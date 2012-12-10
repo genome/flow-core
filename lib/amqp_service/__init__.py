@@ -13,7 +13,7 @@ except AttributeError:
 logging.getLogger().addHandler(nh)
 
 
-from amqp_manager import AMQPManager
+from connection_manager import ConnectionManager
 from service import AMQPService
 
 import dispatcher

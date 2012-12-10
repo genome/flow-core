@@ -5,7 +5,7 @@ from functools import partial
 
 LOG = logging.getLogger(__name__)
 
-class AMQPManager(object):
+class ConnectionManager(object):
     def __init__(self, url, quick_reconnect_max_attempts=3,
             slow_reconnect_delay=60, slow_reconnect_max_attempts=120):
         self.url = url
@@ -88,7 +88,7 @@ class AMQPManager(object):
             self._connection.close()
 
     def run(self):
-        LOG.debug("amqp_manager.run")
+        LOG.debug("connection_manager.run")
         # collect set of flags that must be met
         self._queues_to_create = set()
         self._exchanges_to_create = set()
