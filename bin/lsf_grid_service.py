@@ -16,7 +16,7 @@ if '__main__' == __name__:
     LOG.addHandler(console_handler)
     LOG.setLevel(LOG_LEVEL)
 
-    connection_manager = ConnectionManager('amqp://guest:guest@localhost:5672/%2fworkflow')
+    connection_manager = ConnectionManager('amqp://guest:guest@localhost:5672/workflow')
 
     lsf_dispatcher = dispatcher.LSFDispatcher()
     submit_responder = responder.GridSubmitResponder(
