@@ -14,10 +14,6 @@ class AMQPServiceTest(unittest.TestCase):
 
         self.service = AMQPService(self.connection_manager, *self.responders)
 
-    def tearDown(self):
-        del self.responders
-        del self.connection_manager
-
 
     def test_run(self):
         self.connection_manager.run = mock.Mock()

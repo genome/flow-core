@@ -37,21 +37,6 @@ class GridSubmitResponderTest(unittest.TestCase):
                 exchange_type=self.exchange_type,
                 prefetch_count=self.prefetch_count)
 
-    def tearDown(self):
-        del self.queue
-        del self.durable_queue
-        del self.exchange
-        del self.exchange_type
-        del self.prefetch_count
-
-        del self.channel
-        del self.basic_deliver
-        del self.properties
-
-        del self.data
-
-        del self.responder
-
 
     def test_on_message_success(self):
         expected_job_id = mock.Mock()

@@ -32,24 +32,6 @@ class ResponderTest(unittest.TestCase):
                 exchange_type=self.exchange_type,
                 prefetch_count=self.prefetch_count)
 
-    def tearDown(self):
-        del self.queue
-        del self.durable_queue
-        del self.exchange
-        del self.exchange_type
-        del self.prefetch_count
-
-        del self.channel
-        del self.basic_ack
-        del self.basic_deliver
-        del self.basic_reject
-        del self.properties
-        del self.body
-
-        del self.body_data
-
-        del self.responder
-
 
     def test_message_receiver_normal(self):
         self.responder.on_message = mock.Mock()
