@@ -1,8 +1,6 @@
 import logging
 from pythonlsf import lsf
 
-from pprint import pprint
-
 LOG = logging.getLogger(__name__)
 
 class LSFDispatcher(object):
@@ -19,10 +17,12 @@ class LSFDispatcher(object):
         command_list.extend(arg)
         request.command = str(' '.join(command_list))
 
+        LOG.debug("request.command = '%s'", request.command)
+
         request.options = 0
         request.options2 = 0
         request.queue = self.default_queue
-        pprint(request.queue)
+        LOG.debug("request.queue = %s", request.queue)
 
         request.beginTime = 0
         request.termTime = 0
@@ -40,10 +40,6 @@ class LSFDispatcher(object):
         init_code = lsf.lsb_init("test")
 
         if init_code > 0:
-            pprint(reply)
             raise RuntimeError("Something bad happened: %s" %init_code)
         else:
             return lsf.lsb_submit(request, reply)
-
-
-

@@ -2,8 +2,6 @@ import logging
 
 from . import base
 
-from pprint import pprint
-
 LOG = logging.getLogger(__name__)
 
 
@@ -17,7 +15,7 @@ class GridSubmitResponder(base.Responder):
         base.Responder.__init__(self, *args, **kwargs)
 
     def on_message(self, channel, basic_deliver, properties, workitem):
-        pprint(workitem)
+        LOG.debug("Got workitem %s", workitem)
 
         # XXX launch thinggy with wrapper
         job_id = self.dispatcher.launch_job(

@@ -8,9 +8,12 @@ class AMQPService(object):
         self.responders = responders
 
     def run(self):
+        LOG.info("Starting AMQP service")
         for responder in self.responders:
+            LOG.debug("Registering responder %s", responder)
             self.connection_manager.register_responder(responder)
         self.connection_manager.run()
 
     def stop(self):
+        LOG.info("Stopping AMQP service")
         self.connection_manager.stop()

@@ -24,6 +24,8 @@ class Responder(object):
                     channel, basic_deliver, properties, input_data)
 
             output_message = json.dumps(output_data)
+            LOG.debug("Publishing to routing_key (%s): '%s'",
+                    routing_key, output_message)
             channel.basic_publish(exchange=self.exchange, body=output_message,
                     routing_key=routing_key)
 
