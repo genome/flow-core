@@ -9,7 +9,7 @@ class AMQPService(object):
 
     def run(self):
         for responder in self.responders:
-            responder.run()
+            self.amqp_manager.register_responder(responder)
         self.amqp_manager.run()
 
     def stop(self):

@@ -20,4 +20,4 @@ class GridSubmitResponder(base.Responder):
                 workitem['fields']['params']['command'],
                 workitem['fields']['params']['arg'])
 
-        return {'job_id': job_id}
+        return 'do_some_succeeded_thing', {'job_id': job_id}
