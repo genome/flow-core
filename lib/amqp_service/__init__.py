@@ -10,7 +10,7 @@ except AttributeError:
 
     nh = NullHandler()
 
-logging.getLogger().addHandler(nh)
+logging.getLogger('amqp_service').addHandler(nh)
 
 
 from connection_manager import ConnectionManager
