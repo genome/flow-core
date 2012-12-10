@@ -5,11 +5,15 @@ LOG = logging.getLogger(__name__)
 
 
 class Responder(object):
-    def __init__(self, queue=None, exchange=None):
+    def __init__(self, queue=None, durable_queue=True,
+            exchange=None, exchange_type='topic', prefetch_count=1):
         self.queue = queue
+        self.durable_queue = durable_queue
         self.exchange = exchange
+        self.exchange_type = exchange_type
+        self.prefetch_count = prefetch_count
 
-    def _on_message_wrapper(self, channel, basic_deliver, properties, body):
+    def message_receiver(self, channel, basic_deliver, properties, body):
         LOG.debug('Received message # %s from %s: %s',
                     basic_deliver.delivery_tag, properties.app_id, body)
 
