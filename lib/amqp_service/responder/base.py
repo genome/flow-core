@@ -3,7 +3,7 @@ import logging
 
 from amqp_service.exceptions import ResponderTaskFailed
 
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class Responder(object):
@@ -18,7 +18,7 @@ class Responder(object):
         self.error_response_key = error_response_key
 
     def _on_message_wrapper(self, channel, basic_deliver, properties, body):
-        LOGGER.debug('Received message # %s from %s: %s',
+        LOG.debug('Received message # %s from %s: %s',
                     basic_deliver.delivery_tag, properties.app_id, body)
 
         try:

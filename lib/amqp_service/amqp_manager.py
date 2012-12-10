@@ -1,6 +1,8 @@
 import logging
 import pika
 
+LOG = logging.getLogger(__name__)
+
 class AMQPManager(object):
     def __init__(self, url):
         self.url = url

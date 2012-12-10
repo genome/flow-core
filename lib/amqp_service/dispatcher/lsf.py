@@ -3,6 +3,8 @@ from pythonlsf import lsf
 
 from pprint import pprint
 
+LOG = logging.getLogger(__name__)
+
 class LSFDispatcher(object):
     def __init__(self, default_queue='gms'):
         self.default_queue = default_queue

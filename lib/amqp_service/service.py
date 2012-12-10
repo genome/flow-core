@@ -1,5 +1,7 @@
 import logging
 
+LOG = logging.getLogger(__name__)
+
 class AMQPService(object):
     def __init__(self, amqp_manager, *responders):
         self.amqp_manager = amqp_manager

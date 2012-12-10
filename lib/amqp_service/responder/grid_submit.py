@@ -4,7 +4,7 @@ from . import base
 
 from pprint import pprint
 
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class GridSubmitResponder(base.Responder):

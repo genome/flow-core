@@ -6,7 +6,7 @@ from amqp_service import AMQPManager, AMQPService, dispatcher, responder
 
 LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
               '-35s %(lineno) -5d: %(message)s')
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 if '__main__' == __name__:
     logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
