@@ -33,7 +33,7 @@ class ConnectionManager(object):
 
         for responder in self._responders:
             LOG.debug("Adding channel for responder %s", responder)
-            connection.channel(on_open_callback=partial(self._on_channel_open, responder))
+            connection.channel(partial(self._on_channel_open, responder))
 
     def _on_connection_closed(self, method_frame):
         # if you re-declare a queue or exchange with wrong params, connection
@@ -46,7 +46,8 @@ class ConnectionManager(object):
         # mark channel as open
         LOG.debug("adding close callback on channel %s for responder %s",
                 channel, responder)
-        channel.add_on_close_callback(partial(self._on_channel_closed, responder))
+        channel.add_on_close_callback(
+                partial(self._on_channel_closed, responder))
         self._channels[responder] = channel
 
         LOG.debug("Declaring queue %s for responder %s",
@@ -55,7 +56,8 @@ class ConnectionManager(object):
                 responder.queue, durable=responder.durable_queue)
         LOG.debug("Declaring exchange %s for responder %s",
                 responder.exchange, responder)
-        channel.exchange_declare(partial(self._on_exchange_declare_ok, responder),
+        channel.exchange_declare(
+                partial(self._on_exchange_declare_ok, responder),
                 responder.exchange, responder.exchange_type)
 
     def _on_channel_closed(self, responder, channel):
