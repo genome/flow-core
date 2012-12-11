@@ -21,8 +21,8 @@ if '__main__' == __name__:
     lsf_dispatcher = dispatcher.LSFDispatcher()
     submit_responder = responder.GridSubmitResponder(
             lsf_dispatcher,
-            queue='lsf_submit_job_requests', exchange='grid',
-            succeeded_routing_key='grid.submit.nofitication.success')
+            queue='lsf_submit_job_requests', exchange='lsf',
+            succeeded_routing_key='submit.respond')
 
     service = AMQPService(connection_manager, submit_responder)
 

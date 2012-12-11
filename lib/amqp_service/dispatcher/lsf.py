@@ -10,17 +10,23 @@ class LSFDispatcher(object):
     def get_job_status(self, job_id):
         pass
 
-    def launch_job(self, command, arg=[], **kwargs):
+    def launch_job(self, command, arg=[], wrapper=None, wrapper_args=[], **kwargs):
         request = lsf.submit()
 
-        command_list = [command]
+        command_list = []
+        if wrapper:
+            command_list.append(wrapper)
+            command_list.extend(wrapper_args)
+
+        command_list.append(command)
         command_list.extend(arg)
-        request.command = str(' '.join(command_list))
+        request.command = ' '.join(map(str, command_list))
 
         LOG.debug("request.command = '%s'", request.command)
 
-        request.options = 0
+        request.options = lsf.SUB_QUEUE + lsf.SUB_OUT_FILE + lsf.SUB_ERR_FILE
         request.options2 = 0
+
         request.queue = self.default_queue
         LOG.debug("request.queue = %s", request.queue)
 
@@ -28,6 +34,9 @@ class LSFDispatcher(object):
         request.termTime = 0
         request.numProcessors = 1
         request.maxNumProcessors = 1
+
+        request.errFile = '/gscuser/mburnett/lsf.err'
+        request.outFile = '/gscuser/mburnett/lsf.out'
 
         limits = []
         for i in range(0, lsf.LSF_RLIM_NLIMITS):

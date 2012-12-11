@@ -1,3 +1,4 @@
+import json
 import logging
 
 from . import base
@@ -20,6 +21,10 @@ class GridSubmitResponder(base.Responder):
         # XXX launch thinggy with wrapper
         job_id = self.dispatcher.launch_job(
                 workitem['fields']['params']['command'],
-                workitem['fields']['params']['arg'])
+                workitem['fields']['params']['arg'],
+                wrapper='/gscuser/mburnett/ruote/python-grid-service/bin/basic_command_wrapper.py',
+                wrapper_args=['--amqp_username guest --amqp_password guest --return_packet',
+                    "'%s'" % json.dumps(workitem), ' --amqp_exchange lsf --success_routing_key',
+                    'job.succeed', '--failure_routing_key', 'job.fail']),
 
-        return self.succeeded_routing_key, {'job_id': job_id}
+        return self.succeeded_routing_key, {'workitem': workitem, 'grid_job_id': job_id}

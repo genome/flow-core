@@ -58,7 +58,7 @@ class ConnectionManager(object):
                 responder.exchange, responder)
         channel.exchange_declare(
                 partial(self._on_exchange_declare_ok, responder),
-                responder.exchange, responder.exchange_type)
+                responder.exchange, responder.exchange_type, durable=True)
 
     def _on_channel_closed(self, responder, channel):
         LOG.debug("Channel %s closed for responder %s", channel, responder)
