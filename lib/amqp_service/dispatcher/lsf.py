@@ -24,7 +24,7 @@ class LSFDispatcher(object):
 
         LOG.debug("request.command = '%s'", request.command)
 
-        request.options = lsf.SUB_QUEUE + lsf.SUB_OUT_FILE + lsf.SUB_ERR_FILE
+        request.options = lsf.SUB_QUEUE #+ lsf.SUB_OUT_FILE + lsf.SUB_ERR_FILE
         request.options2 = 0
 
         request.queue = self.default_queue
@@ -35,8 +35,8 @@ class LSFDispatcher(object):
         request.numProcessors = 1
         request.maxNumProcessors = 1
 
-        request.errFile = '/gscuser/mburnett/lsf.err'
-        request.outFile = '/gscuser/mburnett/lsf.out'
+#        request.errFile = '/gscuser/mburnett/lsf.err'
+#        request.outFile = '/gscuser/mburnett/lsf.out'
 
         limits = []
         for i in range(0, lsf.LSF_RLIM_NLIMITS):
