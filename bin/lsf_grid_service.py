@@ -17,8 +17,10 @@ if '__main__' == __name__:
     LOG.addHandler(console_handler)
     LOG.setLevel(LOG_LEVEL)
 
-    connection_manager = ConnectionManager(os.getenv('AMQP_URL'))
-#        'amqp://guest:guest@localhost:5672/workflow')
+    amqp_url = os.getenv('AMQP_URL')
+    if not amqp_url:
+        amqp_url = 'amqp://guest:guest@localhost:5672/workflow'
+    connection_manager = ConnectionManager(amqp_url)
 
     lsf_dispatcher = dispatcher.LSFDispatcher()
     submit_responder = responder.DispatchResponder(
