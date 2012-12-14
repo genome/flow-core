@@ -1,7 +1,7 @@
-from contextlib import contextmanager
 import logging
-import os
 from pythonlsf import lsf
+
+from amqp_service.dispatcher import util
 
 LOG = logging.getLogger(__name__)
 
@@ -97,19 +97,10 @@ class LSFDispatcher(object):
         if init_code > 0:
             raise RuntimeError("Failed lsb_init, errno = %d" % lsf.lsb_errno())
 
-        with environment(env):
+        with util.environment(env):
             submit_result = lsf.lsb_submit(request, reply)
 
         if submit_result > 0:
             return True, submit_result
         else:
             return False, None
-
-@contextmanager
-def environment(temporary_environment):
-    saved_environment = dict(os.environ)
-    os.environ.clear()
-    os.environ.update(temporary_environment)
-    yield
-    os.environ.clear()
-    os.environ.update(saved_environment)
