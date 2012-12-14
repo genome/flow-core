@@ -19,7 +19,7 @@ if '__main__' == __name__:
 
     amqp_url = os.getenv('AMQP_URL')
     if not amqp_url:
-        amqp_url = 'amqp://guest:guest@localhost:5672/workflow'
+        amqp_url = 'amqp://guest:guest@linus202:5672/workflow'
     connection_manager = ConnectionManager(amqp_url)
 
     lsf_dispatcher = dispatcher.LSFDispatcher()
