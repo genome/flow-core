@@ -49,8 +49,6 @@ def connect_to_amqp(args):
 
 if '__main__' == __name__:
     args = parse_arguments()
-    with open('/gscuser/mburnett/wrapper_args', 'w') as f:
-        f.write(str(args))
 
     complete_command = [args.command]
     complete_command.extend(args.arguments)

@@ -1,1 +1,1 @@
-from grid_submit import GridSubmitResponder
+from dispatch_responder import DispatchResponder

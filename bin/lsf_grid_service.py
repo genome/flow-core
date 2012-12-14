@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import logging
+import os
 
 from amqp_service import ConnectionManager, AMQPService, dispatcher, responder
 
@@ -16,10 +17,11 @@ if '__main__' == __name__:
     LOG.addHandler(console_handler)
     LOG.setLevel(LOG_LEVEL)
 
-    connection_manager = ConnectionManager('amqp://guest:guest@localhost:5672/workflow')
+    connection_manager = ConnectionManager(os.getenv('AMQP_URL'))
+#        'amqp://guest:guest@localhost:5672/workflow')
 
     lsf_dispatcher = dispatcher.LSFDispatcher()
-    submit_responder = responder.GridSubmitResponder(
+    submit_responder = responder.DispatchResponder(
             lsf_dispatcher,
             queue='lsf_submit_job_requests', exchange='lsf',
             succeeded_routing_key='submit.respond')
