@@ -23,10 +23,8 @@ if '__main__' == __name__:
     connection_manager = ConnectionManager(amqp_url)
 
     subprocess_dispatcher = dispatcher.SubprocessDispatcher()
-    submit_responder = responder.DispatchResponder(
-            subprocess_dispatcher,
-            queue='subprocess_submit_job_requests', exchange='subprocess',
-            succeeded_routing_key='submit.respond')
+    submit_responder = responder.DispatchResponder(subprocess_dispatcher,
+            queue='subprocess_submit_job_requests', exchange='subprocess')
 
     service = AMQPService(connection_manager, submit_responder)
 

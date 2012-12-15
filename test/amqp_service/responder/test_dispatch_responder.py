@@ -22,20 +22,20 @@ class DispatchResponderTest(unittest.TestCase):
 
         self.command_value = mock.Mock()
         self.return_identifier = mock.Mock()
-        self.arg_value = mock.Mock()
+        self.success_routing_key = mock.Mock()
+        self.failure_routing_key = mock.Mock()
+
         self.data = {'command': self.command_value,
-                     'return_identifier': self.return_identifier}
+                     'return_identifier': self.return_identifier,
+                     'success_routing_key': self.success_routing_key,
+                     'failure_routing_key': self.failure_routing_key}
+
+        self.arg_value = mock.Mock()
 
         self.dispatcher = mock.Mock()
         self.dispatcher.launch_job = mock.Mock()
 
-        self.succeeded_routing_key = mock.Mock()
-        self.failed_routing_key = mock.Mock()
-
         self.responder = DispatchResponder(self.dispatcher,
-                succeeded_routing_key=self.succeeded_routing_key,
-                failed_routing_key=self.failed_routing_key,
-                queue=self.queue,
                 durable_queue=self.durable_queue,
                 exchange=self.exchange,
                 exchange_type=self.exchange_type,
@@ -53,7 +53,7 @@ class DispatchResponderTest(unittest.TestCase):
                 self.command_value, arguments=[],
                 wrapper=None, wrapper_arguments=[])
 
-        self.assertEqual(routing_key, self.succeeded_routing_key)
+        self.assertEqual(routing_key, self.success_routing_key)
         self.assertEqual(output_data,
                 {'return_identifier': self.return_identifier,
                  'dispatch_result': expected_job_id})
@@ -70,7 +70,7 @@ class DispatchResponderTest(unittest.TestCase):
                 self.command_value, arguments=[],
                 wrapper=None, wrapper_arguments=[])
 
-        self.assertEqual(routing_key, self.failed_routing_key)
+        self.assertEqual(routing_key, self.failure_routing_key)
         self.assertEqual(output_data,
                 {'return_identifier': self.return_identifier,
                  'dispatch_result': failure_output})

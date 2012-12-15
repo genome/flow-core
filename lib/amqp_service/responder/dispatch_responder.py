@@ -7,28 +7,18 @@ LOG = logging.getLogger(__name__)
 
 
 class DispatchResponder(base.Responder):
-    def __init__(self, dispatcher, succeeded_routing_key=None,
-            failed_routing_key=None, *args, **kwargs):
+    def __init__(self, dispatcher, *args, **kwargs):
         self.dispatcher = dispatcher
-        self.succeeded_routing_key = succeeded_routing_key
-        self.failed_routing_key = failed_routing_key
 
         base.Responder.__init__(self, *args, **kwargs)
 
     def on_message(self, channel, basic_deliver, properties, input_data):
         LOG.debug("Got input_data %s", input_data)
 
-        try:
-            command = input_data['command']
-        except KeyError:
-            LOG.error("command not specified")
-            raise
-
-        try:
-            return_identifier = input_data['return_identifier']
-        except KeyError:
-            LOG.error("return_identifier not specified")
-            raise
+        command = _get_required(input_data, 'command')
+        return_identifier = _get_required(input_data, 'return_identifier')
+        success_routing_key = _get_required(input_data, 'success_routing_key')
+        failure_routing_key = _get_required(input_data, 'failure_routing_key')
 
         arguments = input_data.get('arguments', [])
         wrapper = input_data.get('wrapper')
@@ -41,11 +31,18 @@ class DispatchResponder(base.Responder):
                 **dispatcher_options)
 
         if success:
-            routing_key = self.succeeded_routing_key
+            routing_key = success_routing_key
         else:
-            routing_key = self.failed_routing_key
+            routing_key = failure_routing_key
 
         result = {'return_identifier': return_identifier,
                   'dispatch_result': dispatch_result}
 
         return routing_key, result
+
+def _get_required(input_data, name):
+    try:
+        return input_data[name]
+    except KeyError:
+        LOG.error("required message key '%s' not specified", name)
+        raise
