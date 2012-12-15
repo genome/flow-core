@@ -4,6 +4,7 @@ try:
 except:
     import mock
 
+import json
 from amqp_service.responder.base import Responder
 
 
@@ -32,6 +33,8 @@ class ResponderTest(unittest.TestCase):
                 exchange_type=self.exchange_type,
                 prefetch_count=self.prefetch_count)
 
+        self.publish_properties = self.responder._properties
+
 
     def test_message_receiver_normal(self):
         self.responder.on_message = mock.Mock()
@@ -43,14 +46,15 @@ class ResponderTest(unittest.TestCase):
         self.responder.message_receiver(self.channel,
                 self.basic_deliver, self.properties, self.body)
 
-        self.responder.on_message.assert_called_once_with(self.channel,
+        self.responder.on_message.assert_called_once_with_with(self.channel,
                 self.basic_deliver, self.properties, self.body_data)
 
-        self.channel.basic_publish.assert_called_once(
-                exchange=self.exchange, body=output_message,
-                routing_key=routing_key)
+        self.channel.basic_publish.assert_called_once_with(
+                exchange=self.exchange, body=json.dumps(output_message),
+                routing_key=routing_key,
+                properties=self.publish_properties)
 
-        self.channel.basic_ack.assert_called_once(
+        self.channel.basic_ack.assert_called_once_with(
                 self.basic_deliver.delivery_tag)
 
 
@@ -59,7 +63,7 @@ class ResponderTest(unittest.TestCase):
                 self.basic_deliver, self.properties, self.body)
 
         self.channel.basic_reject.assert_called_once(
-                self.basic_deliver.delivery_tag)
+                self.basic_deliver.delivery_tag_with)
 
 
     def test_on_message(self):
