@@ -7,16 +7,16 @@ LOG = logging.getLogger(__name__)
 
 class SubprocessDispatcher(object):
     def launch_job(self, command, arguments=[],
-            wrapper=None, wrapper_args=[], env={},
+            wrapper=None, wrapper_arguments=[], env={},
             stdout=None, stderr=None):
 
         command_list = []
         if wrapper:
             command_list.append(wrapper)
-            command_list.extend(wrapper_args)
+            command_list.extend(wrapper_arguments)
 
         command_list.append(command)
-        command_list.extend(arg)
+        command_list.extend(arguments)
 
         with util.environment(env):
             exit_code = subprocess.call(command_list,
