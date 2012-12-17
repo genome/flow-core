@@ -10,8 +10,8 @@ class LSFDispatcher(object):
         self.default_queue = default_queue
 
     def launch_job(self, command, env={}, **kwargs):
+        request = self.create_request(**kwargs)
         command_string = set_command_string(request, command, **kwargs)
-        request = self.create_request(command_string, **kwargs)
         reply = _create_reply()
 
         with util.environment(env):
@@ -23,14 +23,12 @@ class LSFDispatcher(object):
             return False, None
 
 
-    def create_request(self, command_string, queue=None,
-            stdout=None, stderr=None, beginTime=0, termTime=0,
-            numProcessors=1, maxNumProcessors=1, **kwargs):
+    def create_request(self, queue=None, stdout=None, stderr=None,
+            beginTime=0, termTime=0, numProcessors=1, maxNumProcessors=1,
+            **kwargs):
         request = lsf.submit()
         request.options = 0
         request.options2 = 0
-
-        request.command = command_string
 
         if queue:
             request.queue = queue
@@ -73,6 +71,7 @@ def set_command_string(request, command, arguments=[],
     command_string = ' '.join(map(str, command_list))
     LOG.debug("command_string = '%s'", command_string)
 
+    request.command = command_string
     return command_string
 
 

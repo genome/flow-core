@@ -14,12 +14,12 @@ class SubprocessDispatcherTest(unittest.TestCase):
     def test_succeeded_job(self):
         success, result = self.dispatcher.launch_job('/bin/true')
         self.assertTrue(success)
-        self.assertEqual(result, None)
+        self.assertEqual(result, 0)
 
     def test_failed_job(self):
         success, result = self.dispatcher.launch_job('/bin/false')
         self.assertFalse(success)
-        self.assertEqual(result, None)
+        self.assertEqual(result, 1)
 
 
 if '__main__' == __name__:

@@ -102,8 +102,7 @@ class CreateRequestTest(unittest.TestCase):
         self.command = 'complex command'
 
     def test_command_only_success(self):
-        request = self.dispatcher.create_request(self.command)
-        self.assertEqual(request.command, self.command)
+        request = self.dispatcher.create_request()
         self.assertEqual(request.queue, self.default_queue)
 
     def test_command_only_failure(self):
@@ -113,48 +112,41 @@ class CreateRequestTest(unittest.TestCase):
 
     def test_queue_success(self):
         queue = 'different queue'
-        request = self.dispatcher.create_request(self.command, queue=queue)
-        self.assertEqual(request.command, self.command)
+        request = self.dispatcher.create_request(queue=queue)
         self.assertEqual(request.queue, queue)
 
     def test_queue_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, self.command, queue=mock.Mock())
+                self.dispatcher.create_request, queue=mock.Mock())
 
 
     def test_stdout_success(self):
         stdout = 'stdout path'
-        request = self.dispatcher.create_request(self.command, stdout=stdout)
-        self.assertEqual(request.command, self.command)
+        request = self.dispatcher.create_request(stdout=stdout)
         self.assertEqual(request.queue, self.default_queue)
         self.assertEqual(request.outFile, stdout)
 
     def test_stdout_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, self.command,
-                stdout=mock.Mock())
+                self.dispatcher.create_request, stdout=mock.Mock())
 
 
     def test_stderr_success(self):
         stderr = 'stderr path'
-        request = self.dispatcher.create_request(self.command, stderr=stderr)
-        self.assertEqual(request.command, self.command)
+        request = self.dispatcher.create_request(stderr=stderr)
         self.assertEqual(request.queue, self.default_queue)
         self.assertEqual(request.errFile, stderr)
 
     def test_stderr_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, self.command,
-                stderr=mock.Mock())
+                self.dispatcher.create_request, stderr=mock.Mock())
 
 
     def test_rlimits(self):
         value = 4000
-        request = self.dispatcher.create_request(self.command,
-                max_resident_memory=value)
+        request = self.dispatcher.create_request(max_resident_memory=value)
         expected_limits = create_expected_limits()
         expected_limits[lsf_driver.LSF_RLIMIT_RSS] = value
-        self.assertEqual(request.command, self.command)
         self.assertEqual(request.queue, self.default_queue)
 
         for i, x in enumerate(expected_limits):
