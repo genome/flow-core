@@ -7,12 +7,13 @@ LOG = logging.getLogger(__name__)
 
 class Responder(object):
     def __init__(self, queue=None, durable_queue=True, prefetch_count=1,
-            exchange=None, exchange_type='topic'):
+            exchange=None, exchange_type='topic', alternate_exchange=None):
         self.queue = queue
         self.durable_queue = durable_queue
         self.prefetch_count = prefetch_count
         self.exchange = exchange
         self.exchange_type = exchange_type
+        self.alternate_exchange = alternate_exchange
 
         self._properties = pika.BasicProperties(delivery_mode=2)
 

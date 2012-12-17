@@ -23,6 +23,6 @@ class SubprocessDispatcher(object):
                     stdout=stdout, stderr=stderr)
 
         if exit_code > 0:
-            return False, None
+            return False, exit_code
         else:
-            return True, None
+            return True, exit_code

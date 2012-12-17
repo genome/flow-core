@@ -24,7 +24,8 @@ if '__main__' == __name__:
 
     subprocess_dispatcher = dispatcher.SubprocessDispatcher()
     submit_responder = responder.DispatchResponder(subprocess_dispatcher,
-            queue='subprocess_submit_job_requests', exchange='subprocess')
+            queue='subprocess_submit', exchange='subprocess',
+            alternate_exchange='subprocess.alt')
 
     service = AMQPService(connection_manager, submit_responder)
 

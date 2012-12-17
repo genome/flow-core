@@ -56,12 +56,16 @@ class ConnectionManager(object):
                 responder.queue, durable=responder.durable_queue)
         LOG.debug("Declaring exchange %s for responder %s",
                 responder.exchange, responder)
+        arguments = {}
+        if responder.alternate_exchange:
+            arguments['alternate-exchange'] = responder.alternate_exchange
         channel.exchange_declare(
                 partial(self._on_exchange_declare_ok, responder),
-                responder.exchange, responder.exchange_type, durable=True)
+                responder.exchange, responder.exchange_type, durable=True,
+                arguments=arguments)
 
     def _on_channel_closed(self, responder, channel):
-        LOG.debug("Channel %s closed for responder %s", channel, responder)
+        LOG.error("Channel %s closed for responder %s", channel, responder)
         if responder in self._channels:
             LOG.debug("Removing channel %s from tracking")
             # mark channel as closed - is there anything else to do?
