@@ -18,8 +18,8 @@ class Responder(object):
         self._properties = pika.BasicProperties(delivery_mode=2)
 
     def message_receiver(self, channel, basic_deliver, properties, body):
-        LOG.debug('Received message # %s from %s: %s',
-                    basic_deliver.delivery_tag, properties.app_id, body)
+        LOG.debug('Received message # %s from %s',
+                    basic_deliver.delivery_tag, properties.app_id)
 
         try:
             input_data = json.loads(body)
@@ -28,17 +28,19 @@ class Responder(object):
                     channel, basic_deliver, properties, input_data)
 
             output_message = json.dumps(output_data)
-            LOG.debug("Publishing to routing_key (%s): '%s'",
-                    routing_key, output_message)
+            LOG.debug("Publishing to routing_key (%s)", routing_key)
             channel.basic_publish(exchange=self.exchange, body=output_message,
                     routing_key=routing_key, properties=self._properties)
 
             channel.basic_ack(basic_deliver.delivery_tag)
 
         except Exception as e:
-            LOG.error("Rejecting message (%s): '%s'",
-                    basic_deliver.delivery_tag, body)
+            LOG.error("Rejecting message due to %s (%s): '%s'",
+                    e.__class__, basic_deliver.delivery_tag, body)
             LOG.exception(e)
+        except:
+            LOG.error("Rejecting message due to non-standard exception (%s): '%s'",
+                    basic_deliver.delivery_tag, body)
             channel.basic_reject(basic_deliver.delivery_tag, requeue=False)
 
     def on_message(self, channel, basic_deliver, properties, body):

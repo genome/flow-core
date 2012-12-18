@@ -8,7 +8,7 @@ from amqp_service import log_formatter
 
 PIKA_LOG_LEVEL = logging.INFO
 LOG_LEVEL = logging.DEBUG
-LOG_FORMAT = ('%(levelname)-23s %(asctime)s %(name)-50s %(funcName)-45s'
+LOG_FORMAT = ('%(levelname)-23s %(asctime)s %(name)-60s %(funcName)-45s'
               ' %(lineno)5d: %(message)s')
 LOG = logging.getLogger()
 
@@ -27,8 +27,8 @@ if '__main__' == __name__:
 
     subprocess_dispatcher = dispatcher.SubprocessDispatcher()
     submit_responder = responder.DispatchResponder(subprocess_dispatcher,
-            queue='subprocess_submit', exchange='subprocess',
-            alternate_exchange='alt')
+            queue='subprocess_submit', exchange='workflow',
+            alternate_exchange='workflow.alt')
 
     service = AMQPService(connection_manager, submit_responder)
 

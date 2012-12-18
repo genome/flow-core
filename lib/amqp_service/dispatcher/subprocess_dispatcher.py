@@ -1,4 +1,5 @@
 import logging
+import os
 import subprocess
 
 from amqp_service.dispatcher import util
@@ -21,8 +22,14 @@ class SubprocessDispatcher(object):
         with util.environment(environment):
             LOG.debug('executing subprocess using command_list: %s',
                     command_list)
-            exit_code = subprocess.call(command_list,
-                    stdout=stdout, stderr=stderr)
+            try:
+                exit_code = subprocess.call(command_list,
+                        stdout=stdout, stderr=stderr)
+            except OSError as e:
+                error_message = 'Dispatcher got error number (%d): %s' % (
+                        e.errno, os.strerror(e.errno))
+                LOG.error(error_message)
+                raise RuntimeError(error_message)
 
         if exit_code > 0:
             # XXX get error message

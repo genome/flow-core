@@ -6,12 +6,14 @@ from functools import partial
 LOG = logging.getLogger(__name__)
 
 class ConnectionManager(object):
-    def __init__(self, url, quick_reconnect_max_attempts=3,
+    def __init__(self, url, prefetch_count=1, quick_reconnect_max_attempts=3,
             slow_reconnect_delay=60, slow_reconnect_max_attempts=120):
         self.url = url
         self.quick_reconnect_max_attempts = quick_reconnect_max_attempts
         self.slow_reconnect_delay = slow_reconnect_delay
         self.slow_reconnect_max_attempts = slow_reconnect_max_attempts
+
+        self.prefetch_count = prefetch_count
 
         self._connection = None
         self._quick_reconnect_attempts = 0
@@ -49,6 +51,10 @@ class ConnectionManager(object):
         channel.add_on_close_callback(
                 partial(self._on_channel_closed, responder))
         self._channels[responder] = channel
+
+        LOG.debug('Setting prefetch count for channel %s to %d',
+                channel, self.prefetch_count)
+        channel.basic_qos(prefetch_count=self.prefetch_count)
 
         LOG.debug("Declaring queue %s for responder %s",
                 responder.queue, responder)

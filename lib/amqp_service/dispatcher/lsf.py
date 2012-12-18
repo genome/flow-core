@@ -13,13 +13,20 @@ class LSFDispatcher(object):
             wrapper=None, wrapper_arguments=[],
             environment={}, **kwargs):
         request = self.create_request(**kwargs)
-        request.command = resolve_command_string(command, arguments,
+        command_string = resolve_command_string(command, arguments,
                 wrapper=wrapper, wrapper_arguments=wrapper_arguments)
+        request.command = command_string
 
         reply = _create_reply()
 
         with util.environment(environment):
-            submit_result = lsf.lsb_submit(request, reply)
+            try:
+                submit_result = lsf.lsb_submit(request, reply)
+            except Exception as e:
+                LOG.error("lsb_submit failed for command string: '%s'",
+                        command_string)
+                LOG.exception(e)
+                raise RuntimeError(str(e))
 
         if submit_result > 0:
             LOG.debug('successfully submitted lsf job: %s', submit_result)
