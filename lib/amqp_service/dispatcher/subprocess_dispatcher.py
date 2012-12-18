@@ -8,7 +8,7 @@ LOG = logging.getLogger(__name__)
 class SubprocessDispatcher(object):
     def launch_job(self, command, arguments=[],
             wrapper=None, wrapper_arguments=[], environment={},
-            stdout=None, stderr=None):
+            stdout=None, stderr=None, **kwargs):
 
         command_list = []
         if wrapper:
