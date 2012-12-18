@@ -25,7 +25,7 @@ if '__main__' == __name__:
 
     lsf_dispatcher = dispatcher.LSFDispatcher()
     submit_responder = responder.DispatchResponder(lsf_dispatcher,
-            queue='lsf_submit', exchange='lsf', alternate_exchange='lsf.alt')
+            queue='lsf_submit', exchange='lsf', alternate_exchange='alt')
 
     service = AMQPService(connection_manager, submit_responder)
 
