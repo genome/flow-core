@@ -18,9 +18,12 @@ class LSFDispatcher(object):
             submit_result = lsf.lsb_submit(request, reply)
 
         if submit_result > 0:
+            LOG.debug('successfully submitted lsf job: %s', submit_result)
             return True, submit_result
         else:
-            return False, None
+            # XXX get lsf error message
+            LOG.debug('failed to submit lsf job, return value = (%s)', submit_result)
+            return False, submit_result
 
 
     def create_request(self, queue=None, stdout=None, stderr=None,
@@ -69,7 +72,7 @@ def set_command_string(request, command, arguments=[],
     command_list.append(command)
     command_list.extend(arguments)
     command_string = ' '.join(map(str, command_list))
-    LOG.debug("command_string = '%s'", command_string)
+    LOG.debug("lsf command_string = '%s'", command_string)
 
     request.command = command_string
     return command_string
