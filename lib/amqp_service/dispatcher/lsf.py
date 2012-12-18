@@ -64,7 +64,7 @@ def set_command_string(request, command, arguments=[],
         wrapper=None, wrapper_arguments=[], **kwargs):
     command_list = []
     if wrapper:
-        request.jobName = command
+        request.jobName = str(command)
         request.options += lsf.SUB_JOB_NAME
         command_list.append(wrapper)
         command_list.extend(wrapper_arguments)

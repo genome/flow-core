@@ -51,7 +51,8 @@ class DispatchResponderTest(unittest.TestCase):
 
         self.dispatcher.launch_job.assert_called_once_with(
                 self.command_value, arguments=[],
-                wrapper=None, wrapper_arguments=[])
+                wrapper=None, wrapper_arguments=[],
+                environment={})
 
         self.assertEqual(routing_key, self.success_routing_key)
         self.assertEqual(output_data,
@@ -68,7 +69,8 @@ class DispatchResponderTest(unittest.TestCase):
 
         self.dispatcher.launch_job.assert_called_once_with(
                 self.command_value, arguments=[],
-                wrapper=None, wrapper_arguments=[])
+                wrapper=None, wrapper_arguments=[],
+                environment={})
 
         self.assertEqual(routing_key, self.failure_routing_key)
         self.assertEqual(output_data,
@@ -84,7 +86,8 @@ class DispatchResponderTest(unittest.TestCase):
 
         self.dispatcher.launch_job.assert_called_once_with(
                 self.command_value, arguments=[],
-                wrapper=None, wrapper_arguments=[])
+                wrapper=None, wrapper_arguments=[],
+                environment={})
 
 
 
