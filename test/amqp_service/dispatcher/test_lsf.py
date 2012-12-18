@@ -8,49 +8,39 @@ from amqp_service.dispatcher import lsf
 from pythonlsf import lsf as lsf_driver
 
 
-class SetCommandStringTest(unittest.TestCase):
+class ResolveCommandStringTest(unittest.TestCase):
     def setUp(self):
         self.command = 'command'
         self.arguments = ['c1', 'c2']
         self.wrapper = 'wrapper'
         self.wrapper_arguments = ['w1', 'w2']
 
-        self.request = mock.Mock()
-        self.request.options = 0
-
     def test_command_only(self):
-        command_string = lsf.set_command_string(self.request, self.command)
+        command_string = lsf.resolve_command_string(self.command)
         self.assertEqual('command', command_string)
-        self.assertEqual(self.request.options, 0)
 
     def test_command_and_args(self):
-        command_string = lsf.set_command_string(self.request, self.command,
+        command_string = lsf.resolve_command_string(self.command,
                 arguments=self.arguments)
         self.assertEqual('command c1 c2', command_string)
-        self.assertEqual(self.request.options, 0)
 
     def test_wrapper_no_w_args(self):
-        command_string = lsf.set_command_string(self.request, self.command,
+        command_string = lsf.resolve_command_string(self.command,
                 arguments=self.arguments, wrapper=self.wrapper)
         self.assertEqual('wrapper command c1 c2', command_string)
-        self.assertEqual(self.request.options, lsf_driver.SUB_JOB_NAME)
-        self.assertEqual(self.request.jobName, self.command)
 
     def test_no_wrapper_but_w_args(self):
-        command_string = lsf.set_command_string(self.request, self.command,
+        command_string = lsf.resolve_command_string(self.command,
                 arguments=self.arguments,
                 wrapper_arguments=self.wrapper_arguments)
         self.assertEqual('command c1 c2', command_string)
-        self.assertEqual(self.request.options, 0)
 
 
     def test_wrapper_and_w_args(self):
-        command_string = lsf.set_command_string(self.request, self.command,
+        command_string = lsf.resolve_command_string(self.command,
                 arguments=self.arguments, wrapper=self.wrapper,
                 wrapper_arguments=self.wrapper_arguments)
         self.assertEqual('wrapper w1 w2 command c1 c2', command_string)
-        self.assertEqual(self.request.options, lsf_driver.SUB_JOB_NAME)
-        self.assertEqual(self.request.jobName, self.command)
 
 
 class GetRlimitsTest(unittest.TestCase):
@@ -99,25 +89,31 @@ class CreateRequestTest(unittest.TestCase):
         self.default_queue = 'serious queue'
         self.dispatcher = lsf.LSFDispatcher(default_queue=self.default_queue)
 
-        self.command = 'complex command'
+        self.bad_type = mock.Mock()
+        self.bad_type.__str__ = lambda x: None
 
-    def test_command_only_success(self):
-        request = self.dispatcher.create_request()
-        self.assertEqual(request.queue, self.default_queue)
 
-    def test_command_only_failure(self):
+    def test_name_success(self):
+        name = 'different name'
+        request = self.dispatcher.create_request(name=name)
+        self.assertEqual(request.jobName, name)
+        self.assertEqual(request.options,
+                lsf_driver.SUB_JOB_NAME + lsf_driver.SUB_QUEUE)
+
+    def test_name_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, mock.Mock())
+                self.dispatcher.create_request, name=self.bad_type)
 
 
     def test_queue_success(self):
         queue = 'different queue'
         request = self.dispatcher.create_request(queue=queue)
         self.assertEqual(request.queue, queue)
+        self.assertEqual(request.options, lsf_driver.SUB_QUEUE)
 
     def test_queue_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, queue=mock.Mock())
+                self.dispatcher.create_request, queue=self.bad_type)
 
 
     def test_stdout_success(self):
@@ -125,10 +121,12 @@ class CreateRequestTest(unittest.TestCase):
         request = self.dispatcher.create_request(stdout=stdout)
         self.assertEqual(request.queue, self.default_queue)
         self.assertEqual(request.outFile, stdout)
+        self.assertEqual(request.options,
+                lsf_driver.SUB_QUEUE + lsf_driver.SUB_OUT_FILE)
 
     def test_stdout_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, stdout=mock.Mock())
+                self.dispatcher.create_request, stdout=self.bad_type)
 
 
     def test_stderr_success(self):
@@ -136,10 +134,12 @@ class CreateRequestTest(unittest.TestCase):
         request = self.dispatcher.create_request(stderr=stderr)
         self.assertEqual(request.queue, self.default_queue)
         self.assertEqual(request.errFile, stderr)
+        self.assertEqual(request.options,
+                lsf_driver.SUB_QUEUE + lsf_driver.SUB_ERR_FILE)
 
     def test_stderr_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, stderr=mock.Mock())
+                self.dispatcher.create_request, stderr=self.bad_type)
 
 
     def test_rlimits(self):

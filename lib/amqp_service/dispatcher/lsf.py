@@ -9,9 +9,13 @@ class LSFDispatcher(object):
     def __init__(self, default_queue='gms'):
         self.default_queue = default_queue
 
-    def launch_job(self, command, environment={}, **kwargs):
+    def launch_job(self, command, arguments=[],
+            wrapper=None, wrapper_arguments=[],
+            environment={}, **kwargs):
         request = self.create_request(**kwargs)
-        command_string = set_command_string(request, command, **kwargs)
+        request.command = resolve_command_string(command, arguments,
+                wrapper=wrapper, wrapper_arguments=wrapper_arguments)
+
         reply = _create_reply()
 
         with util.environment(environment):
@@ -22,50 +26,53 @@ class LSFDispatcher(object):
             return True, submit_result
         else:
             # XXX get lsf error message
-            LOG.debug('failed to submit lsf job, return value = (%s)', submit_result)
+            LOG.debug('failed to submit lsf job, return value = (%s)',
+                    submit_result)
             return False, submit_result
 
 
-    def create_request(self, queue=None, stdout=None, stderr=None,
+    def create_request(self, name=None, queue=None, stdout=None, stderr=None,
             beginTime=0, termTime=0, numProcessors=1, maxNumProcessors=1,
             **kwargs):
         request = lsf.submit()
         request.options = 0
         request.options2 = 0
 
+        if name:
+            request.jobName = str(name)
+            request.options += lsf.SUB_JOB_NAME
+
         if queue:
-            request.queue = queue
+            request.queue = str(queue)
         else:
             request.queue = self.default_queue
         request.options += lsf.SUB_QUEUE
         LOG.debug("request.queue = %s", request.queue)
 
         if stdout:
-            request.outFile = stdout
+            request.outFile = str(stdout)
             request.options += lsf.SUB_OUT_FILE
             LOG.debug('setting job stdout = %s', stdout)
         if stderr:
-            request.errFile = stderr
+            request.errFile = str(stderr)
             request.options += lsf.SUB_ERR_FILE
             LOG.debug('setting job stderr = %s', stderr)
 
         request.beginTime = int(beginTime)
         request.termTime = int(termTime)
 
-        request.numProcessors = numProcessors
-        request.maxNumProcessors = maxNumProcessors
+        request.numProcessors = int(numProcessors)
+        request.maxNumProcessors = int(maxNumProcessors)
 
         request.rLimits = get_rlimits(**kwargs)
 
         return request
 
 
-def set_command_string(request, command, arguments=[],
-        wrapper=None, wrapper_arguments=[], **kwargs):
+def resolve_command_string(command, arguments=[],
+        wrapper=None, wrapper_arguments=[]):
     command_list = []
     if wrapper:
-        request.jobName = str(command)
-        request.options += lsf.SUB_JOB_NAME
         command_list.append(wrapper)
         command_list.extend(wrapper_arguments)
 
@@ -74,7 +81,6 @@ def set_command_string(request, command, arguments=[],
     command_string = ' '.join(map(str, command_list))
     LOG.debug("lsf command_string = '%s'", command_string)
 
-    request.command = command_string
     return command_string
 
 
