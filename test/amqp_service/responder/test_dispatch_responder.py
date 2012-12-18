@@ -24,11 +24,13 @@ class DispatchResponderTest(unittest.TestCase):
         self.return_identifier = mock.Mock()
         self.success_routing_key = mock.Mock()
         self.failure_routing_key = mock.Mock()
+        self.error_routing_key = mock.Mock()
 
         self.data = {'command': self.command_value,
                      'return_identifier': self.return_identifier,
                      'success_routing_key': self.success_routing_key,
-                     'failure_routing_key': self.failure_routing_key}
+                     'failure_routing_key': self.failure_routing_key,
+                     'error_routing_key': self.error_routing_key}
 
         self.arg_value = mock.Mock()
 
@@ -78,11 +80,29 @@ class DispatchResponderTest(unittest.TestCase):
                  'dispatch_result': failure_output})
 
 
-    def test_on_message_error(self):
-        self.dispatcher.launch_job.side_effect = RuntimeError('test exception')
+    def test_on_message_serious_error(self):
+        self.dispatcher.launch_job.side_effect = Exception('test exception')
 
-        self.assertRaises(RuntimeError, self.responder.on_message,
+        self.assertRaises(Exception, self.responder.on_message,
                 self.channel, self.basic_deliver, self.properties, self.data)
+
+        self.dispatcher.launch_job.assert_called_once_with(
+                self.command_value, arguments=[],
+                wrapper=None, wrapper_arguments=[],
+                environment={})
+
+
+    def test_on_message_error(self):
+        e = RuntimeError('test exception')
+        self.dispatcher.launch_job.side_effect = e
+
+        routing_key, output_data = self.responder.on_message(self.channel,
+                self.basic_deliver, self.properties, self.data)
+
+        self.assertEqual(routing_key, self.error_routing_key)
+        self.assertEqual(output_data,
+                {'return_identifier': self.return_identifier,
+                 'dispatch_result': str(e)})
 
         self.dispatcher.launch_job.assert_called_once_with(
                 self.command_value, arguments=[],
