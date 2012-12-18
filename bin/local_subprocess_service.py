@@ -6,6 +6,7 @@ import os
 from amqp_service import ConnectionManager, AMQPService, dispatcher, responder
 from amqp_service import log_formatter
 
+PIKA_LOG_LEVEL = logging.INFO
 LOG_LEVEL = logging.DEBUG
 LOG_FORMAT = ('%(levelname)-23s %(asctime)s %(name)-50s %(funcName)-45s'
               ' %(lineno)5d: %(message)s')
@@ -17,6 +18,7 @@ if '__main__' == __name__:
     console_handler.setLevel(LOG_LEVEL)
     LOG.addHandler(console_handler)
     LOG.setLevel(LOG_LEVEL)
+    logging.getLogger('pika').setLevel(PIKA_LOG_LEVEL)
 
     amqp_url = os.getenv('AMQP_URL')
     if not amqp_url:
