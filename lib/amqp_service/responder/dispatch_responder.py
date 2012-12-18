@@ -23,12 +23,14 @@ class DispatchResponder(base.Responder):
         arguments = input_data.get('arguments', [])
         wrapper = input_data.get('wrapper')
         wrapper_arguments = input_data.get('wrapper_arguments', [])
+
+        environment = input_data.get('environment', {})
         dispatcher_options = input_data.get('dispatcher_options', {})
 
         success, dispatch_result = self.dispatcher.launch_job(
                 command, arguments=arguments,
                 wrapper=wrapper, wrapper_arguments=wrapper_arguments,
-                **dispatcher_options)
+                environment=environment, **dispatcher_options)
 
         if success:
             routing_key = success_routing_key

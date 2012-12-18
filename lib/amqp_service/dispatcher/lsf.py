@@ -9,12 +9,12 @@ class LSFDispatcher(object):
     def __init__(self, default_queue='gms'):
         self.default_queue = default_queue
 
-    def launch_job(self, command, env={}, **kwargs):
+    def launch_job(self, command, environment={}, **kwargs):
         request = self.create_request(**kwargs)
         command_string = set_command_string(request, command, **kwargs)
         reply = _create_reply()
 
-        with util.environment(env):
+        with util.environment(environment):
             submit_result = lsf.lsb_submit(request, reply)
 
         if submit_result > 0:
