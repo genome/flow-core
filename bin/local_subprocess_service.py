@@ -4,15 +4,16 @@ import logging
 import os
 
 from amqp_service import ConnectionManager, AMQPService, dispatcher, responder
+from amqp_service import log_formatter
 
 LOG_LEVEL = logging.DEBUG
-LOG_FORMAT = ('%(levelname) -10s %(asctime)s %(name) -30s %(funcName) '
-              '-35s %(lineno) -5d: %(message)s')
+LOG_FORMAT = ('%(levelname)-23s %(asctime)s %(name)-50s %(funcName)-45s'
+              ' %(lineno)5d: %(message)s')
 LOG = logging.getLogger()
 
 if '__main__' == __name__:
     console_handler = logging.StreamHandler()
-    console_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    console_handler.setFormatter(log_formatter.ColorFormatter(LOG_FORMAT))
     console_handler.setLevel(LOG_LEVEL)
     LOG.addHandler(console_handler)
     LOG.setLevel(LOG_LEVEL)
