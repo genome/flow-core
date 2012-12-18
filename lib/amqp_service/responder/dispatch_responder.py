@@ -22,8 +22,6 @@ class DispatchResponder(base.Responder):
         error_routing_key = _get_required(input_data, 'error_routing_key')
 
         arguments = input_data.get('arguments', [])
-        wrapper = input_data.get('wrapper')
-        wrapper_arguments = input_data.get('wrapper_arguments', [])
 
         environment = input_data.get('environment', {})
         dispatcher_options = input_data.get('dispatcher_options', {})
@@ -31,7 +29,6 @@ class DispatchResponder(base.Responder):
         try:
             success, dispatch_result = self.dispatcher.launch_job(
                     command, arguments=arguments,
-                    wrapper=wrapper, wrapper_arguments=wrapper_arguments,
                     environment=environment, **dispatcher_options)
 
             if success:

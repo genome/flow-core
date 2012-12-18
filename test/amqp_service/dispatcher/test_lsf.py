@@ -12,8 +12,6 @@ class ResolveCommandStringTest(unittest.TestCase):
     def setUp(self):
         self.command = 'command'
         self.arguments = ['c1', 'c2']
-        self.wrapper = 'wrapper'
-        self.wrapper_arguments = ['w1', 'w2']
 
     def test_command_only(self):
         command_string = lsf.resolve_command_string(self.command)
@@ -23,24 +21,6 @@ class ResolveCommandStringTest(unittest.TestCase):
         command_string = lsf.resolve_command_string(self.command,
                 arguments=self.arguments)
         self.assertEqual('command c1 c2', command_string)
-
-    def test_wrapper_no_w_args(self):
-        command_string = lsf.resolve_command_string(self.command,
-                arguments=self.arguments, wrapper=self.wrapper)
-        self.assertEqual('wrapper command c1 c2', command_string)
-
-    def test_no_wrapper_but_w_args(self):
-        command_string = lsf.resolve_command_string(self.command,
-                arguments=self.arguments,
-                wrapper_arguments=self.wrapper_arguments)
-        self.assertEqual('command c1 c2', command_string)
-
-
-    def test_wrapper_and_w_args(self):
-        command_string = lsf.resolve_command_string(self.command,
-                arguments=self.arguments, wrapper=self.wrapper,
-                wrapper_arguments=self.wrapper_arguments)
-        self.assertEqual('wrapper w1 w2 command c1 c2', command_string)
 
 
 class GetRlimitsTest(unittest.TestCase):

@@ -7,16 +7,10 @@ from amqp_service.dispatcher import util
 LOG = logging.getLogger(__name__)
 
 class SubprocessDispatcher(object):
-    def launch_job(self, command, arguments=[],
-            wrapper=None, wrapper_arguments=[], environment={},
+    def launch_job(self, command, arguments=[], environment={},
             stdout=None, stderr=None, **kwargs):
 
-        command_list = []
-        if wrapper:
-            command_list.append(wrapper)
-            command_list.extend(wrapper_arguments)
-
-        command_list.append(command)
+        command_list = [command]
         command_list.extend(arguments)
 
         with util.environment(environment):

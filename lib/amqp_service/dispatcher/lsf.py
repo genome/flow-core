@@ -10,11 +10,9 @@ class LSFDispatcher(object):
         self.default_queue = default_queue
 
     def launch_job(self, command, arguments=[],
-            wrapper=None, wrapper_arguments=[],
             environment={}, **kwargs):
         request = self.create_request(**kwargs)
-        command_string = resolve_command_string(command, arguments,
-                wrapper=wrapper, wrapper_arguments=wrapper_arguments)
+        command_string = resolve_command_string(command, arguments)
         request.command = command_string
 
         reply = _create_reply()
@@ -76,14 +74,8 @@ class LSFDispatcher(object):
         return request
 
 
-def resolve_command_string(command, arguments=[],
-        wrapper=None, wrapper_arguments=[]):
-    command_list = []
-    if wrapper:
-        command_list.append(wrapper)
-        command_list.extend(wrapper_arguments)
-
-    command_list.append(command)
+def resolve_command_string(command, arguments=[]):
+    command_list = [command]
     command_list.extend(arguments)
     command_string = ' '.join(map(str, command_list))
     LOG.debug("lsf command_string = '%s'", command_string)
