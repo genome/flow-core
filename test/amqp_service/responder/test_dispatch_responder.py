@@ -20,13 +20,13 @@ class DispatchResponderTest(unittest.TestCase):
         self.properties = mock.Mock()
 
 
-        self.command_value = mock.Mock()
+        self.command_line = mock.Mock()
         self.return_identifier = mock.Mock()
         self.success_routing_key = mock.Mock()
         self.failure_routing_key = mock.Mock()
         self.error_routing_key = mock.Mock()
 
-        self.data = {'command': self.command_value,
+        self.data = {'command_line': self.command_line,
                      'return_identifier': self.return_identifier,
                      'success_routing_key': self.success_routing_key,
                      'failure_routing_key': self.failure_routing_key,
@@ -52,8 +52,7 @@ class DispatchResponderTest(unittest.TestCase):
                 self.basic_deliver, self.properties, self.data)
 
         self.dispatcher.launch_job.assert_called_once_with(
-                self.command_value, arguments=[],
-                environment={})
+                self.command_line, environment={})
 
         self.assertEqual(routing_key, self.success_routing_key)
         self.assertEqual(output_data,
@@ -69,8 +68,7 @@ class DispatchResponderTest(unittest.TestCase):
                 self.basic_deliver, self.properties, self.data)
 
         self.dispatcher.launch_job.assert_called_once_with(
-                self.command_value, arguments=[],
-                environment={})
+                self.command_line, environment={})
 
         self.assertEqual(routing_key, self.failure_routing_key)
         self.assertEqual(output_data,
@@ -85,8 +83,7 @@ class DispatchResponderTest(unittest.TestCase):
                 self.channel, self.basic_deliver, self.properties, self.data)
 
         self.dispatcher.launch_job.assert_called_once_with(
-                self.command_value, arguments=[],
-                environment={})
+                self.command_line, environment={})
 
 
     def test_on_message_error(self):
@@ -102,8 +99,7 @@ class DispatchResponderTest(unittest.TestCase):
                  'dispatch_result': str(e)})
 
         self.dispatcher.launch_job.assert_called_once_with(
-                self.command_value, arguments=[],
-                environment={})
+                self.command_line, environment={})
 
 
 

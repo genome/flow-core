@@ -18,7 +18,7 @@ class EnvironmentContextManagerTest(unittest.TestCase):
         os.environ[name] = value
         self.assertEqual(os.environ.get(name), value)
 
-        with util.environment({}):
+        with util.environment([{}]):
             self.assertEqual(os.environ.get(name), None)
         os.environ.pop(name)
 
@@ -30,8 +30,22 @@ class EnvironmentContextManagerTest(unittest.TestCase):
         env = {name: value}
 
         self.assertEqual(os.environ.get(name), None)
-        with util.environment(env):
+        with util.environment([env]):
             self.assertEqual(os.environ.get(name), value)
+        self.assertEqual(os.environ.get(name), None)
+
+    def test_override(self):
+        name = "old_test_uuid_%s" % uuid4().hex
+        old_value = "old test value!"
+        new_value = "new test value!"
+
+        old_env = {name: old_value}
+        new_env = {name: new_value}
+
+        self.assertEqual(os.environ.get(name), None)
+        with util.environment([old_env, new_env]):
+            self.assertEqual(os.environ.get(name), new_value)
+
         self.assertEqual(os.environ.get(name), None)
 
 

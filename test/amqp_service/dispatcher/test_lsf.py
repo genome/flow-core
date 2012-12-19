@@ -8,21 +8,6 @@ from amqp_service.dispatcher import lsf
 from pythonlsf import lsf as lsf_driver
 
 
-class ResolveCommandStringTest(unittest.TestCase):
-    def setUp(self):
-        self.command = 'command'
-        self.arguments = ['c1', 'c2']
-
-    def test_command_only(self):
-        command_string = lsf.resolve_command_string(self.command)
-        self.assertEqual('command', command_string)
-
-    def test_command_and_args(self):
-        command_string = lsf.resolve_command_string(self.command,
-                arguments=self.arguments)
-        self.assertEqual('command c1 c2', command_string)
-
-
 class GetRlimitsTest(unittest.TestCase):
     AVAILABLE_RLIMITS = [
             ('max_resident_memory', lsf_driver.LSF_RLIMIT_RSS),

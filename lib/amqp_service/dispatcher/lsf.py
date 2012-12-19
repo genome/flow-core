@@ -6,18 +6,23 @@ from amqp_service.dispatcher import util
 LOG = logging.getLogger(__name__)
 
 class LSFDispatcher(object):
-    def __init__(self, default_queue='gms'):
+    def __init__(self, default_queue='gms',
+            default_environment={}, manditory_environment={}):
         self.default_queue = default_queue
+        self.default_environment = default_environment
+        self.manditory_environment = manditory_environment
 
-    def launch_job(self, command, arguments=[],
-            environment={}, **kwargs):
+    def launch_job(self, command_line, environment={}, **kwargs):
+        command_string = ' '.join(map(str, command_line))
+        LOG.debug("lsf command_string = '%s'", command_string)
+
         request = self.create_request(**kwargs)
-        command_string = resolve_command_string(command, arguments)
         request.command = command_string
 
         reply = _create_reply()
 
-        with util.environment(environment):
+        with util.environment([self.default_environment, environment,
+                               self.manditory_environment]):
             try:
                 submit_result = lsf.lsb_submit(request, reply)
             except Exception as e:
@@ -73,14 +78,6 @@ class LSFDispatcher(object):
 
         return request
 
-
-def resolve_command_string(command, arguments=[]):
-    command_list = [command]
-    command_list.extend(arguments)
-    command_string = ' '.join(map(str, command_list))
-    LOG.debug("lsf command_string = '%s'", command_string)
-
-    return command_string
 
 
 def get_rlimits(max_resident_memory=None, max_virtual_memory=None,

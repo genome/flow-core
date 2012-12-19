@@ -7,17 +7,19 @@ from amqp_service.dispatcher import util
 LOG = logging.getLogger(__name__)
 
 class SubprocessDispatcher(object):
-    def launch_job(self, command, arguments=[], environment={},
+    def __init__(self, default_environment={}, manditory_environment={}):
+        self.default_environment = default_environment
+        self.manditory_environment = manditory_environment
+
+    def launch_job(self, command_line, environment={},
             stdout=None, stderr=None, **kwargs):
 
-        command_list = [command]
-        command_list.extend(arguments)
-
-        with util.environment(environment):
-            LOG.debug('executing subprocess using command_list: %s',
-                    command_list)
+        with util.environment([self.default_environment, environment,
+                               self.manditory_environment]):
+            LOG.debug('executing subprocess using command_line: %s',
+                    command_line)
             try:
-                exit_code = subprocess.call(command_list,
+                exit_code = subprocess.call(map(str, command_line),
                         stdout=stdout, stderr=stderr)
             except OSError as e:
                 error_message = 'Dispatcher got error number (%d): %s' % (

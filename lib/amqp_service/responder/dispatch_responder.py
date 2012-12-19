@@ -15,21 +15,20 @@ class DispatchResponder(base.Responder):
     def on_message(self, channel, basic_deliver, properties, input_data):
         LOG.debug("Got input_data for message %s", basic_deliver)
 
-        command = _get_required(input_data, 'command')
+        command_line = _get_required(input_data, 'command_line')
         return_identifier = _get_required(input_data, 'return_identifier')
         success_routing_key = _get_required(input_data, 'success_routing_key')
         failure_routing_key = _get_required(input_data, 'failure_routing_key')
         error_routing_key = _get_required(input_data, 'error_routing_key')
-
-        arguments = input_data.get('arguments', [])
 
         environment = input_data.get('environment', {})
         dispatcher_options = input_data.get('dispatcher_options', {})
 
         try:
             success, dispatch_result = self.dispatcher.launch_job(
-                    command, arguments=arguments,
-                    environment=environment, **dispatcher_options)
+                    command_line,
+                    environment=environment,
+                    **dispatcher_options)
 
             if success:
                 routing_key = success_routing_key
