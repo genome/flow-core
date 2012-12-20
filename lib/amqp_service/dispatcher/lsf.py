@@ -12,11 +12,13 @@ class LSFDispatcher(object):
         self.default_environment = default_environment
         self.manditory_environment = manditory_environment
 
-    def launch_job(self, command_line, environment={}, **kwargs):
+    def launch_job(self, command_line, working_directory=None,
+            environment={}, **kwargs):
         command_string = ' '.join(map(str, command_line))
         LOG.debug("lsf command_string = '%s'", command_string)
 
-        request = self.create_request(**kwargs)
+        request = self.create_request(working_directory=working_directory,
+                **kwargs)
         request.command = command_string
 
         reply = _create_reply()
@@ -43,10 +45,11 @@ class LSFDispatcher(object):
 
     def create_request(self, name=None, queue=None, stdout=None, stderr=None,
             beginTime=0, termTime=0, numProcessors=1, maxNumProcessors=1,
-            mail_user=None, **kwargs):
+            mail_user=None, working_directory=None, **kwargs):
         request = lsf.submit()
         request.options = 0
         request.options2 = 0
+        request.options3 = 0
 
         if name:
             request.jobName = str(name)
@@ -55,6 +58,7 @@ class LSFDispatcher(object):
         if mail_user:
             request.mailUser = str(mail_user)
             request.options += lsf.SUB_MAIL_USER
+            LOG.debug('setting mail_user = %s', mail_user)
 
         if queue:
             request.queue = str(queue)
@@ -71,6 +75,11 @@ class LSFDispatcher(object):
             request.errFile = str(stderr)
             request.options += lsf.SUB_ERR_FILE
             LOG.debug('setting job stderr = %s', stderr)
+
+        if working_directory:
+            request.cwd = str(working_directory)
+            request.options3 += lsf.SUB3_CWD
+            LOG.debug('setting cwd = %s', working_directory)
 
         request.beginTime = int(beginTime)
         request.termTime = int(termTime)

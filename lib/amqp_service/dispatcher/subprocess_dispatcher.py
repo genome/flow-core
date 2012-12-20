@@ -11,8 +11,8 @@ class SubprocessDispatcher(object):
         self.default_environment = default_environment
         self.manditory_environment = manditory_environment
 
-    def launch_job(self, command_line, environment={},
-            stdout=None, stderr=None, **kwargs):
+    def launch_job(self, command_line, working_directory=None,
+            environment={}, stdout=None, stderr=None, **kwargs):
 
         with util.environment([self.default_environment, environment,
                                self.manditory_environment]):

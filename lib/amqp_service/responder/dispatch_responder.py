@@ -22,11 +22,12 @@ class DispatchResponder(base.Responder):
         error_routing_key = _get_required(input_data, 'error_routing_key')
 
         environment = input_data.get('environment', {})
+        working_directory = input_data.get('working_directory', '/tmp')
         dispatcher_options = input_data.get('dispatcher_options', {})
 
         try:
             success, dispatch_result = self.dispatcher.launch_job(
-                    command_line,
+                    command_line, working_directory=working_directory,
                     environment=environment,
                     **dispatcher_options)
 

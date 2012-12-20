@@ -26,11 +26,14 @@ class DispatchResponderTest(unittest.TestCase):
         self.failure_routing_key = mock.Mock()
         self.error_routing_key = mock.Mock()
 
+        self.working_directory = mock.Mock()
+
         self.data = {'command_line': self.command_line,
                      'return_identifier': self.return_identifier,
                      'success_routing_key': self.success_routing_key,
                      'failure_routing_key': self.failure_routing_key,
-                     'error_routing_key': self.error_routing_key}
+                     'error_routing_key': self.error_routing_key,
+                     'working_directory': self.working_directory}
 
         self.arg_value = mock.Mock()
 
@@ -52,7 +55,8 @@ class DispatchResponderTest(unittest.TestCase):
                 self.basic_deliver, self.properties, self.data)
 
         self.dispatcher.launch_job.assert_called_once_with(
-                self.command_line, environment={})
+                self.command_line, working_directory=self.working_directory,
+                environment={})
 
         self.assertEqual(routing_key, self.success_routing_key)
         self.assertEqual(output_data,
@@ -68,7 +72,9 @@ class DispatchResponderTest(unittest.TestCase):
                 self.basic_deliver, self.properties, self.data)
 
         self.dispatcher.launch_job.assert_called_once_with(
-                self.command_line, environment={})
+                self.command_line, working_directory=self.working_directory,
+                environment={})
+
 
         self.assertEqual(routing_key, self.failure_routing_key)
         self.assertEqual(output_data,
@@ -83,7 +89,9 @@ class DispatchResponderTest(unittest.TestCase):
                 self.channel, self.basic_deliver, self.properties, self.data)
 
         self.dispatcher.launch_job.assert_called_once_with(
-                self.command_line, environment={})
+                self.command_line, working_directory=self.working_directory,
+                environment={})
+
 
 
     def test_on_message_error(self):
@@ -99,7 +107,9 @@ class DispatchResponderTest(unittest.TestCase):
                  'dispatch_result': str(e)})
 
         self.dispatcher.launch_job.assert_called_once_with(
-                self.command_line, environment={})
+                self.command_line, working_directory=self.working_directory,
+                environment={})
+
 
 
 
