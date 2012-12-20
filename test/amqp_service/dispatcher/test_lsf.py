@@ -69,6 +69,17 @@ class CreateRequestTest(unittest.TestCase):
         self.assertRaises(TypeError,
                 self.dispatcher.create_request, name=self.bad_type)
 
+    def test_mail_user_success(self):
+        mail_user = 'someone@some.whe.re'
+        request = self.dispatcher.create_request(mail_user=mail_user)
+        self.assertEqual(request.mailUser, mail_user)
+        self.assertEqual(request.options,
+                lsf_driver.SUB_MAIL_USER + lsf_driver.SUB_QUEUE)
+
+    def test_mail_user_failure(self):
+        self.assertRaises(TypeError,
+                self.dispatcher.create_request, mail_user=self.bad_type)
+
 
     def test_queue_success(self):
         queue = 'different queue'

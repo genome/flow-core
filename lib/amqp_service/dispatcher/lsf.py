@@ -43,7 +43,7 @@ class LSFDispatcher(object):
 
     def create_request(self, name=None, queue=None, stdout=None, stderr=None,
             beginTime=0, termTime=0, numProcessors=1, maxNumProcessors=1,
-            **kwargs):
+            mail_user=None, **kwargs):
         request = lsf.submit()
         request.options = 0
         request.options2 = 0
@@ -51,6 +51,10 @@ class LSFDispatcher(object):
         if name:
             request.jobName = str(name)
             request.options += lsf.SUB_JOB_NAME
+
+        if mail_user:
+            request.mailUser = str(mail_user)
+            request.options += lsf.SUB_MAIL_USER
 
         if queue:
             request.queue = str(queue)
