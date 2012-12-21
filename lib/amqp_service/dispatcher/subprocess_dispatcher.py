@@ -18,14 +18,30 @@ class SubprocessDispatcher(object):
                                self.manditory_environment]):
             LOG.debug('executing subprocess using command_line: %s',
                     command_line)
+
             try:
+                if stdout:
+                    stdout_fh = open(stdout, 'a')
+                else:
+                    stdout_fh = None
+                if stderr:
+                    stderr_fh = open(stderr, 'a')
+                else:
+                    stderr_fh = None
+
                 exit_code = subprocess.call(map(str, command_line),
-                        stdout=stdout, stderr=stderr)
+                        stdout=stdout_fh, stderr=stderr_fh,
+                        cwd=working_directory)
             except OSError as e:
                 error_message = 'Dispatcher got error number (%d): %s' % (
                         e.errno, os.strerror(e.errno))
                 LOG.error(error_message)
                 raise RuntimeError(error_message)
+            finally:
+                if stdout_fh:
+                    stdout_fh.close()
+                if stderr_fh:
+                    stderr_fh.close()
 
         if exit_code > 0:
             # XXX get error message

@@ -56,7 +56,7 @@ class DispatchResponderTest(unittest.TestCase):
 
         self.dispatcher.launch_job.assert_called_once_with(
                 self.command_line, working_directory=self.working_directory,
-                environment={})
+                environment={}, stdout=None, stderr=None)
 
         self.assertEqual(routing_key, self.success_routing_key)
         self.assertEqual(output_data,
@@ -73,7 +73,7 @@ class DispatchResponderTest(unittest.TestCase):
 
         self.dispatcher.launch_job.assert_called_once_with(
                 self.command_line, working_directory=self.working_directory,
-                environment={})
+                environment={}, stdout=None, stderr=None)
 
 
         self.assertEqual(routing_key, self.failure_routing_key)
@@ -90,7 +90,7 @@ class DispatchResponderTest(unittest.TestCase):
 
         self.dispatcher.launch_job.assert_called_once_with(
                 self.command_line, working_directory=self.working_directory,
-                environment={})
+                environment={}, stdout=None, stderr=None)
 
 
 
@@ -108,7 +108,7 @@ class DispatchResponderTest(unittest.TestCase):
 
         self.dispatcher.launch_job.assert_called_once_with(
                 self.command_line, working_directory=self.working_directory,
-                environment={})
+                environment={}, stdout=None, stderr=None)
 
 
 

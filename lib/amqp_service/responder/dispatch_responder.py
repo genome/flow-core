@@ -17,18 +17,23 @@ class DispatchResponder(base.Responder):
 
         command_line = _get_required(input_data, 'command_line')
         return_identifier = _get_required(input_data, 'return_identifier')
+
         success_routing_key = _get_required(input_data, 'success_routing_key')
         failure_routing_key = _get_required(input_data, 'failure_routing_key')
         error_routing_key = _get_required(input_data, 'error_routing_key')
 
+        dispatcher_options = input_data.get('dispatcher_options', {})
+
+        # XXX These really belong inside dispatcher options
         environment = input_data.get('environment', {})
         working_directory = input_data.get('working_directory', '/tmp')
-        dispatcher_options = input_data.get('dispatcher_options', {})
+        stdout = input_data.get('stdout')
+        stderr = input_data.get('stderr')
 
         try:
             success, dispatch_result = self.dispatcher.launch_job(
                     command_line, working_directory=working_directory,
-                    environment=environment,
+                    environment=environment, stderr=stderr, stdout=stdout,
                     **dispatcher_options)
 
             if success:
