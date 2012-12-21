@@ -26,7 +26,7 @@ class DispatchResponder(base.Responder):
 
         # XXX These really belong inside dispatcher options
         environment = input_data.get('environment', {})
-        working_directory = input_data.get('working_directory', '/tmp')
+        working_directory = input_data.get('working_directory', None)
         stdout = input_data.get('stdout')
         stderr = input_data.get('stderr')
 
