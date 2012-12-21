@@ -62,7 +62,6 @@ if __name__ == '__main__':
 
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(log_formatter.ColorFormatter(LOG_FORMAT))
-    print args.log_level
     console_handler.setLevel(args.log_level)
     LOG.addHandler(console_handler)
     LOG.setLevel(args.log_level)
