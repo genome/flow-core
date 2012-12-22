@@ -1,4 +1,5 @@
 import logging
+import pika
 
 LOG = logging.getLogger(__name__)
 
@@ -54,22 +55,23 @@ class ChannelManager(object):
 
         self._channel = None
 
-    def basic_publish(success_callback=None, failure_callback=None,
+
+    def publish(self, success_callback=None, failure_callback=None,
             **basic_publish_properties):
-        delivery_tag = self._raw_publish(**basic_publish_properties)
-        if delivery_tag:
+        delivery_tag = self.basic_publish(**basic_publish_properties)
+        if delivery_tag > 0:
             if success_callback:
                 success_callback()
         else:
             if failure_callback:
                 failure_callback()
+        return delivery_tag
 
-
-    def _raw_publish(exchange_name=None, routing_key=None, message=None,
+    def basic_publish(self, exchange_name=None, routing_key=None, message=None,
             persistent=True, **basic_publish_properties):
         properties = None
         if persistent:
             properties = pika.BasicProperties(delivery_mode=2)
 
-        return self.channel.basic_publish(exchange_name, routing_key,
+        return self._channel.basic_publish(exchange_name, routing_key,
                 message, properties=properties, **basic_publish_properties)

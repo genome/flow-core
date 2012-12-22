@@ -13,7 +13,7 @@ class ConfirmingChannelManager(ChannelManager):
 
         ChannelManager.__init__(self, **kwargs)
 
-    def basic_publish(attempts=0, **basic_publish_properties):
+    def publish(self, attempts=0, **basic_publish_properties):
         if attempts >= self.max_publish_attempts:
             LOG.warn('Failed to publish message after %d attempts: %s',
                     attempts, basic_publish_properties)
@@ -21,7 +21,7 @@ class ConfirmingChannelManager(ChannelManager):
             if failure_callback:
                 failure_callback()
 
-        delivery_tag = ChannelManager._raw_publish(**basic_publish_properties)
+        delivery_tag = self.basic_publish(**basic_publish_properties)
 
         basic_publish_properties['attempts'] = attempts + 1
         self._unconfirmed_messages[delivery_tag] = basic_publish_properties)
