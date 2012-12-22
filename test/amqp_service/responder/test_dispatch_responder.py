@@ -111,7 +111,5 @@ class DispatchResponderTest(unittest.TestCase):
                 environment={}, stdout=None, stderr=None)
 
 
-
-
 if '__main__' == __name__:
     unittest.main()
