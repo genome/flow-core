@@ -19,12 +19,15 @@ class ConfirmingChannelManager(ChannelManager):
                     attempts, basic_publish_properties)
             failure_callback = basic_publish_properties.get('failure_callback')
             if failure_callback:
-                failure_callback()
+                return failure_callback()
+            return None
 
         delivery_tag = self.basic_publish(**basic_publish_properties)
 
         basic_publish_properties['attempts'] = attempts + 1
-        self._unconfirmed_messages[delivery_tag] = basic_publish_properties)
+        self._unconfirmed_messages[delivery_tag] = basic_publish_properties
+
+        return delivery_tag
 
 
     def on_confirm_ack(self, method_frame):
@@ -43,12 +46,11 @@ class ConfirmingChannelManager(ChannelManager):
     def _on_channel_open(self, channel):
         self._setup_channel(channel)
 
-        if self.publisher_confirms:
-            LOG.debug('Enabling publisher confirms for channel %s', channel)
-            channel.confirm_delivery()
+        LOG.debug('Enabling publisher confirms for channel %s', channel)
+        channel.confirm_delivery()
 
-            add_confirm_ack_callback(channel, self.on_confirm_ack)
-            add_confirm_nack_callback(channel, self.on_confirm_nack)
+        add_confirm_ack_callback(channel, self.on_confirm_ack)
+        add_confirm_nack_callback(channel, self.on_confirm_nack)
 
         self._inform_delegates_about_channel(channel)
 
