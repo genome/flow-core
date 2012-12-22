@@ -37,11 +37,11 @@ class ConnectionManager(object):
         LOG.warning("Connection closed.  method_frame: %s", method_frame)
         LOG.info("Sleeping for %d seconds before next reconnect attempt",
                 self.reconnect_sleep)
-        time.sleep(reconnect_sleep)
+        time.sleep(self.reconnect_sleep)
 
-        self.run()
+        self.start()
 
-    def run(self):
+    def start(self):
         LOG.info("Attempting to connect to AMQP broker")
         self._connection = pika.SelectConnection(pika.URLParameters(self.url),
                 self._on_connection_open)
