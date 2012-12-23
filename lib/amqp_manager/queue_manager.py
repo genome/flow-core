@@ -50,7 +50,7 @@ class QueueManager(object):
             return reject_callback()
 
 
-    def on_channel_open(self, channel):
+    def on_channel_open(self, channel_manager, channel):
         LOG.debug('Declaring queue %s', self.queue_name)
         self._channel = channel
         channel.queue_declare(self._on_declare_queue_ok,

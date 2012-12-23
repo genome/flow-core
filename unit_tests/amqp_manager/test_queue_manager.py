@@ -26,7 +26,9 @@ class QueueManagerSetupTest(unittest.TestCase):
         channel = mock.Mock()
         channel.queue_declare = mock.Mock()
 
-        self.qm.on_channel_open(channel)
+        channel_manager = mock.Mock()
+
+        self.qm.on_channel_open(channel_manager, channel)
         self.assertEqual(channel, self.qm._channel)
         channel.queue_declare.assert_called_once_with(
                 self.qm._on_declare_queue_ok, self.queue_name,

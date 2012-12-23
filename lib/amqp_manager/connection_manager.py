@@ -13,6 +13,7 @@ class ConnectionManager(object):
         self.reconnect_sleep = reconnect_sleep
 
     def _on_connection_open(self, connection):
+        self._connection = connection
         LOG.debug("adding connection close callback")
         connection.add_on_close_callback(self._on_connection_closed)
 
