@@ -37,7 +37,7 @@ class ChannelManager(object):
     def _inform_delegates_about_channel(self, channel):
         for delegate in self.delegates:
             try:
-                delegate.on_channel_open(channel)
+                delegate.on_channel_open(self, channel)
             except:
                 LOG.exception('Delegating on_channel_open to %s failed',
                         delegate)

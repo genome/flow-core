@@ -44,7 +44,8 @@ class ChannelManagerDelegationTest(unittest.TestCase):
         channel.add_on_close_callback.assert_called_once_with(
                 self.channel_manager._on_channel_closed)
         for delegate in self.delegates:
-            delegate.on_channel_open.assert_called_once_with(channel)
+            delegate.on_channel_open.assert_called_once_with(
+                    self.channel_manager, channel)
 
     def test_on_channel_closed(self):
         channel = mock.Mock()
