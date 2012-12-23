@@ -70,18 +70,19 @@ class ConnectionManagerDelegationTest(unittest.TestCase):
 
     def test_on_connection_closed(self):
         method_frame = mock.Mock()
-        self.connection_manager.start = mock.Mock()
 
-        time = mock.Mock()
-        time.sleep = mock.Mock()
-        with mock.patch.object(connection_manager, 'time', time):
-            self.connection_manager._on_connection_closed(method_frame)
+        connection = mock.Mock()
+        connection.ioloop = mock.Mock()
+        connection.ioloop.add_timeout = mock.Mock()
+        self.connection_manager._connection = connection
+
+        self.connection_manager._on_connection_closed(method_frame)
 
         for delegate in self.delegates:
             delegate.on_connection_closed.assert_called_once_with(method_frame)
-        time.sleep.assert_called_once_with(self.reconnect_sleep)
 
-        self.connection_manager.start.assert_called_once_with()
+        connection.ioloop.add_timeout.assert_called_once_with(
+                self.reconnect_sleep, self.connection_manager.start)
 
 
 if '__main__' == __name__:

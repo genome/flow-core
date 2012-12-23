@@ -1,6 +1,5 @@
 import logging
 import pika
-import time
 
 from functools import partial
 
@@ -37,9 +36,8 @@ class ConnectionManager(object):
         LOG.warning("Connection closed.  method_frame: %s", method_frame)
         LOG.info("Sleeping for %d seconds before next reconnect attempt",
                 self.reconnect_sleep)
-        time.sleep(self.reconnect_sleep)
+        self._connection.ioloop.add_timeout(self.reconnect_sleep, self.start)
 
-        self.start()
 
     def start(self):
         LOG.info("Attempting to connect to AMQP broker")
