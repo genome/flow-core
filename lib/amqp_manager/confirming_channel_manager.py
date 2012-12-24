@@ -13,18 +13,25 @@ class ConfirmingChannelManager(ChannelManager):
 
         ChannelManager.__init__(self, **kwargs)
 
-    def publish(self, attempts=0, **basic_publish_properties):
+    def publish(self, attempts=0, success_callback=None,
+            failure_callback=None, **basic_publish_properties):
         if attempts >= self.max_publish_attempts:
             LOG.warn('Failed to publish message after %d attempts: %s',
                     attempts, basic_publish_properties)
-            failure_callback = basic_publish_properties.get('failure_callback')
             if failure_callback:
                 return failure_callback()
             return None
 
+        # XXX AMQP does not seem to provide any way of linking a published
+        # message with its confirmation, making it essentially useless.
         delivery_tag = self.basic_publish(**basic_publish_properties)
+        LOG.debug("published message with delivery_tag = '%s'", delivery_tag)
 
         basic_publish_properties['attempts'] = attempts + 1
+        if success_callback:
+            basic_publish_properties['success_callback'] = success_callback
+        if failure_callback:
+            basic_publish_properties['failure_callback'] = failure_callback
         self._unconfirmed_messages[delivery_tag] = basic_publish_properties
 
         return delivery_tag
@@ -32,6 +39,8 @@ class ConfirmingChannelManager(ChannelManager):
 
     def on_confirm_ack(self, method_frame):
         delivery_tag = method_frame.method.delivery_tag
+        LOG.debug('Got publisher confirmation for delivery_tag = %s',
+                delivery_tag)
         basic_publish_properties = self._unconfirmed_messages.pop(delivery_tag)
         success_callback = basic_publish_properties.get('success_callback')
         if success_callback:
@@ -40,7 +49,7 @@ class ConfirmingChannelManager(ChannelManager):
     def on_confirm_nack(self, method_frame):
         delivery_tag = method_frame.method.delivery_tag
         basic_publish_properties = self._unconfirmed_messages.pop(delivery_tag)
-        self.basic_publish(**basic_publish_properties)
+        self.publish(**basic_publish_properties)
 
 
     def _on_channel_open(self, channel):
@@ -52,11 +61,13 @@ class ConfirmingChannelManager(ChannelManager):
         add_confirm_ack_callback(channel, self.on_confirm_ack)
         add_confirm_nack_callback(channel, self.on_confirm_nack)
 
-        self._inform_delegates_about_channel(channel)
+        self._inform_delegates_about_channel()
 
 
 def add_confirm_ack_callback(channel, callback):
-    channel.callbacks.add(channel.number, Basic.Ack, callback, one_shot=False)
+    channel.callbacks.add(channel.channel_number, Basic.Ack,
+            callback, one_shot=False)
 
 def add_confirm_nack_callback(channel, callback):
-    channel.callbacks.add(channel.number, Basic.Nack, callback, one_shot=False)
+    channel.callbacks.add(channel.channel_number, Basic.Nack,
+            callback, one_shot=False)
