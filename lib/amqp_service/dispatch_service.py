@@ -1,20 +1,19 @@
-import json
 import logging
-
-from . import base
 
 LOG = logging.getLogger(__name__)
 
-
-class DispatchResponder(base.Responder):
-    def __init__(self, dispatcher, *args, **kwargs):
+class DispatchService(object):
+    def __init__(self, dispatcher, exchange_manager, **publish_properties):
         self.dispatcher = dispatcher
+        self.exchange_manager = exchange_manager
+        self.publish_properties = publish_properties
 
-        base.Responder.__init__(self, *args, **kwargs)
+    def bad_data_handler(self, properties, body, ack_callback, reject_callback):
+        LOG.debug('Got bad data, properties = %s: %s', properties, body)
+        reject_callback()
 
-    def on_message(self, channel, basic_deliver, properties, input_data):
-        LOG.debug("Got input_data for message %s", basic_deliver)
-
+    def message_handler(self, properties, input_data,
+            ack_callback, reject_callback):
         command_line = _get_required(input_data, 'command_line')
         return_identifier = _get_required(input_data, 'return_identifier')
 
@@ -48,7 +47,10 @@ class DispatchResponder(base.Responder):
         result = {'return_identifier': return_identifier,
                   'dispatch_result': dispatch_result}
 
-        return routing_key, result
+        self.exchange_manager.publish(routing_key, result,
+                **self.publish_properties)
+
+        ack_callback()
 
 def _get_required(input_data, name):
     try:

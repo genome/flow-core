@@ -3,8 +3,9 @@
 import logging
 import os
 
-from amqp_service import ConnectionManager, AMQPService, dispatcher, responder
-from amqp_service import log_formatter
+from amqp_service.dispatcher import subprocess_dispatcher
+from amqp_service import dispatch_service, log_formatter
+import amqp_manager
 
 PIKA_LOG_LEVEL = logging.INFO
 LOG_LEVEL = logging.DEBUG
@@ -22,17 +23,25 @@ if '__main__' == __name__:
 
     amqp_url = os.getenv('AMQP_URL')
     if not amqp_url:
-        amqp_url = 'amqp://guest:guest@linus202:5672/workflow'
-    connection_manager = ConnectionManager(amqp_url)
+        amqp_url = 'amqp://guest:guest@localhost:5672/%2F'
+        LOG.warning("No AMQP_URL found, using '%s' by default", amqp_url)
 
-    subprocess_dispatcher = dispatcher.SubprocessDispatcher()
-    submit_responder = responder.DispatchResponder(subprocess_dispatcher,
-            queue='subprocess_submit', exchange='workflow',
-            alternate_exchange='workflow.alt')
+    arguments = {'alternate-exchange': 'workflow.alt'}
+    exchange_manager = amqp_manager.ExchangeManager('workflow',
+            durable=True, **arguments)
+    subprocess_dispatcher = subprocess_dispatcher.SubprocessDispatcher()
+    service = dispatch_service.DispatchService(subprocess_dispatcher,
+            exchange_manager, persistent=True)
 
-    service = AMQPService(connection_manager, submit_responder)
+    queue_manager = amqp_manager.QueueManager('subprocess_submit',
+            bad_data_handler=service.bad_data_handler,
+            message_handler=service.message_handler,
+            durable=True)
 
-    try:
-        service.run()
-    except KeyboardInterrupt:
-        service.stop()
+    channel_manager = amqp_manager.ChannelManager(
+            delegates=[exchange_manager, queue_manager])
+    connection_manager = amqp_manager.ConnectionManager(
+            amqp_url,
+            delegates=[channel_manager])
+
+    connection_manager.start()
