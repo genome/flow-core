@@ -93,7 +93,7 @@ class ChannelManager(Delegate):
     def basic_consume(self, on_message_callback, queue_name):
         self._channel.basic_consume(
                 partial(self._on_message_callback, on_message_callback),
-                queue_name, no_ack=True)
+                queue_name)
 
     def _on_message_callback(self, on_message_callback,
             channel, basic_deliver, properties, body):
