@@ -1,27 +1,28 @@
 import json
 import logging
 
+from delegate_base import Delegate
+
 LOG = logging.getLogger(__name__)
 
-class QueueManager(object):
-    def __init__(self, queue_name, decoder=json.loads, durable=True,
-            bad_data_handler=None, message_handler=None):
+class QueueManager(Delegate):
+    def __init__(self, queue_name, decoder=json.loads,
+            bad_data_handler=None, message_handler=None,
+            **queue_declare_properties):
+        Delegate.__init__(self)
         assert callable(message_handler)
 
         self.queue_name = queue_name
         self.decoder = decoder
-        self.durable = durable
 
         self.bad_data_handler = bad_data_handler
         self.message_handler = message_handler
 
-        self.queue = None
-        self._channel = None
+        self.qd_properties = queue_declare_properties
 
-    def on_message(self, channel, basic_deliver, properties, body):
-        ack_callback = make_ack_callback(channel, basic_deliver)
-        reject_callback = make_reject_callback(channel, basic_deliver)
-
+    def on_message(self, properties, body, ack_callback, reject_callback):
+        # This looks messy, but it's important that nothing falls through the
+        # cracks.
         try:
             decoded_message = self.decoder(body)
         except:
@@ -30,19 +31,24 @@ class QueueManager(object):
             try:
                 if self.bad_data_handler:
                     assert callable(self.bad_data_handler)
-                    return self.bad_data_handler(body,
+                    return self.bad_data_handler(properties, body,
                             ack_callback, reject_callback)
             except:
                 LOG.exception(
                         'QueueManager %s caught exception in bad_data_handler',
                         self)
             finally:
-                # XXX Make sure that the bdh rejected or ack'd
-                    # Do multiple ack/rejects work?
-                return reject_callback()
+                try:
+                    reject_result = reject_callback()
+                    LOG.warning('Final reject call for bad data succeeded' +
+                            ' in QueueManager %s: %s, %s',
+                            self, properties, body)
+                    return reject_result
+                except:
+                    return
 
         try:
-            return self.message_handler(decoded_message,
+            return self.message_handler(properties, decoded_message,
                     ack_callback, reject_callback)
         except:
             LOG.exception('QueueManager %s rejecting message' +
@@ -50,31 +56,23 @@ class QueueManager(object):
             return reject_callback()
 
 
-    def on_channel_open(self, channel_manager, channel):
+    def on_channel_open(self, channel_manager):
+        self._channel_manager = channel_manager
         LOG.debug('Declaring queue %s', self.queue_name)
-        self._channel = channel
-        channel.queue_declare(self._on_declare_queue_ok,
-                self.queue_name, durable=self.durable)
+        channel_manager.queue_declare(self._on_declare_queue_ok,
+                self.queue_name, **self.qd_properties)
 
-    def on_channel_closed(self, channel):
+    def on_channel_closed(self, channel_manager):
+        # XXX does this take a method frame instead?
         LOG.debug('QueueManager %s got on_channel_closed for %s',
-                self, channel)
-        self.queue = None
-        self._channel = None
+                self, channel_manager)
+        self._channel_manager = None
 
 
-    def _on_declare_queue_ok(self, queue, method_frame):
+    def _on_declare_queue_ok(self, method_frame):
         LOG.debug("Queue '%s' successfully declared, method_frame = %s",
                 self.queue_name, method_frame)
-        self.queue = queue
         LOG.debug("Beginning consumption of messages from queue '%s'",
                 self.queue_name)
-        self._channel.basic_consume(self.on_message, queue)
-
-
-def make_ack_callback(channel, basic_deliver):
-    return lambda: channel.basic_ack(basic_deliver.delivery_tag)
-
-def make_reject_callback(channel, basic_deliver):
-    return lambda: channel.basic_reject(
-            basic_deliver.delivery_tag, requeue=False)
+        self._channel_manager.basic_consume(self.on_message, self.queue_name)
+        self.notify_ready()

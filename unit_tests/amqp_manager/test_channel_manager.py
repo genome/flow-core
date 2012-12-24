@@ -45,7 +45,7 @@ class ChannelManagerDelegationTest(unittest.TestCase):
                 self.channel_manager._on_channel_closed)
         for delegate in self.delegates:
             delegate.on_channel_open.assert_called_once_with(
-                    self.channel_manager, channel)
+                    self.channel_manager)
 
     def test_on_channel_closed(self):
         channel = mock.Mock()
@@ -146,6 +146,51 @@ class ChannelManagerPublishTest(unittest.TestCase):
         self.channel_manager.basic_publish.assert_called_once_with(
                 **self.basic_publish_properties)
         failure_callback.assert_called_once_with()
+
+
+class ChannelManagerMessageCallbackTest(unittest.TestCase):
+    # Could add tests for exchange/queue declare and basic_consume
+    def setUp(self):
+        self.on_message_callback = mock.Mock()
+
+        self.channel = mock.Mock()
+
+        self.basic_deliver = mock.Mock()
+        self.properties = mock.Mock()
+        self.body = mock.Mock()
+
+        self.cm = channel_manager.ChannelManager()
+
+        self.ack_callback = mock.Mock()
+        self.reject_callback = mock.Mock()
+
+    def test_normal_callback(self):
+        self.call_on_message_with_substitute_callbacks()
+
+        self.on_message_callback.assert_called_once_with(self.properties,
+                self.body, self.ack_callback, self.reject_callback)
+
+    def test_callback_throws(self):
+        self.on_message_callback.side_effect = RuntimeError
+        self.call_on_message_with_substitute_callbacks()
+
+        self.on_message_callback.assert_called_once_with(self.properties,
+                self.body, self.ack_callback, self.reject_callback)
+
+        self.reject_callback.assert_called_once_with()
+
+
+    def call_on_message_with_substitute_callbacks(self):
+        with mock.patch.object(channel_manager, 'make_ack_callback') as ac:
+            ac.return_value = self.ack_callback
+            with mock.patch.object(channel_manager,
+                    'make_reject_callback') as rc:
+                rc.return_value = self.reject_callback
+                self.cm._on_message_callback( self.on_message_callback,
+                        self.channel, self.basic_deliver,
+                        self.properties, self.body)
+                ac.assert_called_once_with(self.channel, self.basic_deliver)
+                rc.assert_called_once_with(self.channel, self.basic_deliver)
 
 
 if '__main__' == __name__:

@@ -1,16 +1,18 @@
 import logging
 import pika
 
-from functools import partial
+from delegate_base import Delegate
 
 LOG = logging.getLogger(__name__)
 
-class ConnectionManager(object):
-    def __init__(self, url, delegates=[], reconnect_sleep=60):
-        self.url = url
-        self.delegates = delegates
+class ConnectionManager(Delegate):
+    _REQUIRED_DELEGATE_METHODS = ['on_connection_open', 'on_connection_closed']
 
+    def __init__(self, url, reconnect_sleep=60, **kwargs):
+        Delegate.__init__(self, **kwargs)
+        self.url = url
         self.reconnect_sleep = reconnect_sleep
+
 
     def _on_connection_open(self, connection):
         self._connection = connection
@@ -19,25 +21,30 @@ class ConnectionManager(object):
 
         for delegate in self.delegates:
             try:
-                delegate.on_connection_open(connection)
+                delegate.on_connection_open(self)
             except:
                 LOG.exception('Delegating on_connection_open to %s failed',
                         delegate)
 
     def _on_connection_closed(self, method_frame):
+        LOG.warning("Connection closed.  method_frame: %s", method_frame)
+
         # if you re-declare a queue or exchange with wrong params, connection
             # will be closed -- can we inspect the frame and behave differently?
         for delegate in self.delegates:
             try:
                 delegate.on_connection_closed(method_frame)
             except:
-                LOG.exception('Delegating on_connection_closed to %s failed',
+                LOG.exception('Delegation of on_connection_closed to %s failed',
                         delegate)
 
-        LOG.warning("Connection closed.  method_frame: %s", method_frame)
         LOG.info("Sleeping for %d seconds before next reconnect attempt",
                 self.reconnect_sleep)
         self._connection.ioloop.add_timeout(self.reconnect_sleep, self.start)
+
+
+    def channel(self, *args, **kwargs):
+        self._connection.channel(*args, **kwargs)
 
 
     def start(self):

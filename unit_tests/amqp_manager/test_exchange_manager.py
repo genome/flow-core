@@ -22,12 +22,11 @@ class ExchangeManagerSetupTest(unittest.TestCase):
         self.channel_manager = mock.Mock()
 
     def test_on_channel_open(self):
-        channel = mock.Mock()
-        channel.exchange_declare = mock.Mock()
+        self.channel_manager.exchange_declare = mock.Mock()
 
-        self.em.on_channel_open(self.channel_manager, channel)
+        self.em.on_channel_open(self.channel_manager)
         self.assertEqual(self.channel_manager, self.em._channel_manager)
-        channel.exchange_declare.assert_called_once_with(
+        self.channel_manager.exchange_declare.assert_called_once_with(
                 self.em._on_exchange_declare_ok, self.exchange_name,
                 exchange_type=self.exchange_type,
                 durable=self.durable, arguments=self.ed_arguments)
@@ -36,6 +35,13 @@ class ExchangeManagerSetupTest(unittest.TestCase):
         channel = mock.Mock()
         self.em.on_channel_closed(channel)
         self.assertEqual(None, self.em._channel_manager)
+
+    def test_exchange_declare_ok(self):
+        method_frame = mock.Mock()
+        self.em.notify_ready = mock.Mock()
+        self.em._on_exchange_declare_ok(method_frame)
+
+        self.em.notify_ready.assert_called_once_with()
 
 
 class ExchangeManagerPublishTest(unittest.TestCase):

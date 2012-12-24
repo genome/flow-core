@@ -22,10 +22,12 @@ class Delegate(object):
         self._ready_callbacks.append(callback)
 
     def _delegate_ready(self, delegate):
+        LOG.debug('%s notified that delegate %s is ready', self, delegate)
         self._unready_delegates.discard(delegate)
         self.notify_ready()
 
     def notify_ready(self):
         if self._ready_callbacks and not self._unready_delegates:
+            LOG.debug('%s calling ready callbacks', self)
             for rc in self._ready_callbacks:
                 rc(self)

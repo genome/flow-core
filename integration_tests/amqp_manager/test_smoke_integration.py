@@ -39,8 +39,7 @@ class MockConnection(object):
         callback(self._channel)
 
 class MockChannel(object):
-    def __init__(self, queue=None, qd_method_frame=None, ed_method_frame=None):
-        self._queue = queue
+    def __init__(self, qd_method_frame=None, ed_method_frame=None):
         self._qd_method_frame = qd_method_frame
         self._ed_method_frame = ed_method_frame
 
@@ -51,7 +50,7 @@ class MockChannel(object):
         self._on_close_callback()
 
     def queue_declare(self, callback, queue_name, **kwargs):
-        callback(self._queue, self._qd_method_frame)
+        callback(self._qd_method_frame)
 
     def exchange_declare(self, callback, name, **kwargs):
         callback(self._ed_method_frame)
@@ -76,10 +75,9 @@ class IntegrationTest(unittest.TestCase):
         self.conn_mgr = connection_manager.ConnectionManager(self.url,
                 delegates=[self.chan_mgr])
 
-        self.queue = mock.Mock()
         self.qd_method_frame = mock.Mock()
         self.ed_method_frame = mock.Mock()
-        self.channel = MockChannel(self.queue,
+        self.channel = MockChannel(
                 qd_method_frame=self.qd_method_frame,
                 ed_method_frame=self.ed_method_frame)
         self.channel.basic_consume = mock.Mock()
@@ -88,11 +86,12 @@ class IntegrationTest(unittest.TestCase):
         self.connection.ioloop = mock.Mock()
 
     def test_on_connection_open(self):
+        ready_callback = mock.Mock()
+        self.conn_mgr.add_ready_callback(ready_callback)
         self.conn_mgr._on_connection_open(self.connection)
 
-        self.assertEqual(self.queue_mgr.queue, self.queue)
-        self.channel.basic_consume.assert_called_once_with(
-                self.queue_mgr.on_message, self.queue)
+        ready_callback.assert_called_once_with(self.conn_mgr)
+        self.channel.basic_consume.assert_called_once()
 
     def test_on_connection_closed(self):
         self.conn_mgr._on_connection_open(self.connection)

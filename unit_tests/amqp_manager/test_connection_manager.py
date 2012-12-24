@@ -13,8 +13,7 @@ class ConnectionManagerStartStopTest(unittest.TestCase):
         self.connection.ioloop.start = mock.Mock()
 
         self.url = mock.Mock()
-        self.connection_manager = connection_manager.ConnectionManager(
-                self.url, delegates=None)
+        self.connection_manager = connection_manager.ConnectionManager(self.url)
 
     def test_start(self):
         pika = mock.Mock()
@@ -66,7 +65,8 @@ class ConnectionManagerDelegationTest(unittest.TestCase):
                 self.connection_manager._on_connection_closed)
 
         for delegate in self.delegates:
-            delegate.on_connection_open.assert_called_once_with(connection)
+            delegate.on_connection_open.assert_called_once_with(
+                    self.connection_manager)
 
     def test_on_connection_closed(self):
         method_frame = mock.Mock()

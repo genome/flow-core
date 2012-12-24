@@ -1,18 +1,23 @@
 import logging
 import pika
+from functools import partial
+
+from delegate_base import Delegate
 
 LOG = logging.getLogger(__name__)
 
-class ChannelManager(object):
-    def __init__(self, prefetch_count=None, delegates=[]):
-        self.prefetch_count = prefetch_count
-        self.delegates = delegates
+class ChannelManager(Delegate):
+    _REQUIRED_DELEGATE_METHODS = ['on_channel_open', 'on_channel_closed']
 
+    def __init__(self, prefetch_count=None, **kwargs):
+        Delegate.__init__(self, **kwargs)
+        self.prefetch_count = prefetch_count
         self._channel = None
 
-    def on_connection_open(self, connection):
+
+    def on_connection_open(self, connection_manager):
         LOG.debug('Connection open, creating channel')
-        connection.channel(self._on_channel_open)
+        connection_manager.channel(self._on_channel_open)
 
     def on_connection_closed(self, method_frame):
         LOG.debug('Got on_connection closed in channel_manager %s: %s',
@@ -21,7 +26,7 @@ class ChannelManager(object):
 
     def _on_channel_open(self, channel):
         self._setup_channel(channel)
-        self._inform_delegates_about_channel(channel)
+        self._inform_delegates_about_channel()
 
     def _setup_channel(self, channel):
         self._channel = channel
@@ -34,10 +39,11 @@ class ChannelManager(object):
                     channel, self.prefetch_count)
             channel.basic_qos(prefetch_count=self.prefetch_count)
 
-    def _inform_delegates_about_channel(self, channel):
+    def _inform_delegates_about_channel(self):
         for delegate in self.delegates:
             try:
-                delegate.on_channel_open(self, channel)
+                LOG.debug('Delegating on_channel_open to %s', delegate)
+                delegate.on_channel_open(self)
             except:
                 LOG.exception('Delegating on_channel_open to %s failed',
                         delegate)
@@ -75,3 +81,36 @@ class ChannelManager(object):
 
         return self._channel.basic_publish(exchange_name, routing_key,
                 message, properties=properties, **basic_publish_properties)
+
+
+    def exchange_declare(self, *args, **kwargs):
+        self._channel.exchange_declare(*args, **kwargs)
+
+    def queue_declare(self, *args, **kwargs):
+        self._channel.queue_declare(*args, **kwargs)
+
+
+    def basic_consume(self, on_message_callback, queue_name):
+        self._channel.basic_consume(
+                partial(self._on_message_callback, on_message_callback),
+                queue_name, no_ack=True)
+
+    def _on_message_callback(self, on_message_callback,
+            channel, basic_deliver, properties, body):
+        ack_callback = make_ack_callback(channel, basic_deliver)
+        reject_callback = make_reject_callback(channel, basic_deliver)
+
+        try:
+            on_message_callback(properties, body, ack_callback, reject_callback)
+        except:
+            LOG.exception('ChannelManager %s caught unhandled exception' +
+                    ' delivering message to %s', self, on_message_callback)
+            reject_callback()
+
+
+def make_ack_callback(channel, basic_deliver):
+    return lambda: channel.basic_ack(basic_deliver.delivery_tag)
+
+def make_reject_callback(channel, basic_deliver):
+    return lambda: channel.basic_reject(
+            basic_deliver.delivery_tag, requeue=False)
