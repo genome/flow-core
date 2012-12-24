@@ -11,6 +11,3 @@ except AttributeError:
     nh = NullHandler()
 
 logging.getLogger('amqp_service').addHandler(nh)
-
-# NOTE pika does not do this itself for some reason
-logging.getLogger('pika').addHandler(nh)
