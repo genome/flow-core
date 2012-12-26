@@ -1,5 +1,6 @@
 import logging
 import pika
+import signal
 
 from delegate_base import Delegate
 
@@ -51,11 +52,21 @@ class ConnectionManager(Delegate):
         LOG.info("Attempting to connect to AMQP broker")
         self._connection = pika.SelectConnection(pika.URLParameters(self.url),
                 self._on_connection_open)
+        signal.signal(signal.SIGINT, raise_handler)
+        signal.signal(signal.SIGTERM, raise_handler)
         try:
             self._connection.ioloop.start()
         except KeyboardInterrupt:
             self.stop()
 
     def stop(self):
+        signal.signal(signal.SIGINT, null_handler)
+        signal.signal(signal.SIGTERM, null_handler)
         self._connection.close()
         self._connection.ioloop.start()
+
+def raise_handler(*args):
+    raise KeyboardInterrupt('Caught Signal')
+
+def null_handler(*args):
+    pass
