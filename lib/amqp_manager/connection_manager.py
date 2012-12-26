@@ -50,10 +50,10 @@ class ConnectionManager(Delegate):
 
     def start(self):
         LOG.info("Attempting to connect to AMQP broker")
-        self._connection = pika.SelectConnection(pika.URLParameters(self.url),
-                self._on_connection_open)
         signal.signal(signal.SIGINT, raise_handler)
         signal.signal(signal.SIGTERM, raise_handler)
+        self._connection = pika.SelectConnection(pika.URLParameters(self.url),
+                self._on_connection_open)
         try:
             self._connection.ioloop.start()
         except KeyboardInterrupt:
