@@ -4,14 +4,10 @@ import logging
 import os
 
 from amqp_service.dispatcher import lsf
-from amqp_service import dispatch_service, log_formatter
+from amqp_service import dispatch_service, configuration
 import amqp_manager
 
 
-PIKA_LOG_LEVEL = logging.INFO
-LOG_LEVEL = logging.DEBUG
-LOG_FORMAT = ('%(levelname)-23s %(asctime)s %(name)-60s %(funcName)-45s'
-              ' %(lineno)5d: %(message)s')
 LOG = logging.getLogger()
 
 DEFAULT_ENVIRONMENT = {
@@ -22,12 +18,8 @@ DEFAULT_ENVIRONMENT = {
 }
 
 if '__main__' == __name__:
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(log_formatter.ColorFormatter(LOG_FORMAT))
-    console_handler.setLevel(LOG_LEVEL)
-    LOG.addHandler(console_handler)
-    LOG.setLevel(LOG_LEVEL)
-    logging.getLogger('pika').setLevel(PIKA_LOG_LEVEL)
+    args = configuration.parse_arguments()
+    configuration.setup_logging(args.logging_configuration)
 
     amqp_url = os.getenv('AMQP_URL')
     if not amqp_url:
