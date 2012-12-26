@@ -11,9 +11,11 @@ except AttributeError:
     nh = NullHandler()
 
 logging.getLogger('amqp_manager').addHandler(nh)
+logging.getLogger('amqp_manager').setLevel(logging.INFO)
 
 # NOTE pika does not do this itself for some reason
 logging.getLogger('pika').addHandler(nh)
+logging.getLogger('pika').setLevel(logging.INFO)
 
 from amqp_manager.channel_manager import ChannelManager
 from amqp_manager.connection_manager import ConnectionManager
