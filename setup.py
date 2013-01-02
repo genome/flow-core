@@ -15,7 +15,9 @@ setup(
         entry_points = entry_points,
         install_requires = [
             'amqp_manager',
-            'pythonlsf',
+            'argparse',
+            'platform-python-lsf-api',
+            'pyyaml',
         ],
         test_suite = 'unit_tests',
 )
