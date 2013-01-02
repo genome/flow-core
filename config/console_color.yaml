@@ -1,6 +1,6 @@
 formatters:
     color:
-        '()': amqp_service.log_formatter.ColorFormatter
+        '()': flow.amqp_service.log_formatter.ColorFormatter
         fmt: '%(levelname)-23s %(asctime)s %(name)-60s %(funcName)-50s %(lineno)5d: %(message)s'
 
 root:

@@ -3,8 +3,8 @@
 import logging
 import os
 
-from amqp_service.dispatcher import subprocess_dispatcher
-from amqp_service import dispatch_service, configuration
+from flow.amqp_service.dispatcher import subprocess_dispatcher
+from flow.amqp_service import dispatch_service, configuration
 import amqp_manager
 
 LOG = logging.getLogger()

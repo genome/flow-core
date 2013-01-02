@@ -1,7 +1,7 @@
 import logging
 from pythonlsf import lsf
 
-from amqp_service.dispatcher import util
+from flow.amqp_service.dispatcher import util
 
 LOG = logging.getLogger(__name__)
 

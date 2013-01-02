@@ -4,7 +4,7 @@ try:
 except:
     import mock
 
-from amqp_service.dispatcher import lsf
+from flow.amqp_service.dispatcher import lsf
 from pythonlsf import lsf as lsf_driver
 
 

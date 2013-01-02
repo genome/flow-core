@@ -4,7 +4,7 @@ try:
 except:
     import mock
 
-from amqp_service.dispatcher import subprocess_dispatcher
+from flow.amqp_service.dispatcher import subprocess_dispatcher
 
 
 class SubprocessDispatcherTest(unittest.TestCase):

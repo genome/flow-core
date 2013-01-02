@@ -2,7 +2,7 @@ import logging
 import os
 import subprocess
 
-from amqp_service.dispatcher import util
+from flow.amqp_service.dispatcher import util
 
 LOG = logging.getLogger(__name__)
 

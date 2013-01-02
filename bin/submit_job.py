@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from amqp_service import log_formatter
+from flow.amqp_service import log_formatter
 import argparse
 import json
 import logging

@@ -1,7 +1,7 @@
 try:
     from logging.config import dictConfig
 except ImportError:
-    from compat.dictconfig import dictConfig
+    from flow.compat.dictconfig import dictConfig
 
 import argparse
 import yaml

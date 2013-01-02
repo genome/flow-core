@@ -10,4 +10,4 @@ except AttributeError:
 
     nh = NullHandler()
 
-logging.getLogger('amqp_service').addHandler(nh)
+logging.getLogger('flow').addHandler(nh)

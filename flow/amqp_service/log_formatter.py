@@ -1,7 +1,7 @@
 import copy
 import logging
 
-from amqp_service import colors
+from flow.amqp_service import colors
 
 DEFAULT_LEVEL_COLORS = {
         logging.DEBUG:    ('debug',    {'foreground': colors.GREY}),
