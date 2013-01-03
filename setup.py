@@ -10,5 +10,8 @@ setup(
         install_requires = [
             'pika',
         ],
+        tests_require = [
+            'mock',
+        ],
         test_suite = 'unit_tests',
 )
