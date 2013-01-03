@@ -19,5 +19,8 @@ setup(
             'platform-python-lsf-api',
             'pyyaml',
         ],
+        tests_require = [
+            'mock',
+        ],
         test_suite = 'unit_tests',
 )
