@@ -3,8 +3,10 @@
 import logging
 import os
 
-from flow.amqp_service.dispatcher import lsf
-from flow.amqp_service import dispatch_service, configuration
+from flow_command_runner.executors import lsf
+from flow_command_runner import service
+
+from flow import configuration
 import amqp_manager
 
 
@@ -29,14 +31,14 @@ if '__main__' == __name__:
     arguments = {'alternate-exchange': 'workflow.alt'}
     exchange_manager = amqp_manager.ExchangeManager('workflow',
             durable=True, **arguments)
-    lsf_dispatcher = lsf.LSFDispatcher(
+    lsf_dispatcher = lsf.LSFExecutor(
             default_environment=DEFAULT_ENVIRONMENT)
-    service = dispatch_service.DispatchService(lsf_dispatcher,
+    command_service = service.CommandLineService(lsf_dispatcher,
             exchange_manager, persistent=True)
 
     queue_manager = amqp_manager.QueueManager('lsf_submit',
-            bad_data_handler=service.bad_data_handler,
-            message_handler=service.message_handler,
+            bad_data_handler=command_service.bad_data_handler,
+            message_handler=command_service.message_handler,
             durable=True)
 
     channel_manager = amqp_manager.ChannelManager(

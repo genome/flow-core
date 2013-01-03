@@ -2,7 +2,7 @@ import logging
 
 LOG = logging.getLogger(__name__)
 
-class DispatchService(object):
+class CommandLineService(object):
     def __init__(self, executor, exchange_manager, **publish_properties):
         self.executor = executor
         self.exchange_manager = exchange_manager

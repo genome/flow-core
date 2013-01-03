@@ -1,7 +1,7 @@
 import logging
 from pythonlsf import lsf
 
-from flow.command_runner import util
+from flow_command_runner import util
 
 LOG = logging.getLogger(__name__)
 

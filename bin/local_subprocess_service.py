@@ -3,8 +3,10 @@
 import logging
 import os
 
-from flow.amqp_service.dispatcher import subprocess_dispatcher
-from flow.amqp_service import dispatch_service, configuration
+from flow_command_runner.executors import local
+from flow_command_runner import service
+
+from flow import configuration
 import amqp_manager
 
 LOG = logging.getLogger()
@@ -22,13 +24,13 @@ if '__main__' == __name__:
     arguments = {'alternate-exchange': 'workflow.alt'}
     exchange_manager = amqp_manager.ExchangeManager('workflow',
             durable=True, **arguments)
-    subprocess_dispatcher = subprocess_dispatcher.SubprocessDispatcher()
-    service = dispatch_service.DispatchService(subprocess_dispatcher,
+    local = local.SubprocessExecutor()
+    command_service = service.CommandLineService(local,
             exchange_manager, persistent=True)
 
     queue_manager = amqp_manager.QueueManager('subprocess_submit',
-            bad_data_handler=service.bad_data_handler,
-            message_handler=service.message_handler,
+            bad_data_handler=command_service.bad_data_handler,
+            message_handler=command_service.message_handler,
             durable=True)
 
     channel_manager = amqp_manager.ChannelManager(
