@@ -8,7 +8,7 @@ import os
 import re
 import sys
 import redis
-from flow import *
+from flow.orchestrator.flow import *
 
 MAX_FILENAME_LEN=30
 WORKFLOW_WRAPPER='workflow-wrapper'

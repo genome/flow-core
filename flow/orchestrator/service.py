@@ -1,6 +1,6 @@
 import logging
 
-from flow.job import Job
+from flow.orchestrator.flow.job import Job
 
 LOG = logging.getLogger(__name__)
 

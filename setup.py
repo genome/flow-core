@@ -17,6 +17,7 @@ setup(
             'amqp_manager',
             'argparse',
             'platform-python-lsf-api',
+            'pygraphviz',
             'pyyaml',
         ],
         tests_require = [
