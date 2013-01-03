@@ -2,11 +2,11 @@ import logging
 import os
 import subprocess
 
-from flow.amqp_service.dispatcher import util
+from flow_command_runner import util
 
 LOG = logging.getLogger(__name__)
 
-class SubprocessDispatcher(object):
+class SubprocessExecutor(object):
     def __init__(self, default_environment={}, manditory_environment={}):
         self.default_environment = default_environment
         self.manditory_environment = manditory_environment
@@ -33,7 +33,7 @@ class SubprocessDispatcher(object):
                         stdout=stdout_fh, stderr=stderr_fh,
                         cwd=working_directory)
             except OSError as e:
-                error_message = 'Dispatcher got error number (%d): %s' % (
+                error_message = 'Executor got error number (%d): %s' % (
                         e.errno, os.strerror(e.errno))
                 LOG.error(error_message)
                 raise RuntimeError(error_message)

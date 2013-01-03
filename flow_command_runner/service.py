@@ -3,8 +3,8 @@ import logging
 LOG = logging.getLogger(__name__)
 
 class DispatchService(object):
-    def __init__(self, dispatcher, exchange_manager, **publish_properties):
-        self.dispatcher = dispatcher
+    def __init__(self, executor, exchange_manager, **publish_properties):
+        self.executor = executor
         self.exchange_manager = exchange_manager
         self.publish_properties = publish_properties
 
@@ -21,19 +21,19 @@ class DispatchService(object):
         failure_routing_key = _get_required(input_data, 'failure_routing_key')
         error_routing_key = _get_required(input_data, 'error_routing_key')
 
-        dispatcher_options = input_data.get('dispatcher_options', {})
+        executor_options = input_data.get('executor_options', {})
 
-        # XXX These really belong inside dispatcher options
+        # XXX These really belong inside executor options
         environment = input_data.get('environment', {})
         working_directory = input_data.get('working_directory', None)
         stdout = input_data.get('stdout')
         stderr = input_data.get('stderr')
 
         try:
-            success, dispatch_result = self.dispatcher.launch_job(
+            success, dispatch_result = self.executor.launch_job(
                     command_line, working_directory=working_directory,
                     environment=environment, stderr=stderr, stdout=stdout,
-                    **dispatcher_options)
+                    **executor_options)
 
             if success:
                 routing_key = success_routing_key

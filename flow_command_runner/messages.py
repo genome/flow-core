@@ -13,7 +13,7 @@ class SubmitCommandLineMessage(Message):
             'status': str,
     }
 
-    optional_fields = {'dispatcher_options': dict}
+    optional_fields = {'executor_options': dict}
 
     def validate(self):
         try:
@@ -22,9 +22,9 @@ class SubmitCommandLineMessage(Message):
             raise exceptions.InvalidMessageException(
                     'Invalid type in command_line.')
 
-        dispatcher_options = getattr(self, 'dispatcher_options', {})
-        for k in dispatcher_options.iterkeys():
+        executor_options = getattr(self, 'executor_options', {})
+        for k in executor_options.iterkeys():
             type_ = type(k)
             if type_ != str and type_ != unicode:
                 raise exceptions.InvalidMessageException(
-                        'Invalid type (%s) as dispatcher_options key.', type_)
+                        'Invalid type (%s) as executor_options key.', type_)

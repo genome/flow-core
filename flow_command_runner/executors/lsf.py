@@ -1,11 +1,11 @@
 import logging
 from pythonlsf import lsf
 
-from flow.amqp_service.dispatcher import util
+from flow.command_runner import util
 
 LOG = logging.getLogger(__name__)
 
-class LSFDispatcher(object):
+class LSFExecutor(object):
     def __init__(self, default_queue='gms',
             default_environment={}, manditory_environment={}):
         self.default_queue = default_queue
