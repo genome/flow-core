@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 entry_points = '''
 [flow.protocol.message_classes]
-submit_command = flow.protocol._messages.command_line:SubmitCommandLineMessage
+submit_command = flow_command_runner.messages:SubmitCommandLineMessage
 '''
 
 setup(
