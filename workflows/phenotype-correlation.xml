@@ -1,0 +1,153 @@
+<?xml version='1.0' standalone='yes'?>
+<workflow name="PhenotypeCorrelation unrelated case/control" executor="Workflow::Executor::SerialDeferred" logDir="/gscmnt/gc4000/info/model_data/2887731032/build128410500/logs">
+  <link fromOperation="input connector" fromProperty="bur_glm_model_file" toOperation="Burden analysis" toProperty="glm_model_file" />
+  <link fromOperation="input connector" fromProperty="bur_glm_clinical_data_file" toOperation="Burden analysis" toProperty="glm_clinical_data_file" />
+  <link fromOperation="input connector" fromProperty="bur_maf_cutoff" toOperation="Burden analysis" toProperty="maf_cutoff" />
+  <link fromOperation="input connector" fromProperty="bur_permutations" toOperation="Burden analysis" toProperty="permutations" />
+  <link fromOperation="input connector" fromProperty="bur_trv_types" toOperation="Burden analysis" toProperty="trv_types" />
+  <link fromOperation="input connector" fromProperty="bur_use_bsub" toOperation="Burden analysis" toProperty="use_bsub" />
+  <link fromOperation="input connector" fromProperty="bur_aggregate_only" toOperation="Burden analysis" toProperty="aggregate_only" />
+  <link fromOperation="input connector" fromProperty="bur_base_R_commands" toOperation="Burden analysis" toProperty="base_R_commands" />
+  <link fromOperation="input connector" fromProperty="bur_output_directory" toOperation="Burden analysis" toProperty="output_directory" />
+  <link fromOperation="input connector" fromProperty="bur_p_value_permutations" toOperation="Burden analysis" toProperty="p_value_permutations" />
+  <link fromOperation="Burden analysis" fromProperty="result" toOperation="output connector" toProperty="bur_result" />
+  <link fromOperation="Create variant matrix for burden analysis" fromProperty="burden_test_annotation_file" toOperation="Burden analysis" toProperty="VEP_annotation_file" />
+  <link fromOperation="Create variant matrix for burden analysis" fromProperty="output_file" toOperation="Burden analysis" toProperty="mutation_file" />
+  <link fromOperation="input connector" fromProperty="svep_output_file" toOperation="Sort VEP annotation" toProperty="output_file" />
+  <link fromOperation="Sort VEP annotation" fromProperty="result" toOperation="output connector" toProperty="svep_result" />
+  <link fromOperation="VEP annotation" fromProperty="output_file" toOperation="Sort VEP annotation" toProperty="input_file" />
+  <link fromOperation="input connector" fromProperty="pcc_glm_model_file" toOperation="Parallel clinical correlation" toProperty="glm_model_file" />
+  <link fromOperation="input connector" fromProperty="pcc_max_cols_per_file" toOperation="Parallel clinical correlation" toProperty="max_cols_per_file" />
+  <link fromOperation="input connector" fromProperty="pcc_output_prefix" toOperation="Parallel clinical correlation" toProperty="output_prefix" />
+  <link fromOperation="input connector" fromProperty="pcc_sample_list_file" toOperation="Parallel clinical correlation" toProperty="sample_list_file" />
+  <link fromOperation="input connector" fromProperty="pcc_clinical_data_file" toOperation="Parallel clinical correlation" toProperty="clinical_data_file" />
+  <link fromOperation="input connector" fromProperty="pcc_work_directory" toOperation="Parallel clinical correlation" toProperty="work_directory" />
+  <link fromOperation="Parallel clinical correlation" fromProperty="result" toOperation="output connector" toProperty="pcc_result" />
+  <link fromOperation="Create variant matrix for single variant test" fromProperty="output_file" toOperation="Parallel clinical correlation" toProperty="variant_matrix" />
+  <link fromOperation="input connector" fromProperty="cds_glm_model_file" toOperation="Create clinical data summary" toProperty="glm_model_file" />
+  <link fromOperation="input connector" fromProperty="cds_include_boxplots" toOperation="Create clinical data summary" toProperty="include_boxplots" />
+  <link fromOperation="input connector" fromProperty="cds_output_directory" toOperation="Create clinical data summary" toProperty="output_directory" />
+  <link fromOperation="input connector" fromProperty="cds_clinical_data_file" toOperation="Create clinical data summary" toProperty="clinical_data_file" />
+  <link fromOperation="Create clinical data summary" fromProperty="result" toOperation="output connector" toProperty="cds_result" />
+  <link fromOperation="input connector" fromProperty="bvm_burden_test_annotation_file" toOperation="Create variant matrix for burden analysis" toProperty="burden_test_annotation_file" />
+  <link fromOperation="input connector" fromProperty="bvm_vcf_file" toOperation="Create variant matrix for burden analysis" toProperty="vcf_file" />
+  <link fromOperation="input connector" fromProperty="bvm_output_file" toOperation="Create variant matrix for burden analysis" toProperty="output_file" />
+  <link fromOperation="input connector" fromProperty="bvm_transpose" toOperation="Create variant matrix for burden analysis" toProperty="transpose" />
+  <link fromOperation="Create variant matrix for burden analysis" fromProperty="result" toOperation="output connector" toProperty="bvm_result" />
+  <link fromOperation="Sort VEP annotation" fromProperty="output_file" toOperation="Create variant matrix for burden analysis" toProperty="vep_annotation_file" />
+  <link fromOperation="input connector" fromProperty="qqp_glm_separator" toOperation="GLM QQ plot generation" toProperty="separator" />
+  <link fromOperation="input connector" fromProperty="qqp_glm_output_file_basename" toOperation="GLM QQ plot generation" toProperty="output_file_basename" />
+  <link fromOperation="input connector" fromProperty="qqp_glm_image_type" toOperation="GLM QQ plot generation" toProperty="image_type" />
+  <link fromOperation="input connector" fromProperty="qqp_glm_title" toOperation="GLM QQ plot generation" toProperty="title" />
+  <link fromOperation="input connector" fromProperty="qqp_glm_pvalue_column" toOperation="GLM QQ plot generation" toProperty="pvalue_column" />
+  <link fromOperation="input connector" fromProperty="qqp_glm_header" toOperation="GLM QQ plot generation" toProperty="header" />
+  <link fromOperation="GLM QQ plot generation" fromProperty="result" toOperation="output connector" toProperty="qqp_glm_result" />
+  <link fromOperation="Parallel clinical correlation" fromProperty="glm_output_file" toOperation="GLM QQ plot generation" toProperty="input_file" />
+  <link fromOperation="input connector" fromProperty="qqp_categorical_separator" toOperation="Categorical QQ plot generation" toProperty="separator" />
+  <link fromOperation="input connector" fromProperty="qqp_categorical_output_file_basename" toOperation="Categorical QQ plot generation" toProperty="output_file_basename" />
+  <link fromOperation="input connector" fromProperty="qqp_categorical_image_type" toOperation="Categorical QQ plot generation" toProperty="image_type" />
+  <link fromOperation="input connector" fromProperty="qqp_categorical_title" toOperation="Categorical QQ plot generation" toProperty="title" />
+  <link fromOperation="input connector" fromProperty="qqp_categorical_pvalue_column" toOperation="Categorical QQ plot generation" toProperty="pvalue_column" />
+  <link fromOperation="input connector" fromProperty="qqp_categorical_header" toOperation="Categorical QQ plot generation" toProperty="header" />
+  <link fromOperation="Categorical QQ plot generation" fromProperty="result" toOperation="output connector" toProperty="qqp_categorical_result" />
+  <link fromOperation="Parallel clinical correlation" fromProperty="categorical_output_file" toOperation="Categorical QQ plot generation" toProperty="input_file" />
+  <link fromOperation="input connector" fromProperty="svm_matrix_genotype_version" toOperation="Create variant matrix for single variant test" toProperty="matrix_genotype_version" />
+  <link fromOperation="input connector" fromProperty="svm_vcf_file" toOperation="Create variant matrix for single variant test" toProperty="vcf_file" />
+  <link fromOperation="input connector" fromProperty="svm_output_file" toOperation="Create variant matrix for single variant test" toProperty="output_file" />
+  <link fromOperation="input connector" fromProperty="svm_transpose" toOperation="Create variant matrix for single variant test" toProperty="transpose" />
+  <link fromOperation="Create variant matrix for single variant test" fromProperty="result" toOperation="output connector" toProperty="svm_result" />
+  <link fromOperation="input connector" fromProperty="vep_input_file" toOperation="VEP annotation" toProperty="input_file" />
+  <link fromOperation="input connector" fromProperty="vep_sift" toOperation="VEP annotation" toProperty="sift" />
+  <link fromOperation="input connector" fromProperty="vep_polyphen" toOperation="VEP annotation" toProperty="polyphen" />
+  <link fromOperation="input connector" fromProperty="vep_format" toOperation="VEP annotation" toProperty="format" />
+  <link fromOperation="input connector" fromProperty="vep_output_file" toOperation="VEP annotation" toProperty="output_file" />
+  <link fromOperation="input connector" fromProperty="vep_hgnc" toOperation="VEP annotation" toProperty="hgnc" />
+  <link fromOperation="input connector" fromProperty="vep_condel" toOperation="VEP annotation" toProperty="condel" />
+  <link fromOperation="VEP annotation" fromProperty="result" toOperation="output connector" toProperty="vep_result" />
+  <operation name="Burden analysis">
+    <operationtype commandClass="Genome::Model::Tools::Germline::BurdenAnalysis" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="Sort VEP annotation">
+    <operationtype commandClass="Genome::Model::PhenotypeCorrelation::Command::SortVepOutput" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="Parallel clinical correlation">
+    <operationtype commandClass="Genome::Model::PhenotypeCorrelation::Command::ParallelClinicalCorrelation" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="Create clinical data summary">
+    <operationtype commandClass="Genome::Model::PhenotypeCorrelation::Command::ClinicalDataSummary" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="Create variant matrix for burden analysis">
+    <operationtype commandClass="Genome::Model::Tools::Vcf::VcfToBurdenMatrix" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="GLM QQ plot generation">
+    <operationtype commandClass="Genome::Model::Tools::Germline::Qqplot" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="Categorical QQ plot generation">
+    <operationtype commandClass="Genome::Model::Tools::Germline::Qqplot" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="Create variant matrix for single variant test">
+    <operationtype commandClass="Genome::Model::Tools::Vcf::VcfToVariantMatrix" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operation name="VEP annotation">
+    <operationtype commandClass="Genome::Db::Ensembl::Vep" typeClass="Workflow::OperationType::Command" />
+  </operation>
+  <operationtype typeClass="Workflow::OperationType::Model">
+    <inputproperty>bur_maf_cutoff</inputproperty>
+    <inputproperty>vep_format</inputproperty>
+    <inputproperty>qqp_glm_header</inputproperty>
+    <inputproperty>cds_glm_model_file</inputproperty>
+    <inputproperty>qqp_glm_title</inputproperty>
+    <inputproperty>pcc_clinical_data_file</inputproperty>
+    <inputproperty>bur_trv_types</inputproperty>
+    <inputproperty>vep_output_file</inputproperty>
+    <inputproperty>bur_glm_model_file</inputproperty>
+    <inputproperty>vep_sift</inputproperty>
+    <inputproperty>pcc_work_directory</inputproperty>
+    <inputproperty>vep_input_file</inputproperty>
+    <inputproperty>bur_output_directory</inputproperty>
+    <inputproperty>bvm_vcf_file</inputproperty>
+    <inputproperty>pcc_max_cols_per_file</inputproperty>
+    <inputproperty>svep_output_file</inputproperty>
+    <inputproperty>qqp_categorical_pvalue_column</inputproperty>
+    <inputproperty>bur_use_bsub</inputproperty>
+    <inputproperty>qqp_glm_pvalue_column</inputproperty>
+    <inputproperty>bur_permutations</inputproperty>
+    <inputproperty>qqp_categorical_header</inputproperty>
+    <inputproperty>qqp_categorical_image_type</inputproperty>
+    <inputproperty>cds_output_directory</inputproperty>
+    <inputproperty>qqp_categorical_separator</inputproperty>
+    <inputproperty>svm_matrix_genotype_version</inputproperty>
+    <inputproperty>qqp_glm_image_type</inputproperty>
+    <inputproperty>svm_transpose</inputproperty>
+    <inputproperty>vep_hgnc</inputproperty>
+    <inputproperty>pcc_glm_model_file</inputproperty>
+    <inputproperty>bur_base_R_commands</inputproperty>
+    <inputproperty>bvm_transpose</inputproperty>
+    <inputproperty>bur_aggregate_only</inputproperty>
+    <inputproperty>vep_condel</inputproperty>
+    <inputproperty>vep_polyphen</inputproperty>
+    <inputproperty>pcc_output_prefix</inputproperty>
+    <inputproperty>qqp_glm_output_file_basename</inputproperty>
+    <inputproperty>pcc_sample_list_file</inputproperty>
+    <inputproperty>cds_clinical_data_file</inputproperty>
+    <inputproperty>bvm_burden_test_annotation_file</inputproperty>
+    <inputproperty>svm_output_file</inputproperty>
+    <inputproperty>qqp_categorical_title</inputproperty>
+    <inputproperty>cds_include_boxplots</inputproperty>
+    <inputproperty>qqp_glm_separator</inputproperty>
+    <inputproperty>bur_p_value_permutations</inputproperty>
+    <inputproperty>bur_glm_clinical_data_file</inputproperty>
+    <inputproperty>bvm_output_file</inputproperty>
+    <inputproperty>svm_vcf_file</inputproperty>
+    <inputproperty>qqp_categorical_output_file_basename</inputproperty>
+    <outputproperty>bur_result</outputproperty>
+    <outputproperty>svep_result</outputproperty>
+    <outputproperty>pcc_result</outputproperty>
+    <outputproperty>cds_result</outputproperty>
+    <outputproperty>bvm_result</outputproperty>
+    <outputproperty>qqp_glm_result</outputproperty>
+    <outputproperty>qqp_categorical_result</outputproperty>
+    <outputproperty>svm_result</outputproperty>
+    <outputproperty>vep_result</outputproperty>
+  </operationtype>
+</workflow>
