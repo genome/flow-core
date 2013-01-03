@@ -11,7 +11,7 @@ submit_command = flow.protocol._messages.command_line:SubmitCommandLineMessage
 setup(
         name = 'flow',
         version = '0.1',
-        packages = find_packages(),
+        packages = find_packages(exclude=['unit_tests']),
         entry_points = entry_points,
         install_requires = [
             'amqp_manager',
