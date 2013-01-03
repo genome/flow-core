@@ -154,7 +154,6 @@ def get_object(redis, key):
     module = __import__(class_info['module'], fromlist=class_info['class'])
     return getattr(module, class_info['class'])(connection=redis, key=key)
 
-
 def make_property_wrapper(name):
     private_name = "_" + name
     def getter(self):

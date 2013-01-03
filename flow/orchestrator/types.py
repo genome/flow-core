@@ -18,7 +18,8 @@ class Step(Storable):
         return get_object(self._connection, self.node_key)
 
     def execute(self):
-        raise NotImplementedError("Execute not implemented in step!")
+        raise NotImplementedError("Execute not implemented in %s"
+                                  %self.__class__.__name__)
 
 
 class ShellCommandStep(Step):
@@ -65,6 +66,8 @@ class Node(Storable):
             return []
 
         self.step(idx).execute()
+
+    def complete(self):
         ready_nodes = []
         for succ_idx in self.successors:
             node = self.flow.node(succ_idx)
@@ -79,9 +82,8 @@ class Flow(Storable):
 
     def node(self, idx):
         key = self.node_keys[idx]
-        if not key:
-            return None
-        return Node(self._connection, key)
+        if key:
+            return get_object(self._connection, key)
 
 
 if __name__ == "__main__":

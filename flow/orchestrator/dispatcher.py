@@ -5,4 +5,7 @@ class Dispatcher:
 
 class InlineDispatcher:
     def __call__(self, node):
-        map(self, node.execute_step(0))
+        node.execute_step(0)
+        ready = node.complete()
+        for r in ready:
+            self(r)

@@ -11,8 +11,8 @@ import redis
 
 from flow.orchestrator.types import *
 
-MAX_FILENAME_LEN=30
-WORKFLOW_WRAPPER='workflow-wrapper'
+MAX_FILENAME_LEN = 30
+WORKFLOW_WRAPPER = 'workflow-wrapper'
 
 class WorkflowEntity(object):
     def __init__(self, job_number):
