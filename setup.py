@@ -19,6 +19,7 @@ setup(
             'platform-python-lsf-api',
             'pygraphviz',
             'pyyaml',
+            'redis',
         ],
         tests_require = [
             'mock',

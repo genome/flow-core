@@ -3,6 +3,10 @@
 from redisom import *
 import subprocess
 
+
+__all__ = ['Step', 'Node', 'StepFailedError', 'ShellCommandStep',
+'PassThroughStep', 'Flow']
+
 class StepFailedError(RuntimeError): pass
 
 class Step(Storable):
