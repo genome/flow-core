@@ -2,18 +2,20 @@ from flow.protocol.message import Message
 from flow.protocol import exceptions
 
 
-class SubmitCommandLineMessage(Message):
+class CommandLineSubmitMessage(Message):
     required_fields = {
-            'node_id': str,
-            'step_id': str,
+            'return_identifier': str,
             'command_line': list,
+
             'success_routing_key': str,
             'failure_routing_key': str,
             'error_routing_key': str,
-            'status': str,
     }
 
-    optional_fields = {'executor_options': dict}
+    optional_fields = {
+            'executor_options': dict,
+            'status': str,
+    }
 
     def validate(self):
         try:
@@ -24,7 +26,16 @@ class SubmitCommandLineMessage(Message):
 
         executor_options = getattr(self, 'executor_options', {})
         for k in executor_options.iterkeys():
-            type_ = type(k)
-            if type_ != str and type_ != unicode:
+            if not isinstance(k, basestring):
                 raise exceptions.InvalidMessageException(
-                        'Invalid type (%s) as executor_options key.', type_)
+                        'Invalid type for executor_options key: %s', k)
+
+class CommandLineResponseMessage(Message):
+    required_fields = {
+            'return_identifier': str,
+            'status': str,
+    }
+    optional_fields = {
+            'job_id': str,
+            'error_message': str,
+    }
