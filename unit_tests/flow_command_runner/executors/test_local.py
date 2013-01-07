@@ -4,26 +4,26 @@ try:
 except:
     import mock
 
-from flow.amqp_service.dispatcher import subprocess_dispatcher
+from flow_command_runner.executors import local
 
 
-class SubprocessDispatcherTest(unittest.TestCase):
+class SubprocessExecutorTest(unittest.TestCase):
     def setUp(self):
-        self.dispatcher = subprocess_dispatcher.SubprocessDispatcher()
+        self.dispatcher = local.SubprocessExecutor()
 
     def test_succeeded_job(self):
-        success, result = self.dispatcher.launch_job(['/bin/true'])
+        success, result = self.dispatcher(['/bin/true'])
         self.assertTrue(success)
         self.assertEqual(result, 0)
 
     def test_failed_job(self):
-        success, result = self.dispatcher.launch_job(['/bin/false'])
+        success, result = self.dispatcher(['/bin/false'])
         self.assertFalse(success)
         self.assertEqual(result, 1)
 
     def test_error(self):
         self.assertRaises(RuntimeError,
-                self.dispatcher.launch_job, [mock.Mock()])
+                self.dispatcher, [mock.Mock()])
 
 
 if '__main__' == __name__:

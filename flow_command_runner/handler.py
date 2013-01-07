@@ -10,23 +10,23 @@ class CommandLineSubmitMessageHandler(object):
     def message_handler(self, message, broker):
         executor_options = getattr(message, 'executor_options', {})
         try:
-            success, result = self.executor.launch_job(message.command_line,
+            success, executor_result = self.executor(message.command_line,
                     **executor_options)
 
             if success:
-                routing_key = message.success_routing_key
-                message = CommandLineResponseMessage(
+                response_routing_key = message.success_routing_key
+                response_message = CommandLineResponseMessage(
                         status='success', job_id=executor_result,
                         return_identifier=message.return_identifier)
             else:
-                routing_key = message.failure_routing_key
-                message = CommandLineResponseMessage(status='failure',
+                response_routing_key = message.failure_routing_key
+                response_message = CommandLineResponseMessage(status='failure',
                         return_identifier=message.return_identifier)
 
         # XXX Might need to tweak what exceptions we need to catch
         except RuntimeError as e:
-            routing = message.error_routing_key
-            message = CommandLineResponseMessage(status='error',
+            response_routing_key = message.error_routing_key
+            response_message = CommandLineResponseMessage(status='error',
                     return_identifier=message.return_identifier,
                     error_message=str(e))
 

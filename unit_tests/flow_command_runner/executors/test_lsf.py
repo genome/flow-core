@@ -4,7 +4,7 @@ try:
 except:
     import mock
 
-from flow.amqp_service.dispatcher import lsf
+from flow_command_runner.executors import lsf
 from pythonlsf import lsf as lsf_driver
 
 
@@ -52,7 +52,7 @@ def create_expected_limits():
 class CreateRequestTest(unittest.TestCase):
     def setUp(self):
         self.default_queue = 'serious queue'
-        self.dispatcher = lsf.LSFDispatcher(default_queue=self.default_queue)
+        self.dispatcher = lsf.LSFExecutor(default_queue=self.default_queue)
 
         self.bad_type = mock.Mock()
         self.bad_type.__str__ = lambda x: None

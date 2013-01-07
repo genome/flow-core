@@ -12,7 +12,7 @@ class LSFExecutor(object):
         self.default_environment = default_environment
         self.manditory_environment = manditory_environment
 
-    def launch_job(self, command_line, working_directory=None,
+    def __call__(self, command_line, working_directory=None,
             environment={}, **kwargs):
         command_string = ' '.join(map(str, command_line))
         LOG.debug("lsf command_string = '%s'", command_string)

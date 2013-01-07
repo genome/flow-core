@@ -6,7 +6,7 @@ except:
 
 import os
 from uuid import uuid4
-from flow.amqp_service.dispatcher import util
+from flow_command_runner import util
 
 
 class EnvironmentContextManagerTest(unittest.TestCase):
