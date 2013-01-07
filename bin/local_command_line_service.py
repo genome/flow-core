@@ -4,7 +4,9 @@ import logging
 import os
 
 from flow_command_runner.executors import local
-from flow_command_runner import service
+from flow_command_runner.handler import CommandLineSubmitMessageHandler
+
+import flow.brokers.amqp
 
 from flow import configuration
 import amqp_manager
@@ -23,15 +25,17 @@ if '__main__' == __name__:
 
     arguments = {'alternate-exchange': 'workflow.alt'}
     exchange_manager = amqp_manager.ExchangeManager('workflow',
-            durable=True, **arguments)
-    local = local.SubprocessExecutor()
-    command_service = service.CommandLineService(local,
-            exchange_manager, persistent=True)
+            durable=True, persistent=True, **arguments)
+    broker = flow.brokers.amqp.AmqpBroker(exchange_manager=exchange_manager)
+
+    executor = local.SubprocessExecutor()
+    handler = CommandLineSubmitMessageHandler(executor=executor)
+
+    listener = flow.brokers.amqp.AmqpListener(
+            delivery_callback=handler.message_handler, broker=broker)
 
     queue_manager = amqp_manager.QueueManager('subprocess_submit',
-            bad_data_handler=command_service.bad_data_handler,
-            message_handler=command_service.message_handler,
-            durable=True)
+            message_handler=listener.on_message, durable=True)
 
     channel_manager = amqp_manager.ChannelManager(
             delegates=[exchange_manager, queue_manager])
