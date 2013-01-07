@@ -3,9 +3,8 @@ from flow_command_runner.messages import CommandLineResponseMessage
 
 LOG = logging.getLogger(__name__)
 
-class CommandLineMessageHandler(object):
-    def __init__(self, executor=None, **kwargs):
-        self.RespondingHandler.__init__(self, **kwargs)
+class CommandLineSubmitMessageHandler(object):
+    def __init__(self, executor=None):
         self.executor = executor
 
     def message_handler(self, message, broker):
