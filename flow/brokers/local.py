@@ -9,7 +9,7 @@ class LocalBroker(object):
     def publish(self, routing_key, message):
         for handler in self.routing_dictionary[routing_key]:
             try:
-                handler(message)
+                handler(message, self)
             except:
                 LOG.exception('Handler (%s) raised exception on message: %s',
                         handler, message)

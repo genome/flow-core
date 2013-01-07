@@ -1,15 +1,14 @@
 import logging
-from flow.handlers import RespondingHandler
 from flow_command_runner.messages import CommandLineResponseMessage
 
 LOG = logging.getLogger(__name__)
 
-class CommandLineMessageHandler(RespondingHandler):
+class CommandLineMessageHandler(object):
     def __init__(self, executor=None, **kwargs):
         self.RespondingHandler.__init__(self, **kwargs)
         self.executor = executor
 
-    def message_handler(self, message):
+    def message_handler(self, message, broker):
         executor_options = getattr(message, 'executor_options', {})
         try:
             success, result = self.executor.launch_job(message.command_line,
@@ -32,4 +31,4 @@ class CommandLineMessageHandler(RespondingHandler):
                     return_identifier=message.return_identifier,
                     error_message=str(e))
 
-        return routing_key, message
+        broker.publish(response_routing_key, response_message)

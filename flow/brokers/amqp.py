@@ -3,7 +3,7 @@ from flow.protocol import codec
 
 LOG = logging.getLogger(__name__)
 
-class AmqpBroker(Broker):
+class AmqpBroker(object):
     def __init__(self, exchange_manager=None):
         self.exchange_manager = exchange_manager
 
@@ -13,8 +13,9 @@ class AmqpBroker(Broker):
                 message=encoded_message)
 
 class AmqpListener(object):
-    def __init__(self, delivery_callback):
+    def __init__(self, delivery_callback=None, broker=None):
         self.delivery_callback = delivery_callback
+        self.broker = broker
 
     def on_message(self, properties, encoded_message,
             ack_callback, reject_callback):
@@ -26,7 +27,7 @@ class AmqpListener(object):
             reject_callback()
 
         try:
-            self.delivery_callback(message)
+            self.delivery_callback(message, self.broker)
             ack_callback()
         except:
             LOG.exception('Unexpected error handling message.')
