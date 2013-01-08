@@ -4,39 +4,32 @@ from redisom import *
 import subprocess
 
 
-__all__ = ['Step', 'Node', 'StepFailedError', 'ShellCommandStep',
-'PassThroughStep', 'Flow']
+__all__ = ['Node', 'Flow', 'NodeFailedError']
 
-class StepFailedError(RuntimeError): pass
+class Status(object):
+    new = "new"
+    dispatched = "dispatched"
+    running = "running"
+    success = "success"
+    failure = "failure"
 
-class Step(Storable):
-    service_name = RedisScalar
-    node_key = RedisScalar
+    _completed_values = set([success, failure])
 
-    @property
-    def node(self):
-        return get_object(self._connection, self.node_key)
-
-    def execute(self):
-        raise NotImplementedError("Execute not implemented in %s"
-                                  %self.__class__.__name__)
+    @staticmethod
+    def done(status):
+        return status in _completed_values
 
 
-class ShellCommandStep(Step):
-    command_line = RedisList
+class NodeFailedError(RuntimeError):
+    def __init__(self, node_key, msg):
+        self.node_key = node_key
+        RuntimeError.__init__(self, "Node %s failed: %s" %(node_key, msg)
 
-    def execute(self):
-        rv = subprocess.call(self.command_line.value)
-        if rv != 0:
-            raise StepFailedError("Command line step failed: '%s' returned %d"
-                                  %(" ".join(self.command_line), rv))
 
-class PassThroughStep(Step):
-    data = RedisHash
-
-    def execute(self):
-        print "Pass through step returns", self.data
-        self.node.outputs = self.data
+class NodeAlreadyCompletedError(RuntimeError):
+    def __init__(self, node_key):
+        self.node_key = node_key
+        RuntimeError.__init__(self, "Node %s already completed!" %node_key)
 
 
 class Node(Storable):
@@ -45,8 +38,7 @@ class Node(Storable):
     name = RedisScalar
     log_dir = RedisScalar
     status = RedisScalar
-    step_keys = RedisList
-    current_step = RedisScalar
+    completed = RedisScalar
 
     successors = RedisSet
     input_connections = RedisHash
@@ -56,41 +48,30 @@ class Node(Storable):
     def flow(self):
         return get_object(self._connection, self.flow_key.value)
 
-    def step(self, idx):
-        return get_object(self._connection, self.step_keys[idx])
-
-    def execute_step(self, idx):
-        print "Executing", self.name
-        if len(self.step_keys) == 0:
-            print "Node with no step!", self.name
-            return []
-
-        self.step(idx).execute()
-
+    def execute(self, context):
+        raise RuntimeError("execute not implemented in %s"
+                           %self.__class__.__name__)
     def complete(self):
         ready_nodes = []
-        for succ_idx in self.successors:
-            node = self.flow.node(succ_idx)
-            if node.indegree.increment(-1) == 0:
-                ready_nodes.append(node)
+        if self.completed.setnx(1):
+            for succ_idx in self.successors:
+                node = self.flow.node(succ_idx)
+                if node.indegree.increment(-1) == 0:
+                    ready_nodes.append(node)
+        else:
+            raise NodeAlreadyCompletedError(self.key)
+
         return ready_nodes
+
 
 class Flow(Storable):
     name = RedisScalar
     status = RedisScalar
     node_keys = RedisList
+    environment = RedisHash
+    user_id = RedisScalar
 
     def node(self, idx):
         key = self.node_keys[idx]
         if key:
             return get_object(self._connection, key)
-
-
-if __name__ == "__main__":
-    import redis
-    c = redis.Redis()
-    step = Step(connection=c)
-    node = Node(connection=c, name="First Node")
-    flow = Flow(connection=c)
-    flow.node_keys
-

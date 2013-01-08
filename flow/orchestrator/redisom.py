@@ -33,6 +33,9 @@ class RedisScalar(RedisValue):
     def value(self, val):
         return self.connection.set(self.key, val)
 
+    def setnx(self, val):
+        return self.connection.setnx(self.key, val)
+
     def increment(self, by=1):
         return self.connection.incr(self.key, by)
 
@@ -188,36 +191,47 @@ class StorableMeta(type):
         return cls
 
 
-class Storable(object):
+class RedisObject(object):
     __metaclass__ = StorableMeta
 
-    def __init__(self, connection=None, key=None, **kwargs):
+    def exists(self):
+        cinfo = self._class_info.value
+        if "module" in cinfo and "class" in cinfo:
+            if (self.__class__.__module__ != self._class_info["module"]
+                or self.__class__.__name__ != self._class_info["class"]):
+                raise RuntimeError("Class mismatch for object %s" %self.key)
+        else:
+            return False
+
+    @classmethod
+    def create(cls, connection=None, key=None, **kwargs):
+        obj = cls(connection, key)
+        
+        for k, v in kwargs.iteritems():
+            if k not in obj._redis_properties:
+                raise AttributeError("Unknown attribute %s" %k)
+            setattr(obj, k, v)
+
+        return obj
+
+    @classmethod
+    def get(cls, connection, key):
+        obj = cls(connection, key)
+        if not obj.exists():
+            raise KeyError("Object not found: class=%s key=%s" %(cls, key))
+        return obj
+
+    def __init__(self, connection, key):
         self._connection = connection
         if key == None:
             key = _make_key("/" + self.__class__.__name__, uuid4().hex)
         self.key = key
+        self._class_info = RedisHash(connection, self.key)
 
         for name, value in self._redis_properties.iteritems():
             private_name = "_" + name
             pobj = value(connection=connection, key=self.subkey(name))
             setattr(self, private_name, pobj)
-
-        self._class_info = RedisHash(connection, self.subkey("_class_info"))
-        if self._class_info:
-            if (self.__class__.__module__ != self._class_info["module"]
-                or self.__class__.__name__ != self._class_info["class"]):
-                raise RuntimeError("class mismatch for object %s" %self.key)
-        else:
-            self._class_info.update({
-                "module": self.__class__.__module__,
-                "class": self.__class__.__name__,
-            })
-
-        for k, v in kwargs.iteritems():
-            if k not in self._redis_properties:
-                raise AttributeError("Unknown attribute %s" %k)
-            setattr(self, k, v)
-
 
     def subkey(self, *args):
         return _make_key(self.key, *args)
