@@ -4,10 +4,11 @@ from flow_command_runner.messages import CommandLineResponseMessage
 LOG = logging.getLogger(__name__)
 
 class CommandLineSubmitMessageHandler(object):
-    def __init__(self, executor=None):
+    def __init__(self, executor=None, broker=None):
         self.executor = executor
+        self.broker = broker
 
-    def message_handler(self, message, broker):
+    def message_handler(self, message):
         executor_options = getattr(message, 'executor_options', {})
         try:
             success, executor_result = self.executor(message.command_line,
@@ -18,6 +19,7 @@ class CommandLineSubmitMessageHandler(object):
                 response_message = CommandLineResponseMessage(
                         status='success', job_id=executor_result,
                         return_identifier=message.return_identifier)
+
             else:
                 response_routing_key = message.failure_routing_key
                 response_message = CommandLineResponseMessage(status='failure',
@@ -30,4 +32,4 @@ class CommandLineSubmitMessageHandler(object):
                     return_identifier=message.return_identifier,
                     error_message=str(e))
 
-        broker.publish(response_routing_key, response_message)
+        self.broker.publish(response_routing_key, response_message)

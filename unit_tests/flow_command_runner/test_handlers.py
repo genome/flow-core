@@ -11,7 +11,11 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
     def setUp(self):
         self.executor = mock.Mock()
 
-        self.handler = CommandLineSubmitMessageHandler(self.executor)
+        self.broker = mock.Mock()
+        self.broker.publish = mock.Mock()
+
+        self.handler = CommandLineSubmitMessageHandler(
+                self.executor, self.broker)
 
         self.message = mock.Mock()
         self.message.command_line = mock.Mock()
@@ -20,14 +24,11 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
         self.message.error_routing_key = mock.Mock()
         self.message.executor_options = {'passthru': True}
 
-        self.broker = mock.Mock()
-        self.broker.publish = mock.Mock()
-
 
     def test_message_handler_executor_success(self):
         executor_result = mock.Mock()
         self.executor.return_value = (True, executor_result)
-        self.handler.message_handler(self.message, self.broker)
+        self.handler.message_handler(self.message)
         self.executor.assert_called_once_with(self.message.command_line,
                 passthru=True)
 
@@ -40,7 +41,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
     def test_message_handler_executor_failure(self):
         executor_result = mock.Mock()
         self.executor.return_value = (False, executor_result)
-        self.handler.message_handler(self.message, self.broker)
+        self.handler.message_handler(self.message)
         self.executor.assert_called_once_with(self.message.command_line,
                 passthru=True)
 
@@ -52,7 +53,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
 
     def test_message_handler_executor_exception(self):
         self.executor.side_effect = RuntimeError('error_message')
-        self.handler.message_handler(self.message, self.broker)
+        self.handler.message_handler(self.message)
         self.executor.assert_called_once_with(self.message.command_line,
                 passthru=True)
 

@@ -37,10 +37,10 @@ if '__main__' == __name__:
 
     executor = lsf.LSFExecutor(
             default_environment=DEFAULT_ENVIRONMENT)
-    handler = CommandLineSubmitMessageHandler(executor=executor)
+    handler = CommandLineSubmitMessageHandler(executor=executor, broker=broker)
 
     listener = flow.brokers.amqp.AmqpListener(
-            delivery_callback=handler.message_handler, broker=broker)
+            delivery_callback=handler.message_handler)
 
     queue_manager = amqp_manager.QueueManager('lsf_submit',
             message_handler=listener.on_message, durable=True)

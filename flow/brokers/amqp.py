@@ -13,9 +13,8 @@ class AmqpBroker(object):
                 message=encoded_message)
 
 class AmqpListener(object):
-    def __init__(self, delivery_callback=None, broker=None):
+    def __init__(self, delivery_callback=None):
         self.delivery_callback = delivery_callback
-        self.broker = broker
 
     def on_message(self, properties, encoded_message,
             ack_callback, reject_callback):
@@ -27,7 +26,7 @@ class AmqpListener(object):
             reject_callback()
 
         try:
-            self.delivery_callback(message, self.broker)
+            self.delivery_callback(message)
             ack_callback()
         except:
             LOG.exception('Unexpected error handling message.')
