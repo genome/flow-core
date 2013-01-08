@@ -1,4 +1,3 @@
-import json
 import logging
 
 from delegate_base import Delegate
@@ -6,49 +5,20 @@ from delegate_base import Delegate
 LOG = logging.getLogger(__name__)
 
 class QueueManager(Delegate):
-    def __init__(self, queue_name, decoder=json.loads,
-            bad_data_handler=None, message_handler=None,
+    def __init__(self, queue_name, message_handler=None,
             **queue_declare_properties):
         Delegate.__init__(self)
         assert callable(message_handler)
 
         self.queue_name = queue_name
-        self.decoder = decoder
 
-        self.bad_data_handler = bad_data_handler
         self.message_handler = message_handler
 
         self.qd_properties = queue_declare_properties
 
     def on_message(self, properties, body, ack_callback, reject_callback):
-        # This looks messy, but it's important that nothing falls through the
-        # cracks.
         try:
-            decoded_message = self.decoder(body)
-        except:
-            LOG.exception('QueueManager %s failed to decode message failed: %s',
-                    self, body)
-            try:
-                if self.bad_data_handler:
-                    assert callable(self.bad_data_handler)
-                    return self.bad_data_handler(properties, body,
-                            ack_callback, reject_callback)
-            except:
-                LOG.exception(
-                        'QueueManager %s caught exception in bad_data_handler',
-                        self)
-            finally:
-                try:
-                    reject_result = reject_callback()
-                    LOG.warning('Final reject call for bad data succeeded' +
-                            ' in QueueManager %s: %s, %s',
-                            self, properties, body)
-                    return reject_result
-                except:
-                    return
-
-        try:
-            return self.message_handler(properties, decoded_message,
+            return self.message_handler(properties, body,
                     ack_callback, reject_callback)
         except:
             LOG.exception('QueueManager %s rejecting message' +

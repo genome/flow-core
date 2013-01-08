@@ -10,16 +10,12 @@ from amqp_manager import queue_manager
 class QueueManagerSetupTest(unittest.TestCase):
     def setUp(self):
         self.queue_name = mock.Mock()
-        self.decoder = mock.Mock()
         self.durable = mock.Mock()
 
-        self.bad_data_handler = mock.Mock()
         self.message_handler = mock.Mock()
 
         self.qm = queue_manager.QueueManager(self.queue_name,
-                decoder=self.decoder, durable=self.durable,
-                bad_data_handler=self.bad_data_handler,
-                message_handler=self.message_handler)
+                durable=self.durable, message_handler=self.message_handler)
 
 
     def test_on_channel_open(self):
@@ -55,15 +51,10 @@ class QueueManagerSetupTest(unittest.TestCase):
 
 class QueueManagerMessageTest(unittest.TestCase):
     def setUp(self):
-        self.decoder = mock.Mock()
-        self.decoded_message = mock.Mock()
-        self.decoder.return_value = self.decoded_message
 
-        self.bad_data_handler = mock.Mock()
         self.message_handler = mock.Mock()
 
-        self.qm = queue_manager.QueueManager(None, decoder=self.decoder,
-                bad_data_handler=self.bad_data_handler,
+        self.qm = queue_manager.QueueManager(None,
                 message_handler=self.message_handler)
 
         self.ack_callback = mock.Mock()
@@ -74,51 +65,21 @@ class QueueManagerMessageTest(unittest.TestCase):
 
 
 
-    def test_on_message_decoder_throws(self):
-        self.decoder.side_effect = RuntimeError
-
-        self.qm.on_message(self.properties, self.body,
-                self.ack_callback, self.reject_callback)
-
-        self.decoder.assert_called_once_with(self.body)
-        self.bad_data_handler.assert_called_once_with(self.properties,
-                self.body, self.ack_callback, self.reject_callback)
-
-        # In practice, this might be called more than once (if bad_data_handler
-        # calls it).
-        self.reject_callback.assert_called_once_with()
-
-
-    def test_on_message_bad_data_handler_throws(self):
-        self.decoder.side_effect = RuntimeError
-        self.bad_data_handler.side_effect = RuntimeError
-
-        self.qm.on_message(self.properties, self.body,
-                self.ack_callback, self.reject_callback)
-
-        self.decoder.assert_called_once_with(self.body)
-        self.bad_data_handler.assert_called_once_with(self.properties,
-                self.body, self.ack_callback, self.reject_callback)
-        self.reject_callback.assert_called_once_with()
-
-
     def test_on_message_handler_throws(self):
         self.message_handler.side_effect = RuntimeError
 
         self.qm.on_message(self.properties, self.body,
                 self.ack_callback, self.reject_callback)
 
-        self.decoder.assert_called_once_with(self.body)
         self.message_handler.assert_called_once_with(self.properties,
-                self.decoded_message, self.ack_callback, self.reject_callback)
+                self.body, self.ack_callback, self.reject_callback)
         self.reject_callback.assert_called_once_with()
 
     def test_on_message_normal(self):
         self.qm.on_message(self.properties, self.body,
                 self.ack_callback, self.reject_callback)
-        self.decoder.assert_called_once_with(self.body)
         self.message_handler.assert_called_once_with(self.properties,
-                self.decoded_message, self.ack_callback, self.reject_callback)
+                self.body, self.ack_callback, self.reject_callback)
 
 
 if '__main__' == __name__:

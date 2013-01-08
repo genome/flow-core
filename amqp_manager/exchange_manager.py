@@ -1,4 +1,3 @@
-import json
 import logging
 
 from delegate_base import Delegate
@@ -6,23 +5,22 @@ from delegate_base import Delegate
 LOG = logging.getLogger(__name__)
 
 class ExchangeManager(Delegate):
-    def __init__(self, exchange_name, encoder=json.dumps,
-            exchange_type='topic', durable=True, **exchange_declare_arguments):
+    def __init__(self, exchange_name, exchange_type='topic', durable=True,
+            persistent=None, basic_publish_properties={},
+            **exchange_declare_arguments):
         Delegate.__init__(self)
         self.exchange_name = exchange_name
         self.exchange_type = exchange_type
         self.durable = durable
+        self.persistent = persistent
 
-        self.encoder = encoder
         self._ed_arguments = exchange_declare_arguments
+        self._bp_properties = basic_publish_properties
 
-    def publish(self, routing_key, unencoded_message,
-            **basic_publish_properties):
-        encoded_message = self.encoder(unencoded_message)
-
+    def publish(self, routing_key=None, message=None):
         self._channel_manager.publish(exchange_name=self.exchange_name,
-                routing_key=routing_key, message=encoded_message,
-                **basic_publish_properties)
+                routing_key=routing_key, message=message,
+                persistent=self.persistent, **self._bp_properties)
 
     def on_channel_open(self, channel_manager):
         self._channel_manager = channel_manager

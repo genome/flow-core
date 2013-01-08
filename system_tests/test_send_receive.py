@@ -11,7 +11,7 @@ import os
 import logging
 
 if os.getenv('LOG_TESTS'):
-    from amqp_service import log_formatter
+    from flow.util import log_formatter
 
     PIKA_LOG_LEVEL = logging.INFO
     LOG_LEVEL = logging.DEBUG
@@ -44,9 +44,6 @@ class MockProcess(object):
         LOG.info('Going to shut down.')
         self.cm.stop()
 
-    def bad_data_handler(self, ack_callback, reject_callback):
-        reject_callback()
-
     def set_queue_name(self, queue_manager):
         self.queue_name = queue_manager.queue_name
 
@@ -66,8 +63,7 @@ class SystemTest(unittest.TestCase):
 
         self.qm = queue_manager.QueueManager(self.queue_name,
                 durable=False, auto_delete=True,
-                message_handler=self.process.message_handler,
-                bad_data_handler=self.process.bad_data_handler)
+                message_handler=self.process.message_handler)
         self.qm.add_ready_callback(self.process.set_queue_name)
 
     def test_basic_channel_manager(self):

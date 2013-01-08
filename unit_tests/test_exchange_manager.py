@@ -46,13 +46,12 @@ class ExchangeManagerSetupTest(unittest.TestCase):
 
 class ExchangeManagerPublishTest(unittest.TestCase):
     def setUp(self):
-        self.encoder = mock.Mock()
-        self.encoded_message = mock.Mock()
-        self.encoder.return_value = self.encoded_message
-
         self.exchange_name = mock.Mock()
+        self.basic_publish_properties = {'passthru': mock.Mock()}
+        self.persistent = mock.Mock()
         self.em = exchange_manager.ExchangeManager(self.exchange_name,
-                encoder=self.encoder)
+                basic_publish_properties=self.basic_publish_properties,
+                persistent=self.persistent)
 
         self.channel_manager = mock.Mock()
         self.channel_manager.publish = mock.Mock()
@@ -61,27 +60,17 @@ class ExchangeManagerPublishTest(unittest.TestCase):
 
         self.success_callback = mock.Mock()
         self.failure_callback = mock.Mock()
-        self.basic_publish_properties = {'passthru': mock.Mock()}
 
         self.routing_key = mock.Mock()
         self.unencoded_message = mock.Mock()
 
     def test_publish_normal(self):
-        self.em.publish(self.routing_key, self.unencoded_message,
-                **self.basic_publish_properties)
+        self.em.publish(self.routing_key, self.unencoded_message)
 
-        self.encoder.assert_called_once_with(self.unencoded_message)
         self.em._channel_manager.publish.assert_called_once_with(
-                exchange_name=self.exchange_name,
-                routing_key=self.routing_key, message=self.encoded_message,
+                exchange_name=self.exchange_name, persistent=self.persistent,
+                routing_key=self.routing_key, message=self.unencoded_message,
                 **self.basic_publish_properties)
-
-    def test_publish_encode_throws(self):
-        self.encoder.side_effect = RuntimeError
-        self.assertRaises(RuntimeError, self.em.publish,
-                self.routing_key, self.unencoded_message,
-                **self.basic_publish_properties)
-        self.encoder.assert_called_once_with(self.unencoded_message)
 
 
 if '__main__' == __name__:
