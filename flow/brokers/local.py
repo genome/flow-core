@@ -1,44 +1,32 @@
 import logging
-from collections import deque
+from collections import deque, defaultdict
 
 LOG = logging.getLogger(__name__)
 
-class SingletonMeta(type):
-    def __init__(cls, name, bases, dict):
-        super(SingletonMeta, cls).__init__(name, bases, dict)
-        cls._instance = None
 
-    def __call__(cls,*args,**kw):
-        if cls._instance is None:
-            cls._instance = super(SingletonMeta, cls).__call__(*args, **kw)
-        return cls._instance
+class LocalBroker(object):
+    def __init__(self):
+        self.queue = deque()
+        self.bindings = defaultdict(list)
+        self.handlers = defaultdict(list)
 
+    def register_handler(self, queue_name, handler):
+        self.handlers[queue_name].append(handler)
 
-_QUEUE = deque()
-
-class Broker(object):
-    __metaclass__ = SingletonMeta
+    def register_binding(self, routing_key, queue_name):
+        self.bindings[routing_key].append(queue_name)
 
     def publish(self, routing_key, message):
-        _QUEUE.append((routing_key, message))
-        listener = Listener()
-        listener.listen()
-
-class Listener(object):
-    __metaclass__ = SingletonMeta
-
-    def __init__(self, routing_dictionary):
-        self.routing_dictionary = routing_dictionary
+        self.queue.append((routing_key, message))
 
     def listen(self):
-        routing_key, message = _QUEUE.popleft()
+        while len(self.queue):
+            routing_key, message = self.queue.popleft()
+            queues = self.bindings[routing_key]
+            for q in queues:
+                for h in self.handlers[q]:
+                    # XXX I like passing the broker into handlers...
+#                    h(message, self)
+                    h(message)
 
-        for handler in self.routing_dictionary[routing_key]:
-            try:
-                handler(message)
-            except:
-                LOG.exception('Handler (%s) raised exception on message: %s',
-                        handler, message)
-        else:
-            LOG.warning('No handlers found for routing key (%s) message: %s',
-                    routing_key, message)
+        LOG.info('No messages remain in queue.')
