@@ -8,10 +8,10 @@ class LocalBroker(object):
     def __init__(self):
         self.queue = deque()
         self.bindings = defaultdict(list)
-        self.handlers = defaultdict(list)
+        self.handlers = {}
 
     def register_handler(self, queue_name, handler):
-        self.handlers[queue_name].append(handler)
+        self.handlers[queue_name] = handler
 
     def register_binding(self, routing_key, queue_name):
         self.bindings[routing_key].append(queue_name)
@@ -20,13 +20,17 @@ class LocalBroker(object):
         self.queue.append((routing_key, message))
 
     def listen(self):
-        while len(self.queue):
+        while self.queue:
             routing_key, message = self.queue.popleft()
+            LOG.debug('got message on rk %s: %s', routing_key, message)
             queues = self.bindings[routing_key]
             for q in queues:
-                for h in self.handlers[q]:
+                try:
+                    h = self.handlers[q]
                     # XXX I like passing the broker into handlers...
 #                    h(message, self)
                     h(message)
-
-        LOG.info('No messages remain in queue.')
+                except KeyError:
+                    pass
+        else:
+            LOG.warning('No messages found in queue.')

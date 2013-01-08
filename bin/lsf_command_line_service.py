@@ -9,7 +9,6 @@ from flow_command_runner.handler import CommandLineSubmitMessageHandler
 import flow.brokers.amqp
 
 from flow import configuration
-import amqp_manager
 
 
 LOG = logging.getLogger()

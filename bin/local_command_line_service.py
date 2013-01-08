@@ -8,7 +8,6 @@ from flow_command_runner.handler import CommandLineSubmitMessageHandler
 import flow.brokers.amqp
 
 from flow import configuration
-import amqp_manager
 
 LOG = logging.getLogger()
 
@@ -18,6 +17,7 @@ if '__main__' == __name__:
 
     broker = flow.brokers.amqp.AmqpBroker()
 
+    broker.register_binding('my.rk', 'subprocess_submit')
     executor = local.SubprocessExecutor()
     handler = CommandLineSubmitMessageHandler(executor=executor, broker=broker)
     broker.register_handler('subprocess_submit', handler)

@@ -11,6 +11,8 @@ loggers:
         level: INFO
     amqp_manager:
         level: INFO
+    flow:
+        level: INFO
 
 handlers:
     console:
