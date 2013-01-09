@@ -4,7 +4,8 @@ from redisom import *
 import subprocess
 
 
-__all__ = ['Node', 'Flow', 'NodeFailedError']
+__all__ = ['NodeBase', 'Flow', 'NodeFailedError', 'NodeAlreadyCompletedError',
+           'Status']
 
 
 class Status(object):
