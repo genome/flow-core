@@ -6,6 +6,7 @@ import subprocess
 
 __all__ = ['Node', 'Flow', 'NodeFailedError']
 
+
 class Status(object):
     new = "new"
     dispatched = "dispatched"
@@ -32,17 +33,14 @@ class NodeAlreadyCompletedError(RuntimeError):
         RuntimeError.__init__(self, "Node %s already completed!" %node_key)
 
 
-class Node(Storable):
+class NodeBase(RedisObject):
     flow_key = RedisScalar
     indegree = RedisScalar
     name = RedisScalar
-    log_dir = RedisScalar
     status = RedisScalar
     completed = RedisScalar
 
     successors = RedisSet
-    input_connections = RedisHash
-    outputs = RedisHash
 
     @property
     def flow(self):
@@ -51,22 +49,17 @@ class Node(Storable):
     def execute(self, context):
         raise RuntimeError("execute not implemented in %s"
                            %self.__class__.__name__)
-    def complete(self):
-        ready_nodes = []
+    def complete(self, services):
         if self.completed.setnx(1):
             for succ_idx in self.successors:
                 node = self.flow.node(succ_idx)
                 if node.indegree.increment(-1) == 0:
-                    ready_nodes.append(node)
+                    node.execute(services)
         else:
             raise NodeAlreadyCompletedError(self.key)
 
-        return ready_nodes
 
-
-class Flow(Storable):
-    name = RedisScalar
-    status = RedisScalar
+class Flow(NodeBase):
     node_keys = RedisList
     environment = RedisHash
     user_id = RedisScalar

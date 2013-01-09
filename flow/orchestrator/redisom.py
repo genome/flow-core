@@ -245,7 +245,7 @@ class RedisObject(object):
         obj = cls(connection, key)
         obj._class_info.update({"module": cls.__module__,
                                 "class": cls.__name__})
-       
+
         for k, v in kwargs.iteritems():
             if k not in obj._redis_properties:
                 raise AttributeError("Unknown attribute %s" % k)
