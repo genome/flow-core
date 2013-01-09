@@ -24,7 +24,7 @@ class Status(object):
 class NodeFailedError(RuntimeError):
     def __init__(self, node_key, msg):
         self.node_key = node_key
-        RuntimeError.__init__(self, "Node %s failed: %s" %(node_key, msg)
+        RuntimeError.__init__(self, "Node %s failed: %s" %(node_key, msg))
 
 
 class NodeAlreadyCompletedError(RuntimeError):
