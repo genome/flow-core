@@ -4,7 +4,7 @@ from flow.protocol import exceptions
 
 class CommandLineSubmitMessage(Message):
     required_fields = {
-            'return_identifier': str,
+            'return_identifier': object,
             'command_line': list,
 
             'success_routing_key': str,
