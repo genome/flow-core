@@ -19,14 +19,14 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
 
         self.message = mock.Mock()
         self.message.command_line = mock.Mock()
-        self.message.success_routing_key = mock.Mock()
-        self.message.failure_routing_key = mock.Mock()
-        self.message.error_routing_key = mock.Mock()
+        self.message.success_routing_key = 'succes_key'
+        self.message.failure_routing_key = 'failure_key'
+        self.message.error_routing_key = 'error_key'
         self.message.executor_options = {'passthru': True}
 
 
     def test_message_handler_executor_success(self):
-        executor_result = mock.Mock()
+        executor_result = 'my_job_id'
         self.executor.return_value = (True, executor_result)
         self.handler.message_handler(self.message)
         self.executor.assert_called_once_with(self.message.command_line,

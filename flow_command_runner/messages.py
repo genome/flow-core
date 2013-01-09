@@ -7,14 +7,14 @@ class CommandLineSubmitMessage(Message):
             'return_identifier': object,
             'command_line': list,
 
-            'success_routing_key': str,
-            'failure_routing_key': str,
-            'error_routing_key': str,
+            'success_routing_key': basestring,
+            'failure_routing_key': basestring,
+            'error_routing_key': basestring,
     }
 
     optional_fields = {
             'executor_options': dict,
-            'status': str,
+            'status': basestring,
     }
 
     def validate(self):
@@ -32,10 +32,10 @@ class CommandLineSubmitMessage(Message):
 
 class CommandLineResponseMessage(Message):
     required_fields = {
-            'return_identifier': str,
-            'status': str,
+            'return_identifier': object,
+            'status': basestring,
     }
     optional_fields = {
-            'job_id': str,
-            'error_message': str,
+            'job_id': basestring,
+            'error_message': basestring,
     }

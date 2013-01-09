@@ -11,7 +11,13 @@ class Message(object):
         try:
             for name, type_ in self.required_fields.iteritems():
                 value = kwargs.pop(name)
-                setattr(self, name, type_(value))
+                if isinstance(value, type_):
+                    setattr(self, name, value)
+                else:
+                    raise exceptions.InvalidMessageException(
+                            'Message (%s) requires %s have type (%s)' %
+                            (self.__class__.__name__, name, type_))
+
         except KeyError:
             raise exceptions.InvalidMessageException(
                     'Required field %s is missing' % name)
@@ -19,7 +25,12 @@ class Message(object):
         for name, type_ in self.optional_fields.iteritems():
             value = kwargs.pop(name, None)
             if value is not None:
-                setattr(self, name, type_(value))
+                if isinstance(value, type_):
+                    setattr(self, name, value)
+                else:
+                    raise exceptions.InvalidMessageException(
+                            'Message (%s) requires %s have type (%s)' %
+                            (self.__class__.__name__, name, type_))
 
         if kwargs:
             raise exceptions.InvalidMessageException(
