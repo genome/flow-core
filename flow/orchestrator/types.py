@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 from redisom import *
-import subprocess
-
 
 __all__ = ['NodeBase', 'Flow', 'NodeFailedError', 'NodeAlreadyCompletedError',
            'Status']
