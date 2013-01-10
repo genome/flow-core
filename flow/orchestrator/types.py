@@ -45,6 +45,48 @@ class NodeBase(RedisObject):
     outputs = RedisHash
 
     @property
+    def environment(self):
+        local_proxy = getattr(self, 'hidden_environment', None)
+        if local_proxy.value:
+            return local_proxy
+
+        if self.flow:
+            return self.flow.environment
+
+    @environment.setter
+    def environment(self, value):
+        self.hidden_environment.value = value
+
+
+    @property
+    def working_directory(self):
+        local_proxy = getattr(self, 'hidden_working_directory', None)
+        if local_proxy.value:
+            return local_proxy
+
+        if self.flow:
+            return self.flow.working_directory
+
+    @working_directory.setter
+    def working_directory(self, value):
+        self.hidden_working_directory.value = value
+
+
+    @property
+    def user_id(self):
+        local_proxy = getattr(self, 'hidden_user_id', None)
+        if local_proxy.value:
+            return local_proxy
+
+        if self.flow:
+            return self.flow.user_id
+
+    @user_id.setter
+    def user_id(self, value):
+        self.hidden_user_id.value = value
+
+
+    @property
     def inputs(self):
         try:
             inp_conn = self.input_connections
@@ -130,9 +172,9 @@ class StopNode(NodeBase):
 
 class Flow(NodeBase):
     node_keys = RedisList
-    environment = RedisHash
-    user_id = RedisScalar
-    working_directory = RedisScalar
+    hidden_environment = RedisHash
+    hidden_user_id = RedisScalar
+    hidden_working_directory = RedisScalar
 
     def node(self, idx):
         key = self.node_keys[idx]
