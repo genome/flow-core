@@ -17,7 +17,6 @@ if '__main__' == __name__:
 
     broker = flow.brokers.amqp.AmqpBroker()
 
-    broker.register_binding('my.rk', 'subprocess_submit')
     executor = local.SubprocessExecutor()
     handler = CommandLineSubmitMessageHandler(executor=executor, broker=broker)
     broker.register_handler('subprocess_submit', handler)

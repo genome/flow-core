@@ -4,7 +4,7 @@ import logging
 
 import redis
 import flow.brokers.amqp
-from flow.orchestrator.handlers import MethodDescriptorHandler
+from flow.orchestrator.handlers import MethodDescriptorHandler, ExecuteNodeHandler
 from flow_command_runner.client import CommandLineClient
 
 from flow import configuration
@@ -14,10 +14,8 @@ LOG = logging.getLogger()
 EXECUTE_WRAPPER = []
 SHORTCUT_WRAPPER = []
 CALLBACK_QUEUES = {
-        'on_shortcut_success': 'workflow_shortcut_success',
-        'on_shortcut_failure': 'workflow_shortcut_failure',
-        'on_execute_success': 'workflow_execute_success',
-        'on_execute_failure': 'workflow_execute_failure',
+        'on_success': 'workflow_success',
+        'on_failure': 'workflow_failure',
 }
 
 if '__main__' == __name__:
@@ -28,24 +26,24 @@ if '__main__' == __name__:
 
     shortcut_service = CommandLineClient(broker,
             submit_routing_key='genome.shortcut.submit',
-            submit_success_routing_key='genome.shortcut.success',
-            submit_failure_routing_key='genome.shortcut.failure',
-            submit_error_routing_key='genome.shortcut.error',
+            success_routing_key='genome.shortcut.success',
+            failure_routing_key='genome.shortcut.failure',
+            error_routing_key='genome.shortcut.error',
             wrapper=SHORTCUT_WRAPPER)
 
     execute_service = CommandLineClient(broker,
             submit_routing_key='genome.execute.submit',
-            submit_success_routing_key='genome.execute.success',
-            submit_failure_routing_key='genome.execute.failure',
-            submit_error_routing_key='genome.execute.error',
+            success_routing_key='genome.execute.success',
+            failure_routing_key='genome.execute.failure',
+            error_routing_key='genome.execute.error',
             wrapper=EXECUTE_WRAPPER)
 
     services = {
-            'shortcut': shortcut_service,
-            'execute': execute_service,
+            'genome_shortcut': shortcut_service,
+            'genome_execute': execute_service,
     }
 
-    redis_connection = redis.StrictRedis(host='vmpool83')
+    redis_connection = redis.StrictRedis(host='linus129')
     for callback_name, queue_name in CALLBACK_QUEUES.iteritems():
         handler = MethodDescriptorHandler(redis=redis_connection,
                 services=services, callback_name=callback_name)

@@ -15,5 +15,5 @@ class FlowSubmitMessage(Message):
 
 class ExecuteNodeMessage(Message):
     required_fields = {
-            'node_key': str,
+            'node_key': basestring,
     }

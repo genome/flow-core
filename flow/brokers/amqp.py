@@ -1,5 +1,6 @@
 import logging
 from flow.protocol import codec
+from flow.protocol.exceptions import InvalidMessageException
 
 import amqp_manager
 import os
@@ -54,14 +55,13 @@ class AmqpListener(object):
             ack_callback, reject_callback):
         try:
             message = codec.decode(encoded_message)
-        except InvalidMessageError as e:
+
+            self.delivery_callback(message)
+            ack_callback()
+        except InvalidMessageException as e:
             LOG.exception('Invalid message.  Properties = %s, message = %s',
                     properties, encoded_message)
             reject_callback()
-
-        try:
-            self.delivery_callback(message)
-            ack_callback()
         except:
             LOG.exception('Unexpected error handling message.')
             reject_callback()

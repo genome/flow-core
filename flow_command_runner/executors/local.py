@@ -29,6 +29,8 @@ class SubprocessExecutor(object):
                 else:
                     stderr_fh = None
 
+                LOG.debug('working_directory = %s', working_directory)
+                LOG.debug('PATH = %s', os.getenv('PATH'))
                 exit_code = subprocess.call(map(str, command_line),
                         stdout=stdout_fh, stderr=stderr_fh,
                         cwd=working_directory)

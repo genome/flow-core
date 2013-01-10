@@ -6,15 +6,15 @@ LOG = logging.getLogger(__name__)
 class CommandLineClient(object):
     def __init__(self, broker,
             submit_routing_key=None,
-            submit_success_routing_key=None,
-            submit_failure_routing_key=None,
-            submit_error_routing_key=None,
+            success_routing_key=None,
+            failure_routing_key=None,
+            error_routing_key=None,
             wrapper=[]):
         self.broker                     = broker
         self.submit_routing_key         = submit_routing_key
-        self.submit_success_routing_key = submit_success_routing_key
-        self.submit_failure_routing_key = submit_failure_routing_key
-        self.submit_error_routing_key   = submit_error_routing_key
+        self.success_routing_key = success_routing_key
+        self.failure_routing_key = failure_routing_key
+        self.error_routing_key   = error_routing_key
         self.wrapper                    = wrapper
 
     def submit(self, command_line, return_identifier=None, **executor_options):

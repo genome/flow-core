@@ -34,5 +34,6 @@ class ExecuteNodeHandler(object):
         self.services = services
 
     def __call__(self, message):
-        node = redisom.get_object(self.redis, message.node_key)
-        node.excute(self.services)
+        print message.node_key
+        node = get_object(self.redis, message.node_key)
+        node.execute(self.services)

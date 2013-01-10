@@ -8,8 +8,10 @@ class CommandLineSubmitMessageHandler(object):
         self.executor = executor
         self.broker = broker
 
-    def message_handler(self, message):
+    def __call__(self, message):
+        LOG.debug('CommandLineSubmitMessageHandler got message')
         executor_options = getattr(message, 'executor_options', {})
+
         try:
             success, executor_result = self.executor(message.command_line,
                     **executor_options)
@@ -17,7 +19,7 @@ class CommandLineSubmitMessageHandler(object):
             if success:
                 response_routing_key = message.success_routing_key
                 response_message = CommandLineResponseMessage(
-                        status='success', job_id=executor_result,
+                        status='success', job_id=str(executor_result),
                         return_identifier=message.return_identifier)
 
             else:
