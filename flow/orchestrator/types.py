@@ -63,7 +63,7 @@ class NodeBase(RedisObject):
                 rv.update(zip(props.keys(), map(json.loads, vals)))
             else:
                 rv.update(dict((k, json.loads(v))
-                          for k, v in outputs.iteritems))
+                          for k, v in outputs.iteritems()))
 
         return rv
 
