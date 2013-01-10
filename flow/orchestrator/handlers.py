@@ -1,6 +1,6 @@
 import logging
 
-from flow.orchestrator.redisom import invoke_instance_method
+from flow.orchestrator.redisom import get_object, invoke_instance_method
 
 LOG = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ class MethodDescriptorHandler(object):
         self.callback_name = callback_name
 
 
-    def message_handler(self, message):
+    def __call__(self, message):
         try:
             method_descriptor = message.return_identifier[self.callback_name]
         except KeyError:
@@ -27,3 +27,12 @@ class MethodDescriptorHandler(object):
             LOG.error('Handler (%s) failed to execute method descriptor: %s',
                     self, method_descriptor)
             raise
+
+class ExecuteNodeHandler(object):
+    def __init__(self, redis=None, services=None):
+        self.redis = redis
+        self.services = services
+
+    def __call__(self, message):
+        node = redisom.get_object(self.redis, message.node_key)
+        node.excute(self.services)

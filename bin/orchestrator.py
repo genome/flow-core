@@ -51,4 +51,8 @@ if '__main__' == __name__:
                 services=services, callback_name=callback_name)
         broker.register_handler(queue_name, handler)
 
+    execute_handler = ExecuteNodeHandler(
+            redis=redis_connection, services=services)
+    broker.register_handler('flow_execute_node', execute_handler)
+
     broker.listen()
