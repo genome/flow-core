@@ -18,9 +18,6 @@ CALLBACK_QUEUES = {
         'on_shortcut_failure': 'workflow_shortcut_failure',
         'on_execute_success': 'workflow_execute_success',
         'on_execute_failure': 'workflow_execute_failure',
-
-        # Maybe?
-        'on_execute_job_id': 'workflow_execute_job_id',
 }
 
 if '__main__' == __name__:
@@ -48,7 +45,7 @@ if '__main__' == __name__:
             'execute': execute_service,
     }
 
-    redis_connection = redis.StrictRedis(host='vmpool84')
+    redis_connection = redis.StrictRedis(host='vmpool83')
     for callback_name, queue_name in CALLBACK_QUEUES.iteritems():
         handler = MethodDescriptorHandler(redis=redis_connection,
                 services=services, callback_name=callback_name)
