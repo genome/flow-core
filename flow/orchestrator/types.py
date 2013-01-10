@@ -57,11 +57,14 @@ class NodeBase(RedisObject):
         for idx, mapping_str in inp_conn.iteritems():
             idx = int(idx)
             props = json.loads(mapping_str)
+            outputs = self.flow.node(idx).outputs
             if props:
-                vals = self.flow.node(idx).outputs.values(props.values())
-                rv.update(zip(props.keys(), vals))
+                vals = outputs.values(props.values())
+                rv.update(zip(props.keys(), map(json.loads, vals)))
             else:
-                rv.update(self.flow.node(idx).outputs.value)
+                rv.update(dict((k, json.loads(v))
+                          for k, v in outputs.iteritems))
+
         return rv
 
     @property
