@@ -126,7 +126,11 @@ class RedisSet(RedisValue):
         return self.connection.sadd(self.key, *vals)
 
     def remove(self, val):
-        return self.connection.srem(self.key, val)
+        pipe = self.connection.pipeline()
+        pipe.srem(self.key, val)
+        pipe.scard(self.key)
+        removed, size = pipe.execute()
+        return removed, size
 
     def __iter__(self):
         return self.value.__iter__()
@@ -178,8 +182,11 @@ class RedisHash(RedisValue):
     def keys(self):
         return self.connection.hkeys(self.key)
 
-    def values(self):
-        return self.connection.hvals(self.key)
+    def values(self, keys=None):
+        if keys == None:
+            return self.connection.hvals(self.key)
+        else:
+            return self.connection.hmget(self.key, keys)
 
     def update(self, mapping):
         if len(mapping) == 0:
@@ -263,7 +270,8 @@ class RedisObject(object):
     def __init__(self, connection, key):
         self._connection = connection
         if key == None:
-            key = _make_key("/" + self.__class__.__name__, uuid4().hex)
+            key = _make_key("/" + self.__module__, self.__class__.__name__,
+                            uuid4().hex)
         self.key = key
         self._class_info = RedisHash(connection, self.key)
 
@@ -293,8 +301,8 @@ def get_object(redis, key):
 
 
 def invoke_instance_method(connection, method_descriptor, **kwargs):
-    obj = get_object(connection, method_descriptor["object_key"])
-    method = getattr(obj, method_descriptor["method_name"], None)
+    obj = get_object(connection, method_descriptor['object_key'])
+    method = getattr(obj, method_descriptor['method_name'], None)
     if method == None:
         raise AttributeError("Invalid method for class %s: %s"
                              % (obj.__class__.__name__,

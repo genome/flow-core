@@ -46,7 +46,7 @@ class TestRedisScalar(RedisOmTest):
         x.value = 8
         self.assertEqual(16, x.increment(8))
         self.assertEqual(2, x.increment(-14))
-        
+
 
 class TestRedisList(RedisOmTest):
     def test_value(self):
@@ -63,10 +63,13 @@ class TestRedisList(RedisOmTest):
 
     def test_append(self):
         l = rom.RedisList(self.conn, "l")
-        l.append("a")
+        size = l.append("a")
         self.assertEqual(["a"], l.value)
-        l.append("b")
+        self.assertEqual(1, size)
+
+        size = l.append("b")
         self.assertEqual(["a", "b"], l.value)
+        self.assertEqual(2, size)
 
     def test_extend(self):
         l = rom.RedisList(self.conn, "l")
@@ -107,7 +110,7 @@ class TestRedisList(RedisOmTest):
         l.value = ["a", "b", "c"]
         seen = [x for x in l]
         self.assertEqual(["a", "b", "c"], l.value)
-        
+
 
 class TestRedisSet(RedisOmTest):
     def test_value(self):
@@ -141,10 +144,10 @@ class TestRedisSet(RedisOmTest):
     def test_remove(self):
         s = rom.RedisSet(self.conn, "s")
         s.value = ["one", "two"]
-        self.assertEqual(1, s.remove("two"))
-        self.assertEqual(0, s.remove("two"))
+        self.assertEqual((True, 1), s.remove("two"))
+        self.assertEqual((False, 1), s.remove("two"))
         self.assertEqual(set(["one"]), s.value)
-        self.assertEqual(1, s.remove("one"))
+        self.assertEqual((True, 0), s.remove("one"))
         self.assertEqual(set(), s.value)
 
     def test_len(self):
@@ -196,8 +199,8 @@ class TestRedisHash(RedisOmTest):
         self.assertEqual({"X": "Y"}, h.value)
         del h["X"]
         self.assertEqual({}, h.value)
-    
-    
+
+
     def test_len(self):
         h = rom.RedisHash(self.conn, "h")
         self.assertEqual(0, len(h))
@@ -232,6 +235,14 @@ class TestRedisHash(RedisOmTest):
 
 
 class TestRedisObject(RedisOmTest):
+    def test_keygen(self):
+        obj = SimpleObj.create(self.conn)
+        components = obj.key.split("/")
+        self.assertEqual(4, len(components))
+        self.assertEqual('', components[0])
+        self.assertEqual(obj.__module__, components[1])
+        self.assertEqual(obj.__class__.__name__, components[2])
+
     def test_get_object(self):
         obj = SimpleObj.create(self.conn, "x", ascalar="hi")
         obj_ref = rom.get_object(self.conn, obj.key)
@@ -253,7 +264,7 @@ class TestRedisObject(RedisOmTest):
         self.assertRaises(AttributeError, obj.method_descriptor, "fake")
         method_descriptor = obj.method_descriptor("a_method")
         method_descriptor["method_name"] = "fake"
-        self.assertRaises(AttributeError, rom.invoke_instance_method, 
+        self.assertRaises(AttributeError, rom.invoke_instance_method,
                           self.conn, method_descriptor)
 
     def test_get_object_nexist(self):
@@ -294,7 +305,7 @@ class TestRedisObject(RedisOmTest):
         self.assertEqual(['5', '4', '3'], obj.alist.value)
         self.assertEqual(set(['x', 'y', 'z']), obj.aset.value)
 
-        
+
     def test_create_invalid_prop(self):
         self.assertRaises(AttributeError, SimpleObj.create, self.conn, "x",
                           badprop="bad")
