@@ -6,13 +6,39 @@ LOG = logging.getLogger(__name__)
 
 class OrchestratorNodeHandler(object):
     def __init__(self, redis=None, services=None, callback_name=None):
-        assert(callback_name in
-                set(['on_ready', 'on_start', 'on_success', 'on_failure']))
         self.redis = redis
         self.services = services
         self.callback_name = callback_name
 
+
     def message_handler(self, message):
-        node = get_object(self.redis, message.return_identifier)
-        callback = getattr(node, self.callback_name)
-        callback(self.services)
+        # Exceptions need to be propagated back up one level
+        try:
+            node = get_object(self.redis, message.return_identifier)
+        except:
+            try:
+                LOG.exception('Failed to get node from return_identifier:',
+                        message.return_identifier)
+            except AttributeError:
+                LOG.exception(
+                        'Failed to get node from return_identifier (unknown)')
+            finally:
+                raise
+
+        try:
+            callback = getattr(node, self.callback_name)
+        except AttributeError:
+            LOG.exception('Failed to get node callback')
+            raise
+
+        try:
+            callback(self.services, **message.to_dict())
+        except NodeAlreadyCompletedError:
+            LOG.exception('%s got node already completed error',
+                    self.__class__.__name__)
+        except NodeAlreadyExecutedError:
+            LOG.exception('%s got node already executed error',
+                    self.__class__.__name__)
+        except RuntimeError:
+            LOG.exception('Failed to execute node callback')
+            raise
