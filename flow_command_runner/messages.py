@@ -33,9 +33,10 @@ class CommandLineSubmitMessage(Message):
 class CommandLineResponseMessage(Message):
     required_fields = {
             'return_identifier': object,
-            'status': basestring,
     }
     optional_fields = {
+            'exit_code': int,
+            'status': basestring,
             'job_id': basestring,
             'error_message': basestring,
     }
