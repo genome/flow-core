@@ -20,7 +20,8 @@ class MethodDescriptorHandler(object):
             raise
 
         try:
-            invoke_instance_method(method_descriptor)
+            invoke_instance_method(self.redis, method_descriptor,
+                    services=self.services)
 
         except:
             LOG.error('Handler (%s) failed to execute method descriptor: %s',
