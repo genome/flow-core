@@ -4,7 +4,7 @@ import logging
 
 import redis
 import flow.brokers.amqp
-from flow.orchestrator.handlers import MethodDescriptorHandler, ExecuteNodeHandler
+from flow.orchestrator.handlers import *
 from flow_command_runner.client import CommandLineClient
 
 from flow import configuration
@@ -52,5 +52,8 @@ if '__main__' == __name__:
     execute_handler = ExecuteNodeHandler(
             redis=redis_connection, services=services)
     broker.register_handler('flow_execute_node', execute_handler)
+
+    status_handler = NodeStatusRequestHandler(broker, redis=redis_connection)
+    broker.register_handler('flow_status_request', status_handler)
 
     broker.listen()

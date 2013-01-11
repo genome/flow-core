@@ -1,6 +1,9 @@
 import logging
+import time
 
 from flow.orchestrator.redisom import get_object, invoke_instance_method
+
+from flow.orchestrator.messages import NodeStatusRequestMessage, NodeStatusResponseMessage
 
 LOG = logging.getLogger(__name__)
 
@@ -37,3 +40,47 @@ class ExecuteNodeHandler(object):
         print message.node_key
         node = get_object(self.redis, message.node_key)
         node.execute(self.services)
+
+
+class NodeStatusRequestHandler(object):
+    def __init__(self, broker, redis=None):
+        self.broker = broker
+        self.redis = redis
+
+    def __call__(self, message):
+        response_message = NodeStatusResponseMessage(
+                node_key=message.node_key, status='unknown node')
+        try:
+            node = get_object(self.redis, message.node_key)
+            if node:
+                response_message.status = node.status
+        except:
+            LOG.warning('Status requested for unknown node (%s)',
+                    message.node_key)
+
+        self.broker.publish(message.response_routing_key, response_message)
+
+
+class NodeStatusResponseHandler(object):
+    def __init__(self, broker, polling_interval=5, node_key=None,
+            request_routing_key=None, response_routing_key=None):
+        self.broker = broker
+        self.polling_interval = polling_interval
+        self.node_key = node_key
+        self.request_routing_key = request_routing_key
+        self.response_routing_key = response_routing_key
+
+    def __call__(self, message):
+        status = message.status
+        if status == 'success':
+            self.broker.exit(0)
+        elif status == 'failure':
+            self.broker.exit(1)
+        else:
+            time.sleep(self.polling_interval)
+            self.send_request()
+
+    def send_request(self):
+        request_message = NodeStatusRequestMessage(node_key=self.node_key,
+                response_routing_key=self.response_routing_key)
+        self.broker.publish(self.request_routing_key, request_message)

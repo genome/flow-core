@@ -17,3 +17,15 @@ class ExecuteNodeMessage(Message):
     required_fields = {
             'node_key': basestring,
     }
+
+class NodeStatusRequestMessage(Message):
+    required_fields = {
+            'node_key': basestring,
+            'response_routing_key': basestring,
+    }
+
+class NodeStatusResponseMessage(Message):
+    required_fields = {
+            'node_key': basestring,
+            'status': basestring,
+    }

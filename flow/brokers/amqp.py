@@ -21,6 +21,11 @@ class AmqpBroker(object):
 
         self.queue_managers = []
 
+        self.ready = False
+        self._on_ready_publishes = []
+
+        self.exit_code = 0
+
     def register_handler(self, queue_name, handler):
         listener = AmqpListener(delivery_callback=handler)
 
@@ -33,18 +38,32 @@ class AmqpBroker(object):
         pass
 
     def publish(self, routing_key, message):
-        encoded_message = codec.encode(message)
-        self.exchange_manager.publish(routing_key=routing_key,
-                message=encoded_message)
+        if self.ready:
+            encoded_message = codec.encode(message)
+            self.exchange_manager.publish(routing_key=routing_key,
+                    message=encoded_message)
+        else:
+            self._on_ready_publishes.append((routing_key, message))
 
     def listen(self):
+        self.ready = True
+
         delegates = [self.exchange_manager]
         delegates.extend(self.queue_managers)
         channel_manager = amqp_manager.ChannelManager(delegates=delegates)
-        connection_manager = amqp_manager.ConnectionManager(
+        self.connection_manager = amqp_manager.ConnectionManager(
                 self.amqp_url, delegates=[channel_manager])
 
-        connection_manager.start()
+        for routing_key, message in self._on_ready_publishes:
+            self.connection_manager.add_ready_callback(
+                    lambda x: self.publish(routing_key, message))
+
+        self.connection_manager.start()
+        return self.exit_code
+
+    def exit(self, exit_code):
+        self.exit_code = exit_code
+        self.connection_manager.stop()
 
 
 class AmqpListener(object):

@@ -8,6 +8,8 @@ entry_points = '''
 submit_command = flow_command_runner.messages:CommandLineSubmitMessage
 command_result = flow_command_runner.messages:CommandLineResponseMessage
 execute_node = flow.orchestrator.messages:ExecuteNodeMessage
+status_request = flow.orchestrator.messages:NodeStatusRequestMessage
+status_response = flow.orchestrator.messages:NodeStatusResponseMessage
 '''
 
 setup(
