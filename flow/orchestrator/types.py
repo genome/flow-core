@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import redisom as rom
+import time
 
 __all__ = ['NodeBase', 'Flow', 'NodeFailedError', 'NodeAlreadyCompletedError',
            'Status', 'StartNode', 'StopNode']
@@ -51,10 +52,18 @@ class NodeBase(rom.Object):
     outputs = rom.Property(rom.Hash, value_decoder=rom.json_dec,
                            value_encoder=rom.json_enc)
 
+    @property
     def duration(self):
-        if not self.execute_timestamp.value or not self.complete_timestamp.value:
+        if not self.execute_timestamp.value:
             return None
-        return self.complete_timestamp.value - self.execute_timestamp.value
+
+        if not self.complete_timestamp.value:
+            end = _timestamp(self._connection.time())
+        else:
+            end = float(self.complete_timestamp.value)
+
+        beg = float(self.execute_timestamp.value)
+        return end - beg
 
     @property
     def environment(self):
@@ -198,10 +207,10 @@ class Flow(NodeBase):
 
 
 class SleepNode(NodeBase):
-    sleep_time = Property(rom.Scalar)
+    sleep_time = rom.Property(rom.Scalar)
 
     def _execute(self, services):
         sleep_time = self.sleep_time.value
         if sleep_time:
-            time.sleep(sleep_time)
+            time.sleep(float(sleep_time))
         self.complete(services)
