@@ -135,6 +135,7 @@ class NodeBase(rom.Object):
 
     def fail(self, services):
         print "Failing", self.name
+        self.status = Status.failure
         for succ_idx in self.successors:
             node = self.flow.node(succ_idx)
             node.cancel(services)
