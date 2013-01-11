@@ -8,6 +8,9 @@ __all__ = ['NodeBase', 'Flow', 'NodeFailedError', 'NodeAlreadyCompletedError',
 # FIXME: collect service names
 ORCHESTRATOR = "orchestrator"
 
+def _timestamp(redis_ts):
+    return redis_ts[0] + redis_ts[1] * 1e-6
+
 class Status(object):
     new = "new"
     dispatched = "dispatched"
@@ -36,16 +39,22 @@ class NodeAlreadyCompletedError(RuntimeError):
 
 
 class NodeBase(rom.Object):
+    execute_timestamp = rom.Property(rom.Scalar)
+    complete_timestamp = rom.Property(rom.Scalar)
     flow_key = rom.Property(rom.Scalar)
     indegree = rom.Property(rom.Scalar)
     name = rom.Property(rom.Scalar)
     status = rom.Property(rom.Scalar)
-    completed = rom.Property(rom.Scalar)
     successors = rom.Property(rom.Set)
     input_connections = rom.Property(rom.Hash, value_decoder=rom.json_dec,
                                      value_encoder=rom.json_enc)
     outputs = rom.Property(rom.Hash, value_decoder=rom.json_dec,
                            value_encoder=rom.json_enc)
+
+    def duration(self):
+        if not self.execute_timestamp.value or not self.complete_timestamp.value:
+            return None
+        return self.complete_timestamp.value - self.execute_timestamp.value
 
     @property
     def environment(self):
@@ -115,15 +124,18 @@ class NodeBase(rom.Object):
         return rom.get_object(self._connection, self.flow_key.value)
 
     def execute(self, services):
-        print "Executing '%s' (key=%s)" % (str(self.name), self.key)
-        if self.status != Status.cancelled:
-            self._execute(services)
-        else:
-            self.fail(services)
+        now = _timestamp(self._connection.time())
+        if self.execute_timestamp.setnx(now):
+            print "Executing '%s' (key=%s)" % (str(self.name), self.key)
+            if self.status != Status.cancelled:
+                self._execute(services)
+            else:
+                self.fail(services)
 
     def complete(self, services):
         self.status = Status.success
-        if self.completed.setnx(1):
+        now = _timestamp(self._connection.time())
+        if self.complete_timestamp.setnx(now):
             for succ_idx in self.successors:
                 node = self.flow.node(succ_idx)
                 idg = node.indegree.increment(-1)
