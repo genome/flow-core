@@ -207,6 +207,14 @@ class Flow(NodeBase):
     hidden_user_id = rom.Property(rom.Scalar)
     hidden_working_directory = rom.Property(rom.Scalar)
 
+    @property
+    def flow(self):
+        flow_key = self.flow_key.value
+        if not flow_key:
+            return self
+        return rom.get_object(self._connection, flow_key)
+
+
     def node(self, idx):
         key = self.node_keys[idx]
         if key:
