@@ -119,6 +119,7 @@ class NodeBase(rom.Object):
             self.fail(services)
 
     def complete(self, services):
+        self.status = Status.success
         if self.completed.setnx(1):
             for succ_idx in self.successors:
                 node = self.flow.node(succ_idx)
