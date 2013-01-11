@@ -5,6 +5,7 @@ import logging
 import redis
 import flow.brokers.amqp
 from flow.orchestrator.handlers import *
+from flow.orchestrator.client import OrchestratorClient
 from flow_command_runner.client import CommandLineClient
 
 from flow import configuration
@@ -38,9 +39,11 @@ if '__main__' == __name__:
             error_routing_key='genome.execute.submit.error',
             wrapper=EXECUTE_WRAPPER)
 
+    orchestrator_service = OrchestratorClient(broker)
     services = {
             'genome_shortcut': shortcut_service,
             'genome_execute': execute_service,
+            'orchestrator': orchestrator_service,
     }
 
     redis_connection = redis.StrictRedis(host='linus129')
