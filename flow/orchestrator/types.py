@@ -5,6 +5,9 @@ import redisom as rom
 __all__ = ['NodeBase', 'Flow', 'NodeFailedError', 'NodeAlreadyCompletedError',
            'Status', 'StartNode', 'StopNode']
 
+# FIXME: collect service names
+ORCHESTRATOR = "orchestrator"
+
 class Status(object):
     new = "new"
     dispatched = "dispatched"
@@ -125,7 +128,7 @@ class NodeBase(rom.Object):
                 node = self.flow.node(succ_idx)
                 idg = node.indegree.increment(-1)
                 if idg == 0:
-                    node.execute(services)
+                    services[ORCHESTRATOR].execute_node(node.key)
         else:
             raise NodeAlreadyCompletedError(self.key)
 
