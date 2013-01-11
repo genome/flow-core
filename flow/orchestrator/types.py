@@ -162,7 +162,7 @@ class StopNode(NodeBase):
         self.flow.complete(services)
 
     def fail(self, services):
-        self.flow.fail()
+        self.flow.fail(services)
 
     def cancel(self, services):
         self.flow.cancel(services)
