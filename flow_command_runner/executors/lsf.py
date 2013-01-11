@@ -6,7 +6,7 @@ from flow_command_runner import util
 LOG = logging.getLogger(__name__)
 
 class LSFExecutor(object):
-    def __init__(self, default_queue='gms',
+    def __init__(self, default_queue='long',
             default_environment={}, manditory_environment={}):
         self.default_queue = default_queue
         self.default_environment = default_environment
