@@ -39,7 +39,8 @@ if '__main__' == __name__:
             error_routing_key='genome.execute.submit.error',
             wrapper=EXECUTE_WRAPPER)
 
-    orchestrator_service = OrchestratorClient(broker)
+    orchestrator_service = OrchestratorClient(broker,
+            execute_node_routing_key='flow.node.execute')
     services = {
             'genome_shortcut': shortcut_service,
             'genome_execute': execute_service,

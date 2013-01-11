@@ -13,6 +13,7 @@ class OrchestratorClient(object):
             submit_flow_failure_routing_key=None,
             submit_flow_error_routing_key=None):
 
+        self.broker = broker
         self.execute_node_routing_key        = execute_node_routing_key
 
         self.submit_flow_routing_key         = submit_flow_routing_key
