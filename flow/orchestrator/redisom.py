@@ -7,13 +7,10 @@ import json
 KEY_DELIM = '/'
 
 def json_enc(obj):
-    if obj is None:
-        return '""'
-    else:
-        return json.dumps(obj)
+    return json.dumps(obj)
 
 def json_dec(text):
-    if text is None or text is '""':
+    if text is None:
         return None
     else:
         return json.loads(text)
