@@ -33,9 +33,9 @@ if '__main__' == __name__:
 
     execute_service = CommandLineClient(broker,
             submit_routing_key='genome.execute.submit',
-            success_routing_key='genome.execute.success',
-            failure_routing_key='genome.execute.failure',
-            error_routing_key='genome.execute.error',
+            success_routing_key='genome.execute.submit.success',
+            failure_routing_key='genome.execute.submit.failure',
+            error_routing_key='genome.execute.submit.error',
             wrapper=EXECUTE_WRAPPER)
 
     services = {
