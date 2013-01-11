@@ -129,12 +129,15 @@ class NodeBase(rom.Object):
         return rv
 
     @property
+    def now(self):
+        return _timestamp(self._connection.time())
+
+    @property
     def flow(self):
         return rom.get_object(self._connection, self.flow_key.value)
 
     def execute(self, services):
-        now = _timestamp(self._connection.time())
-        if self.execute_timestamp.setnx(now):
+        if self.execute_timestamp.setnx(self.now):
             print "Executing '%s' (key=%s)" % (str(self.name), self.key)
             if self.status != Status.cancelled:
                 self._execute(services)
@@ -143,8 +146,7 @@ class NodeBase(rom.Object):
 
     def complete(self, services):
         self.status = Status.success
-        now = _timestamp(self._connection.time())
-        if self.complete_timestamp.setnx(now):
+        if self.complete_timestamp.setnx(self.now):
             for succ_idx in self.successors:
                 node = self.flow.node(succ_idx)
                 idg = node.indegree.increment(-1)
@@ -167,12 +169,17 @@ class NodeBase(rom.Object):
                 node.fail(services)
 
 
+    def _execute(self, services):
+        raise NotImplementedError("_execute not implemented in %s" %
+                self.__class__.__name__)
+
 class StartNode(NodeBase):
     @property
     def inputs(self):
         return self.outputs
 
     def _execute(self, services):
+        self.flow.execute_timestamp.setnx(self.now)
         self.complete(services)
 
 
@@ -204,6 +211,9 @@ class Flow(NodeBase):
         key = self.node_keys[idx]
         if key:
             return rom.get_object(self._connection, key)
+
+    def _execute(self, services):
+        services[ORCHESTRATOR].execute_node(self.node_keys[0])
 
 
 class SleepNode(NodeBase):
