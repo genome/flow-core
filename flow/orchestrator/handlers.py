@@ -53,7 +53,11 @@ class NodeStatusRequestHandler(object):
         try:
             node = get_object(self.redis, message.node_key)
             if node:
-                response_message.status = node.status
+                status = node.status
+                if status.value:
+                    response_message.status = status.value
+                else:
+                    response_message.status = 'unknown status'
         except:
             LOG.warning('Status requested for unknown node (%s)',
                     message.node_key)
@@ -72,6 +76,7 @@ class NodeStatusResponseHandler(object):
 
     def __call__(self, message):
         status = message.status
+        LOG.debug('Status for node (%s) is %s', message.node_key, status)
         if status == 'success':
             self.broker.exit(0)
         elif status == 'failure':
@@ -81,6 +86,7 @@ class NodeStatusResponseHandler(object):
             self.send_request()
 
     def send_request(self):
+        LOG.debug('Sending status request for node (%s).', self.node_key)
         request_message = NodeStatusRequestMessage(node_key=self.node_key,
                 response_routing_key=self.response_routing_key)
         self.broker.publish(self.request_routing_key, request_message)
