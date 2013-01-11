@@ -183,3 +183,13 @@ class Flow(NodeBase):
         key = self.node_keys[idx]
         if key:
             return rom.get_object(self._connection, key)
+
+
+class SleepNode(NodeBase):
+    sleep_time = Property(rom.Scalar)
+
+    def _execute(self, services):
+        sleep_time = self.sleep_time.value
+        if sleep_time:
+            time.sleep(sleep_time)
+        self.complete(services)
