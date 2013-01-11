@@ -16,7 +16,7 @@ LOG = logging.getLogger()
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--logging_configuration',
-            default='config/console_color.yaml')
+            default='/gscuser/mburnett/f/flow/config/console_color.yaml')
 
     parser.add_argument('--polling_interval', type=float, default=5.0)
 
