@@ -2,16 +2,52 @@
 
 from uuid import uuid4
 import redis
+import json
 
 KEY_DELIM = '/'
 
+def json_enc(obj):
+    if obj is None:
+        return '""'
+    else:
+        return json.dumps(obj)
 
-class RedisValueMeta(type):
+def json_dec(text):
+    if text is None or text is '""':
+        return None
+    else:
+        return json.loads(text)
+
+class ValueMeta(type):
     pass
 
 
-class RedisValue(object):
-    __metaclass__ = RedisValueMeta
+class Property(object):
+    def __init__(self, cls, **kwargs):
+        if not isinstance(cls, ValueMeta):
+            raise TypeError("Unknown redisom class %s" % str(cls))
+
+        self.cls = cls
+        self.kwargs = kwargs
+
+    @staticmethod
+    def make_property(name):
+        private_name = _make_private_name(name)
+        def getter(self):
+            return getattr(self, private_name)
+
+        def setter(self, value):
+            getattr(self, private_name).value = value
+
+        def deleter(self):
+            getattr(self, private_name).delete()
+            delattr(self, private_name)
+
+        return property(getter, setter, deleter)
+
+
+class Value(object):
+    __metaclass__ = ValueMeta
     def __init__(self, connection, key):
         self.connection = connection
         self.key = key
@@ -26,9 +62,9 @@ class RedisValue(object):
         return repr(self.value)
 
 
-class RedisScalar(RedisValue):
+class Scalar(Value):
     def __init__(self, connection, key):
-        RedisValue.__init__(self, connection, key)
+        Value.__init__(self, connection, key)
 
     @property
     def value(self):
@@ -51,13 +87,13 @@ class RedisScalar(RedisValue):
         return int(self.value)
 
 
-class RedisList(RedisValue):
+class List(Value):
     def _make_index_error(self, size, idx):
         return IndexError("list range out of index (key=%s, size=%d, index=%d)"
                           % (self.key, size, idx))
 
     def __init__(self, connection, key):
-        RedisValue.__init__(self, connection, key)
+        Value.__init__(self, connection, key)
 
     def __getitem__(self, idx):
         try:
@@ -104,9 +140,9 @@ class RedisList(RedisValue):
             return ret
 
 
-class RedisSet(RedisValue):
+class Set(Value):
     def __init__(self, connection, key):
-        RedisValue.__init__(self, connection, key)
+        Value.__init__(self, connection, key)
 
     @property
     def value(self):
@@ -139,24 +175,51 @@ class RedisSet(RedisValue):
         return self.connection.scard(self.key)
 
 
-class RedisHash(RedisValue):
-    def __init__(self, connection, key):
-        RedisValue.__init__(self, connection, key)
+class Hash(Value):
+    def __init__(self, connection, key, value_encoder=None, value_decoder=None):
+        Value.__init__(self, connection, key)
+        self._value_encoder = value_encoder
+        self._value_decoder = value_decoder
+
+    def _encode_dict(self, d):
+        if not self._value_encoder:
+            return d
+        else:
+            return dict((k, self._encode_value(v)) for k, v in d.iteritems())
+
+    def _decode_dict(self, d):
+        if not self._value_encoder:
+            return d
+        else:
+            return dict((k, self._decode_value(v)) for k, v in d.iteritems())
+
+    def _encode_value(self, v):
+        if not self._value_encoder:
+            return v
+        else:
+            return self._value_encoder(v)
+
+    def _decode_value(self, v):
+        if not self._value_decoder:
+            return v
+        else:
+            return self._value_decoder(v)
 
     @property
     def value(self):
-        return self.connection.hgetall(self.key)
+        raw = self.connection.hgetall(self.key)
+        return self._decode_dict(raw)
 
     @value.setter
     def value(self, vals):
         pipe = self.connection.pipeline()
         pipe.delete(self.key)
-        pipe.hmset(self.key, vals)
+        pipe.hmset(self.key, self._encode_dict(vals))
         del_rv, set_rv = pipe.execute()
         return set_rv
 
     def __setitem__(self, hkey, val):
-        return self.connection.hset(self.key, hkey, val)
+        return self.connection.hset(self.key, hkey, self._encode_value(val))
 
     def __getitem__(self, hkey):
         pipe = self.connection.pipeline()
@@ -165,7 +228,7 @@ class RedisHash(RedisValue):
         exists, value = pipe.execute()
         if not exists:
             raise KeyError(str(hkey))
-        return value
+        return self._decode_value(value)
 
     def __delitem__(self, hkey):
         pipe = self.connection.pipeline()
@@ -184,14 +247,16 @@ class RedisHash(RedisValue):
 
     def values(self, keys=None):
         if keys == None:
-            return self.connection.hvals(self.key)
+            raw = self.connection.hvals(self.key)
         else:
-            return self.connection.hmget(self.key, keys)
+            raw = self.connection.hmget(self.key, keys)
+
+        return map(self._decode_value, raw)
 
     def update(self, mapping):
         if len(mapping) == 0:
             return None
-        return self.connection.hmset(self.key, mapping)
+        return self.connection.hmset(self.key, self._encode_dict(mapping))
 
     def iteritems(self):
         return self.value.iteritems()
@@ -201,22 +266,11 @@ def _make_key(*args):
     return KEY_DELIM.join(map(str, args))
 
 
-def _make_property_wrapper(name):
-    private_name = "_" + name
-    def getter(self):
-        return getattr(self, private_name)
-
-    def setter(self, value):
-        getattr(self, private_name).value = value
-
-    def deleter(self):
-        getattr(self, private_name).delete()
-        delattr(self, private_name)
-
-    return property(getter, setter, deleter)
+def _make_private_name(name):
+    return "_rom_" + name
 
 
-class RedisObjectMeta(type):
+class ObjectMeta(type):
     def __new__(meta, class_name, bases, class_dict):
         cls = type.__new__(meta, class_name, bases, class_dict)
 
@@ -228,15 +282,29 @@ class RedisObjectMeta(type):
         properties.update(class_dict)
 
         for name, value in properties.iteritems():
-            if isinstance(value, RedisValueMeta):
+            if isinstance(value, Property):
                 cls._redis_properties[name] = value
-                setattr(cls, name, _make_property_wrapper(name))
+                setattr(cls, name, value.make_property(name))
 
         return cls
 
 
-class RedisObject(object):
-    __metaclass__ = RedisObjectMeta
+class Object(object):
+    __metaclass__ = ObjectMeta
+
+    def __init__(self, connection, key):
+        self._connection = connection
+        if key == None:
+            key = _make_key("/" + self.__module__, self.__class__.__name__,
+                            uuid4().hex)
+        self.key = key
+        self._class_info = Hash(connection, self.key)
+
+        for name, propdef in self._redis_properties.iteritems():
+            private_name = _make_private_name(name)
+            pobj = propdef.cls(connection=connection, key=self.subkey(name),
+                               **propdef.kwargs)
+            setattr(self, private_name, pobj)
 
     def exists(self):
         cinfo = self._class_info.value
@@ -266,19 +334,6 @@ class RedisObject(object):
         if not obj.exists():
             raise KeyError("Object not found: class=%s key=%s" % (cls, key))
         return obj
-
-    def __init__(self, connection, key):
-        self._connection = connection
-        if key == None:
-            key = _make_key("/" + self.__module__, self.__class__.__name__,
-                            uuid4().hex)
-        self.key = key
-        self._class_info = RedisHash(connection, self.key)
-
-        for name, value in self._redis_properties.iteritems():
-            private_name = "_" + name
-            pobj = value(connection=connection, key=self.subkey(name))
-            setattr(self, private_name, pobj)
 
     def method_descriptor(self, method_name):
         method = getattr(self, method_name, None)

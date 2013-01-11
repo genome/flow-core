@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-from redisom import *
-import json
+import redisom as rom
 
 __all__ = ['NodeBase', 'Flow', 'NodeFailedError', 'NodeAlreadyCompletedError',
            'Status', 'StartNode', 'StopNode']
-
 
 class Status(object):
     new = "new"
@@ -34,15 +32,17 @@ class NodeAlreadyCompletedError(RuntimeError):
         RuntimeError.__init__(self, "Node %s already completed!" %node_key)
 
 
-class NodeBase(RedisObject):
-    flow_key = RedisScalar
-    indegree = RedisScalar
-    name = RedisScalar
-    status = RedisScalar
-    completed = RedisScalar
-    successors = RedisSet
-    input_connections = RedisHash
-    outputs = RedisHash
+class NodeBase(rom.Object):
+    flow_key = rom.Property(rom.Scalar)
+    indegree = rom.Property(rom.Scalar)
+    name = rom.Property(rom.Scalar)
+    status = rom.Property(rom.Scalar)
+    completed = rom.Property(rom.Scalar)
+    successors = rom.Property(rom.Set)
+    input_connections = rom.Property(rom.Hash, value_decoder=rom.json_dec,
+                                     value_encoder=rom.json_enc)
+    outputs = rom.Property(rom.Hash, value_decoder=rom.json_dec,
+                           value_encoder=rom.json_enc)
 
     @property
     def environment(self):
@@ -85,7 +85,6 @@ class NodeBase(RedisObject):
     def user_id(self, value):
         self.hidden_user_id.value = value
 
-
     @property
     def inputs(self):
         try:
@@ -96,22 +95,21 @@ class NodeBase(RedisObject):
             return None
 
         rv = {}
-        for idx, mapping_str in inp_conn.iteritems():
+        for idx, props in inp_conn.iteritems():
             idx = int(idx)
-            props = json.loads(mapping_str)
-            outputs = self.flow.node(idx).outputs
+            node = self.flow.node(idx)
+            outputs = node.outputs
             if props:
                 vals = outputs.values(props.values())
-                rv.update(zip(props.keys(), map(json.loads, vals)))
+                rv.update(zip(props.keys(), vals))
             else:
-                rv.update(dict((k, json.loads(v))
-                          for k, v in outputs.iteritems()))
+                rv.update(outputs)
 
         return rv
 
     @property
     def flow(self):
-        return get_object(self._connection, self.flow_key.value)
+        return rom.get_object(self._connection, self.flow_key.value)
 
     def execute(self, services):
         print "Executing '%s' (key=%s)" % (str(self.name), self.key)
@@ -167,16 +165,16 @@ class StopNode(NodeBase):
         self.flow.fail()
 
     def cancel(self, services):
-        self.flow.cancel()
+        self.flow.cancel(services)
 
 
 class Flow(NodeBase):
-    node_keys = RedisList
-    hidden_environment = RedisHash
-    hidden_user_id = RedisScalar
-    hidden_working_directory = RedisScalar
+    node_keys = rom.Property(rom.List)
+    hidden_environment = rom.Property(rom.Hash)
+    hidden_user_id = rom.Property(rom.Scalar)
+    hidden_working_directory = rom.Property(rom.Scalar)
 
     def node(self, idx):
         key = self.node_keys[idx]
         if key:
-            return get_object(self._connection, key)
+            return rom.get_object(self._connection, key)

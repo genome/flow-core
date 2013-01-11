@@ -1,32 +1,34 @@
 #!/usr/bin/env python
 
-import unittest
-import os
 import flow.orchestrator.redisom as rom
+
+import os
+import unittest
 from fakeredis import FakeRedis
 
-class SimpleObj(rom.RedisObject):
-    ascalar = rom.RedisScalar
-    ahash = rom.RedisHash
-    alist = rom.RedisList
-    aset = rom.RedisSet
-    a_method_arg = rom.RedisScalar
+class SimpleObj(rom.Object):
+    """A simple class with one of each type of property to test rom.Object"""
+
+    ascalar = rom.Property(rom.Scalar)
+    ahash = rom.Property(rom.Hash)
+    alist = rom.Property(rom.List)
+    aset = rom.Property(rom.Set)
+    a_method_arg = rom.Property(rom.Scalar)
 
     def a_method(self, arg=None):
         self.a_method_arg = arg
         return arg
 
 
-class RedisOmTest(unittest.TestCase):
+class TestBase(unittest.TestCase):
     def setUp(self):
-        import redis
-        self.conn = redis.Redis()
+        self.conn = FakeRedis()
         self.conn.flushall()
 
 
-class TestRedisScalar(RedisOmTest):
+class TestScalar(TestBase):
     def test_value(self):
-        x = rom.RedisScalar(self.conn, "x")
+        x = rom.Scalar(self.conn, "x")
         self.assertEqual(None, x.value)
         x.value = "hello there"
         self.assertEqual("hello there", x.value)
@@ -35,22 +37,22 @@ class TestRedisScalar(RedisOmTest):
         self.assertEqual(32, int(x))
 
     def test_setnx(self):
-        x = rom.RedisScalar(self.conn, "x")
+        x = rom.Scalar(self.conn, "x")
         self.assertTrue(x.setnx("hi"))
         self.assertEqual("hi", x.value)
         self.assertFalse(x.setnx("bye"))
         self.assertEqual("hi", x.value)
 
     def test_increment(self):
-        x = rom.RedisScalar(self.conn, "x")
+        x = rom.Scalar(self.conn, "x")
         x.value = 8
         self.assertEqual(16, x.increment(8))
         self.assertEqual(2, x.increment(-14))
 
 
-class TestRedisList(RedisOmTest):
+class TestList(TestBase):
     def test_value(self):
-        l = rom.RedisList(self.conn, "l")
+        l = rom.List(self.conn, "l")
         self.assertEqual([], l.value)
         native_list = ["one", "two"]
         l.value = native_list
@@ -62,7 +64,7 @@ class TestRedisList(RedisOmTest):
         self.assertEqual(native_list, l.value)
 
     def test_append(self):
-        l = rom.RedisList(self.conn, "l")
+        l = rom.List(self.conn, "l")
         size = l.append("a")
         self.assertEqual(["a"], l.value)
         self.assertEqual(1, size)
@@ -72,14 +74,14 @@ class TestRedisList(RedisOmTest):
         self.assertEqual(2, size)
 
     def test_extend(self):
-        l = rom.RedisList(self.conn, "l")
+        l = rom.List(self.conn, "l")
         l.extend(["a", "b"])
         self.assertEqual(["a", "b"], l.value)
         l.extend(["c", "d"])
         self.assertEqual(["a", "b", "c", "d"], l.value)
 
     def test_len(self):
-        l = rom.RedisList(self.conn, "l")
+        l = rom.List(self.conn, "l")
         self.assertEqual(0, len(l))
         l.value = ["x", "y"]
         self.assertEqual(2, len(l))
@@ -87,7 +89,7 @@ class TestRedisList(RedisOmTest):
         self.assertEqual(3, len(l))
 
     def test_getitem(self):
-        l = rom.RedisList(self.conn, "l")
+        l = rom.List(self.conn, "l")
         self.assertRaises(IndexError, l.__getitem__, 0)
         self.assertRaises(TypeError, l.__getitem__, "cat")
         l.append("x")
@@ -98,7 +100,7 @@ class TestRedisList(RedisOmTest):
         self.assertRaises(IndexError, l.__getitem__, 3)
 
     def test_setitem(self):
-        l = rom.RedisList(self.conn, "l")
+        l = rom.List(self.conn, "l")
         l.value = ["one", "two"]
         l[0] = "three"
         l[1] = "four"
@@ -106,15 +108,15 @@ class TestRedisList(RedisOmTest):
         self.assertRaises(IndexError, l.__setitem__, 2, "five")
 
     def test_iterator(self):
-        l = rom.RedisList(self.conn, "l")
+        l = rom.List(self.conn, "l")
         l.value = ["a", "b", "c"]
         seen = [x for x in l]
         self.assertEqual(["a", "b", "c"], l.value)
 
 
-class TestRedisSet(RedisOmTest):
+class TestSet(TestBase):
     def test_value(self):
-        s = rom.RedisSet(self.conn, "s")
+        s = rom.Set(self.conn, "s")
         self.assertEqual(set(), s.value)
         native_set = set(["one", "two", "three"])
         s.value = native_set
@@ -125,7 +127,7 @@ class TestRedisSet(RedisOmTest):
         self.assertEqual(native_set, s.value)
 
     def test_add(self):
-        s = rom.RedisSet(self.conn, "s")
+        s = rom.Set(self.conn, "s")
         s.add("one")
         self.assertEqual(set(["one"]), s.value)
         s.add("one")
@@ -134,7 +136,7 @@ class TestRedisSet(RedisOmTest):
         self.assertEqual(set(["one", "two"]), s.value)
 
     def test_update(self):
-        s = rom.RedisSet(self.conn, "s")
+        s = rom.Set(self.conn, "s")
         s.add("one")
         s.update(["one", "two"])
         self.assertEqual(set(["one", "two"]), s.value)
@@ -142,7 +144,7 @@ class TestRedisSet(RedisOmTest):
         self.assertEqual(set(["one", "two", "three"]), s.value)
 
     def test_remove(self):
-        s = rom.RedisSet(self.conn, "s")
+        s = rom.Set(self.conn, "s")
         s.value = ["one", "two"]
         self.assertEqual((True, 1), s.remove("two"))
         self.assertEqual((False, 1), s.remove("two"))
@@ -151,7 +153,7 @@ class TestRedisSet(RedisOmTest):
         self.assertEqual(set(), s.value)
 
     def test_len(self):
-        s = rom.RedisSet(self.conn, "s")
+        s = rom.Set(self.conn, "s")
         self.assertEqual(0, len(s))
         s.value = ["a", "b", "c"]
         self.assertEqual(3, len(s))
@@ -159,14 +161,14 @@ class TestRedisSet(RedisOmTest):
         self.assertEqual(2, len(s))
 
     def test_iterator(self):
-        s = rom.RedisSet(self.conn, "s")
+        s = rom.Set(self.conn, "s")
         s.value = ["a", "b", "c"]
         self.assertEqual(["a", "b", "c"], sorted([x for x in s]))
 
 
-class TestRedisHash(RedisOmTest):
+class TestHash(TestBase):
     def test_value(self):
-        h = rom.RedisHash(self.conn, "h")
+        h = rom.Hash(self.conn, "h")
         native_hash = {"hello": "world"}
         h.value = native_hash
         self.assertEqual(native_hash, h.value)
@@ -176,7 +178,7 @@ class TestRedisHash(RedisOmTest):
         self.assertEqual(native_hash, h.value)
 
     def test_setitem(self):
-        h = rom.RedisHash(self.conn, "h")
+        h = rom.Hash(self.conn, "h")
         h["x"] = "y"
         self.assertEqual({"x": "y"}, h.value)
         h["y"] = "z"
@@ -185,14 +187,14 @@ class TestRedisHash(RedisOmTest):
         self.assertEqual({"x": "y", "y": "z"}, h.value)
 
     def test_getitem(self):
-        h = rom.RedisHash(self.conn, "h")
+        h = rom.Hash(self.conn, "h")
         h.value = {"x": "y", "X": "Y"}
         self.assertEqual("y", h["x"])
         self.assertEqual("Y", h["X"])
         self.assertRaises(KeyError, h.__getitem__, "z")
 
     def test_delitem(self):
-        h = rom.RedisHash(self.conn, "h")
+        h = rom.Hash(self.conn, "h")
         h.value = {"x": "y", "X": "Y"}
         self.assertRaises(KeyError, h.__delitem__, "z")
         del h["x"]
@@ -202,7 +204,7 @@ class TestRedisHash(RedisOmTest):
 
 
     def test_len(self):
-        h = rom.RedisHash(self.conn, "h")
+        h = rom.Hash(self.conn, "h")
         self.assertEqual(0, len(h))
         h["x"] = "y"
         self.assertEqual(1, len(h))
@@ -212,14 +214,14 @@ class TestRedisHash(RedisOmTest):
         self.assertEqual(1, len(h))
 
     def test_keys_values(self):
-        h = rom.RedisHash(self.conn, "h")
+        h = rom.Hash(self.conn, "h")
         native = dict((chr(x), str(x)) for x in xrange(ord('a'), ord('z')+1))
         h.value = native
         self.assertEqual(sorted(native.keys()), sorted(h.keys()))
         self.assertEqual(sorted(native.values()), sorted(h.values()))
 
     def test_update(self):
-        h = rom.RedisHash(self.conn, "h")
+        h = rom.Hash(self.conn, "h")
         h.value = {"x": "y"}
         h.update({"x": "y", "y": "z"})
         self.assertEqual({"x": "y", "y": "z"}, h.value)
@@ -227,14 +229,44 @@ class TestRedisHash(RedisOmTest):
         self.assertEqual({"x": "y", "y": "z", "z": "a"}, h.value)
 
     def test_iteritems(self):
-        h = rom.RedisHash(self.conn, "h")
+        h = rom.Hash(self.conn, "h")
         native = dict((chr(x), str(x)) for x in xrange(ord('a'), ord('z')+1))
         h.value = native
         seen = dict((k, v) for k, v in h.iteritems())
         self.assertEqual(native, seen)
 
+    def test_json_encoding(self):
+        h = rom.Hash(self.conn, "h",
+                     value_encoder=rom.json_enc,
+                     value_decoder=rom.json_dec)
 
-class TestRedisObject(RedisOmTest):
+        native = {"a": ["b", "c"], "d": {"e": "f"}, "g": "h", "num": 7}
+        h.value = native
+
+        # test .value property
+        self.assertEqual(native, h.value)
+
+        # test __getitem__
+        for k in native:
+            self.assertEqual(native[k], h[k])
+
+        # test .values()
+        self.assertEqual(native.values(), h.values())
+        partial_keys = ("a", "num", "g")
+        native_partial = dict((k, native[k]) for k in partial_keys)
+        self.assertEqual(native_partial.values(), h.values(partial_keys))
+
+        # test .iteritems()
+        seen = dict((k, v) for k, v in h.iteritems())
+        self.assertEqual(native, seen)
+
+        # test .update()
+        upd = {"one": { "two": ["three", "four", "five"] } }
+        h.update(upd)
+        self.assertEqual(upd["one"], h["one"])
+
+
+class TestRedisObject(TestBase):
     def test_keygen(self):
         obj = SimpleObj.create(self.conn)
         components = obj.key.split("/")
@@ -249,7 +281,7 @@ class TestRedisObject(RedisOmTest):
         self.assertEqual("x", obj.key)
         self.assertEqual("hi", obj.ascalar.value)
 
-    def a_method_descriptor(self):
+    def method_descriptor(self):
         obj = SimpleObj.create(self.conn, "x")
         expected = {"object_key": obj.key, "method_name": "a_method"}
         method_descriptor = obj.method_descriptor("a_method")
