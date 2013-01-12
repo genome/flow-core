@@ -47,7 +47,7 @@ if '__main__' == __name__:
             'orchestrator': orchestrator_service,
     }
 
-    redis_connection = redis.StrictRedis(host='linus129')
+    redis_connection = redis.StrictRedis(host='blade14-2-5')
     for callback_name, queue_name in CALLBACK_QUEUES.iteritems():
         handler = MethodDescriptorHandler(redis=redis_connection,
                 services=services, callback_name=callback_name)

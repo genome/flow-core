@@ -50,7 +50,8 @@ class AmqpBroker(object):
 
         delegates = [self.exchange_manager]
         delegates.extend(self.queue_managers)
-        channel_manager = amqp_manager.ChannelManager(delegates=delegates)
+        channel_manager = amqp_manager.ChannelManager(delegates=delegates,
+                prefetch_count=2)
         self.connection_manager = amqp_manager.ConnectionManager(
                 self.amqp_url, delegates=[channel_manager])
 
