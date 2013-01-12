@@ -57,7 +57,7 @@ class AmqpBroker(object):
 
         for routing_key, message in self._on_ready_publishes:
             self.connection_manager.add_ready_callback(
-                    lambda x: self.publish(routing_key, message))
+                    lambda x, k=routing_key, m=message: self.publish(k, m))
 
         self.connection_manager.start()
         return self.exit_code
