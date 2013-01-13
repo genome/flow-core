@@ -117,7 +117,7 @@ class NodeBase(rom.Object):
 
         rv = {}
         for key, props in inp_conn.iteritems():
-            node = rom.get_object(self.connection, key)
+            node = rom.get_object(self._connection, key)
             outputs = node.outputs
             if props:
                 vals = outputs.values(props.values())
