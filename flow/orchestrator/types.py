@@ -116,9 +116,8 @@ class NodeBase(rom.Object):
             return None
 
         rv = {}
-        for idx, props in inp_conn.iteritems():
-            idx = int(idx)
-            node = self.flow.node(idx)
+        for key, props in inp_conn.iteritems():
+            node = rom.get_object(self.connection, key)
             outputs = node.outputs
             if props:
                 vals = outputs.values(props.values())
@@ -199,6 +198,10 @@ class StopNode(NodeBase):
 
     def cancel(self, services):
         self.flow.cancel(services)
+
+
+class DataNode(NodeBase):
+    outputs = rom.Property(rom.Hash)
 
 
 class Flow(NodeBase):
