@@ -20,6 +20,8 @@ class QueueManager(Delegate):
         try:
             return self.message_handler(properties, body,
                     ack_callback, reject_callback)
+        except KeyboardInterrupt:
+            raise
         except:
             LOG.exception('QueueManager %s rejecting message' +
                     ' due to unhandled exception in message handler', self)

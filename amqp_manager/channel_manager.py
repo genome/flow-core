@@ -102,11 +102,12 @@ class ChannelManager(Delegate):
 
         try:
             on_message_callback(properties, body, ack_callback, reject_callback)
+        except KeyboardInterrupt:
+            raise
         except:
             LOG.exception('ChannelManager %s caught unhandled exception' +
                     ' delivering message to %s', self, on_message_callback)
             reject_callback()
-
 
 def make_ack_callback(channel, basic_deliver):
     return lambda: channel.basic_ack(basic_deliver.delivery_tag)
