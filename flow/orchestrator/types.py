@@ -174,8 +174,8 @@ class NodeBase(rom.Object):
 
 class StartNode(NodeBase):
     @property
-    def inputs(self):
-        return self.outputs
+    def outputs(self):
+        return self.flow.outputs
 
     def _execute(self, services):
         self.flow.execute_timestamp.setnx(self.now)
