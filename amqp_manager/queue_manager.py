@@ -6,7 +6,7 @@ LOG = logging.getLogger(__name__)
 
 class QueueManager(Delegate):
     def __init__(self, queue_name, message_handler=None,
-            **queue_declare_properties):
+            bindings=[], **queue_declare_properties):
         Delegate.__init__(self)
         assert callable(message_handler)
 
@@ -14,7 +14,9 @@ class QueueManager(Delegate):
 
         self.message_handler = message_handler
 
+        self.bindings = bindings
         self.qd_properties = queue_declare_properties
+
 
     def on_message(self, properties, body, ack_callback, reject_callback):
         try:
@@ -44,6 +46,21 @@ class QueueManager(Delegate):
     def _on_declare_queue_ok(self, method_frame):
         LOG.debug("Queue '%s' successfully declared, method_frame = %s",
                 self.queue_name, method_frame)
+        self._declare_next_bind()
+
+    def _declare_next_bind(self):
+        if self.bindings:
+            bind_info = self.bindings.pop()
+            self._channel_manager.queue_bind(self._on_bind_ok, self.queue_name,
+                    bind_info['exchange'], bind_info['topic'])
+        else:
+            self._begin_consume()
+
+    def _on_bind_ok(self, frame):
+        LOG.debug("Bind OK!")
+        self._declare_next_bind()
+
+    def _begin_consume(self):
         LOG.debug("Beginning consumption of messages from queue '%s'",
                 self.queue_name)
         self._channel_manager.basic_consume(self.on_message, self.queue_name)

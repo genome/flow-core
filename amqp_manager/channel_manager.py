@@ -89,6 +89,9 @@ class ChannelManager(Delegate):
     def queue_declare(self, *args, **kwargs):
         self._channel.queue_declare(*args, **kwargs)
 
+    def queue_bind(self, *args, **kwargs):
+        self._channel.queue_bind(*args, **kwargs)
+
 
     def basic_consume(self, on_message_callback, queue_name):
         self._channel.basic_consume(
