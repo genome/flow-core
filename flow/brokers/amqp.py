@@ -8,9 +8,10 @@ import os
 LOG = logging.getLogger(__name__)
 
 class AmqpBroker(object):
-    def __init__(self):
-        arguments = {'alternate-exchange': 'workflow.alt'}
-        self.exchange_manager = amqp_manager.ExchangeManager('workflow',
+    def __init__(self, exchange_name='workflow'):
+        arguments = {'alternate-exchange': '%s.alt' % exchange_name}
+        self.exchange_name = exchange_name
+        self.exchange_manager = amqp_manager.ExchangeManager(exchange_name,
                 durable=True, persistent=True, **arguments)
 
         amqp_url = os.getenv('AMQP_URL')
