@@ -120,7 +120,7 @@ class NodeBase(rom.Object):
             node = rom.get_object(self._connection, key)
             outputs = node.outputs
             if props:
-                vals = outputs.values(props.values())
+                vals = [outputs[k] for k in props.values()]
                 rv.update(zip(props.keys(), vals))
             else:
                 rv.update(outputs)
@@ -175,7 +175,7 @@ class NodeBase(rom.Object):
 class StartNode(NodeBase):
     @property
     def outputs(self):
-        return self.flow.outputs
+        return self.flow.inputs
 
     def _execute(self, services):
         self.flow.execute_timestamp.setnx(self.now)
