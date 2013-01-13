@@ -201,8 +201,7 @@ class StopNode(NodeBase):
 
 
 class DataNode(NodeBase):
-    outputs = rom.Property(rom.Hash, value_decoder=rom.json_dec,
-                                     value_encoder=rom.json_enc)
+    pass
 
 
 class Flow(NodeBase):
