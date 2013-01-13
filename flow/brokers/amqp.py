@@ -27,6 +27,15 @@ class AmqpBroker(object):
 
         self.exit_code = 0
 
+    def register_temporary_handler(self, queue_name, handler, routing_key):
+        listener = AmqpListener(delivery_callback=handler)
+
+        qm = amqp_manager.QueueManager(queue_name, message_handler=listener,
+                durable=False, auto_delete=True, exclusive=True,
+                bindings=[{'exchange': self.exchange_name,
+                           'topic': routing_key}])
+        self.queue_managers.append(qm)
+
     def register_handler(self, queue_name, handler):
         listener = AmqpListener(delivery_callback=handler)
 

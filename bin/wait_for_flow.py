@@ -32,9 +32,10 @@ if '__main__' == __name__:
 
     handler = NodeStatusResponseHandler(broker,
             node_key=args.node_key, polling_interval=args.polling_interval,
-            request_routing_key='flow.status.request',
-            response_routing_key='temp.status.response')
-    broker.register_handler('process_status_response', handler)
+            request_routing_key='flow.status.request')
+
+    broker.register_temporary_handler(handler.response_queue,
+            handler, handler.response_routing_key)
 
     handler.send_request()
     exit_code = broker.listen()

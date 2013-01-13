@@ -1,5 +1,6 @@
 import logging
 import time
+import uuid
 
 from flow.orchestrator.redisom import get_object, invoke_instance_method
 
@@ -73,6 +74,11 @@ class NodeStatusResponseHandler(object):
         self.node_key = node_key
         self.request_routing_key = request_routing_key
         self.response_routing_key = response_routing_key
+
+        identifier = uuid.uuid4().hex
+        self.response_routing_key = 'flow.status.response.%s' % identifier
+        self.response_queue = 'flow_status_response_%s' % identifier
+
 
     def __call__(self, message):
         status = message.status
