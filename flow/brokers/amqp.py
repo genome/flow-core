@@ -82,6 +82,8 @@ class AmqpListener(object):
             LOG.exception('Invalid message.  Properties = %s, message = %s',
                     properties, encoded_message)
             reject_callback()
+        except KeyboardInterrupt:
+            raise
         except:
             LOG.exception('Unexpected error handling message.')
             reject_callback()
