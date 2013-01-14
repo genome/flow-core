@@ -3,6 +3,7 @@ import time
 import uuid
 
 from flow.orchestrator.redisom import get_object, invoke_instance_method
+from flow.orchestrator.types import Status
 
 from flow.orchestrator.messages import NodeStatusRequestMessage, NodeStatusResponseMessage
 
@@ -83,9 +84,9 @@ class NodeStatusResponseHandler(object):
     def __call__(self, message):
         status = message.status
         LOG.debug('Status for node (%s) is %s', message.node_key, status)
-        if status == 'success':
+        if status == Status.success:
             self.broker.exit(0)
-        elif status == 'failure':
+        elif status == Status.failure:
             self.broker.exit(1)
         else:
             time.sleep(self.polling_interval)
