@@ -39,7 +39,8 @@ class ExecuteNodeHandler(object):
         self.services = services
 
     def __call__(self, message):
-        print message.node_key
+        print message.node_key # TODO remove after benchmarking?
+        LOG.debug('Executing node: %s' % message.node_key)
         node = get_object(self.redis, message.node_key)
         node.execute(self.services)
 
