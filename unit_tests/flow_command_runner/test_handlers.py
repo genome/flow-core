@@ -32,7 +32,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
         self.executor.assert_called_once_with(self.message.command_line,
                 passthru=True)
 
-        response_message = CommandLineResponseMessage(status='success',
+        response_message = CommandLineResponseMessage(
                 return_identifier=self.message.return_identifier,
                 job_id=executor_result)
         self.broker.publish.assert_called_once_with(
@@ -45,7 +45,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
         self.executor.assert_called_once_with(self.message.command_line,
                 passthru=True)
 
-        response_message = CommandLineResponseMessage(status='failure',
+        response_message = CommandLineResponseMessage(
                 return_identifier=self.message.return_identifier)
         self.broker.publish.assert_called_once_with(
                 self.message.failure_routing_key, response_message)
@@ -57,7 +57,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
         self.executor.assert_called_once_with(self.message.command_line,
                 passthru=True)
 
-        response_message = CommandLineResponseMessage(status='error',
+        response_message = CommandLineResponseMessage(
                 return_identifier=self.message.return_identifier,
                 error_message = 'error_message')
         self.broker.publish.assert_called_once_with(

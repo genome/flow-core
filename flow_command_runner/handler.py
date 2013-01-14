@@ -19,18 +19,18 @@ class CommandLineSubmitMessageHandler(object):
             if success:
                 response_routing_key = message.success_routing_key
                 response_message = CommandLineResponseMessage(
-                        status='success', job_id=str(executor_result),
+                        job_id=str(executor_result),
                         return_identifier=message.return_identifier)
 
             else:
                 response_routing_key = message.failure_routing_key
-                response_message = CommandLineResponseMessage(status='failure',
+                response_message = CommandLineResponseMessage(
                         return_identifier=message.return_identifier)
 
         # XXX Might need to tweak what exceptions we need to catch
         except RuntimeError as e:
             response_routing_key = message.error_routing_key
-            response_message = CommandLineResponseMessage(status='error',
+            response_message = CommandLineResponseMessage(
                     return_identifier=message.return_identifier,
                     error_message=str(e))
 

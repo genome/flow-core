@@ -14,7 +14,6 @@ class CommandLineSubmitMessage(Message):
 
     optional_fields = {
             'executor_options': dict,
-            'status': basestring,
     }
 
     def validate(self):
@@ -36,7 +35,6 @@ class CommandLineResponseMessage(Message):
     }
     optional_fields = {
             'exit_code': int,
-            'status': basestring,
             'job_id': basestring,
             'error_message': basestring,
     }
