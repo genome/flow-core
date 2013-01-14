@@ -55,15 +55,16 @@ class NodeStatusRequestHandler(object):
                 node_key=message.node_key, status='unknown node')
         try:
             node = get_object(self.redis, message.node_key)
-            if node:
-                status = node.status
-                if status.value:
-                    response_message.status = status.value
-                else:
-                    response_message.status = 'unknown status'
         except:
             LOG.warning('Status requested for unknown node (%s)',
                     message.node_key)
+        else:
+            if node:
+                status = node.status.value
+                if status:
+                    response_message.status = status
+                else:
+                    response_message.status = 'unknown status'
 
         self.broker.publish(message.response_routing_key, response_message)
 
