@@ -11,13 +11,7 @@ class Message(object):
         try:
             for name, type_ in self.required_fields.iteritems():
                 value = kwargs.pop(name)
-                if isinstance(value, type_):
-                    setattr(self, name, value)
-                else:
-                    raise exceptions.InvalidMessageException(
-                            'Message (%s) requires %s have type (%s)' %
-                            (self.__class__.__name__, name, type_))
-
+                self._validate_field_value(name, value, type_)
         except KeyError:
             raise exceptions.InvalidMessageException(
                     'Required field %s is missing' % name)
@@ -25,12 +19,7 @@ class Message(object):
         for name, type_ in self.optional_fields.iteritems():
             value = kwargs.pop(name, None)
             if value is not None:
-                if isinstance(value, type_):
-                    setattr(self, name, value)
-                else:
-                    raise exceptions.InvalidMessageException(
-                            'Message (%s) requires %s have type (%s)' %
-                            (self.__class__.__name__, name, type_))
+                self._validate_field_value(name, value, type_)
 
         if kwargs:
             raise exceptions.InvalidMessageException(
@@ -41,7 +30,16 @@ class Message(object):
 
 
     def validate(self):
+        # to be optionally specified by subclasses.
         pass
+
+    def _validate_field_value(self, name, value, type_):
+        if isinstance(value, type_):
+            setattr(self, name, value)
+        else:
+            raise exceptions.InvalidMessageException(
+                    'Message (%s) requires %s have type (%s)' %
+                    (self.__class__.__name__, name, type_))
 
     def to_dict(self):
         data = copy.copy(self.__dict__)
