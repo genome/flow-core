@@ -49,20 +49,38 @@ class Value(object):
         self.connection = connection
         self.key = key
 
-    def clear(self):
-        return self.connection.delete(self.key)
-
     def delete(self):
-        self.connection.delete(self.key)
+        return self.connection.delete(self.key)
 
     def __repr__(self):
         return repr(self.value)
 
 
-class Scalar(Value):
-    def __init__(self, connection, key):
-        Value.__init__(self, connection, key)
+class Timestamp(Value):
+    @property
+    def value(self):
+        return self.connection.get(self.key)
 
+    @property
+    def now(self):
+        sec, usec = self.connection.time()
+        return "%d.%d" %(sec, usec)
+
+    def set(self):
+        now = self.now
+        self.connection.set(self.key, now)
+        return now
+
+    def setnx(self):
+        now = self.now
+        if self.connection.setnx(self.key, now):
+            return now
+        return False
+
+    def delete(self):
+        return self.connection.delete(self.key)
+
+class Scalar(Value):
     @property
     def value(self):
         return self.connection.get(self.key)
@@ -88,9 +106,6 @@ class List(Value):
     def _make_index_error(self, size, idx):
         return IndexError("list range out of index (key=%s, size=%d, index=%d)"
                           % (self.key, size, idx))
-
-    def __init__(self, connection, key):
-        Value.__init__(self, connection, key)
 
     def __getitem__(self, idx):
         try:
@@ -138,9 +153,6 @@ class List(Value):
 
 
 class Set(Value):
-    def __init__(self, connection, key):
-        Value.__init__(self, connection, key)
-
     @property
     def value(self):
         return self.connection.smembers(self.key)
@@ -209,11 +221,14 @@ class Hash(Value):
 
     @value.setter
     def value(self, vals):
-        pipe = self.connection.pipeline()
-        pipe.delete(self.key)
-        pipe.hmset(self.key, self._encode_dict(vals))
-        del_rv, set_rv = pipe.execute()
-        return set_rv
+        if vals:
+            pipe = self.connection.pipeline()
+            pipe.delete(self.key)
+            pipe.hmset(self.key, self._encode_dict(vals))
+            del_rv, set_rv = pipe.execute()
+            return set_rv
+        else:
+            return self.connection.delete(self.key), 0
 
     def __setitem__(self, hkey, val):
         return self.connection.hset(self.key, hkey, self._encode_value(val))
@@ -308,7 +323,7 @@ class Object(object):
         if "module" in cinfo and "class" in cinfo:
             if (self.__class__.__module__ != self._class_info["module"]
                 or self.__class__.__name__ != self._class_info["class"]):
-                raise RuntimeError("Class mismatch for object %s" %self.key)
+                raise TypeError("Class mismatch for object %s" % self.key)
         else:
             return False
 

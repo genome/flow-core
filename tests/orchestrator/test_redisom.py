@@ -4,12 +4,13 @@ import flow.orchestrator.redisom as rom
 
 import os
 import unittest
-from fakeredis import FakeRedis
+from redistest import RedisTest
 
 class SimpleObj(rom.Object):
     """A simple class with one of each type of property to test rom.Object"""
 
     ascalar = rom.Property(rom.Scalar)
+    atimestamp = rom.Property(rom.Timestamp)
     ahash = rom.Property(rom.Hash)
     alist = rom.Property(rom.List)
     aset = rom.Property(rom.Set)
@@ -19,12 +20,41 @@ class SimpleObj(rom.Object):
         self.a_method_arg = arg
         return arg
 
+class OtherObj(rom.Object):
+    """Used to test what happens getting an object of the wrong type"""
+    pass
+
 
 class TestBase(unittest.TestCase):
     def setUp(self):
-        self.conn = FakeRedis()
+        self.conn = RedisTest()
         self.conn.flushall()
 
+
+class TestEncoders(TestBase):
+    def test_json_enc_dec(self):
+        self.assertEqual('null', rom.json_enc(None))
+        self.assertEqual(None, rom.json_dec('null'))
+        self.assertEqual(None, rom.json_dec(None))
+
+        val = {"one": [2, 3, 4], "five": 6}
+        enc = rom.json_enc(val)
+        self.assertTrue(isinstance(enc, basestring))
+        self.assertEqual(val, rom.json_dec(enc))
+
+class TestProperty(TestBase):
+    def test_property_class_validity(self):
+        self.assertRaises(TypeError, rom.Property, basestring)
+        self.assertRaises(TypeError, rom.Property, rom.Property)
+        self.assertRaises(TypeError, rom.Property, int)
+        self.assertRaises(TypeError, rom.Property, "rom.Scalar")
+
+        # There is no assertNotRaises, so we just do these to make sure they
+        # don't throw.
+        rom.Property(rom.Hash)
+        rom.Property(rom.List)
+        rom.Property(rom.Scalar)
+        rom.Property(rom.Set)
 
 class TestScalar(TestBase):
     def test_value(self):
@@ -48,6 +78,24 @@ class TestScalar(TestBase):
         x.value = 8
         self.assertEqual(16, x.increment(8))
         self.assertEqual(2, x.increment(-14))
+
+
+class TestTimestamp(TestBase):
+    def test_timestamp(self):
+        ts = rom.Timestamp(self.conn, "ts")
+        self.assertEqual(None, ts.value)
+
+        first = ts.setnx()
+        self.assertFalse(first is False)
+        self.assertTrue(float(first) >= 0)
+        self.assertEqual(first, ts.value)
+
+        second = ts.set()
+        self.assertTrue(float(second) >= float(first))
+        self.assertEqual(second, ts.value)
+
+        self.assertFalse(ts.setnx())
+        self.assertEqual(second, ts.value)
 
 
 class TestList(TestBase):
@@ -228,6 +276,9 @@ class TestHash(TestBase):
         h.update({"z": "a", "y": "z"})
         self.assertEqual({"x": "y", "y": "z", "z": "a"}, h.value)
 
+        self.assertEqual(None, h.update({}))
+        self.assertEqual({"x": "y", "y": "z", "z": "a"}, h.value)
+
     def test_iteritems(self):
         h = rom.Hash(self.conn, "h")
         native = dict((chr(x), str(x)) for x in xrange(ord('a'), ord('z')+1))
@@ -266,8 +317,11 @@ class TestHash(TestBase):
         self.assertEqual(upd["one"], h["one"])
 
 
-class TestRedisObject(TestBase):
+class TestObject(TestBase):
     def test_keygen(self):
+        # If you are here because you just changed the key generation policy
+        # to not include module/class name, then feel free to remove this
+        # test.
         obj = SimpleObj.create(self.conn)
         components = obj.key.split("/")
         self.assertEqual(4, len(components))
@@ -275,13 +329,23 @@ class TestRedisObject(TestBase):
         self.assertEqual(obj.__module__, components[1])
         self.assertEqual(obj.__class__.__name__, components[2])
 
+    def test_get_object_not_found(self):
+        self.assertRaises(KeyError, rom.get_object, self.conn, "badkey")
+
     def test_get_object(self):
         obj = SimpleObj.create(self.conn, "x", ascalar="hi")
         obj_ref = rom.get_object(self.conn, obj.key)
         self.assertEqual("x", obj.key)
         self.assertEqual("hi", obj.ascalar.value)
 
-    def method_descriptor(self):
+    def test_get_object_wrong_type(self):
+        obj = SimpleObj.create(self.conn, "x", ascalar="hi")
+        self.assertRaises(TypeError, OtherObj.get, self.conn, "x")
+
+        obj = OtherObj.create(self.conn, "x")
+        self.assertRaises(TypeError, SimpleObj.get, self.conn, "x")
+
+    def test_method_descriptor(self):
         obj = SimpleObj.create(self.conn, "x")
         expected = {"object_key": obj.key, "method_name": "a_method"}
         method_descriptor = obj.method_descriptor("a_method")
@@ -346,6 +410,40 @@ class TestRedisObject(TestBase):
         obj = SimpleObj.create(self.conn, "/x")
         self.assertEqual("/x/y/z", obj.subkey("y", "z"))
         self.assertEqual("/x/1/2", obj.subkey(1, 2))
+
+    def test_delete_property(self):
+        obj = SimpleObj.create(self.conn, "/x")
+
+        obj.ascalar = "six"
+        key = obj.ascalar.key
+        self.assertEqual("six", self.conn.get(key))
+        del obj.ascalar
+        self.assertFalse(hasattr(obj, "ascalar"))
+        self.assertEqual(None, self.conn.get(key))
+
+        obj.ahash = {"a": "b"}
+        key = obj.ahash.key
+        self.assertEqual({"a": "b"}, self.conn.hgetall(key))
+        del obj.ahash
+        self.assertFalse(hasattr(obj, "ahash"))
+        self.assertEqual(None, self.conn.get(key))
+
+        obj.aset = set(["x", "y"])
+        key = obj.aset.key
+        self.assertEqual(set(["x", "y"]), self.conn.smembers(key))
+        del obj.aset
+        self.assertFalse(hasattr(obj, "aset"))
+        # redis quirk: smembers returns set([]) when fetching an empty set
+        self.assertEqual(set([]), self.conn.smembers(key))
+
+        obj.alist = ["a", "b", "c"]
+        key = obj.alist.key
+        self.assertEqual(["a", "b", "c"], self.conn.lrange(key, 0, -1))
+        del obj.alist
+        self.assertFalse(hasattr(obj, "alist"))
+        # redis quirk: smembers returns list([]) when fetching an empty list
+        self.assertEqual(0, self.conn.llen(key))
+
 
 
 if __name__ == "__main__":

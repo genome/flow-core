@@ -4,13 +4,11 @@ import redisom as rom
 import time
 
 __all__ = ['NodeBase', 'Flow', 'NodeFailedError', 'NodeAlreadyCompletedError',
-           'Status', 'StartNode', 'StopNode']
+           'Status', 'StartNode', 'StopNode', 'DataNode']
 
 # FIXME: collect service names
 ORCHESTRATOR = "orchestrator"
 
-def _timestamp(redis_ts):
-    return redis_ts[0] + redis_ts[1] * 1e-6
 
 class Status(object):
     new = "new"
@@ -39,9 +37,32 @@ class NodeAlreadyCompletedError(RuntimeError):
         RuntimeError.__init__(self, "Node %s already completed!" %node_key)
 
 
+class InheritedProperty(rom.Property):
+    @staticmethod
+    def make_property(name):
+        private_name = rom._make_private_name(name)
+        def getter(self):
+            v = getattr(self, private_name)
+            if v and v.value:
+                return v
+            if self.flow and self.key != self.flow.key:
+                return getattr(self.flow, name)
+
+        def setter(self, value):
+            getattr(self, private_name).value = value
+
+        def deleter(self):
+            getattr(self, private_name).delete()
+            # Unlike normal rom properties, we don't remove the accessor
+            # when deleting an inherited property
+
+        return property(getter, setter, deleter)
+
+
+
 class NodeBase(rom.Object):
-    execute_timestamp = rom.Property(rom.Scalar)
-    complete_timestamp = rom.Property(rom.Scalar)
+    execute_timestamp = rom.Property(rom.Timestamp)
+    complete_timestamp = rom.Property(rom.Timestamp)
     flow_key = rom.Property(rom.Scalar)
     indegree = rom.Property(rom.Scalar)
     name = rom.Property(rom.Scalar)
@@ -52,67 +73,28 @@ class NodeBase(rom.Object):
     outputs = rom.Property(rom.Hash, value_decoder=rom.json_dec,
                            value_encoder=rom.json_enc)
 
+    environment = InheritedProperty(rom.Hash)
+    user_id = InheritedProperty(rom.Scalar)
+    working_directory = InheritedProperty(rom.Scalar)
+
     @property
     def duration(self):
-        if not self.execute_timestamp.value:
+        if self.execute_timestamp.value is None:
             return None
 
-        if not self.complete_timestamp.value:
-            end = _timestamp(self._connection.time())
+        end = self.complete_timestamp.value
+        if not end:
+            end = float(self.complete_timestamp.now)
         else:
-            end = float(self.complete_timestamp.value)
+            end = float(end)
 
         beg = float(self.execute_timestamp.value)
         return end - beg
 
     @property
-    def environment(self):
-        local_proxy = getattr(self, 'hidden_environment', None)
-        if local_proxy.value:
-            return local_proxy
-
-        if self.flow:
-            return self.flow.environment
-
-    @environment.setter
-    def environment(self, value):
-        self.hidden_environment.value = value
-
-
-    @property
-    def working_directory(self):
-        local_proxy = getattr(self, 'hidden_working_directory', None)
-        if local_proxy.value:
-            return local_proxy
-
-        if self.flow:
-            return self.flow.working_directory
-
-    @working_directory.setter
-    def working_directory(self, value):
-        self.hidden_working_directory.value = value
-
-
-    @property
-    def user_id(self):
-        local_proxy = getattr(self, 'hidden_user_id', None)
-        if local_proxy.value:
-            return local_proxy
-
-        if self.flow:
-            return self.flow.user_id
-
-    @user_id.setter
-    def user_id(self, value):
-        self.hidden_user_id.value = value
-
-    @property
     def inputs(self):
-        try:
-            inp_conn = self.input_connections
-            if not inp_conn:
-                return None
-        except:
+        inp_conn = self.input_connections.value
+        if not inp_conn:
             return None
 
         rv = {}
@@ -128,24 +110,23 @@ class NodeBase(rom.Object):
         return rv
 
     @property
-    def now(self):
-        return _timestamp(self._connection.time())
-
-    @property
     def flow(self):
+        if not self.flow_key or not self.flow_key.value:
+            return None
+
         return rom.get_object(self._connection, self.flow_key.value)
 
     def execute(self, services):
-        if self.execute_timestamp.setnx(self.now):
+        if self.execute_timestamp.setnx() is not False:
             print "Executing '%s' (key=%s)" % (str(self.name), self.key)
-            if self.status != Status.cancelled:
+            if self.status.value != Status.cancelled:
                 self._execute(services)
             else:
                 self.fail(services)
 
     def complete(self, services):
         self.status = Status.success
-        if self.complete_timestamp.setnx(self.now):
+        if self.complete_timestamp.setnx():
             for succ_idx in self.successors:
                 node = self.flow.node(succ_idx)
                 idg = node.indegree.increment(-1)
@@ -167,7 +148,6 @@ class NodeBase(rom.Object):
             if node.indegree.increment(-1) == 0:
                 node.fail(services)
 
-
     def _execute(self, services):
         raise NotImplementedError("_execute not implemented in %s" %
                 self.__class__.__name__)
@@ -178,7 +158,6 @@ class StartNode(NodeBase):
         return self.flow.inputs
 
     def _execute(self, services):
-        self.flow.execute_timestamp.setnx(self.now)
         self.complete(services)
 
 
@@ -190,25 +169,25 @@ class StopNode(NodeBase):
         self.complete(services)
 
     def complete(self, services):
-        print "Completing a stop node (%s)!" % self.name
+        self.status = Status.success
+        print "Completing a stop node (%s, for %s)!" % (self.name, self.flow.name)
         self.flow.complete(services)
 
     def fail(self, services):
+        self.status = Status.failure
         self.flow.fail(services)
 
     def cancel(self, services):
-        self.flow.cancel(services)
+        self.status = Status.failure
+        self.flow.fail(services)
 
 
 class DataNode(NodeBase):
-    pass
+    status = Status.success
 
 
 class Flow(NodeBase):
     node_keys = rom.Property(rom.List)
-    hidden_environment = rom.Property(rom.Hash)
-    hidden_user_id = rom.Property(rom.Scalar)
-    hidden_working_directory = rom.Property(rom.Scalar)
 
     @property
     def flow(self):
@@ -226,12 +205,7 @@ class Flow(NodeBase):
     def _execute(self, services):
         services[ORCHESTRATOR].execute_node(self.node_keys[0])
 
+    def add_node(self, node):
+        node.flow_key = self.key
+        self.node_keys.append(node.key)
 
-class SleepNode(NodeBase):
-    sleep_time = rom.Property(rom.Scalar)
-
-    def _execute(self, services):
-        sleep_time = self.sleep_time.value
-        if sleep_time:
-            time.sleep(float(sleep_time))
-        self.complete(services)
