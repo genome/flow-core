@@ -18,11 +18,11 @@ class Status(object):
     failure = "failure"
     cancelled = "cancelled"
 
-    _completed_values = set([success, failure])
+    _completed_values = set([success, failure, cancelled])
 
     @staticmethod
     def done(status):
-        return status in _completed_values
+        return status in Status._completed_values
 
 
 class NodeFailedError(RuntimeError):

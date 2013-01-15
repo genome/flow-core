@@ -65,6 +65,7 @@ class TestScalar(TestBase):
         self.assertEqual("hello there", str(x))
         x.value = 32
         self.assertEqual(32, int(x))
+        self.assertEqual("'32'", repr(x))
 
     def test_setnx(self):
         x = rom.Scalar(self.conn, "x")
@@ -97,6 +98,15 @@ class TestTimestamp(TestBase):
         self.assertFalse(ts.setnx())
         self.assertEqual(second, ts.value)
 
+    def test_delete(self):
+        ts = rom.Timestamp(self.conn, "ts")
+        val = ts.setnx()
+        self.assertTrue(float(val) > 0)
+        ts.delete()
+        self.assertEqual(None, ts.value)
+        val2 = ts.setnx()
+        self.assertTrue(float(val2) >= float(val))
+
 
 class TestList(TestBase):
     def test_value(self):
@@ -110,6 +120,7 @@ class TestList(TestBase):
         native_list = ["three", "four"]
         l.value = native_list
         self.assertEqual(native_list, l.value)
+        self.assertEqual(repr(native_list), repr(l))
 
     def test_append(self):
         l = rom.List(self.conn, "l")
@@ -173,6 +184,7 @@ class TestSet(TestBase):
         native_set = set(["four"])
         s.value = native_set
         self.assertEqual(native_set, s.value)
+        self.assertEqual(repr(native_set), repr(s))
 
     def test_add(self):
         s = rom.Set(self.conn, "s")
@@ -224,6 +236,15 @@ class TestHash(TestBase):
         native_hash = {"goodbye": "cruel world"}
         h.value = native_hash
         self.assertEqual(native_hash, h.value)
+        self.assertEqual(repr(native_hash), repr(h))
+
+    def test_set_empty(self):
+        h = rom.Hash(self.conn, "h")
+        h.value = {"a": "b"}
+        self.assertEqual(1, len(h))
+        h.value = {}
+        self.assertEqual(0, len(h))
+        self.assertEqual({}, h.value)
 
     def test_setitem(self):
         h = rom.Hash(self.conn, "h")
@@ -329,12 +350,19 @@ class TestObject(TestBase):
         self.assertEqual(obj.__module__, components[1])
         self.assertEqual(obj.__class__.__name__, components[2])
 
+
     def test_get_object_not_found(self):
         self.assertRaises(KeyError, rom.get_object, self.conn, "badkey")
+        self.assertRaises(KeyError, SimpleObj.get, self.conn, "badkey")
 
     def test_get_object(self):
         obj = SimpleObj.create(self.conn, "x", ascalar="hi")
+
         obj_ref = rom.get_object(self.conn, obj.key)
+        self.assertEqual("x", obj_ref.key)
+        self.assertEqual("hi", obj_ref.ascalar.value)
+
+        obj_ref = SimpleObj.get(self.conn, "x")
         self.assertEqual("x", obj.key)
         self.assertEqual("hi", obj.ascalar.value)
 

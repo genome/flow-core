@@ -326,6 +326,7 @@ class Object(object):
                 raise TypeError("Class mismatch for object %s" % self.key)
         else:
             return False
+        return True
 
     @classmethod
     def create(cls, connection=None, key=None, **kwargs):
@@ -356,9 +357,6 @@ class Object(object):
 
     def subkey(self, *args):
         return _make_key(self.key, *args)
-
-    def child_object(self, *args):
-        return get_object(self._connection, self.subkey(*args))
 
 
 def get_object(redis, key):
