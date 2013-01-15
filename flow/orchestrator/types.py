@@ -207,5 +207,21 @@ class Flow(NodeBase):
 
     def add_node(self, node):
         node.flow_key = self.key
-        self.node_keys.append(node.key)
+        return self.node_keys.append(node.key)
+
+    def add_nodes(self, nodes):
+        keys = []
+        for n in nodes:
+            n.flow_key = self.key
+            keys.append(n.key)
+        return self.node_keys.extend(keys)
+
+class SleepNode(NodeBase):
+    sleep_time = rom.Property(rom.Scalar)
+
+    def _execute(self, services):
+        sleep_time = self.sleep_time.value
+        if sleep_time:
+            time.sleep(float(sleep_time))
+        self.complete(services)
 
