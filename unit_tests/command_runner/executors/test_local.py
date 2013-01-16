@@ -4,7 +4,7 @@ try:
 except:
     import mock
 
-from flow_command_runner.executors import local
+from flow.command_runner.executors import local
 
 
 class SubprocessExecutorTest(unittest.TestCase):

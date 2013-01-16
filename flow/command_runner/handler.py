@@ -1,5 +1,5 @@
 import logging
-from flow_command_runner.messages import CommandLineResponseMessage
+from flow.command_runner.messages import CommandLineResponseMessage
 
 LOG = logging.getLogger(__name__)
 

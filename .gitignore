@@ -1,7 +1,7 @@
-.coverage
 *.pyc
+.coverage
 /*.egg
 /*.egg-info
-/distribute-*.tar.gz
-/dist/
 /build/
+/dist/
+/distribute-*.tar.gz

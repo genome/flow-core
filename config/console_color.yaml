@@ -14,7 +14,7 @@ loggers:
         level: INFO
     flow:
         level: INFO
-    flow_command_runner:
+    command_runner:
         level: INFO
 
 handlers:

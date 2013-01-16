@@ -6,7 +6,7 @@ import redis
 import flow.brokers.amqp
 from flow.orchestrator.handlers import *
 from flow.orchestrator.client import OrchestratorClient
-from flow_command_runner.client import CommandLineClient
+from flow.command_runner.client import CommandLineClient
 
 from flow import configuration
 

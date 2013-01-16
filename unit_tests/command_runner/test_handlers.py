@@ -4,8 +4,8 @@ try:
 except:
     import mock
 
-from flow_command_runner.messages import CommandLineResponseMessage
-from flow_command_runner.handler import CommandLineSubmitMessageHandler
+from flow.command_runner.messages import CommandLineResponseMessage
+from flow.command_runner.handler import CommandLineSubmitMessageHandler
 
 class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
     def setUp(self):

@@ -2,7 +2,7 @@ import logging
 import os
 import subprocess
 
-from flow_command_runner import util
+from flow.command_runner import util
 
 LOG = logging.getLogger(__name__)
 

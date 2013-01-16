@@ -2,8 +2,8 @@
 
 import logging
 
-from flow_command_runner.executors import local
-from flow_command_runner.handler import CommandLineSubmitMessageHandler
+from flow.command_runner.executors import local
+from flow.command_runner.handler import CommandLineSubmitMessageHandler
 
 import flow.brokers.amqp
 

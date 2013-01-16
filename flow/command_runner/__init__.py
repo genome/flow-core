@@ -10,4 +10,4 @@ except AttributeError:
 
     nh = NullHandler()
 
-logging.getLogger('flow_command_runner').addHandler(nh)
+logging.getLogger('command_runner').addHandler(nh)

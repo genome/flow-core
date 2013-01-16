@@ -4,7 +4,7 @@ try:
 except:
     import mock
 
-from flow_command_runner.executors import lsf
+from flow.command_runner.executors import lsf
 from pythonlsf import lsf as lsf_driver
 
 

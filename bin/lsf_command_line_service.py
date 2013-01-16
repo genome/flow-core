@@ -3,8 +3,8 @@
 import logging
 import os
 
-from flow_command_runner.executors import lsf
-from flow_command_runner.handler import CommandLineSubmitMessageHandler
+from flow.command_runner.executors import lsf
+from flow.command_runner.handler import CommandLineSubmitMessageHandler
 
 import flow.brokers.amqp
 
