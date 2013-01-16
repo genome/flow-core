@@ -4,10 +4,10 @@ try:
 except:
     import mock
 
-from amqp_manager import channel_manager
-from amqp_manager import connection_manager
-from amqp_manager import exchange_manager
-from amqp_manager import queue_manager
+from flow.amqp_manager import channel_manager
+from flow.amqp_manager import connection_manager
+from flow.amqp_manager import exchange_manager
+from flow.amqp_manager import queue_manager
 
 import os
 

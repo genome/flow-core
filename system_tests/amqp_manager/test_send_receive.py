@@ -1,9 +1,9 @@
 import unittest
 
-from amqp_manager import channel_manager
-from amqp_manager import connection_manager
-from amqp_manager import exchange_manager
-from amqp_manager import queue_manager
+from flow.amqp_manager import channel_manager
+from flow.amqp_manager import connection_manager
+from flow.amqp_manager import exchange_manager
+from flow.amqp_manager import queue_manager
 
 import uuid
 import os
@@ -28,10 +28,10 @@ if os.getenv('LOG_TESTS'):
     LOG.setLevel(LOG_LEVEL)
     logging.getLogger('pika').setLevel(PIKA_LOG_LEVEL)
 else:
-    import amqp_manager
+    import flow.amqp_manager
 
     LOG = logging.getLogger()
-    LOG.addHandler(amqp_manager.nh)
+    LOG.addHandler(flow.amqp_manager.nh)
 
 
 class MockProcess(object):

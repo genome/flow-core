@@ -5,7 +5,7 @@ except:
     import mock
 
 import pika
-from amqp_manager import channel_manager
+from flow.amqp_manager import channel_manager
 
 class ChanelManagerPrefetchTest(unittest.TestCase):
     def test_setup_channel(self):

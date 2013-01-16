@@ -4,7 +4,7 @@ try:
 except:
     import mock
 
-from amqp_manager import queue_manager
+from flow.amqp_manager import queue_manager
 
 
 class QueueManagerSetupTest(unittest.TestCase):

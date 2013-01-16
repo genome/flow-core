@@ -4,7 +4,7 @@ try:
 except:
     import mock
 
-from amqp_manager import exchange_manager
+from flow.amqp_manager import exchange_manager
 
 
 class ExchangeManagerSetupTest(unittest.TestCase):

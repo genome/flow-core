@@ -4,7 +4,7 @@ try:
 except:
     import mock
 
-from amqp_manager import delegate_base
+from flow.amqp_manager import delegate_base
 
 class DelegateTest(unittest.TestCase):
     def setUp(self):

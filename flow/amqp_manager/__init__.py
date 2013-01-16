@@ -17,7 +17,7 @@ logging.getLogger('amqp_manager').setLevel(logging.INFO)
 logging.getLogger('pika').addHandler(nh)
 logging.getLogger('pika').setLevel(logging.INFO)
 
-from amqp_manager.channel_manager import ChannelManager
-from amqp_manager.connection_manager import ConnectionManager
-from amqp_manager.exchange_manager import ExchangeManager
-from amqp_manager.queue_manager import QueueManager
+from flow.amqp_manager.channel_manager import ChannelManager
+from flow.amqp_manager.connection_manager import ConnectionManager
+from flow.amqp_manager.exchange_manager import ExchangeManager
+from flow.amqp_manager.queue_manager import QueueManager

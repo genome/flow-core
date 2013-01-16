@@ -4,7 +4,7 @@ try:
 except:
     import mock
 
-from amqp_manager import connection_manager
+from flow.amqp_manager import connection_manager
 
 class ConnectionManagerStartStopTest(unittest.TestCase):
     def setUp(self):
