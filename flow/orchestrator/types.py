@@ -103,8 +103,8 @@ class NodeBase(rom.Object):
             node = rom.get_object(self._connection, key)
             outputs = node.outputs
             if props:
-                vals = [outputs[k] for k in props.values()]
-                rv.update(zip(props.keys(), vals))
+                for prop_key, prop_value in props.iteritems():
+                    rv[prop_key] = outputs[prop_value]
             else:
                 rv.update(outputs)
 
