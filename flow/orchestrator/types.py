@@ -180,11 +180,13 @@ class StopNode(NodeBase):
         self.flow.complete(services)
 
     def fail(self, services):
+        LOG.debug("Failing a stop node (%s, for %s)!" % (self.name, self.flow.name))
         NodeBase.fail(self, services)
         self.flow.fail(services)
 
     def cancel(self, services):
-        NodeBase.cancel(self, services)
+        LOG.debug("Canceling a stop node (%s, for %s)!" % (self.name, self.flow.name))
+        NodeBase.fail(self, services)
         self.flow.fail(services)
 
 
