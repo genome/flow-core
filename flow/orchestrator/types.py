@@ -36,7 +36,7 @@ class NodeFailedError(RuntimeError):
 class NodeAlreadyCompletedError(RuntimeError):
     def __init__(self, node_key):
         self.node_key = node_key
-        RuntimeError.__init__(self, "Node %s already completed!" %node_key)
+        RuntimeError.__init__(self, "Node %s already completed!" % node_key)
 
 
 class InheritedProperty(rom.Property):
