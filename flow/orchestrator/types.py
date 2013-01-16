@@ -110,12 +110,15 @@ class NodeBase(rom.Object):
 
         return rv
 
-    @property
-    def flow(self):
+    def _get_flow(self, default=None):
         if not self.flow_key or not self.flow_key.value:
-            return None
+            return default
 
         return rom.get_object(self._connection, self.flow_key.value)
+
+    @property
+    def flow(self):
+        return self._get_flow()
 
     def execute(self, services):
         if self.execute_timestamp.setnx() is not False:
@@ -171,16 +174,16 @@ class StopNode(NodeBase):
         self.complete(services)
 
     def complete(self, services):
-        self.status = Status.success
+        NodeBase.complete(self, services)
         LOG.debug("Completing a stop node (%s, for %s)!" % (self.name, self.flow.name))
         self.flow.complete(services)
 
     def fail(self, services):
-        self.status = Status.failure
+        NodeBase.fail(self, services)
         self.flow.fail(services)
 
     def cancel(self, services):
-        self.status = Status.failure
+        NodeBase.cancel(self, services)
         self.flow.fail(services)
 
 
@@ -193,11 +196,7 @@ class Flow(NodeBase):
 
     @property
     def flow(self):
-        flow_key = self.flow_key.value
-        if not flow_key:
-            return self
-        return rom.get_object(self._connection, flow_key)
-
+        return self._get_flow(default=self)
 
     def node(self, idx):
         key = self.node_keys[idx]
