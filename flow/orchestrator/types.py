@@ -2,6 +2,7 @@
 
 import redisom as rom
 import time
+import logging
 
 __all__ = ['NodeBase', 'Flow', 'NodeFailedError', 'NodeAlreadyCompletedError',
            'Status', 'StartNode', 'StopNode', 'DataNode']
