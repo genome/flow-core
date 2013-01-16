@@ -9,6 +9,7 @@ __all__ = ['NodeBase', 'Flow', 'NodeFailedError', 'NodeAlreadyCompletedError',
 # FIXME: collect service names
 ORCHESTRATOR = "orchestrator"
 
+LOG = logging.getLogger(__name__)
 
 class Status(object):
     new = "new"
@@ -118,13 +119,14 @@ class NodeBase(rom.Object):
 
     def execute(self, services):
         if self.execute_timestamp.setnx() is not False:
-            print "Executing '%s' (key=%s)" % (str(self.name), self.key)
+            LOG.debug("Executing '%s' (key=%s)" % (self.name, self.key))
             if self.status.value != Status.cancelled:
                 self._execute(services)
             else:
                 self.fail(services)
 
     def complete(self, services):
+        LOG.debug("Completing '%s' (key=%s)" % (self.name, self.key))
         self.status = Status.success
         if self.complete_timestamp.setnx():
             for succ_idx in self.successors:
@@ -136,11 +138,11 @@ class NodeBase(rom.Object):
             raise NodeAlreadyCompletedError(self.key)
 
     def cancel(self, services):
-        print "Cancelling", self.name
+        LOG.debug("Cancelling '%s' (key=%s)" % (self.name, self.key))
         self.status = Status.cancelled
 
     def fail(self, services):
-        print "Failing", self.name
+        LOG.debug("Failing '%s' (key=%s)" % (self.name, self.key))
         self.status = Status.failure
         for succ_idx in self.successors:
             node = self.flow.node(succ_idx)
@@ -170,7 +172,7 @@ class StopNode(NodeBase):
 
     def complete(self, services):
         self.status = Status.success
-        print "Completing a stop node (%s, for %s)!" % (self.name, self.flow.name)
+        LOG.debug("Completing a stop node (%s, for %s)!" % (self.name, self.flow.name))
         self.flow.complete(services)
 
     def fail(self, services):
@@ -206,15 +208,21 @@ class Flow(NodeBase):
         services[ORCHESTRATOR].execute_node(self.node_keys[0])
 
     def add_node(self, node):
+        LOG.debug("Added node '%s' (key=%s) to flow '%s'" %
+                (node.name, node.key, self.name))
         node.flow_key = self.key
         return self.node_keys.append(node.key)
 
     def add_nodes(self, nodes):
+        # optimized for Redis (instead of just calling self.add_node in a loop)
         keys = []
         for n in nodes:
             n.flow_key = self.key
             keys.append(n.key)
+        LOG.debug("Added %d node(s) to flow '%s'" %
+                (len(keys), self.name))
         return self.node_keys.extend(keys)
+
 
 class SleepNode(NodeBase):
     sleep_time = rom.Property(rom.Scalar)
