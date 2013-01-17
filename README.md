@@ -1,13 +1,7 @@
-Write services that listen to AMQP messages and take action.
+Main Flow repository.
 
-# Requirements
-
-python version 2.6+
-
-## Runtime Dependencies
-pika
-pythonlsf
-
-## Test Dependencies
-mock (unless python 2.7+)
-discover (optional)
+Contains:
+- Orchestrator
+- AMQP Broker
+- Shell Command Service
+- Benchmarking code
