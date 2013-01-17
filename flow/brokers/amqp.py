@@ -2,7 +2,7 @@ import logging
 from flow.protocol import codec
 from flow.protocol.exceptions import InvalidMessageException
 
-import amqp_manager
+import flow.amqp_manager
 import os
 
 LOG = logging.getLogger(__name__)
@@ -11,8 +11,8 @@ class AmqpBroker(object):
     def __init__(self, exchange_name='workflow'):
         arguments = {'alternate-exchange': '%s.alt' % exchange_name}
         self.exchange_name = exchange_name
-        self.exchange_manager = amqp_manager.ExchangeManager(exchange_name,
-                durable=True, persistent=True, **arguments)
+        self.exchange_manager = flow.amqp_manager.ExchangeManager(
+                exchange_name, durable=True, persistent=True, **arguments)
 
         amqp_url = os.getenv('AMQP_URL')
         if not amqp_url:
@@ -30,8 +30,9 @@ class AmqpBroker(object):
     def register_temporary_handler(self, queue_name, handler, routing_key):
         listener = AmqpListener(delivery_callback=handler)
 
-        qm = amqp_manager.QueueManager(queue_name, message_handler=listener,
-                durable=False, auto_delete=True, exclusive=True,
+        qm = flow.amqp_manager.QueueManager(
+                queue_name, message_handler=listener, durable=False,
+                auto_delete=True, exclusive=True,
                 bindings=[{'exchange': self.exchange_name,
                            'topic': routing_key}])
         self.queue_managers.append(qm)
@@ -39,7 +40,7 @@ class AmqpBroker(object):
     def register_handler(self, queue_name, handler):
         listener = AmqpListener(delivery_callback=handler)
 
-        qm = amqp_manager.QueueManager(queue_name,
+        qm = flow.amqp_manager.QueueManager(queue_name,
                 message_handler=listener, durable=True)
         self.queue_managers.append(qm)
 
@@ -60,9 +61,9 @@ class AmqpBroker(object):
 
         delegates = [self.exchange_manager]
         delegates.extend(self.queue_managers)
-        channel_manager = amqp_manager.ChannelManager(delegates=delegates,
+        channel_manager = flow.amqp_manager.ChannelManager(delegates=delegates,
                 prefetch_count=2)
-        self.connection_manager = amqp_manager.ConnectionManager(
+        self.connection_manager = flow.amqp_manager.ConnectionManager(
                 self.amqp_url, delegates=[channel_manager])
 
         for routing_key, message in self._on_ready_publishes:
