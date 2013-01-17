@@ -15,7 +15,11 @@ status_response = flow.orchestrator.messages:NodeStatusResponseMessage
 setup(
         name = 'flow',
         version = '0.1',
-        packages = find_packages(exclude=['unit_tests']),
+        packages = find_packages(exclude=[
+            'unit_tests',
+            'integration_tests',
+            'system_tests'
+        ]),
         entry_points = entry_points,
         install_requires = [
             'argparse',
