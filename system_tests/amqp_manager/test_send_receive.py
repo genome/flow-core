@@ -58,7 +58,9 @@ class SystemTest(unittest.TestCase):
 
         self.process = MockProcess(self.em)
 
-        self.amqp_url = os.environ['TESTING_AMQP_URL']
+        self.amqp_url = os.getenv('TESTING_AMQP_URL')
+        if not self.amqp_url:
+            raise RuntimeError('Environment variable TESTING_AMQP_URL must be set')
         self.queue_name = 'system_test_%s' % uuid.uuid4().hex
 
         self.qm = queue_manager.QueueManager(self.queue_name,
