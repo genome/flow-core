@@ -32,6 +32,7 @@ setup(
         tests_require = [
             'mock',
             'nose',
+            'coverage',
             'fakeredis',
         ],
         test_suite = 'unit_tests',
