@@ -28,7 +28,6 @@ setup(
         ],
         setup_requires = [
             'nose',
-            'nosexcover',
         ],
         tests_require = [
             'mock',
