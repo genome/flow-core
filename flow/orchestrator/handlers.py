@@ -18,7 +18,6 @@ class PetriTokenHandler(object):
     def __call__(self, message):
         try:
             place = get_object(self.redis, message.node_key)
-            print "ADD TOKENS", place.key, message.num_tokens
             place.add_tokens(message.num_tokens, services=self.services)
         except Exception as e:
             LOG.error('Handler (%s) failed to add tokens to place %s: %s'
