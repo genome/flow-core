@@ -33,14 +33,14 @@ class TestBase(unittest.TestCase):
 
 class TestEncoders(TestBase):
     def test_json_enc_dec(self):
-        self.assertEqual('null', rom.json_enc(None))
-        self.assertEqual(None, rom.json_dec('null'))
-        self.assertEqual(None, rom.json_dec(None))
+        self.assertEqual('null', rom.json_enc(None, None))
+        self.assertEqual(None, rom.json_dec(None, 'null'))
+        self.assertEqual(None, rom.json_dec(None, None))
 
         val = {"one": [2, 3, 4], "five": 6}
-        enc = rom.json_enc(val)
+        enc = rom.json_enc(None, val)
         self.assertTrue(isinstance(enc, basestring))
-        self.assertEqual(val, rom.json_dec(enc))
+        self.assertEqual(val, rom.json_dec(None, enc))
 
 class TestProperty(TestBase):
     def test_property_class_validity(self):
@@ -446,21 +446,18 @@ class TestObject(TestBase):
         key = obj.ascalar.key
         self.assertEqual("six", self.conn.get(key))
         del obj.ascalar
-        self.assertFalse(hasattr(obj, "ascalar"))
         self.assertEqual(None, self.conn.get(key))
 
         obj.ahash = {"a": "b"}
         key = obj.ahash.key
         self.assertEqual({"a": "b"}, self.conn.hgetall(key))
         del obj.ahash
-        self.assertFalse(hasattr(obj, "ahash"))
         self.assertEqual(None, self.conn.get(key))
 
         obj.aset = set(["x", "y"])
         key = obj.aset.key
         self.assertEqual(set(["x", "y"]), self.conn.smembers(key))
         del obj.aset
-        self.assertFalse(hasattr(obj, "aset"))
         # redis quirk: smembers returns set([]) when fetching an empty set
         self.assertEqual(set([]), self.conn.smembers(key))
 
@@ -468,7 +465,6 @@ class TestObject(TestBase):
         key = obj.alist.key
         self.assertEqual(["a", "b", "c"], self.conn.lrange(key, 0, -1))
         del obj.alist
-        self.assertFalse(hasattr(obj, "alist"))
         # redis quirk: smembers returns list([]) when fetching an empty list
         self.assertEqual(0, self.conn.llen(key))
 

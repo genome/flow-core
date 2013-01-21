@@ -55,18 +55,35 @@ def build_net(num_places):
 
     return net
 
+def build_all_nets(num_places, num_nets):
+    master_net = pn.SuccessFailurePetriNet.create(connection=conn, name="master net")
+
+    begin = master_net.add_transition(name="Master begin")
+    end = master_net.add_transition(name="Master end")
+
+    master_net.add_arc(master_net.start, begin)
+    master_net.add_arc(end, master_net.success)
+    for i in xrange(num_nets):
+        subnet = build_net(num_places)
+        master_net.add_arc(begin, subnet.start)
+        master_net.add_arc(subnet.success, end)
+
+    return master_net
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num-flows", default=1, type=int,
-                        help="The total number of flows to construct")
+    parser.add_argument("--num-nets", default=1, type=int,
+                        help="The total number of nets to construct")
     parser.add_argument("--nodes-each", default=100, type=int,
                         help="The number of nodes in each flow")
     parser.add_argument("--sleep-time", default=0, type=float,
                         help="Time in seconds each node should sleep")
     parser.add_argument("--amqp-url", default=None,
-                        help="If specified, launch the created flows by "
+                        help="If specified, launch the created nets by "
                              "sending a message on the givel url")
+    parser.add_argument("--image-file", default=None,
+                        help="Save an image of the flow to the given file")
     redis_url = parser.add_mutually_exclusive_group(required=True)
     redis_url.add_argument("--redis-unix",
                            help="Path to redis UNIX domain socket")
@@ -83,13 +100,15 @@ if __name__ == "__main__":
             host = args.redis_url
             conn = redis.Redis(host=host)
 
-    print "num_flows=%d" % args.num_flows
+    print "num_nets=%d" % args.num_nets
     print "nodes_each=%d" % args.nodes_each
     print "sleep_time=%f" % args.sleep_time
 
     beg = time.time()
-    net = build_net(args.nodes_each)
+    net = build_all_nets(args.nodes_each, args.num_nets)
     end = time.time()
+    if args.image_file:
+        net.graph.draw(args.image_file, prog="dot")
     print "net=%s" % str(net.key)
     print "construct_sec=%f" % (end - beg)
 
@@ -102,9 +121,9 @@ if __name__ == "__main__":
         #orchestrator_service.execute_node(str(net.key))
         #broker.listen()
 
-        routing_key = "flow.node.execute"
+        routing_key = "flow.place.add_tokens"
         body = json.dumps({
-            "node_key": str(net.start.key),
+            "place_key": str(net.start.key),
             "num_tokens": 1,
             "message_class": "AddTokensMessage",
         })
@@ -132,7 +151,6 @@ if __name__ == "__main__":
         if exit_code != 0:
             print "Flow execution failed!"
         else:
-            print "Yay"
+            print "execute_sec=%f" % net.duration
             print net.status
-            print "execute_sec: %f seconds" % net.duration
         sys.exit(exit_code)

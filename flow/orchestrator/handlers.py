@@ -2,6 +2,7 @@ import logging
 import time
 import uuid
 
+from flow.petri.net import Place, Transition
 from flow.orchestrator.redisom import get_object, invoke_instance_method
 from flow.orchestrator.types import Status
 
@@ -10,18 +11,32 @@ from flow.orchestrator.messages import NodeStatusRequestMessage, NodeStatusRespo
 LOG = logging.getLogger(__name__)
 
 class PetriTokenHandler(object):
-    def __init__(self, redis=None, services=None, callback_name=None):
+    def __init__(self, redis=None, services=None):
         self.redis = redis
         self.services = services
-        self.callback_name = callback_name
 
     def __call__(self, message):
         try:
-            place = get_object(self.redis, message.node_key)
+            place = Place(self.redis, message.place_key)
             place.add_tokens(message.num_tokens, services=self.services)
         except Exception as e:
             LOG.error('Handler (%s) failed to add tokens to place %s: %s'
-                    % (self, message.node_key, str(e)))
+                    % (self, message.place_key, str(e)))
+            raise e
+
+
+class PetriTransitionHandler(object):
+    def __init__(self, redis=None, services=None):
+        self.redis = redis
+        self.services = services
+
+    def __call__(self, message):
+        try:
+            transition = Transition(self.redis, message.transition_key)
+            transition.fire(services=self.services)
+        except Exception as e:
+            LOG.error('Handler (%s) failed to execute transition %s: %s'
+                    % (self, message.transition_key, str(e)))
             raise e
 
 

@@ -314,7 +314,7 @@ class ObjectMeta(type):
         for name, value in properties.iteritems():
             if isinstance(value, Property):
                 cls._redis_properties[name] = value
-                setattr(cls, name, value.make_property(name))
+                delattr(cls, name)
 
         return cls
 
@@ -323,18 +323,40 @@ class Object(object):
     __metaclass__ = ObjectMeta
 
     def __init__(self, connection, key):
-        self._connection = connection
         if key == None:
             key = _make_key("/" + self.__module__, self.__class__.__name__,
                             uuid4().hex)
-        self.key = key
-        self._class_info = Hash(connection, self.key)
 
-        for name, propdef in self._redis_properties.iteritems():
-            private_name = _make_private_name(name)
-            pobj = propdef.cls(connection=connection, key=self.subkey(name),
+        self.__dict__.update({
+            "key": key,
+            "_redis_property_instances": {},
+            "_class_info": Hash(connection, key),
+            "_connection": connection,
+        })
+
+
+    def __getattr__(self, name):
+        try:
+            whee = self._redis_property_instances[name]
+            return whee
+        except KeyError:
+            try:
+                propdef = self._redis_properties[name]
+            except KeyError:
+                raise AttributeError("No such property %s on class %s" %
+                        (name, self.__class__.__name__))
+            prop = propdef.cls(connection=self._connection, key=self.subkey(name),
                                **propdef.kwargs)
-            setattr(self, private_name, pobj)
+            self._redis_property_instances[name] = prop
+            return prop
+
+    def __setattr__(self, name, value):
+        getattr(self, name).value = value
+
+    def __delattr__(self, name):
+        getattr(self, name).delete()
+        del self._redis_property_instances[name]
+
 
     def exists(self):
         cinfo = self._class_info.value

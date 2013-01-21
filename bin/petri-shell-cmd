@@ -2,44 +2,52 @@
 
 from redis import Redis
 import flow.petri.net as pn
+import os
 import sys
 
-conn = Redis()
-if len(sys.argv) < 2:
-    print "Give a shell command to run"
-    sys.exit(1)
+if __name__ == "__main__":
+    host = os.getenv("FLOW_REDIS_URL")
+    if host:
+        conn = Redis(host=host)
+    else:
+        conn = Redis()
+
+    if len(sys.argv) < 2:
+        print "Give a shell command to run"
+        sys.exit(1)
 
 
-# Create places
-net = pn.SuccessFailurePetriNet.create(connection=conn, name="S/F Shell Command")
-running = net.add_place(name="running")
-msg_exec_ok = net.add_place(name="msg_exec_ok")
-msg_exec_fail = net.add_place(name="msg_exec_fail")
+    # Create places
+    net = pn.SuccessFailurePetriNet.create(connection=conn,
+            name="Shell Command")
+    running = net.add_place(name="running")
+    msg_exec_ok = net.add_place(name="msg_exec_ok")
+    msg_exec_fail = net.add_place(name="msg_exec_fail")
 
-# "execute" transition action
-execute_cmd = pn.ShellCommand.create(connection=conn, cmdline=sys.argv[1:],
-        success_place_key=msg_exec_ok.key,
-        failure_place_key=msg_exec_fail.key)
+    # "execute" transition action
+    execute_cmd = pn.ShellCommand.create(connection=conn, cmdline=sys.argv[1:],
+            success_place_key=msg_exec_ok.key,
+            failure_place_key=msg_exec_fail.key)
 
-# Create transitions
-execute = net.add_transition(name="execute", actions=[execute_cmd.key])
-exec_success = net.add_transition(name="exec_success")
-exec_failure = net.add_transition(name="exec_failure")
+    # Create transitions
+    execute = net.add_transition(name="execute", actions=[execute_cmd.key])
+    exec_success = net.add_transition(name="exec_success")
+    exec_failure = net.add_transition(name="exec_failure")
 
-# Add arcs to hook everything up
-net.add_arc(net.start, execute)
-net.add_arc(execute, running)
-net.add_arc(running, exec_success)
-net.add_arc(running, exec_failure)
-net.add_arc(msg_exec_ok, exec_success)
-net.add_arc(msg_exec_fail, exec_failure)
-net.add_arc(exec_success, net.success)
-net.add_arc(exec_failure, net.failure)
+    # Add arcs to hook everything up
+    net.add_arc(net.start, execute)
+    net.add_arc(execute, running)
+    net.add_arc(running, exec_success)
+    net.add_arc(running, exec_failure)
+    net.add_arc(msg_exec_ok, exec_success)
+    net.add_arc(msg_exec_fail, exec_failure)
+    net.add_arc(exec_success, net.success)
+    net.add_arc(exec_failure, net.failure)
 
-print str(net)
-open("before.dot", "w").write(str(net.graph))
-net.graph.draw("before.png", prog="dot")
-net.execute()
-net.graph.draw("after.png", prog="dot")
-open("after.dot", "w").write(str(net.graph))
-print str(net)
+    print str(net)
+    open("before.dot", "w").write(str(net.graph))
+    net.graph.draw("before.png", prog="dot")
+    net.execute()
+    net.graph.draw("after.png", prog="dot")
+    open("after.dot", "w").write(str(net.graph))
+    print str(net)

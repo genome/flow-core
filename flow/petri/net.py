@@ -10,34 +10,29 @@ class Node(rom.Object):
 
     @property
     def net(self):
-        return rom.get_object(self._connection, self.net_key)
+        return PetriNet(self._connection, self.net_key)
 
 
 class Place(Node):
     tokens = rom.Property(rom.Scalar)
-    arcs_out = rom.Property(rom.Hash)
+    arcs_out = rom.Property(rom.Set)
     last_token_timestamp = rom.Property(rom.Timestamp)
 
-    def consume_tokens(self, n):
-        n = int(n)
-        print "'%s' loses %d token(s)" % (self.name, n)
-        self.tokens.increment(-n)
+    def consume_token(self):
+        self.tokens.increment(-1)
 
     def add_tokens(self, n, services=None):
         self.last_token_timestamp.set()
         n = int(n)
-        print "'%s' gains %d token(s)" % (self.name, int(n))
         self.tokens.increment(n)
 
         if not self.arcs_out:
             print "Stopping in '%s'" % self.name
         else:
-            for dst_key, multiplicity in self.arcs_out.iteritems():
-                dst = rom.get_object(self._connection, dst_key)
-                print "'%s' tells '%s' that it just got %d token(s)" %(
-                        self.name, dst.name, n)
-                if dst.notify(self.key, n):
-                    dst.fire(services=services)
+            for dst_key in self.arcs_out:
+                dst = Transition(self._connection, dst_key)
+                if dst.notify(self.key):
+                    services['orchestrator'].fire_transition(dst.key)
 
     def __str__(self):
         return "%s: %d" % (self.name, self.tokens)
@@ -45,38 +40,29 @@ class Place(Node):
 
 class Transition(Node):
     actions = rom.Property(rom.List)
-    pred = rom.Property(rom.Hash)
-    arcs_in = rom.Property(rom.Hash)
-    arcs_out = rom.Property(rom.Hash)
+    pred = rom.Property(rom.Set)
+    arcs_in = rom.Property(rom.Set)
+    arcs_out = rom.Property(rom.Set)
 
-    def notify(self, place_key, num_tokens):
+    def notify(self, place_key):
         # FIXME we should probably pipeline this block
-        n = self.pred.increment(place_key, -num_tokens)
-        if n == 0:
-            del self.pred[place_key]
-        ready = len(self.pred) == 0
-
-        if ready:
-            print "'%s' is pleased!" % self.name
-        else:
-            print "'%s' is indifferent." % self.name
-        return ready
+        removed, size = self.pred.remove(place_key)
+        return removed and size == 0
 
     def fire(self, services=None):
         print "'%s' fires!" % self.name
-        for src_key, multiplicity in self.arcs_in.iteritems():
-            src = rom.get_object(self._connection, src_key)
-            src.consume_tokens(multiplicity)
-
         for action_key in self.actions:
             action = rom.get_object(self._connection, action_key)
             print "\n** running transition action\n"
             action.execute()
             print "\n** transition action complete\n"
 
-        for dst_key, multiplicity in self.arcs_out.iteritems():
-            dst = rom.get_object(self._connection, dst_key)
-            services['orchestrator'].add_tokens(dst.key, multiplicity)
+        for dst_key in self.arcs_out:
+            services['orchestrator'].add_tokens(dst_key)
+
+        for src_key in self.arcs_in:
+            src = Place(self._connection, src_key)
+            src.consume_token()
 
 
 class TransitionAction(rom.Object):
@@ -92,9 +78,9 @@ class ShellCommand(TransitionAction):
     def execute(self, **kwargs):
         rv = subprocess.call(self.cmdline.value)
         if rv == 0:
-            place = rom.get_object(self._connection, self.success_place_key)
+            place = Place(self._connection, self.success_place_key)
         else:
-            place = rom.get_object(self._connection, self.failure_place_key)
+            place = Place(self._connection, self.failure_place_key)
 
         place.add_tokens(1)
 
@@ -111,16 +97,14 @@ class PetriNet(Node):
     def status(self):
         active = []
         for pkey in self.places:
-            place = rom.get_object(self._connection, pkey)
+            place = Place(self._connection, pkey)
             if int(place.tokens) > 0:
                 active.append(str(place.name))
-        print "Status:", active
         return ", ".join(active)
 
     @property
     def start(self):
-        print "Looking up start node", self.start_key
-        return rom.get_object(self._connection, self.start_key)
+        return Place(self._connection, self.start_key)
 
     def add_place(self, name):
         place = Place.create(self._connection, name=name, net_key=self.key,
@@ -134,19 +118,18 @@ class PetriNet(Node):
         self.transitions.add(transition.key)
         return transition
 
-    def add_arc(self, src, dst, multiplicity=1):
-        src.arcs_out.increment(dst.key, multiplicity)
+    def add_arc(self, src, dst):
+        src.arcs_out.add(dst.key)
 
         if isinstance(dst, Transition):
-            dst.pred[src.key] = multiplicity
-            dst.arcs_in.increment(src.key, multiplicity)
+            dst.pred.add(src.key)
+            dst.arcs_in.add(src.key)
 
     def execute(self):
-        print "Starting node", self.start_key, self.start
         self.start.add_tokens(1)
 
     def __str__(self):
-        places = [rom.get_object(self._connection, x) for x in self.places]
+        places = [Place(self._connection, x) for x in self.places]
         return "%s: <%s>" % (self.name,
             ", ".join((str(x) for x in places)))
 
@@ -155,8 +138,8 @@ class PetriNet(Node):
         graph = pygraphviz.AGraph(directed=True)
         arcs = {}
         for pkey in self.places:
-            p = rom.get_object(self._connection, pkey)
-            arcs.setdefault(pkey, set()).update(p.arcs_out.keys())
+            p = Place(self._connection, pkey)
+            arcs.setdefault(pkey, set()).update(p.arcs_out)
             if int(p.tokens) > 0:
                 color = "grey"
             else:
@@ -165,8 +148,8 @@ class PetriNet(Node):
                     style="filled", fillcolor=color)
 
         for tkey in self.transitions:
-            t = rom.get_object(self._connection, tkey)
-            arcs.setdefault(tkey, set()).update(t.arcs_out.keys())
+            t = Transition(self._connection, tkey)
+            arcs.setdefault(tkey, set()).update(t.arcs_out)
             graph.add_node(t.key, label=t.name, shape="box",
                     style="filled", fillcolor="black", fontcolor="white")
 
@@ -175,6 +158,7 @@ class PetriNet(Node):
                 graph.add_edge(src_key, dst_key)
 
         return graph
+
 
 class SuccessFailurePetriNet(PetriNet):
     success_key = rom.Property(rom.Scalar)
@@ -186,12 +170,22 @@ class SuccessFailurePetriNet(PetriNet):
         self.failure_key = self.add_place(name="failure").key
 
     @property
+    def status(self):
+        active = []
+        if int(self.success.tokens) > 0:
+            return "success"
+        if int(self.failure.tokens) > 0:
+            return "failure"
+
+        return "running"
+
+    @property
     def success(self):
-        return rom.get_object(self._connection, self.success_key)
+        return Place(self._connection, self.success_key)
 
     @property
     def failure(self):
-        return rom.get_object(self._connection, self.failure_key)
+        return Place(self._connection, self.failure_key)
 
     @property
     def duration(self):

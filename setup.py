@@ -4,6 +4,7 @@ entry_points = '''
 [flow.protocol.message_classes]
 execute_node = flow.orchestrator.messages:ExecuteNodeMessage
 add_tokens = flow.orchestrator.messages:AddTokensMessage
+fire_transition = flow.orchestrator.messages:FireTransitionMessage
 status_request = flow.orchestrator.messages:NodeStatusRequestMessage
 status_response = flow.orchestrator.messages:NodeStatusResponseMessage
 submit_command = flow.command_runner.messages:CommandLineSubmitMessage

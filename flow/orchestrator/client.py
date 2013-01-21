@@ -8,6 +8,9 @@ class OrchestratorClient(object):
     def __init__(self, broker=None,
             execute_node_routing_key=None,
 
+            add_tokens_routing_key=None,
+            fire_transition_routing_key=None,
+
             submit_flow_routing_key=None,
             submit_flow_success_routing_key=None,
             submit_flow_failure_routing_key=None,
@@ -16,15 +19,22 @@ class OrchestratorClient(object):
         self.broker = broker
         self.execute_node_routing_key        = execute_node_routing_key
 
+        self.add_tokens_routing_key = add_tokens_routing_key
+        self.fire_transition_routing_key = fire_transition_routing_key
+
         self.submit_flow_routing_key         = submit_flow_routing_key
         self.submit_flow_success_routing_key = submit_flow_success_routing_key
         self.submit_flow_failure_routing_key = submit_flow_failure_routing_key
         self.submit_flow_error_routing_key   = submit_flow_error_routing_key
 
-    def add_tokens(self, node_key, num_tokens=1):
-        message = AddTokensMessage(node_key=node_key,
+    def add_tokens(self, place_key, num_tokens=1):
+        message = AddTokensMessage(place_key=place_key,
                 num_tokens=int(num_tokens))
-        self.broker.publish(self.execute_node_routing_key, message)
+        self.broker.publish(self.add_tokens_routing_key, message)
+
+    def fire_transition(self, transition_key):
+        message = FireTransitionMessage(transition_key=transition_key)
+        self.broker.publish(self.fire_transition_routing_key, message)
 
     def execute_node(self, node_key):
         message = ExecuteNodeMessage(node_key=node_key)

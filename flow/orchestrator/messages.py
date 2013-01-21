@@ -1,6 +1,7 @@
 from flow.protocol.message import Message
 
-__all__ = ['FlowSubmitMessage', 'ExecuteNodeMessage', 'AddTokensMessage']
+__all__ = ['FlowSubmitMessage', 'ExecuteNodeMessage', 'AddTokensMessage',
+        'FireTransitionMessage']
 
 class FlowSubmitMessage(Message):
     required_fields = {
@@ -15,8 +16,13 @@ class FlowSubmitMessage(Message):
 
 class AddTokensMessage(Message):
     required_fields = {
-            'node_key': basestring,
+            'place_key': basestring,
             'num_tokens': int,
+    }
+
+class FireTransitionMessage(Message):
+    required_fields = {
+            'transition_key': basestring,
     }
 
 class ExecuteNodeMessage(Message):
