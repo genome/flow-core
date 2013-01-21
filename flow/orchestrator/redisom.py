@@ -6,14 +6,20 @@ import json
 
 KEY_DELIM = '/'
 
-def json_enc(obj):
+def json_enc(conn, obj):
     return json.dumps(obj)
 
-def json_dec(text):
+def json_dec(conn, text):
     if text is None:
         return None
     else:
         return json.loads(text)
+
+def obj_enc(conn, obj):
+    return obj.key
+
+def obj_dec(conn, key):
+    return get_object(conn, key)
 
 class ValueMeta(type):
     pass
@@ -206,13 +212,16 @@ class Hash(Value):
         if not self._value_encoder:
             return v
         else:
-            return self._value_encoder(v)
+            return self._value_encoder(self.connection, v)
 
     def _decode_value(self, v):
         if not self._value_decoder:
             return v
         else:
-            return self._value_decoder(v)
+            return self._value_decoder(self.connection, v)
+
+    def increment(self, key, n):
+        return self.connection.hincrby(self.key, key, n)
 
     @property
     def value(self):
@@ -240,6 +249,15 @@ class Hash(Value):
         exists, value = pipe.execute()
         if not exists:
             raise KeyError(str(hkey))
+        return self._decode_value(value)
+
+    def get(self, key, default=None):
+        pipe = self.connection.pipeline()
+        pipe.hexists(self.key, hkey)
+        pipe.hget(self.key, hkey)
+        exists, value = pipe.execute()
+        if not exists:
+            return default
         return self._decode_value(value)
 
     def __delitem__(self, hkey):
@@ -328,6 +346,9 @@ class Object(object):
             return False
         return True
 
+    def _on_create(self):
+        pass
+
     @classmethod
     def create(cls, connection=None, key=None, **kwargs):
         obj = cls(connection, key)
@@ -338,6 +359,8 @@ class Object(object):
             if k not in obj._redis_properties:
                 raise AttributeError("Unknown attribute %s" % k)
             setattr(obj, k, v)
+
+        obj._on_create()
 
         return obj
 
