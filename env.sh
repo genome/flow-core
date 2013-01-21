@@ -1,6 +1,12 @@
-export PATH=`pwd`/bin:$PATH
-export PERL5LIB=`pwd`/lib:$PERL5LIB
+export FLOW_HOME=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
+export PATH=$FLOW_HOME/bin:$PATH
 export AMQP_URL=amqp://guest:guest@vmpool82:5672/workflow
-export RUOTE_REDIS_URL=redis://vmpool83
-export INPUTS_REDIS_URL=redis://vmpool84
+export FLOW_REDIS_URL=blade14-2-5
+
+echo ""
+echo "Setting up flow base environment in $FLOW_HOME"
+echo ""
+echo "AMQP_URL: $AMQP_URL"
+echo "FLOW_REDIS_URL: $FLOW_REDIS_URL"
+echo ""

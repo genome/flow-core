@@ -16,13 +16,15 @@ class Node(rom.Object):
 class Place(Node):
     tokens = rom.Property(rom.Scalar)
     arcs_out = rom.Property(rom.Hash)
+    last_token_timestamp = rom.Property(rom.Timestamp)
 
     def consume_tokens(self, n):
         n = int(n)
         print "'%s' loses %d token(s)" % (self.name, n)
         self.tokens.increment(-n)
 
-    def add_tokens(self, n):
+    def add_tokens(self, n, services=None):
+        self.last_token_timestamp.set()
         n = int(n)
         print "'%s' gains %d token(s)" % (self.name, int(n))
         self.tokens.increment(n)
@@ -35,7 +37,7 @@ class Place(Node):
                 print "'%s' tells '%s' that it just got %d token(s)" %(
                         self.name, dst.name, n)
                 if dst.notify(self.key, n):
-                    dst.fire()
+                    dst.fire(services=services)
 
     def __str__(self):
         return "%s: %d" % (self.name, self.tokens)
@@ -60,7 +62,7 @@ class Transition(Node):
             print "'%s' is indifferent." % self.name
         return ready
 
-    def fire(self):
+    def fire(self, services=None):
         print "'%s' fires!" % self.name
         for src_key, multiplicity in self.arcs_in.iteritems():
             src = rom.get_object(self._connection, src_key)
@@ -74,7 +76,7 @@ class Transition(Node):
 
         for dst_key, multiplicity in self.arcs_out.iteritems():
             dst = rom.get_object(self._connection, dst_key)
-            dst.add_tokens(multiplicity)
+            services['orchestrator'].add_tokens(dst.key, multiplicity)
 
 
 class TransitionAction(rom.Object):
@@ -104,6 +106,16 @@ class PetriNet(Node):
 
     def _on_create(self):
         self.start_key = self.add_place(name="start").key
+
+    @property
+    def status(self):
+        active = []
+        for pkey in self.places:
+            place = rom.get_object(self._connection, pkey)
+            if int(place.tokens) > 0:
+                active.append(str(place.name))
+        print "Status:", active
+        return ", ".join(active)
 
     @property
     def start(self):
@@ -180,3 +192,12 @@ class SuccessFailurePetriNet(PetriNet):
     @property
     def failure(self):
         return rom.get_object(self._connection, self.failure_key)
+
+    @property
+    def duration(self):
+        beg = self.start.last_token_timestamp.value
+        end = self.success.last_token_timestamp.value
+        if beg is None or end is None:
+            return None
+
+        return float(end) - float(beg)

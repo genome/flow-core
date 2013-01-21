@@ -21,6 +21,11 @@ class OrchestratorClient(object):
         self.submit_flow_failure_routing_key = submit_flow_failure_routing_key
         self.submit_flow_error_routing_key   = submit_flow_error_routing_key
 
+    def add_tokens(self, node_key, num_tokens=1):
+        message = AddTokensMessage(node_key=node_key,
+                num_tokens=int(num_tokens))
+        self.broker.publish(self.execute_node_routing_key, message)
+
     def execute_node(self, node_key):
         message = ExecuteNodeMessage(node_key=node_key)
         self.broker.publish(self.execute_node_routing_key, message)

@@ -1,6 +1,6 @@
 from flow.protocol.message import Message
 
-__all__ = ['FlowSubmitMessage', 'ExecuteNodeMessage']
+__all__ = ['FlowSubmitMessage', 'ExecuteNodeMessage', 'AddTokensMessage']
 
 class FlowSubmitMessage(Message):
     required_fields = {
@@ -12,6 +12,12 @@ class FlowSubmitMessage(Message):
             'error_routing_key': basestring,
     }
 
+
+class AddTokensMessage(Message):
+    required_fields = {
+            'node_key': basestring,
+            'num_tokens': int,
+    }
 
 class ExecuteNodeMessage(Message):
     required_fields = {

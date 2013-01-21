@@ -9,6 +9,23 @@ from flow.orchestrator.messages import NodeStatusRequestMessage, NodeStatusRespo
 
 LOG = logging.getLogger(__name__)
 
+class PetriTokenHandler(object):
+    def __init__(self, redis=None, services=None, callback_name=None):
+        self.redis = redis
+        self.services = services
+        self.callback_name = callback_name
+
+    def __call__(self, message):
+        try:
+            place = get_object(self.redis, message.node_key)
+            print "ADD TOKENS", place.key, message.num_tokens
+            place.add_tokens(message.num_tokens, services=self.services)
+        except Exception as e:
+            LOG.error('Handler (%s) failed to add tokens to place %s: %s'
+                    % (self, message.node_key, str(e)))
+            raise e
+
+
 class MethodDescriptorHandler(object):
     def __init__(self, services=None, callback_name=None,
             queue_name=None, storage=None):
@@ -62,7 +79,7 @@ class NodeStatusRequestHandler(object):
                     message.node_key)
         else:
             if node:
-                status = node.status.value
+                status = str(node.status)
                 if status:
                     response_message.status = status
                 else:
