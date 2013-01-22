@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-from flow.orchestrator.types import *
+from flow.orchestrator import types as ft
 
 from redistest import RedisTest
 import mock
+from mock import Mock
 import unittest
 
 class TestBase(unittest.TestCase):
@@ -11,9 +12,9 @@ class TestBase(unittest.TestCase):
         self.conn = RedisTest()
 
     def _create_node(self, **kwargs):
-        return NodeBase.create(connection=self.conn, **kwargs)
+        return ft.NodeBase.create(connection=self.conn, **kwargs)
 
-class TestStatus(TestBase):
+class TestStatus(unittest.TestCase):
     def test_done(self):
         self.assertEqual(False, Status.done(Status.new))
         self.assertEqual(False, Status.done(Status.running))
@@ -47,7 +48,7 @@ class TestNodeBase(TestBase):
         self.assertEqual(float(end)-float(beg), node.duration)
 
     def test_flow_accessor(self):
-        flow = Flow.create(connection=self.conn, name="flow")
+        flow = ft.Flow.create(connection=self.conn, name="flow")
         node = self._create_node(name="Test Node")
         self.assertEqual(None, node.flow)
         node.flow_key = flow.key
@@ -72,12 +73,12 @@ class TestNodeBase(TestBase):
         when = node.complete_timestamp.value
         self.assertNotEqual(None, when)
         self.assertTrue(float(when) >= 0)
-        self.assertRaises(NodeAlreadyCompletedError, node.complete,
+        self.assertRaises(ft.NodeAlreadyCompletedError, node.complete,
                           no_services)
         self.assertEqual(when, node.complete_timestamp.value)
 
     def test_complete_with_successors(self):
-        flow = Flow.create(connection=self.conn, name="Test Flow")
+        flow = ft.Flow.create(connection=self.conn, name="Test Flow")
         nodes = [self._create_node(name="n%d" %x) for x in xrange(3)]
 
         for n in nodes:
@@ -88,7 +89,7 @@ class TestNodeBase(TestBase):
         nodes[1].indegree = 1
         nodes[2].indegree = 2
 
-        mock_orchestrator = mock.MagicMock()
+        mock_orchestrator = Mock()
         services = { "orchestrator": mock_orchestrator }
 
         nodes[0].complete(services)
@@ -98,7 +99,7 @@ class TestNodeBase(TestBase):
         mock_orchestrator.assert_has_calls(expected_call)
         self.assertEqual(1, len(mock_orchestrator.mock_calls))
 
-        self.assertRaises(NodeAlreadyCompletedError, nodes[0].complete,
+        self.assertRaises(ft.NodeAlreadyCompletedError, nodes[0].complete,
                           services)
 
     def test_cancel(self):
@@ -116,7 +117,7 @@ class TestNodeBase(TestBase):
         self.assertEqual(Status.failure, node.status.value)
 
     def test_fail_with_successors(self):
-        flow = Flow.create(connection=self.conn, name="Test Flow")
+        flow = ft.Flow.create(connection=self.conn, name="Test Flow")
         nodes = [self._create_node(name="n%d" %x) for x in xrange(3)]
 
         for n in nodes:
@@ -129,7 +130,7 @@ class TestNodeBase(TestBase):
 
         # FIXME: Nodes should fail successors through the orchestrator.
         #        They currently do so by directly calling them.
-        mock_orchestrator = mock.MagicMock()
+        mock_orchestrator = Mock()
         services = { "orchestrator": mock_orchestrator }
 
         nodes[0].fail(services)
@@ -149,8 +150,8 @@ class TestNodeBase(TestBase):
         f1_env = {"PATH": "/bin:/usr/bin", "HOME": "/home/frog"}
         f2_env = {"x": "y"}
         node_env = {"a": "b"}
-        f1 = Flow.create(connection=self.conn, name="f1")
-        f2 = Flow.create(connection=self.conn, name="f2")
+        f1 = ft.Flow.create(connection=self.conn, name="f1")
+        f2 = ft.Flow.create(connection=self.conn, name="f2")
         node = self._create_node(name="Test Node", flow_key=f2.key)
         f1.add_node(f2)
         f2.add_node(node)
@@ -204,8 +205,8 @@ class TestNodeBase(TestBase):
 class TestFlow(TestBase):
     def setUp(self):
         TestBase.setUp(self)
-        self.flow = Flow.create(connection=self.conn, name="Test flow")
-        self.data = DataNode.create(connection=self.conn, name="inputs")
+        self.flow = ft.Flow.create(connection=self.conn, name="Test flow")
+        self.data = ft.DataNode.create(connection=self.conn, name="inputs")
         self.flow.input_connections[self.data.key] = {}
         self.native_outputs = {
                 "scalar": "value",
@@ -224,7 +225,7 @@ class TestFlow(TestBase):
     def test_inputs(self):
         self.assertEqual(self.native_outputs, self.flow.inputs)
 
-        start_node = StartNode.create(connection=self.conn, name="start")
+        start_node = ft.StartNode.create(connection=self.conn, name="start")
         self.flow.add_node(start_node)
         self.assertEqual(self.native_outputs, start_node.outputs)
 
@@ -240,7 +241,7 @@ class TestFlow(TestBase):
         # FIXME: stop nodes directly complete themselves and their flow,
         #        they should do it via the orchestrator
 
-        stop_node = StopNode.create(connection=self.conn, name="stop")
+        stop_node = ft.StopNode.create(connection=self.conn, name="stop")
         self.flow.add_node(stop_node)
         self.assertEqual(self.flow.key, stop_node.flow.key)
         no_services = {}
@@ -249,7 +250,7 @@ class TestFlow(TestBase):
         self.assertEqual(Status.success, self.flow.status.value)
 
     def test_stop_node_cancel(self):
-        stop_node = StopNode.create(connection=self.conn, name="stop")
+        stop_node = ft.StopNode.create(connection=self.conn, name="stop")
         self.flow.add_node(stop_node)
         no_services = {}
         stop_node.cancel(no_services)
@@ -257,7 +258,7 @@ class TestFlow(TestBase):
         self.assertEqual(Status.failure, self.flow.status.value)
 
     def test_stop_node_fail(self):
-        stop_node = StopNode.create(connection=self.conn, name="stop")
+        stop_node = ft.StopNode.create(connection=self.conn, name="stop")
         self.flow.add_node(stop_node)
         no_services = {}
         stop_node.fail(no_services)
