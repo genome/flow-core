@@ -86,6 +86,7 @@ class Timestamp(Value):
     def delete(self):
         return self.connection.delete(self.key)
 
+
 class Scalar(Value):
     @property
     def value(self):
@@ -334,11 +335,9 @@ class Object(object):
             "_connection": connection,
         })
 
-
     def __getattr__(self, name):
         try:
-            whee = self._redis_property_instances[name]
-            return whee
+            return self._redis_property_instances[name]
         except KeyError:
             try:
                 propdef = self._redis_properties[name]
@@ -356,7 +355,6 @@ class Object(object):
     def __delattr__(self, name):
         getattr(self, name).delete()
         del self._redis_property_instances[name]
-
 
     def exists(self):
         cinfo = self._class_info.value
