@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from flow.orchestrator import types as ft
+from flow.orchestrator.types import Status
 
 from redistest import RedisTest
 import mock
