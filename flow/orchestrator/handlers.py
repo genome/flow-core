@@ -4,7 +4,6 @@ import uuid
 
 from flow.petri.net import Place, Transition
 from flow.orchestrator.redisom import get_object, invoke_instance_method
-from flow.orchestrator.types import Status
 
 from flow.orchestrator.messages import NodeStatusRequestMessage, NodeStatusResponseMessage
 
@@ -123,9 +122,9 @@ class NodeStatusResponseHandler(object):
     def __call__(self, message):
         status = message.status
         LOG.debug('Status for node (%s) is %s', message.node_key, status)
-        if status == Status.success:
+        if status == "success":
             self.broker.exit(0)
-        elif status == Status.failure:
+        elif status == "failure":
             self.broker.exit(1)
         else:
             time.sleep(self.polling_interval)
