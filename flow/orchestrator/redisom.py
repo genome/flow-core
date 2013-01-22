@@ -33,21 +33,6 @@ class Property(object):
         self.cls = cls
         self.kwargs = kwargs
 
-    @staticmethod
-    def make_property(name):
-        private_name = _make_private_name(name)
-        def getter(self):
-            return getattr(self, private_name)
-
-        def setter(self, value):
-            getattr(self, private_name).value = value
-
-        def deleter(self):
-            getattr(self, private_name).delete()
-            delattr(self, private_name)
-
-        return property(getter, setter, deleter)
-
 
 class Value(object):
     __metaclass__ = ValueMeta
