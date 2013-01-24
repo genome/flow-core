@@ -360,8 +360,10 @@ class TestObject(TestBase):
         self.assertEqual(obj.__class__.__name__, components[2])
 
     def test_get_object_not_found(self):
-        self.assertRaises(KeyError, rom.get_object, connection=self.conn, key="badkey")
-        self.assertRaises(KeyError, SimpleObj.get, connection=self.conn, key="badkey")
+        self.assertRaises(KeyError, rom.get_object, connection=self.conn,
+                key="badkey")
+        self.assertRaises(KeyError, SimpleObj.get, connection=self.conn,
+                key="badkey")
 
     def test_get_object(self):
         obj = SimpleObj.create(connection=self.conn, key="x", ascalar="hi")
@@ -376,10 +378,12 @@ class TestObject(TestBase):
 
     def test_get_object_wrong_type(self):
         obj = SimpleObj.create(connection=self.conn, key="x", ascalar="hi")
-        self.assertRaises(TypeError, OtherObj.get, connection=self.conn, key="x")
+        self.assertRaises(TypeError, OtherObj.get, connection=self.conn,
+                key="x")
 
         obj = OtherObj.create(connection=self.conn, key="x")
-        self.assertRaises(TypeError, SimpleObj.get, connection=self.conn, key="x")
+        self.assertRaises(TypeError, SimpleObj.get, connection=self.conn,
+                key="x")
 
     def test_method_descriptor(self):
         obj = SimpleObj.create(connection=self.conn, key="x")
@@ -401,7 +405,8 @@ class TestObject(TestBase):
                           self.conn, method_descriptor)
 
     def test_get_object_nexist(self):
-        self.assertRaises(KeyError, SimpleObj.get, connection=self.conn, key="x")
+        self.assertRaises(KeyError, SimpleObj.get, connection=self.conn,
+                key="x")
 
     def test_create(self):
         obj = SimpleObj.create(connection=self.conn, key="x", ascalar=42)
@@ -440,8 +445,8 @@ class TestObject(TestBase):
 
 
     def test_create_invalid_prop(self):
-        self.assertRaises(AttributeError, SimpleObj.create, connection=self.conn, key="x",
-                          badprop="bad")
+        self.assertRaises(AttributeError, SimpleObj.create,
+                connection=self.conn, key="x", badprop="bad")
 
     def test_subkey(self):
         obj = SimpleObj.create(connection=self.conn, key="/x")
