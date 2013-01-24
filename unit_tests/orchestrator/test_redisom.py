@@ -58,33 +58,33 @@ class TestProperty(TestBase):
 
 class TestScalar(TestBase):
     def test_value(self):
-        x = rom.Scalar(self.conn, "x")
-        self.assertEqual(None, x.value)
+        x = rom.Scalar(connection=self.conn, key="x")
+        self.assertRaises(KeyError, getattr, x, 'value')
         x.value = "hello there"
         self.assertEqual("hello there", x.value)
         self.assertEqual("hello there", str(x))
         x.value = 32
         self.assertEqual(32, int(x))
-        self.assertEqual("'32'", repr(x))
+        self.assertEqual('32', str(x))
 
     def test_setnx(self):
-        x = rom.Scalar(self.conn, "x")
+        x = rom.Scalar(connection=self.conn, key="x")
         self.assertTrue(x.setnx("hi"))
         self.assertEqual("hi", x.value)
         self.assertFalse(x.setnx("bye"))
         self.assertEqual("hi", x.value)
 
-    def test_increment(self):
-        x = rom.Scalar(self.conn, "x")
+    def test_incr(self):
+        x = rom.Scalar(connection=self.conn, key="x")
         x.value = 8
-        self.assertEqual(16, x.increment(8))
-        self.assertEqual(2, x.increment(-14))
+        self.assertEqual(16, x.incr(8))
+        self.assertEqual(2, x.incr(-14))
 
 
 class TestTimestamp(TestBase):
     def test_timestamp(self):
-        ts = rom.Timestamp(self.conn, "ts")
-        self.assertEqual(None, ts.value)
+        ts = rom.Timestamp(connection=self.conn, key="ts")
+        self.assertRaises(KeyError, getattr, ts, "value")
 
         first = ts.setnx()
         self.assertFalse(first is False)
@@ -99,18 +99,18 @@ class TestTimestamp(TestBase):
         self.assertEqual(second, ts.value)
 
     def test_delete(self):
-        ts = rom.Timestamp(self.conn, "ts")
+        ts = rom.Timestamp(connection=self.conn, key="ts")
         val = ts.setnx()
         self.assertTrue(float(val) > 0)
         ts.delete()
-        self.assertEqual(None, ts.value)
+        self.assertRaises(KeyError, getattr, ts, "value")
         val2 = ts.setnx()
         self.assertTrue(float(val2) >= float(val))
 
 
 class TestList(TestBase):
     def test_value(self):
-        l = rom.List(self.conn, "l")
+        l = rom.List(connection=self.conn, key="l")
         self.assertEqual([], l.value)
         native_list = ["one", "two"]
         l.value = native_list
@@ -120,10 +120,10 @@ class TestList(TestBase):
         native_list = ["three", "four"]
         l.value = native_list
         self.assertEqual(native_list, l.value)
-        self.assertEqual(repr(native_list), repr(l))
+        self.assertEqual(str(native_list), str(l))
 
     def test_append(self):
-        l = rom.List(self.conn, "l")
+        l = rom.List(connection=self.conn, key="l")
         size = l.append("a")
         self.assertEqual(["a"], l.value)
         self.assertEqual(1, size)
@@ -133,14 +133,14 @@ class TestList(TestBase):
         self.assertEqual(2, size)
 
     def test_extend(self):
-        l = rom.List(self.conn, "l")
+        l = rom.List(connection=self.conn, key="l")
         l.extend(["a", "b"])
         self.assertEqual(["a", "b"], l.value)
         l.extend(["c", "d"])
         self.assertEqual(["a", "b", "c", "d"], l.value)
 
     def test_len(self):
-        l = rom.List(self.conn, "l")
+        l = rom.List(connection=self.conn, key="l")
         self.assertEqual(0, len(l))
         l.value = ["x", "y"]
         self.assertEqual(2, len(l))
@@ -148,7 +148,7 @@ class TestList(TestBase):
         self.assertEqual(3, len(l))
 
     def test_getitem(self):
-        l = rom.List(self.conn, "l")
+        l = rom.List(connection=self.conn, key="l")
         self.assertRaises(IndexError, l.__getitem__, 0)
         self.assertRaises(TypeError, l.__getitem__, "cat")
         l.append("x")
@@ -159,7 +159,7 @@ class TestList(TestBase):
         self.assertRaises(IndexError, l.__getitem__, 3)
 
     def test_setitem(self):
-        l = rom.List(self.conn, "l")
+        l = rom.List(connection=self.conn, key="l")
         l.value = ["one", "two"]
         l[0] = "three"
         l[1] = "four"
@@ -167,7 +167,7 @@ class TestList(TestBase):
         self.assertRaises(IndexError, l.__setitem__, 2, "five")
 
     def test_iterator(self):
-        l = rom.List(self.conn, "l")
+        l = rom.List(connection=self.conn, key="l")
         l.value = ["a", "b", "c"]
         seen = [x for x in l]
         self.assertEqual(["a", "b", "c"], l.value)
@@ -175,7 +175,7 @@ class TestList(TestBase):
 
 class TestSet(TestBase):
     def test_value(self):
-        s = rom.Set(self.conn, "s")
+        s = rom.Set(connection=self.conn, key="s")
         self.assertEqual(set(), s.value)
         native_set = set(["one", "two", "three"])
         s.value = native_set
@@ -184,10 +184,10 @@ class TestSet(TestBase):
         native_set = set(["four"])
         s.value = native_set
         self.assertEqual(native_set, s.value)
-        self.assertEqual(repr(native_set), repr(s))
+        self.assertEqual(str(native_set), str(s))
 
     def test_add(self):
-        s = rom.Set(self.conn, "s")
+        s = rom.Set(connection=self.conn, key="s")
         s.add("one")
         self.assertEqual(set(["one"]), s.value)
         s.add("one")
@@ -196,24 +196,33 @@ class TestSet(TestBase):
         self.assertEqual(set(["one", "two"]), s.value)
 
     def test_update(self):
-        s = rom.Set(self.conn, "s")
+        s = rom.Set(connection=self.conn, key="s")
         s.add("one")
         s.update(["one", "two"])
         self.assertEqual(set(["one", "two"]), s.value)
         s.update(["two", "three"])
         self.assertEqual(set(["one", "two", "three"]), s.value)
 
+    def test_discard(self):
+        s = rom.Set(connection=self.conn, key="s")
+        s.value = ["one", "two"]
+        self.assertEqual((True, 1), s.discard("two"))
+        self.assertEqual((False, 1), s.discard("two"))
+        self.assertEqual(set(["one"]), s.value)
+        self.assertEqual((True, 0), s.discard("one"))
+        self.assertEqual(set(), s.value)
+
     def test_remove(self):
-        s = rom.Set(self.conn, "s")
+        s = rom.Set(connection=self.conn, key="s")
         s.value = ["one", "two"]
         self.assertEqual((True, 1), s.remove("two"))
-        self.assertEqual((False, 1), s.remove("two"))
+        self.assertRaises(KeyError, s.remove, "two")
         self.assertEqual(set(["one"]), s.value)
         self.assertEqual((True, 0), s.remove("one"))
         self.assertEqual(set(), s.value)
 
     def test_len(self):
-        s = rom.Set(self.conn, "s")
+        s = rom.Set(connection=self.conn, key="s")
         self.assertEqual(0, len(s))
         s.value = ["a", "b", "c"]
         self.assertEqual(3, len(s))
@@ -221,14 +230,14 @@ class TestSet(TestBase):
         self.assertEqual(2, len(s))
 
     def test_iterator(self):
-        s = rom.Set(self.conn, "s")
+        s = rom.Set(connection=self.conn, key="s")
         s.value = ["a", "b", "c"]
         self.assertEqual(["a", "b", "c"], sorted([x for x in s]))
 
 
 class TestHash(TestBase):
     def test_value(self):
-        h = rom.Hash(self.conn, "h")
+        h = rom.Hash(connection=self.conn, key="h")
         native_hash = {"hello": "world"}
         h.value = native_hash
         self.assertEqual(native_hash, h.value)
@@ -236,10 +245,10 @@ class TestHash(TestBase):
         native_hash = {"goodbye": "cruel world"}
         h.value = native_hash
         self.assertEqual(native_hash, h.value)
-        self.assertEqual(repr(native_hash), repr(h))
+        self.assertEqual(str(native_hash), str(h))
 
     def test_set_empty(self):
-        h = rom.Hash(self.conn, "h")
+        h = rom.Hash(connection=self.conn, key="h")
         h.value = {"a": "b"}
         self.assertEqual(1, len(h))
         h.value = {}
@@ -247,7 +256,7 @@ class TestHash(TestBase):
         self.assertEqual({}, h.value)
 
     def test_setitem(self):
-        h = rom.Hash(self.conn, "h")
+        h = rom.Hash(connection=self.conn, key="h")
         h["x"] = "y"
         self.assertEqual({"x": "y"}, h.value)
         h["y"] = "z"
@@ -256,14 +265,14 @@ class TestHash(TestBase):
         self.assertEqual({"x": "y", "y": "z"}, h.value)
 
     def test_getitem(self):
-        h = rom.Hash(self.conn, "h")
+        h = rom.Hash(connection=self.conn, key="h")
         h.value = {"x": "y", "X": "Y"}
         self.assertEqual("y", h["x"])
         self.assertEqual("Y", h["X"])
         self.assertRaises(KeyError, h.__getitem__, "z")
 
     def test_delitem(self):
-        h = rom.Hash(self.conn, "h")
+        h = rom.Hash(connection=self.conn, key="h")
         h.value = {"x": "y", "X": "Y"}
         self.assertRaises(KeyError, h.__delitem__, "z")
         del h["x"]
@@ -273,7 +282,7 @@ class TestHash(TestBase):
 
 
     def test_len(self):
-        h = rom.Hash(self.conn, "h")
+        h = rom.Hash(connection=self.conn, key="h")
         self.assertEqual(0, len(h))
         h["x"] = "y"
         self.assertEqual(1, len(h))
@@ -283,14 +292,14 @@ class TestHash(TestBase):
         self.assertEqual(1, len(h))
 
     def test_keys_values(self):
-        h = rom.Hash(self.conn, "h")
+        h = rom.Hash(connection=self.conn, key="h")
         native = dict((chr(x), str(x)) for x in xrange(ord('a'), ord('z')+1))
         h.value = native
         self.assertEqual(sorted(native.keys()), sorted(h.keys()))
         self.assertEqual(sorted(native.values()), sorted(h.values()))
 
     def test_update(self):
-        h = rom.Hash(self.conn, "h")
+        h = rom.Hash(connection=self.conn, key="h")
         h.value = {"x": "y"}
         h.update({"x": "y", "y": "z"})
         self.assertEqual({"x": "y", "y": "z"}, h.value)
@@ -301,14 +310,14 @@ class TestHash(TestBase):
         self.assertEqual({"x": "y", "y": "z", "z": "a"}, h.value)
 
     def test_iteritems(self):
-        h = rom.Hash(self.conn, "h")
+        h = rom.Hash(connection=self.conn, key="h")
         native = dict((chr(x), str(x)) for x in xrange(ord('a'), ord('z')+1))
         h.value = native
         seen = dict((k, v) for k, v in h.iteritems())
         self.assertEqual(native, seen)
 
     def test_json_encoding(self):
-        h = rom.Hash(self.conn, "h",
+        h = rom.Hash(connection=self.conn, key="h",
                      value_encoder=rom.json_enc,
                      value_decoder=rom.json_dec)
 
@@ -343,48 +352,48 @@ class TestObject(TestBase):
         # If you are here because you just changed the key generation policy
         # to not include module/class name, then feel free to remove this
         # test.
-        obj = SimpleObj.create(self.conn)
+        obj = SimpleObj.create(connection=self.conn)
         components = obj.key.split("/")
         self.assertEqual(4, len(components))
         self.assertEqual('', components[0])
         self.assertEqual(obj.__module__, components[1])
         self.assertEqual(obj.__class__.__name__, components[2])
 
-
     def test_get_object_not_found(self):
-        self.assertRaises(KeyError, rom.get_object, self.conn, "badkey")
-        self.assertRaises(KeyError, SimpleObj.get, self.conn, "badkey")
+        self.assertRaises(KeyError, rom.get_object, connection=self.conn, key="badkey")
+        self.assertRaises(KeyError, SimpleObj.get, connection=self.conn, key="badkey")
 
     def test_get_object(self):
-        obj = SimpleObj.create(self.conn, "x", ascalar="hi")
+        obj = SimpleObj.create(connection=self.conn, key="x", ascalar="hi")
 
-        obj_ref = rom.get_object(self.conn, obj.key)
+        obj_ref = rom.get_object(connection=self.conn, key=obj.key)
         self.assertEqual("x", obj_ref.key)
         self.assertEqual("hi", obj_ref.ascalar.value)
 
-        obj_ref = SimpleObj.get(self.conn, "x")
+        obj_ref = SimpleObj.get(connection=self.conn, key="x")
         self.assertEqual("x", obj.key)
         self.assertEqual("hi", obj.ascalar.value)
 
     def test_get_object_wrong_type(self):
-        obj = SimpleObj.create(self.conn, "x", ascalar="hi")
-        self.assertRaises(TypeError, OtherObj.get, self.conn, "x")
+        obj = SimpleObj.create(connection=self.conn, key="x", ascalar="hi")
+        self.assertRaises(TypeError, OtherObj.get, connection=self.conn, key="x")
 
-        obj = OtherObj.create(self.conn, "x")
-        self.assertRaises(TypeError, SimpleObj.get, self.conn, "x")
+        obj = OtherObj.create(connection=self.conn, key="x")
+        self.assertRaises(TypeError, SimpleObj.get, connection=self.conn, key="x")
 
     def test_method_descriptor(self):
-        obj = SimpleObj.create(self.conn, "x")
+        obj = SimpleObj.create(connection=self.conn, key="x")
         expected = {"object_key": obj.key, "method_name": "a_method"}
         method_descriptor = obj.method_descriptor("a_method")
         self.assertEqual(expected, method_descriptor)
-        self.assertFalse(None, obj.a_method_arg.value)
-        rv = rom.invoke_instance_method(self.conn, method_descriptor, arg="yep")
+        self.assertRaises(KeyError, getattr, obj.a_method_arg, 'value')
+        rv = rom.invoke_instance_method(self.conn, method_descriptor,
+                arg="yep")
         self.assertEqual("yep", rv)
         self.assertEqual("yep", obj.a_method_arg.value)
 
     def test_invalid_method_descriptor(self):
-        obj = SimpleObj.create(self.conn, "x")
+        obj = SimpleObj.create(connection=self.conn, key="x")
         self.assertRaises(AttributeError, obj.method_descriptor, "fake")
         method_descriptor = obj.method_descriptor("a_method")
         method_descriptor["method_name"] = "fake"
@@ -392,17 +401,17 @@ class TestObject(TestBase):
                           self.conn, method_descriptor)
 
     def test_get_object_nexist(self):
-        self.assertRaises(KeyError, SimpleObj.get, self.conn, "x")
+        self.assertRaises(KeyError, SimpleObj.get, connection=self.conn, key="x")
 
     def test_create(self):
-        obj = SimpleObj.create(self.conn, "x", ascalar=42)
+        obj = SimpleObj.create(connection=self.conn, key="x", ascalar=42)
         self.assertEqual(42, int(obj.ascalar))
         self.assertEqual("42", obj.ascalar.value)
         self.assertEqual({}, obj.ahash.value)
         self.assertEqual([], obj.alist.value)
         self.assertEqual(set(), obj.aset.value)
 
-        obj = SimpleObj.create(self.conn, "y", ascalar=42,
+        obj = SimpleObj.create(connection=self.conn, key="y", ascalar=42,
                                 ahash={'1': '2', '3': '4'})
         self.assertEqual(42, int(obj.ascalar))
         self.assertEqual('42', obj.ascalar.value)
@@ -410,7 +419,7 @@ class TestObject(TestBase):
         self.assertEqual([], obj.alist.value)
         self.assertEqual(set(), obj.aset.value)
 
-        obj = SimpleObj.create(self.conn, "y", ascalar=42,
+        obj = SimpleObj.create(connection=self.conn, key="z", ascalar=42,
                                 ahash={'1': '2', '3': '4'},
                                 alist=['5', '4', '3'])
         self.assertEqual(42, int(obj.ascalar))
@@ -419,7 +428,7 @@ class TestObject(TestBase):
         self.assertEqual(['5', '4', '3'], obj.alist.value)
         self.assertEqual(set(), obj.aset.value)
 
-        obj = SimpleObj.create(self.conn, "y", ascalar=42,
+        obj = SimpleObj.create(connection=self.conn, key="zz", ascalar=42,
                                 ahash={'1': '2', '3': '4'},
                                 alist=['5', '4', '3'],
                                 aset=['x', 'y', 'z'])
@@ -431,16 +440,16 @@ class TestObject(TestBase):
 
 
     def test_create_invalid_prop(self):
-        self.assertRaises(AttributeError, SimpleObj.create, self.conn, "x",
+        self.assertRaises(AttributeError, SimpleObj.create, connection=self.conn, key="x",
                           badprop="bad")
 
     def test_subkey(self):
-        obj = SimpleObj.create(self.conn, "/x")
+        obj = SimpleObj.create(connection=self.conn, key="/x")
         self.assertEqual("/x/y/z", obj.subkey("y", "z"))
         self.assertEqual("/x/1/2", obj.subkey(1, 2))
 
     def test_delete_property(self):
-        obj = SimpleObj.create(self.conn, "/x")
+        obj = SimpleObj.create(connection=self.conn, key="/x")
 
         obj.ascalar = "six"
         key = obj.ascalar.key
@@ -468,6 +477,33 @@ class TestObject(TestBase):
         # redis quirk: smembers returns list([]) when fetching an empty list
         self.assertEqual(0, self.conn.llen(key))
 
+    def test_delete_object(self):
+        obj = SimpleObj.create(connection=self.conn, key="/x")
+
+        obj.ascalar = "six"
+        key = obj.ascalar.key
+        self.assertEqual("six", self.conn.get(key))
+
+        obj.ahash = {"a": "b"}
+        key = obj.ahash.key
+        self.assertEqual({"a": "b"}, self.conn.hgetall(key))
+
+        obj.aset = set(["x", "y"])
+        key = obj.aset.key
+        self.assertEqual(set(["x", "y"]), self.conn.smembers(key))
+
+        obj.alist = ["a", "b", "c"]
+        key = obj.alist.key
+        self.assertEqual(["a", "b", "c"], self.conn.lrange(key, 0, -1))
+
+        obj.delete()
+
+        self.assertEqual(None, self.conn.get(key))
+        self.assertEqual(None, self.conn.get(key))
+        # redis quirk: smembers returns set([]) when fetching an empty set
+        self.assertEqual(set([]), self.conn.smembers(key))
+        # redis quirk: smembers returns list([]) when fetching an empty list
+        self.assertEqual(0, self.conn.llen(key))
 
 
 if __name__ == "__main__":
