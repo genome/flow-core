@@ -15,6 +15,8 @@ class SimpleObj(rom.Object):
     alist = rom.Property(rom.List)
     aset = rom.Property(rom.Set)
     a_method_arg = rom.Property(rom.Scalar)
+    aref = rom.Reference('SimpleObj')
+    astrongref = rom.Reference('SimpleObj', weak=False)
 
     def a_method(self, arg=None):
         self.a_method_arg = arg
@@ -23,7 +25,6 @@ class SimpleObj(rom.Object):
 class OtherObj(rom.Object):
     """Used to test what happens getting an object of the wrong type"""
     pass
-
 
 class TestBase(unittest.TestCase):
     def setUp(self):
@@ -56,6 +57,109 @@ class TestProperty(TestBase):
         rom.Property(rom.Scalar)
         rom.Property(rom.Set)
 
+class TestReference(TestBase):
+    def setUp(self):
+        TestBase.setUp(self)
+        self.x = SimpleObj.create(connection=self.conn, key='/x')
+        self.y = SimpleObj.create(connection=self.conn, key='/y')
+
+    def tearDown(self):
+        del self.x
+        del self.y
+
+    def test_access_reference_before_set(self):
+        self.assertRaises(RuntimeError, getattr, self.x, 'aref')
+
+    def test_chained_references(self):
+        z = SimpleObj.create(connection=self.conn, key='/z')
+        z.ascalar = 'z-scalar'
+        self.x.aref = self.y
+        self.assertEqual(self.x.aref.key, self.y.key)
+        self.y.aref = z
+        self.assertEqual(self.y.aref.key, z.key)
+
+        self.assertEqual(self.x.aref.aref.key, z.key)
+        self.assertEqual(self.x.aref.aref.ascalar.value, 'z-scalar')
+
+    def test_redis_backed_references(self):
+        self.x.aref = self.y
+        self.assertEqual(self.x.aref.key, self.y.key)
+
+        another_x = rom.get_object(self.conn, self.x.key)
+        self.assertEqual(another_x.aref.key, self.y.key)
+
+    def test_self_reference(self):
+        self.x.aref = self.x
+        self.x.ascalar = 'x-scalar'
+        self.assertEqual(self.x.aref.key, self.x.key)
+        self.assertEqual(self.x.aref.aref.key, self.x.key)
+        self.assertEqual(self.x.aref.aref.aref.key, self.x.key)
+
+        self.assertEqual(self.x.aref.ascalar.value, 'x-scalar')
+        self.assertEqual(self.x.aref.aref.ascalar.value, 'x-scalar')
+        self.assertEqual(self.x.aref.aref.aref.ascalar.value, 'x-scalar')
+
+    def test_delete_reference(self):
+        self.x.aref = self.y
+        self.assertEqual(self.x.aref.key, self.y.key)
+        del self.x.aref
+        self.assertRaises(RuntimeError, getattr, self.x, 'aref')
+
+        self.x.aref = self.x
+        self.assertEqual(self.x.aref.key, self.x.key)
+        del self.x.aref
+        self.assertRaises(RuntimeError, getattr, self.x, 'aref')
+
+    def test_change_reference(self):
+        self.x.aref = self.y
+        self.x.ascalar = 'x-scalar'
+        self.y.ascalar = 'y-scalar'
+        self.assertEqual(self.x.aref.key, self.y.key)
+        self.assertEqual(self.x.aref.ascalar.value, 'y-scalar')
+
+        self.x.aref = self.x
+        self.assertEqual(self.x.aref.key, self.x.key)
+        self.assertEqual(self.x.aref.ascalar.value, 'x-scalar')
+
+    def test_delete_object_with_weak_references(self):
+        self.y.ascalar = 'y-scalar'
+        self.x.aref = self.y
+        self.assertEqual(self.x.aref.key, self.y.key)
+        self.assertEqual(self.x.aref.ascalar.value, 'y-scalar')
+
+        self.x.delete()
+        self.assertFalse(self.conn.exists(self.x.key))
+        self.assertTrue(self.conn.exists(self.y.key))
+        self.assertTrue(self.conn.exists(self.y.ascalar.key))
+
+    def test_delete_object_with_strong_references(self):
+        self.y.ascalar = 'y-scalar'
+        self.x.astrongref = self.y
+        self.assertEqual(self.x.astrongref.key, self.y.key)
+        self.assertEqual(self.x.astrongref.ascalar.value, 'y-scalar')
+
+        self.x.delete()
+        self.assertFalse(self.conn.exists(self.x.key))
+        self.assertFalse(self.conn.exists(self.y.key))
+        self.assertFalse(self.conn.exists(self.y.ascalar.key))
+
+    def test_try_add_with_non_object(self):
+        self.assertRaises(TypeError, setattr, self.x, 'aref', 'bad')
+
+    def test_try_to_specify_a_non_object_class(self):
+        def make_class():
+            class Bad(rom.Object):
+                bad_ref = rom.Reference(rom.Scalar)
+        self.assertRaises(TypeError, make_class)
+
+    def test_specifying_a_class(self):
+        class TestObj(rom.Object):
+            aref = rom.Reference(SimpleObj)
+        i = TestObj.create(connection=self.conn, key='/i')
+        i.aref = self.x
+        self.assertEqual(i.aref.key, self.x.key)
+
+
 class TestScalar(TestBase):
     def test_value(self):
         x = rom.Scalar(connection=self.conn, key="x")
@@ -66,6 +170,7 @@ class TestScalar(TestBase):
         x.value = 32
         self.assertEqual(32, int(x))
         self.assertEqual('32', str(x))
+        self.assertRaises(TypeError, rom.Scalar)
 
     def test_setnx(self):
         x = rom.Scalar(connection=self.conn, key="x")
@@ -106,6 +211,13 @@ class TestTimestamp(TestBase):
         self.assertRaises(KeyError, getattr, ts, "value")
         val2 = ts.setnx()
         self.assertTrue(float(val2) >= float(val))
+
+    def test_setter(self):
+        ts = rom.Timestamp(connection=self.conn, key="ts")
+        def tester():
+            ts.value = 'something'
+        self.assertRaises(AttributeError, tester)
+
 
 
 class TestList(TestBase):
@@ -265,6 +377,10 @@ class TestHash(TestBase):
         self.h["y"] = "z"
         self.assertEqual({"x": "y", "y": "z"}, self.h.value)
 
+        he = rom.Hash(connection=self.conn, key='he', value_encoder=rom.json_enc)
+        he['x'] = 'y'
+        self.assertEqual(he['x'], '"y"')
+
     def test_getitem(self):
         self.h.value = {"x": "y", "X": "Y"}
         self.assertEqual("y", self.h["x"])
@@ -366,6 +482,15 @@ class TestObject(TestBase):
         self.assertEqual(obj.__module__, components[1])
         self.assertEqual(obj.__class__.__name__, components[2])
 
+    def test_access_non_property_or_reference(self):
+        obj = SimpleObj.create(connection=self.conn, key="x")
+        def access():
+            obj.not_a_member
+        self.assertRaises(AttributeError, access)
+
+        obj.something_else = 'a member'
+        self.assertEqual(obj.something_else, 'a member')
+
     def test_get_object_not_found(self):
         self.assertRaises(KeyError, rom.get_object, connection=self.conn,
                 key="badkey")
@@ -382,6 +507,8 @@ class TestObject(TestBase):
         obj_ref = SimpleObj.get(connection=self.conn, key="x")
         self.assertEqual("x", obj.key)
         self.assertEqual("hi", obj.ascalar.value)
+
+        self.assertRaises(TypeError, SimpleObj.get)
 
     def test_get_object_wrong_type(self):
         obj = SimpleObj.create(connection=self.conn, key="x", ascalar="hi")
@@ -414,6 +541,9 @@ class TestObject(TestBase):
     def test_get_object_nexist(self):
         self.assertRaises(KeyError, SimpleObj.get, connection=self.conn,
                 key="x")
+
+    def test_bad_create(self):
+        self.assertRaises(TypeError, SimpleObj.create)
 
     def test_create(self):
         obj = SimpleObj.create(connection=self.conn, key="x", ascalar=42)

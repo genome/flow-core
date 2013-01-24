@@ -298,21 +298,42 @@ def _make_key(*args):
     return KEY_DELIM.join(map(str, args))
 
 
+class Reference(object):
+    def __init__(self, class_or_class_name, weak=True, **kwargs):
+        if isinstance(class_or_class_name, basestring):
+            self.class_name = class_or_class_name
+        else:
+            cls = class_or_class_name
+            if not issubclass(cls, Object):
+                raise TypeError("References must be to subclasses of Object "
+                    "and (%s) is not!" % cls.__name__)
+            self.class_name = cls.__name__
+
+        self.weak = weak
+        self.kwargs = kwargs
+
+
 class ObjectMeta(type):
     _class_registry = {}
     def __new__(meta, class_name, bases, class_dict):
         cls = type.__new__(meta, class_name, bases, class_dict)
 
-        properties = {}
+        # TODO could use some refactoring
+        members = {}
         cls._rom_properties = {}
+        cls._rom_references = {}
         for base in bases:
-            properties.update(base.__dict__)
+            members.update(base.__dict__)
             cls._rom_properties.update(getattr(base, "_rom_properties", {}))
-        properties.update(class_dict)
+            cls._rom_references.update(getattr(base, "_rom_references", {}))
+        members.update(class_dict)
 
-        for name, value in properties.iteritems():
+        for name, value in members.iteritems():
             if isinstance(value, Property):
                 cls._rom_properties[name] = value
+                delattr(cls, name)
+            if isinstance(value, Reference):
+                cls._rom_references[name] = value
                 delattr(cls, name)
 
         meta._class_registry[class_name] = cls
@@ -326,12 +347,8 @@ class Object(object):
     __metaclass__ = ObjectMeta
 
     def __init__(self, connection=None, key=None):
-        if connection is None:
-            raise TypeError("You must specify a connection")
-        if key == None:
-            key = _make_key("/" + self.__module__, self.__class__.__name__,
-                            uuid4().hex)
-
+        if connection is None or key is None:
+            raise TypeError("You must specify a connection and a key")
         self.__dict__.update({
             "key": key,
             "_rom_types": {},
@@ -348,25 +365,50 @@ class Object(object):
             try:
                 propdef = self._rom_properties[name]
             except KeyError:
-                raise AttributeError("No such property '%s' on class %s" %
-                        (name, self.__class__.__name__))
+                try:
+                    propdef = self._rom_references[name]
+                except:
+                    raise AttributeError("No such property or relation '%s'"
+                            " on class %s" % (name, self.__class__.__name__))
+                else:
+                    key = self.connection.get(self.subkey(name))
+                    if key is None:
+                        raise RuntimeError("Reference has not been set yet.")
+                    cls = Object.get_registered_class(propdef.class_name)
+                    prop = cls(connection=self.connection, key=key,
+                            **propdef.kwargs)
+                    self._rom_types[name] = prop
+            else:
+                cls = propdef.cls
+                prop = cls.create(connection=self.connection, key=self.subkey(name),
+                                   **propdef.kwargs)
+                self._rom_types[name] = prop
 
-            cls = propdef.cls
-            prop = cls.create(connection=self.connection, key=self.subkey(name),
-                               **propdef.kwargs)
-            self._rom_types[name] = prop
             return prop
 
     def __setattr__(self, name, value):
         # is always called on attribute setting
         if name in self._rom_properties:
             getattr(self, name).value = value
+        elif name in self._rom_references:
+            if not isinstance(value, Object):
+                raise TypeError("References must be Objects not (%s)" %
+                        value.__class__.__name__)
+
+            self.connection.set(self.subkey(name), value.key)
+            self._rom_types[name] = value
         else:
             object.__setattr__(self, name, value)
 
     def __delattr__(self, name):
-        getattr(self, name).delete()
-        del self._rom_types[name]
+        if name in self._rom_properties:
+            getattr(self, name).delete()
+        elif name in self._rom_references:
+            self.connection.delete(self.subkey(name))
+            ref = self._rom_references[name]
+
+        if name in self._rom_types:
+            del self._rom_types[name]
 
     def exists(self):
         try:
@@ -383,6 +425,10 @@ class Object(object):
 
     @classmethod
     def create(cls, connection=None, key=None, **kwargs):
+        if key is None:
+            key = _make_key("/" + cls.__module__, cls.__name__,
+                            uuid4().hex)
+
         obj = cls(connection=connection, key=key)
         obj._class_name.value = cls.__name__
 
@@ -398,7 +444,7 @@ class Object(object):
     @classmethod
     def get(cls, connection=None, key=None):
         if connection is None or key is None:
-            raise RuntimeError('get requires connection and key to be specified.')
+            raise TypeError('get requires connection and key to be specified.')
         obj = cls(connection=connection, key=key)
         if not obj.exists():
             raise KeyError("Object not found: class=%s key=%s" % (cls, key))
@@ -417,6 +463,14 @@ class Object(object):
     def delete(self):
         for name in self._rom_properties.iterkeys():
             getattr(self, name).delete()
+        for name, ref in self._rom_references.iteritems():
+            if not ref.weak:
+                try:
+                    r = getattr(self, name)
+                except RuntimeError:
+                    pass
+                else:
+                    r.delete()
         self._class_name.delete()
 
 
