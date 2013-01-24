@@ -236,84 +236,91 @@ class TestSet(TestBase):
 
 
 class TestHash(TestBase):
+    def setUp(self):
+        TestBase.setUp(self)
+        self.h = rom.Hash(connection=self.conn, key="h")
+
     def test_value(self):
-        h = rom.Hash(connection=self.conn, key="h")
         native_hash = {"hello": "world"}
-        h.value = native_hash
-        self.assertEqual(native_hash, h.value)
+        self.h.value = native_hash
+        self.assertEqual(native_hash, self.h.value)
 
         native_hash = {"goodbye": "cruel world"}
-        h.value = native_hash
-        self.assertEqual(native_hash, h.value)
-        self.assertEqual(str(native_hash), str(h))
+        self.h.value = native_hash
+        self.assertEqual(native_hash, self.h.value)
+        self.assertEqual(str(native_hash), str(self.h))
 
     def test_set_empty(self):
-        h = rom.Hash(connection=self.conn, key="h")
-        h.value = {"a": "b"}
-        self.assertEqual(1, len(h))
-        h.value = {}
-        self.assertEqual(0, len(h))
-        self.assertEqual({}, h.value)
+        self.h.value = {"a": "b"}
+        self.assertEqual(1, len(self.h))
+        self.h.value = {}
+        self.assertEqual(0, len(self.h))
+        self.assertEqual({}, self.h.value)
 
     def test_setitem(self):
-        h = rom.Hash(connection=self.conn, key="h")
-        h["x"] = "y"
-        self.assertEqual({"x": "y"}, h.value)
-        h["y"] = "z"
-        self.assertEqual({"x": "y", "y": "z"}, h.value)
-        h["y"] = "z"
-        self.assertEqual({"x": "y", "y": "z"}, h.value)
+        self.h["x"] = "y"
+        self.assertEqual({"x": "y"}, self.h.value)
+        self.h["y"] = "z"
+        self.assertEqual({"x": "y", "y": "z"}, self.h.value)
+        self.h["y"] = "z"
+        self.assertEqual({"x": "y", "y": "z"}, self.h.value)
 
     def test_getitem(self):
-        h = rom.Hash(connection=self.conn, key="h")
-        h.value = {"x": "y", "X": "Y"}
-        self.assertEqual("y", h["x"])
-        self.assertEqual("Y", h["X"])
-        self.assertRaises(KeyError, h.__getitem__, "z")
+        self.h.value = {"x": "y", "X": "Y"}
+        self.assertEqual("y", self.h["x"])
+        self.assertEqual("Y", self.h["X"])
+        self.assertRaises(KeyError, self.h.__getitem__, "z")
 
     def test_delitem(self):
-        h = rom.Hash(connection=self.conn, key="h")
-        h.value = {"x": "y", "X": "Y"}
-        self.assertRaises(KeyError, h.__delitem__, "z")
-        del h["x"]
-        self.assertEqual({"X": "Y"}, h.value)
-        del h["X"]
-        self.assertEqual({}, h.value)
-
+        self.h.value = {"x": "y", "X": "Y"}
+        self.assertRaises(KeyError, self.h.__delitem__, "z")
+        del self.h["x"]
+        self.assertEqual({"X": "Y"}, self.h.value)
+        del self.h["X"]
+        self.assertEqual({}, self.h.value)
 
     def test_len(self):
-        h = rom.Hash(connection=self.conn, key="h")
-        self.assertEqual(0, len(h))
-        h["x"] = "y"
-        self.assertEqual(1, len(h))
-        h["y"] = "z"
-        self.assertEqual(2, len(h))
-        del h["y"]
-        self.assertEqual(1, len(h))
+        self.assertEqual(0, len(self.h))
+        self.h["x"] = "y"
+        self.assertEqual(1, len(self.h))
+        self.h["y"] = "z"
+        self.assertEqual(2, len(self.h))
+        del self.h["y"]
+        self.assertEqual(1, len(self.h))
 
     def test_keys_values(self):
-        h = rom.Hash(connection=self.conn, key="h")
         native = dict((chr(x), str(x)) for x in xrange(ord('a'), ord('z')+1))
-        h.value = native
-        self.assertEqual(sorted(native.keys()), sorted(h.keys()))
-        self.assertEqual(sorted(native.values()), sorted(h.values()))
+        self.h.value = native
+        self.assertEqual(sorted(native.keys()), sorted(self.h.keys()))
+        self.assertEqual(sorted(native.values()), sorted(self.h.values()))
+
+    def test_incrby(self):
+        self.h.value = {'a':1}
+        self.assertEqual('1', str(self.h['a']))
+        self.assertEqual('3', str(self.h.incrby('a', 2)))
+        self.assertEqual('3', str(self.h['a']))
+
+    def test_get(self):
+        self.h.value = {'a':1}
+        self.assertEqual('1', str(self.h['a']))
+        self.assertEqual('1', str(self.h.get('a')))
+        self.assertEqual('default', self.h.get('b', default='default'))
+        self.assertEqual(None, self.h.get('b'))
 
     def test_update(self):
-        h = rom.Hash(connection=self.conn, key="h")
-        h.value = {"x": "y"}
-        h.update({"x": "y", "y": "z"})
-        self.assertEqual({"x": "y", "y": "z"}, h.value)
-        h.update({"z": "a", "y": "z"})
-        self.assertEqual({"x": "y", "y": "z", "z": "a"}, h.value)
+        self.h.value = {"x": "y"}
+        self.h.update({"x": "y", "y": "z"})
+        self.assertEqual({"x": "y", "y": "z"}, self.h.value)
+        self.h.update({"z": "a", "y": "z"})
+        self.assertEqual({"x": "y", "y": "z", "z": "a"}, self.h.value)
 
-        self.assertEqual(None, h.update({}))
-        self.assertEqual({"x": "y", "y": "z", "z": "a"}, h.value)
+        self.assertEqual(None, self.h.update({}))
+        self.assertEqual({"x": "y", "y": "z", "z": "a"}, self.h.value)
 
     def test_iteritems(self):
-        h = rom.Hash(connection=self.conn, key="h")
         native = dict((chr(x), str(x)) for x in xrange(ord('a'), ord('z')+1))
-        h.value = native
-        seen = dict((k, v) for k, v in h.iteritems())
+        self.h.value = native
+        seen = dict((k, v) for k, v in self.h.iteritems())
         self.assertEqual(native, seen)
 
     def test_json_encoding(self):

@@ -15,12 +15,6 @@ def json_dec(conn, text):
     else:
         return json.loads(text)
 
-def obj_enc(conn, obj):
-    return obj.key
-
-def obj_dec(conn, key):
-    return get_object(conn, key)
-
 
 class RomIndexError(IndexError):
     pass
@@ -38,20 +32,7 @@ class Property(object):
         self.kwargs = kwargs
 
 
-class ValueMeta(type):
-    _class_registry = {}
-    def __new__(meta, class_name, bases, class_dict):
-        cls = type.__new__(meta, class_name, bases, class_dict)
-
-        meta._class_registry[class_name] = cls
-        return cls
-
-    def get_registered_class(meta, class_name):
-        return meta._class_registry[class_name]
-
-
 class Value(object):
-    __metaclass__ = ValueMeta
     def __init__(self, connection=None, key=None):
         if connection is None or key is None:
             raise TypeError("You must specify a connection and a key")
@@ -61,8 +42,9 @@ class Value(object):
     def __str__(self):
         return str(self.value)
 
-    def create(self, *args, **kwargs):
-        self.__init__(*args, **kwargs)
+    @classmethod
+    def create(cls, *args, **kwargs):
+        return cls(*args, **kwargs)
 
     def delete(self):
         return self.connection.delete(self.key)
@@ -245,7 +227,7 @@ class Hash(Value):
             decoder = self._value_decoder
             return [decoder(conn, v) for v in values]
 
-    def hincrby(self, key, n):
+    def incrby(self, key, n):
         return self.connection.hincrby(self.key, key, n)
 
     def _value_getter(self):
@@ -277,7 +259,7 @@ class Hash(Value):
 
     def get(self, key, default=None):
         try:
-            return self[hkey]
+            return self[key]
         except KeyError:
             return default
 
@@ -316,9 +298,10 @@ def _make_key(*args):
     return KEY_DELIM.join(map(str, args))
 
 
-class ObjectMeta(ValueMeta):
+class ObjectMeta(type):
+    _class_registry = {}
     def __new__(meta, class_name, bases, class_dict):
-        cls = ValueMeta.__new__(meta, class_name, bases, class_dict)
+        cls = type.__new__(meta, class_name, bases, class_dict)
 
         properties = {}
         cls._rom_properties = {}
@@ -332,7 +315,11 @@ class ObjectMeta(ValueMeta):
                 cls._rom_properties[name] = value
                 delattr(cls, name)
 
+        meta._class_registry[class_name] = cls
         return cls
+
+    def get_registered_class(meta, class_name):
+        return meta._class_registry[class_name]
 
 
 class Object(object):
@@ -348,7 +335,7 @@ class Object(object):
         self.__dict__.update({
             "key": key,
             "_rom_types": {},
-            "_class_info": Hash(connection=connection, key=key),
+            "_class_name": Scalar(connection=connection, key=key),
             "connection": connection,
         })
 
@@ -365,13 +352,13 @@ class Object(object):
                         (name, self.__class__.__name__))
 
             cls = propdef.cls
-            prop = cls(connection=self.connection, key=self.subkey(name),
+            prop = cls.create(connection=self.connection, key=self.subkey(name),
                                **propdef.kwargs)
             self._rom_types[name] = prop
             return prop
 
     def __setattr__(self, name, value):
-        # unconditionally called on attribute setting
+        # is always called on attribute setting
         if name in self._rom_properties:
             getattr(self, name).value = value
         else:
@@ -382,13 +369,13 @@ class Object(object):
         del self._rom_types[name]
 
     def exists(self):
-        cinfo = self._class_info.value
-        if "module" in cinfo and "class" in cinfo:
-            if (self.__class__.__module__ != self._class_info["module"]
-                or self.__class__.__name__ != self._class_info["class"]):
-                raise TypeError("Class mismatch for object %s" % self.key)
-        else:
+        try:
+            class_name = self._class_name.value
+        except NotInRedisError:
             return False
+
+        if class_name != self.__class__.__name__:
+            raise TypeError("Class mismatch for object (%s)" % self.key)
         return True
 
     def _on_create(self):
@@ -397,8 +384,7 @@ class Object(object):
     @classmethod
     def create(cls, connection=None, key=None, **kwargs):
         obj = cls(connection=connection, key=key)
-        obj._class_info.update({"module": cls.__module__,
-                                "class": cls.__name__})
+        obj._class_name.value = cls.__name__
 
         for k, v in kwargs.iteritems():
             if k not in obj._rom_properties:
@@ -431,18 +417,16 @@ class Object(object):
     def delete(self):
         for name in self._rom_properties.iterkeys():
             getattr(self, name).delete()
-        self._class_info.delete()
+        self._class_name.delete()
 
 
 def get_object(connection=None, key=None):
     if connection is None or key is None:
         raise TypeError("You must specify connection and key")
 
-    class_info = connection.hgetall(key)
-    if 'module' not in class_info or 'class' not in class_info:
-        raise KeyError("Requested object (%s) not found" % key)
-    module = __import__(class_info['module'], fromlist=class_info['class'])
-    return getattr(module, class_info['class'])(connection=connection, key=key)
+    class_name = connection.get(key)
+    cls = Object.get_registered_class(class_name)
+    return cls(connection=connection, key=key)
 
 
 def invoke_instance_method(connection, method_descriptor, **kwargs):
