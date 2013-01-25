@@ -176,6 +176,7 @@ class TestValue(TestBase):
         self.x.value = 32
         self.assertEqual(32, int(self.x))
         self.assertEqual('32', str(self.x))
+        self.assertEqual(32, float(self.x))
 
     def test_setnx(self):
         self.assertTrue(self.x.setnx("hi"))

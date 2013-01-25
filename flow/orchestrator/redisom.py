@@ -126,10 +126,7 @@ class Int(Value):
         return int(value)
 
 
-class Float(Value):
-    def incr(self, *args, **kwargs):
-        return self.connection.incr(self.key, *args, **kwargs)
-
+class Float(Int):
     def _encode(self, value):
         return float(value)
 
