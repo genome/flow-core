@@ -10,7 +10,7 @@ class Node(rom.Object):
 
     @property
     def net(self):
-        return PetriNet(self._connection, self.net_key)
+        return PetriNet(self.connection, self.net_key)
 
 
 class Place(Node):
@@ -30,7 +30,7 @@ class Place(Node):
             print "Stopping in '%s'" % self.name
         else:
             for dst_key in self.arcs_out:
-                dst = Transition(self._connection, dst_key)
+                dst = Transition(self.connection, dst_key)
                 if dst.notify(self.key):
                     services['orchestrator'].fire_transition(dst.key)
 
@@ -52,7 +52,7 @@ class Transition(Node):
     def fire(self, services=None):
         print "'%s' fires!" % self.name
         for action_key in self.actions:
-            action = rom.get_object(self._connection, action_key)
+            action = rom.get_object(self.connection, action_key)
             print "\n** running transition action\n"
             action.execute()
             print "\n** transition action complete\n"
@@ -61,7 +61,7 @@ class Transition(Node):
             services['orchestrator'].add_tokens(dst_key)
 
         for src_key in self.arcs_in:
-            src = Place(self._connection, src_key)
+            src = Place(self.connection, src_key)
             src.consume_token()
 
 
@@ -78,9 +78,9 @@ class ShellCommand(TransitionAction):
     def execute(self, **kwargs):
         rv = subprocess.call(self.cmdline.value)
         if rv == 0:
-            place = Place(self._connection, self.success_place_key)
+            place = Place(self.connection, self.success_place_key)
         else:
-            place = Place(self._connection, self.failure_place_key)
+            place = Place(self.connection, self.failure_place_key)
 
         place.add_tokens(1)
 
@@ -97,23 +97,23 @@ class PetriNet(Node):
     def status(self):
         active = []
         for pkey in self.places:
-            place = Place(self._connection, pkey)
+            place = Place(self.connection, pkey)
             if int(place.tokens) > 0:
                 active.append(str(place.name))
         return ", ".join(active)
 
     @property
     def start(self):
-        return Place(self._connection, self.start_key)
+        return Place(self.connection, self.start_key)
 
     def add_place(self, name):
-        place = Place.create(self._connection, name=name, net_key=self.key,
+        place = Place.create(self.connection, name=name, net_key=self.key,
                 tokens=0)
         self.places.add(place.key)
         return place
 
     def add_transition(self, name, actions=None):
-        transition = Transition.create(self._connection, name=name,
+        transition = Transition.create(self.connection, name=name,
                 net_key=self.key, actions=actions)
         self.transitions.add(transition.key)
         return transition
@@ -129,7 +129,7 @@ class PetriNet(Node):
         self.start.add_tokens(1)
 
     def __str__(self):
-        places = [Place(self._connection, x) for x in self.places]
+        places = [Place(self.connection, x) for x in self.places]
         return "%s: <%s>" % (self.name,
             ", ".join((str(x) for x in places)))
 
@@ -138,7 +138,7 @@ class PetriNet(Node):
         graph = pygraphviz.AGraph(directed=True)
         arcs = {}
         for pkey in self.places:
-            p = Place(self._connection, pkey)
+            p = Place(self.connection, pkey)
             arcs.setdefault(pkey, set()).update(p.arcs_out)
             if int(p.tokens) > 0:
                 color = "grey"
@@ -148,7 +148,7 @@ class PetriNet(Node):
                     style="filled", fillcolor=color)
 
         for tkey in self.transitions:
-            t = Transition(self._connection, tkey)
+            t = Transition(self.connection, tkey)
             arcs.setdefault(tkey, set()).update(t.arcs_out)
             graph.add_node(t.key, label=t.name, shape="box",
                     style="filled", fillcolor="black", fontcolor="white")
@@ -181,11 +181,11 @@ class SuccessFailurePetriNet(PetriNet):
 
     @property
     def success(self):
-        return Place(self._connection, self.success_key)
+        return Place(self.connection, self.success_key)
 
     @property
     def failure(self):
-        return Place(self._connection, self.failure_key)
+        return Place(self.connection, self.failure_key)
 
     @property
     def duration(self):
