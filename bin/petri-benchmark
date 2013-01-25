@@ -105,12 +105,15 @@ if __name__ == "__main__":
     print "sleep_time=%f" % args.sleep_time
 
     beg = time.time()
+    beg_cpu = time.clock()
     net = build_all_nets(args.nodes_each, args.num_nets)
+    end_cpu = time.clock()
     end = time.time()
     if args.image_file:
         net.graph.draw(args.image_file, prog="dot")
     print "net=%s" % str(net.key)
-    print "construct_sec=%f" % (end - beg)
+    print "construct_wall_sec=%f" % (end - beg)
+    print "construct_cpu_sec=%f" % (end_cpu - beg_cpu)
 
     if args.amqp_url:
         #os.environ["AMQP_URL"] = args.amqp_url
