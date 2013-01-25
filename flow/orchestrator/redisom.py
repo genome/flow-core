@@ -138,7 +138,6 @@ class String(Value):
     def _encode(self, value):
         return str(value)
 
-
 class List(Value):
     def __getitem__(self, idx):
         try:
@@ -374,7 +373,7 @@ class Object(object):
             raise TypeError("You must specify a connection and a key")
         self.__dict__.update({
             "key": key,
-            "_rom_types": {},
+            "_cache": {},
             "_class_name": String(connection=connection, key=key),
             "connection": connection,
         })
@@ -383,7 +382,7 @@ class Object(object):
     def __getattr__(self, name):
         # fallback for when lookup in __dict__ fails
         try:
-            return self._rom_types[name]
+            return self._cache[name]
         except KeyError:
             try:
                 propdef = self._rom_properties[name]
@@ -400,12 +399,12 @@ class Object(object):
                     cls = Object.get_registered_class(propdef.class_name)
                     prop = cls(connection=self.connection, key=key,
                             **propdef.kwargs)
-                    self._rom_types[name] = prop
+                    self._cache[name] = prop
             else:
                 cls = propdef.cls
-                prop = cls.create(connection=self.connection, key=self.subkey(name),
-                                   **propdef.kwargs)
-                self._rom_types[name] = prop
+                prop = cls.create(connection=self.connection,
+                        key=self.subkey(name), **propdef.kwargs)
+                self._cache[name] = prop
 
             return prop
 
@@ -419,7 +418,7 @@ class Object(object):
                         value.__class__.__name__)
 
             self.connection.set(self.subkey(name), value.key)
-            self._rom_types[name] = value
+            self._cache[name] = value
         else:
             object.__setattr__(self, name, value)
 
@@ -430,8 +429,8 @@ class Object(object):
             self.connection.delete(self.subkey(name))
             ref = self._rom_references[name]
 
-        if name in self._rom_types:
-            del self._rom_types[name]
+        if name in self._cache:
+            del self._cache[name]
 
     def exists(self):
         try:
