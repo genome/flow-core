@@ -9,12 +9,12 @@ from redistest import RedisTest
 class SimpleObj(rom.Object):
     """A simple class with one of each type of property to test rom.Object"""
 
-    ascalar = rom.Property(rom.Scalar)
+    ascalar = rom.Property(rom.String)
     atimestamp = rom.Property(rom.Timestamp)
     ahash = rom.Property(rom.Hash)
     alist = rom.Property(rom.List)
     aset = rom.Property(rom.Set)
-    a_method_arg = rom.Property(rom.Scalar)
+    a_method_arg = rom.Property(rom.String)
     aref = rom.Reference('SimpleObj')
     astrongref = rom.Reference('SimpleObj', weak=False)
 
@@ -48,13 +48,13 @@ class TestProperty(TestBase):
         self.assertRaises(TypeError, rom.Property, basestring)
         self.assertRaises(TypeError, rom.Property, rom.Property)
         self.assertRaises(TypeError, rom.Property, int)
-        self.assertRaises(TypeError, rom.Property, "rom.Scalar")
+        self.assertRaises(TypeError, rom.Property, "rom.Int")
 
         # There is no assertNotRaises, so we just do these to make sure they
         # don't throw.
         rom.Property(rom.Hash)
         rom.Property(rom.List)
-        rom.Property(rom.Scalar)
+        rom.Property(rom.Int)
         rom.Property(rom.Set)
 
 class TestReference(TestBase):
@@ -149,7 +149,7 @@ class TestReference(TestBase):
     def test_try_to_specify_a_non_object_class(self):
         def make_class():
             class Bad(rom.Object):
-                bad_ref = rom.Reference(rom.Scalar)
+                bad_ref = rom.Reference(rom.Int)
         self.assertRaises(TypeError, make_class)
 
     def test_specifying_a_class(self):
@@ -160,31 +160,77 @@ class TestReference(TestBase):
         self.assertEqual(i.aref.key, self.x.key)
 
 
-class TestScalar(TestBase):
+class TestValue(TestBase):
+    def setUp(self):
+        TestBase.setUp(self)
+        self.x = rom.Value(connection=self.conn, key='/x')
+
+    def test_init(self):
+        self.assertRaises(TypeError, rom.Value)
+
     def test_value(self):
-        x = rom.Scalar(connection=self.conn, key="x")
-        self.assertRaises(KeyError, getattr, x, 'value')
-        x.value = "hello there"
-        self.assertEqual("hello there", x.value)
-        self.assertEqual("hello there", str(x))
-        x.value = 32
-        self.assertEqual(32, int(x))
-        self.assertEqual('32', str(x))
-        self.assertRaises(TypeError, rom.Scalar)
+        self.assertRaises(KeyError, getattr, self.x, 'value')
+        self.x.value = "hello there"
+        self.assertEqual("hello there", self.x.value)
+        self.assertEqual("hello there", str(self.x))
+        self.x.value = 32
+        self.assertEqual(32, int(self.x))
+        self.assertEqual('32', str(self.x))
 
     def test_setnx(self):
-        x = rom.Scalar(connection=self.conn, key="x")
-        self.assertTrue(x.setnx("hi"))
-        self.assertEqual("hi", x.value)
-        self.assertFalse(x.setnx("bye"))
-        self.assertEqual("hi", x.value)
+        self.assertTrue(self.x.setnx("hi"))
+        self.assertEqual("hi", self.x.value)
+        self.assertFalse(self.x.setnx("bye"))
+        self.assertEqual("hi", self.x.value)
+
+class TestInt(TestBase):
+    def setUp(self):
+        TestBase.setUp(self)
+        self.x = rom.Int(connection=self.conn, key='/x')
+
+    def test_value(self):
+        self.assertRaises(ValueError, setattr, self.x, 'value', 'string')
+        self.x.value = 1234
+        self.assertEqual(1234, self.x.value)
+        self.x.value = 1.234
+        self.assertEqual(1, self.x.value)
 
     def test_incr(self):
-        x = rom.Scalar(connection=self.conn, key="x")
-        x.value = 8
-        self.assertEqual(16, x.incr(8))
-        self.assertEqual(2, x.incr(-14))
+        self.x.value = 8
+        self.assertEqual(9, self.x.incr())
+        self.assertEqual(9, self.x.value)
 
+        self.assertEqual(11, self.x.incr(2))
+        self.assertEqual(11, self.x.value)
+
+class TestFloat(TestBase):
+    def setUp(self):
+        TestBase.setUp(self)
+        self.x = rom.Float(connection=self.conn, key='/x')
+
+    def test_value(self):
+        self.assertRaises(ValueError, setattr, self.x, 'value', 'string')
+        self.x.value = 1234
+        self.assertEqual(1234, self.x.value)
+        self.x.value = 1.234
+        self.assertEqual(1.234, self.x.value)
+
+    def test_incr(self):
+        self.x.value = 8
+        self.assertEqual(9, self.x.incr())
+        self.assertEqual(9, self.x.value)
+
+        self.assertEqual(11, self.x.incr(2))
+        self.assertEqual(11, self.x.value)
+
+class TestString(TestBase):
+    def setUp(self):
+        TestBase.setUp(self)
+        self.x = rom.String(connection=self.conn, key='/x')
+
+    def test_value(self):
+        self.x.value = 1234
+        self.assertEqual("1234", self.x.value)
 
 class TestTimestamp(TestBase):
     def test_timestamp(self):

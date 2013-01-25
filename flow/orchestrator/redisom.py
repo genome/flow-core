@@ -53,25 +53,40 @@ class Value(object):
         self.connection = connection
         self.key = key
 
-    def __str__(self):
-        return str(self.value)
-
     @classmethod
     def create(cls, *args, **kwargs):
         return cls(*args, **kwargs)
 
+    def setnx(self, value):
+        return self.connection.setnx(self.key, self._encode(value))
+
     def delete(self):
         return self.connection.delete(self.key)
+
+    def _encode(self, value):
+        return value
+
+    def _decode(self, value):
+        return value
 
     def _value_getter(self):
         result = self.connection.get(self.key)
         if result is None:
             raise NotInRedisError("Redis has no data for key (%s)." %
                     (self.key))
-        return result
+        return self._decode(result)
 
     def _value_setter(self, new_value):
-        return self.connection.set(self.key, new_value)
+        return self.connection.set(self.key, self._encode(new_value))
+
+    def __int__(self):
+        return int(self.value)
+
+    def __float__(self):
+        return float(self.value)
+
+    def __str__(self):
+        return str(self.value)
 
     value = property(_value_getter, _value_setter)
 
@@ -97,19 +112,31 @@ class Timestamp(Value):
             return now
         return False
 
+class Int(Value):
+    def incr(self, *args, **kwargs):
+        return self.connection.incr(self.key, *args, **kwargs)
 
-class Scalar(Value):
-    def setnx(self, val):
-        return self.connection.setnx(self.key, val)
+    def _encode(self, value):
+        return int(value)
 
-    def incr(self, by=1):
-        return self.connection.incr(self.key, by)
+    def _decode(self, value):
+        return int(value)
 
-    def __str__(self):
-        return self.value
 
-    def __int__(self):
-        return int(self.value)
+class Float(Value):
+    def incr(self, *args, **kwargs):
+        return self.connection.incr(self.key, *args, **kwargs)
+
+    def _encode(self, value):
+        return float(value)
+
+    def _decode(self, value):
+        return float(value)
+
+
+class String(Value):
+    def _encode(self, value):
+        return str(value)
 
 
 class List(Value):
@@ -348,7 +375,7 @@ class Object(object):
         self.__dict__.update({
             "key": key,
             "_rom_types": {},
-            "_class_name": Scalar(connection=connection, key=key),
+            "_class_name": String(connection=connection, key=key),
             "connection": connection,
         })
 
