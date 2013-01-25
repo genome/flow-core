@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import flow.orchestrator.redisom as rom
+from flow.orchestrator.redisom import NotInRedisError
 
 import os
 import unittest
@@ -88,6 +89,32 @@ class TestReference(TestBase):
         another_x = rom.get_object(self.conn, self.x.key)
         self.assertEqual(another_x.aref.key, self.y.key)
 
+    def test_assignment(self):
+        self.x.aref = self.y
+        self.x.astrongref = self.y.key
+        self.y.ascalar = 'y-scalar'
+        self.assertEqual(self.x.aref.ascalar.value, 'y-scalar')
+        self.assertEqual(self.x.astrongref.ascalar.value, 'y-scalar')
+
+        def bad_assignment1():
+            self.x.astrongref = '/bad'
+        self.assertRaises(NotInRedisError, bad_assignment1)
+
+        def bad_assignment2():
+            self.x.astrongref = '/y/ascalar'
+        self.assertRaises(KeyError, bad_assignment2)
+
+        class Z(rom.Object):
+            pass
+        z = Z.create(self.conn, '/z')
+        def bad_assignment3():
+            self.x.astrongref = '/z'
+        self.assertRaises(TypeError, bad_assignment3)
+
+        def bad_assignment4():
+            self.x.astrongref = z
+        self.assertRaises(TypeError, bad_assignment4)
+
     def test_self_reference(self):
         self.x.aref = self.x
         self.x.ascalar = 'x-scalar'
@@ -142,9 +169,6 @@ class TestReference(TestBase):
         self.assertFalse(self.conn.exists(self.x.key))
         self.assertFalse(self.conn.exists(self.y.key))
         self.assertFalse(self.conn.exists(self.y.ascalar.key))
-
-    def test_try_add_with_non_object(self):
-        self.assertRaises(TypeError, setattr, self.x, 'aref', 'bad')
 
     def test_try_to_specify_a_non_object_class(self):
         def make_class():
@@ -636,6 +660,13 @@ class TestObject(TestBase):
         self.assertEqual(['5', '4', '3'], obj.alist.value)
         self.assertEqual(set(['x', 'y', 'z']), obj.aset.value)
 
+    def test_create_with_references(self):
+        x = SimpleObj.create(connection=self.conn, key="/x", ascalar='x-scalar')
+        y = SimpleObj.create(connection=self.conn, key="/y", aref='/x')
+        self.assertEqual(y.aref.ascalar.value, 'x-scalar')
+
+        z = SimpleObj.create(connection=self.conn, key="/z", aref=x)
+        self.assertEqual(y.aref.ascalar.value, 'x-scalar')
 
     def test_create_invalid_prop(self):
         self.assertRaises(AttributeError, SimpleObj.create,

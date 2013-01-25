@@ -413,12 +413,31 @@ class Object(object):
         if name in self._rom_properties:
             getattr(self, name).value = value
         elif name in self._rom_references:
-            if not isinstance(value, Object):
-                raise TypeError("References must be Objects not (%s)" %
-                        value.__class__.__name__)
+            if isinstance(value, basestring):
+                key = value
+                class_name = self.connection.get(key)
+                if class_name is None:
+                    raise NotInRedisError("Redis has no data for key (%s)." %
+                            key)
+                cls = Object.get_registered_class(class_name)
 
-            self.connection.set(self.subkey(name), value.key)
-            self._cache[name] = value
+                expected_class_name = self._rom_references[name].class_name
+                if cls.__name__ != expected_class_name:
+                        raise TypeError("Attempted to assign a reference to "
+                        "%s but %s must only reference class %s" %
+                        (cls.__name__, name, expected_class_name))
+                obj = cls(self.connection, key)
+            else:
+                expected_class_name = self._rom_references[name].class_name
+                if not isinstance(value, Object) or value.__class__.__name__ != expected_class_name:
+                        raise TypeError("Attempted to assign a reference to "
+                        "%s but %s must only reference class %s" %
+                        (repr(value), name, expected_class_name))
+                key = value.key
+                obj = value
+
+            self.connection.set(self.subkey(name), key)
+            self._cache[name] = obj
         else:
             object.__setattr__(self, name, value)
 
@@ -455,7 +474,7 @@ class Object(object):
         obj._class_name.value = cls.__name__
 
         for k, v in kwargs.iteritems():
-            if k not in obj._rom_properties:
+            if k not in obj._rom_properties and k not in obj._rom_references:
                 raise AttributeError("Unknown attribute %s" % k)
             setattr(obj, k, v)
 
