@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 from uuid import uuid4
+import functools
+import hashlib
 import redis
 import json
 
@@ -21,6 +23,23 @@ class RomIndexError(IndexError):
 
 class NotInRedisError(KeyError):
     pass
+
+
+class Script(object):
+    def __init__(self, script_body=None):
+        self.script_body = script_body
+        self.script_hash = hashlib.sha1(script_body).hexdigest()
+
+    def __call__(self, connection=None, keys=[], args=[]):
+        if connection is None:
+            raise TypeError("You must specify a connection")
+
+        num_keys = len(keys)
+        keys_and_args = keys + args
+        try:
+            return connection.evalsha(self.script_hash, num_keys, *keys_and_args)
+        except redis.exceptions.NoScriptError:
+            return connection.eval(self.script_body, num_keys, *keys_and_args)
 
 
 class Property(object):
@@ -342,10 +361,12 @@ class ObjectMeta(type):
 
         # TODO could use some refactoring
         members = {}
+        cls._rom_scripts = {}
         cls._rom_properties = {}
         cls._rom_references = {}
         for base in bases:
             members.update(base.__dict__)
+            cls._rom_scripts.update(getattr(base, "_rom_scripts", {}))
             cls._rom_properties.update(getattr(base, "_rom_properties", {}))
             cls._rom_references.update(getattr(base, "_rom_references", {}))
         members.update(class_dict)
@@ -354,8 +375,11 @@ class ObjectMeta(type):
             if isinstance(value, Property):
                 cls._rom_properties[name] = value
                 delattr(cls, name)
-            if isinstance(value, Reference):
+            elif isinstance(value, Reference):
                 cls._rom_references[name] = value
+                delattr(cls, name)
+            elif isinstance(value, Script):
+                cls._rom_scripts[name] = value
                 delattr(cls, name)
 
         meta._class_registry[class_name] = cls
@@ -377,6 +401,9 @@ class Object(object):
             "_class_name": String(connection=connection, key=key),
             "connection": connection,
         })
+
+        for name, script in self._rom_scripts.iteritems():
+            self.__dict__[name] = functools.partial(script, self.connection)
 
 
     def __getattr__(self, name):
