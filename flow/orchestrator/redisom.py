@@ -116,6 +116,9 @@ class Int(Value):
     def incr(self, *args, **kwargs):
         return self.connection.incr(self.key, *args, **kwargs)
 
+    def decr(self, *args, **kwargs):
+        return self.connection.decr(self.key, *args, **kwargs)
+
     def _encode(self, value):
         return int(value)
 

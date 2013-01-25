@@ -203,6 +203,14 @@ class TestInt(TestBase):
         self.assertEqual(11, self.x.incr(2))
         self.assertEqual(11, self.x.value)
 
+    def test_decr(self):
+        self.x.value = 8
+        self.assertEqual(7, self.x.decr())
+        self.assertEqual(7, self.x.value)
+
+        self.assertEqual(5, self.x.decr(2))
+        self.assertEqual(5, self.x.value)
+
 class TestFloat(TestBase):
     def setUp(self):
         TestBase.setUp(self)
