@@ -6,10 +6,10 @@ import json
 
 KEY_DELIM = '/'
 
-def json_enc(conn, obj):
+def json_enc(obj):
     return json.dumps(obj)
 
-def json_dec(conn, text):
+def json_dec(text):
     if text is None:
         return None
     else:
@@ -29,6 +29,20 @@ class Property(object):
             raise TypeError("Unknown redisom class %s" % str(cls))
 
         self.cls = cls
+        self.kwargs = kwargs
+
+class Reference(object):
+    def __init__(self, class_or_class_name, weak=True, **kwargs):
+        if isinstance(class_or_class_name, basestring):
+            self.class_name = class_or_class_name
+        else:
+            cls = class_or_class_name
+            if not issubclass(cls, Object):
+                raise TypeError("References must be to subclasses of Object "
+                    "and (%s) is not!" % cls.__name__)
+            self.class_name = cls.__name__
+
+        self.weak = weak
         self.kwargs = kwargs
 
 
@@ -195,37 +209,34 @@ class Hash(Value):
         if self._value_encoder is None:
             return d
         else:
-            conn = self.connection
             encoder = self._value_encoder
-            return dict((k, encoder(conn, v)) for k, v in d.iteritems())
+            return dict((k, encoder(v)) for k, v in d.iteritems())
 
     def _decode_dict(self, d):
         if self._value_encoder is None:
             return d
         else:
-            conn = self.connection
             decoder = self._value_decoder
-            return dict((k, decoder(conn, v)) for k, v in d.iteritems())
+            return dict((k, decoder(v)) for k, v in d.iteritems())
 
     def _encode_value(self, v):
         if self._value_encoder is None:
             return v
         else:
-            return self._value_encoder(self.connection, v)
+            return self._value_encoder(v)
 
     def _decode_value(self, v):
         if self._value_decoder is None:
             return v
         else:
-            return self._value_decoder(self.connection, v)
+            return self._value_decoder(v)
 
     def _decode_values(self, values):
         if self._value_decoder is None:
             return values
         else:
-            conn = self.connection
             decoder = self._value_decoder
-            return [decoder(conn, v) for v in values]
+            return [decoder(v) for v in values]
 
     def incrby(self, key, n):
         return self.connection.hincrby(self.key, key, n)
@@ -296,21 +307,6 @@ class Hash(Value):
 
 def _make_key(*args):
     return KEY_DELIM.join(map(str, args))
-
-
-class Reference(object):
-    def __init__(self, class_or_class_name, weak=True, **kwargs):
-        if isinstance(class_or_class_name, basestring):
-            self.class_name = class_or_class_name
-        else:
-            cls = class_or_class_name
-            if not issubclass(cls, Object):
-                raise TypeError("References must be to subclasses of Object "
-                    "and (%s) is not!" % cls.__name__)
-            self.class_name = cls.__name__
-
-        self.weak = weak
-        self.kwargs = kwargs
 
 
 class ObjectMeta(type):

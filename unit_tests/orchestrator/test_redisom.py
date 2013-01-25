@@ -34,14 +34,14 @@ class TestBase(unittest.TestCase):
 
 class TestEncoders(TestBase):
     def test_json_enc_dec(self):
-        self.assertEqual('null', rom.json_enc(None, None))
-        self.assertEqual(None, rom.json_dec(None, 'null'))
-        self.assertEqual(None, rom.json_dec(None, None))
+        self.assertEqual('null', rom.json_enc(None))
+        self.assertEqual(None, rom.json_dec('null'))
+        self.assertEqual(None, rom.json_dec(None))
 
         val = {"one": [2, 3, 4], "five": 6}
-        enc = rom.json_enc(None, val)
+        enc = rom.json_enc(val)
         self.assertTrue(isinstance(enc, basestring))
-        self.assertEqual(val, rom.json_dec(None, enc))
+        self.assertEqual(val, rom.json_dec(enc))
 
 class TestProperty(TestBase):
     def test_property_class_validity(self):
@@ -509,6 +509,7 @@ class TestObject(TestBase):
         self.assertEqual("hi", obj.ascalar.value)
 
         self.assertRaises(TypeError, SimpleObj.get)
+        self.assertRaises(TypeError, rom.get_object)
 
     def test_get_object_wrong_type(self):
         obj = SimpleObj.create(connection=self.conn, key="x", ascalar="hi")
