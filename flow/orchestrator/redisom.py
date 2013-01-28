@@ -362,7 +362,7 @@ class Object(object):
 def get_object(redis, key):
     class_info = redis.hgetall(key)
     if 'module' not in class_info or 'class' not in class_info:
-        raise KeyError("Requested object %s not found" % key)
+        raise KeyError("Requested object (%s) not found" % key)
     module = __import__(class_info['module'], fromlist=class_info['class'])
     return getattr(module, class_info['class'])(connection=redis, key=key)
 
