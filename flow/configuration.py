@@ -1,23 +1,28 @@
+import argparse
+import yaml
+
 try:
     from logging.config import dictConfig
 except ImportError:
     from flow.compat.dictconfig import dictConfig
 
-import argparse
-import yaml
 
-def setup_logging(configuration_filename):
-    # XXX Should probably use templating, then have yaml parse it as a dict
-    # That way we can easily set filenames and log levels, etc.
+def load_config(configuration_filename):
     with open(configuration_filename) as f:
         configuration_dict = yaml.load(f)
 
-    dictConfig(configuration_dict)
+    return configuration_dict
+
+
+def setup_logging(logging_dict):
+    dictConfig(logging_dict)
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--logging_configuration',
-            default='config/console_color.yaml')
+    parser.add_argument('--config', default=None, help='Configuration file')
+    parser.add_argument('--logging-mode', default='default',
+            help='Logging configuration to use')
+    parser.add_argument('executable_name')
 
     return parser.parse_args()

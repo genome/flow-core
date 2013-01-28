@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import logging
+import os
+import sys
+import traceback
+from flow.factories import general_factory
+import flow.configuration
+
+LOG = logging.getLogger()
+
+
+def main(executable_name=None, logging_mode=None, config_filename=None):
+    if config_filename is None:
+        config_filename = os.getenv('FLOW_CONFIG')
+    config = flow.configuration.load_config(config_filename)
+
+    logging_config = config['logging_configurations'][logging_mode]
+    flow.configuration.setup_logging(logging_config)
+
+    exec_config = config['executables'][executable_name]
+    command = general_factory(**exec_config)
+    command.run()
+
+
+if __name__ == '__main__':
+    args = flow.configuration.parse_arguments()
+
+    try:
+        main(executable_name=args.executable_name,
+                logging_mode=args.logging_mode, config_filename=args.config)
+    except:
+        LOG.exception('Unhandled exception caught, exitting.')
+        traceback.print_exc()
+        sys.exit(1)

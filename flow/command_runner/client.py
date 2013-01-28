@@ -4,7 +4,7 @@ from flow.command_runner.messages import CommandLineSubmitMessage
 LOG = logging.getLogger(__name__)
 
 class CommandLineClient(object):
-    def __init__(self, broker,
+    def __init__(self, broker=None,
             submit_routing_key=None,
             success_routing_key=None,
             failure_routing_key=None,

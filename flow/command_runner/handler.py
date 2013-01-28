@@ -4,9 +4,10 @@ from flow.command_runner.messages import CommandLineResponseMessage
 LOG = logging.getLogger(__name__)
 
 class CommandLineSubmitMessageHandler(object):
-    def __init__(self, executor=None, broker=None):
+    def __init__(self, executor=None, broker=None, queue_name=None):
         self.executor = executor
         self.broker = broker
+        self.queue_name = queue_name
 
     def __call__(self, message):
         LOG.debug('CommandLineSubmitMessageHandler got message')

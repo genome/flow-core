@@ -10,11 +10,11 @@ from flow.orchestrator.messages import NodeStatusRequestMessage, NodeStatusRespo
 LOG = logging.getLogger(__name__)
 
 class MethodDescriptorHandler(object):
-    def __init__(self, redis=None, services=None, callback_name=None):
-        self.redis = redis
-        self.services = services
+    def __init__(self, services=None, callback_name=None,
+            queue_name=None, storage=None):
         self.callback_name = callback_name
-
+        self.queue_name = queue_name
+        self.storage = storage
 
     def __call__(self, message):
         try:
@@ -25,7 +25,7 @@ class MethodDescriptorHandler(object):
             raise
 
         try:
-            invoke_instance_method(self.redis, method_descriptor,
+            invoke_instance_method(self.storage, method_descriptor,
                     services=self.services)
 
         except:
@@ -34,27 +34,29 @@ class MethodDescriptorHandler(object):
             raise
 
 class ExecuteNodeHandler(object):
-    def __init__(self, redis=None, services=None):
-        self.redis = redis
+    def __init__(self, services=None, queue_name=None, storage=None):
         self.services = services
+        self.queue_name = queue_name
+        self.storage = storage
 
     def __call__(self, message):
         print message.node_key # TODO remove after benchmarking?
         LOG.debug('Executing node: %s' % message.node_key)
-        node = get_object(self.redis, message.node_key)
+        node = get_object(self.storage, message.node_key)
         node.execute(self.services)
 
 
 class NodeStatusRequestHandler(object):
-    def __init__(self, broker, redis=None):
-        self.broker = broker
-        self.redis = redis
+    def __init__(self, services=None, queue_name=None, storage=None):
+        self.services = services
+        self.queue_name = queue_name
+        self.storage = storage
 
     def __call__(self, message):
         response_message = NodeStatusResponseMessage(
                 node_key=message.node_key, status='unknown node')
         try:
-            node = get_object(self.redis, message.node_key)
+            node = get_object(self.storage, message.node_key)
         except:
             LOG.warning('Status requested for unknown node (%s)',
                     message.node_key)
@@ -70,18 +72,22 @@ class NodeStatusRequestHandler(object):
 
 
 class NodeStatusResponseHandler(object):
-    def __init__(self, broker, polling_interval=5, node_key=None,
-            request_routing_key=None, response_routing_key=None):
+    def __init__(self, broker=None, polling_interval=5, node_key=None,
+            request_routing_key=None, response_routing_key=None,
+            queue_name=None, storage=None):
         self.broker = broker
         self.polling_interval = polling_interval
         self.node_key = node_key
         self.request_routing_key = request_routing_key
         self.response_routing_key = response_routing_key
 
+        self.services = services
+        self.queue_name = queue_name
+        self.storage = storage
+
         identifier = uuid.uuid4().hex
         self.response_routing_key = 'flow.status.response.%s' % identifier
         self.response_queue = 'flow_status_response_%s' % identifier
-
 
     def __call__(self, message):
         status = message.status

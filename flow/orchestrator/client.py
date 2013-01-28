@@ -5,7 +5,7 @@ from flow.orchestrator.messages import *
 LOG = logging.getLogger(__name__)
 
 class OrchestratorClient(object):
-    def __init__(self, broker,
+    def __init__(self, broker=None,
             execute_node_routing_key=None,
 
             submit_flow_routing_key=None,
