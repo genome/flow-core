@@ -36,12 +36,6 @@ class NodeAlreadyCompletedError(RuntimeError):
         self.node_key = node_key
         RuntimeError.__init__(self, "Node %s already completed!" % node_key)
 
-class FlowStatusError(RuntimeError):
-    def __init__(self, flow, expected_status):
-        self.flow = flow
-        RuntimeError.__init__(self, "Flow %s has status '%s' instead of"
-            " the status '%s'" % (flow, flow.status, expected_status))
-
 
 class InheritedProperty(rom.Property):
     @staticmethod
@@ -204,11 +198,6 @@ class DataNode(NodeBase):
 class Flow(NodeBase):
     node_keys = rom.Property(rom.List)
 
-    def __init__(self, *args, **kwargs):
-        status = kwargs.pop('status', Status.new)
-        NodeBase.__init__(self, *args, **kwargs)
-        self.status = status
-
     @property
     def flow(self):
         return self._get_flow(default=self)
@@ -222,8 +211,6 @@ class Flow(NodeBase):
         services[ORCHESTRATOR].execute_node(self.node_keys[0])
 
     def add_node(self, node):
-        if self.status.value is not Status.new:
-            raise FlowStatusError(self, Status.new)
         LOG.debug("Added node '%s' (key=%s) to flow '%s'" %
                 (node.name, node.key, self.name))
         node.flow_key = self.key
@@ -231,9 +218,6 @@ class Flow(NodeBase):
 
     def add_nodes(self, nodes):
         # optimized for Redis (instead of just calling self.add_node in a loop)
-
-        if self.status.value is not Status.new:
-            raise FlowStatusError(self, Status.new)
         keys = []
         for n in nodes:
             n.flow_key = self.key

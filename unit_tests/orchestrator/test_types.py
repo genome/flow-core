@@ -223,15 +223,6 @@ class TestFlow(TestBase):
         self.assertEqual([node.key], self.flow.node_keys.value)
         self.assertEqual(self.flow.key, node.flow.key)
 
-    def test_flows_built_with_new_status(self):
-        self.assertEqual(0, len(self.flow.node_keys))
-        self.assertEqual(self.flow.status.value, Status.new)
-
-    def test_add_node_when_running(self):
-        self.flow.status = Status.running
-        node = self._create_node(name="Test Node")
-        self.assertRaises(ft.FlowStatusError, self.flow.add_node, node)
-
     def test_inputs(self):
         self.assertEqual(self.native_outputs, self.flow.inputs)
 
