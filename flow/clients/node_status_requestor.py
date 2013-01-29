@@ -40,17 +40,23 @@ class NodeStatusRequestor(object):
             self.polling_interval = args.polling_interval
 
         self.broker.connect()
-        self.broker.create_bound_temporary_queue(self.responder_exchange,
-                self.response_routing_key, self.queue_name)
+        try:
+            self.create_queue()
 
-        if args.expected_statuses:
-            result = self.block_until_status(args.node_key,
-                    args.expected_statuses)
-        result = self.get_status(args.node_key)
+            if args.expected_statuses:
+                result = self.block_until_status(args.node_key,
+                        args.expected_statuses)
+            result = self.get_status(args.node_key)
 
-        print result
+            print result
+        except KeyboardInterrupt:
+            self.broker.disconnect()
 
         return 0
+
+    def create_queue(self):
+            self.broker.create_bound_temporary_queue(self.responder_exchange,
+                    self.response_routing_key, self.queue_name)
 
     def block_until_status(self, node_key, done_statuses):
         status = None
