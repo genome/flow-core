@@ -10,7 +10,8 @@ import flow.configuration
 LOG = logging.getLogger()
 
 
-def main(executable_name=None, logging_mode=None, config_filename=None):
+def main(executable_name=None, logging_mode=None,
+        config_filename=None, args=None):
     if config_filename is None:
         config_filename = os.getenv('FLOW_CONFIG')
     config = flow.configuration.load_config(config_filename)
@@ -20,16 +21,22 @@ def main(executable_name=None, logging_mode=None, config_filename=None):
 
     exec_config = config['executables'][executable_name]
     command = general_factory(**exec_config)
-    command.run()
+    exit_code = command.run(*args)
+
+    return exit_code
 
 
 if __name__ == '__main__':
     args = flow.configuration.parse_arguments()
 
+    exit_code = 1
+
     try:
-        main(executable_name=args.executable_name,
-                logging_mode=args.logging_mode, config_filename=args.config)
+        exit_code = main(executable_name=args.executable_name,
+                logging_mode=args.logging_mode, config_filename=args.config,
+                args=args.args)
     except:
         LOG.exception('Unhandled exception caught, exitting.')
         traceback.print_exc()
-        sys.exit(1)
+
+    sys.exit(exit_code)
