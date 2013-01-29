@@ -6,11 +6,17 @@ LOG = logging.getLogger()
 
 
 __all__ = [
+    'dictionary_factory'
     'general_factory',
 ]
 
 
 def dictionary_factory(**kwargs):
+    for key, val in kwargs.iteritems():
+        if isinstance(val, dict):
+            kwargs[key] = general_factory(**val)
+        elif isinstance(val, list):
+            kwargs[key] = [general_factory(**entry) for entry in val]
     return kwargs
 
 
