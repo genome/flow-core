@@ -37,7 +37,7 @@ def load_commands(command_category='flow.commands'):
         commands[ep.name] = command
     return commands
 
-def parse_arguments(commands):
+def create_parser(commands):
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default=None, help='Configuration file')
     parser.add_argument('--logging-mode',
@@ -50,4 +50,4 @@ def parse_arguments(commands):
         command_parser.set_defaults(command=command)
         command.annotate_parser(command_parser)
 
-    return parser.parse_args()
+    return parser

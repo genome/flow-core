@@ -15,7 +15,9 @@ if __name__ == '__main__':
     try:
         commands = flow.configuration.load_commands()
 
-        arguments = flow.configuration.parse_arguments(commands)
+        parser = flow.configuration.create_parser(commands)
+        arguments = parser.parse_args()
+
         logging_mode = arguments.logging_mode
         if logging_mode is None:
             logging_mode = arguments.command.default_logging_mode
