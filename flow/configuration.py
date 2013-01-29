@@ -24,7 +24,5 @@ def parse_arguments():
     parser.add_argument('--logging-mode', default='default',
             help='Logging configuration to use')
     parser.add_argument('executable_name')
-    parser.add_argument('args', nargs='*', default=[],
-            help='Addition options for the command')
 
-    return parser.parse_args()
+    return parser.parse_known_args()

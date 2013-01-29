@@ -27,14 +27,14 @@ def main(executable_name=None, logging_mode=None,
 
 
 if __name__ == '__main__':
-    args = flow.configuration.parse_arguments()
+    args, unparsed_argv = flow.configuration.parse_arguments()
 
     exit_code = 1
 
     try:
         exit_code = main(executable_name=args.executable_name,
                 logging_mode=args.logging_mode, config_filename=args.config,
-                args=args.args)
+                args=unparsed_argv)
     except:
         LOG.exception('Unhandled exception caught, exitting.')
         traceback.print_exc()
