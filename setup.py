@@ -31,6 +31,7 @@ command_line_local_executor = flow.command_runner.executors.local:SubprocessExec
 command_line_lsf_executor = flow.command_runner.executors.lsf:LSFExecutor
 
 node_status_requestor = flow.clients.node_status_requestor:NodeStatusRequestor
+benchmark = flow.clients.benchmark:Benchmark
 '''
 
 setup(
