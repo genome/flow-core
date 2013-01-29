@@ -15,6 +15,9 @@ class BlockingAmqpBroker(object):
                 pika.URLParameters(self.amqp_url))
         self.channel = self.connection.channel()
 
+    def disconnect(self):
+        self.connection.close()
+
     def create_bound_temporary_queue(self, exchange_name, topic, queue_name):
         self.channel.queue_declare(queue_name,
                 durable=False, auto_delete=True, exclusive=True)
