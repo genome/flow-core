@@ -29,10 +29,15 @@ class NodeStatusRequestor(object):
         parser.add_argument('expected_statuses', nargs='*', default=[],
                 help='If specified, block until status matches one of these')
 
+        parser.add_argument('--polling-interval', type=float, default=None,
+                help='The interval with which to poll for node status')
+
         return parser.parse_args(args=args)
 
     def run(self, *raw_args):
         args = self.parse_args(raw_args)
+        if args.polling_interval:
+            self.polling_interval = args.polling_interval
 
         self.broker.connect()
         self.broker.create_bound_temporary_queue(self.responder_exchange,
