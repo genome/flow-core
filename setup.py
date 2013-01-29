@@ -11,10 +11,14 @@ command_result = flow.command_runner.messages:CommandLineResponseMessage
 [flow.commands]
 status = flow.commands.status:StatusCommand
 benchmark = flow.commands.benchmark:BenchmarkCommand
-orchestrator = flow.commands.orchestrator:OrchestratorCommand
+orchestrator = flow.commands.service:ServiceCommand
+local_command_line_service = flow.commands.service:ServiceCommand
+lsf_command_line_service = flow.commands.service:ServiceCommand
 
 [flow.factories]
-service = flow.service:Service
+status_command = flow.commands.status:StatusCommand
+
+
 dictionary_factory = flow.factories:dictionary_factory
 
 redis_storage_singleton = flow.storage:redis_storage_singleton
@@ -34,9 +38,6 @@ method_descriptor_handler = flow.orchestrator.handlers:MethodDescriptorHandler
 command_line_submit_handler = flow.command_runner.handler:CommandLineSubmitMessageHandler
 command_line_local_executor = flow.command_runner.executors.local:SubprocessExecutor
 command_line_lsf_executor = flow.command_runner.executors.lsf:LSFExecutor
-
-node_status_requestor = flow.clients.node_status_requestor:NodeStatusRequestor
-benchmark = flow.clients.benchmark:Benchmark
 '''
 
 setup(

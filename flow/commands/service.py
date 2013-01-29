@@ -7,7 +7,7 @@ import uuid
 LOG = logging.getLogger()
 
 
-class OrchestratorCommand(CommandBase):
+class ServiceCommand(CommandBase):
     def __init__(self, storage=None, broker=None, handlers=None,
             service_interfaces={}):
         self.storage = storage
