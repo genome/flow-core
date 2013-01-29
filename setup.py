@@ -13,11 +13,15 @@ service = flow.service:Service
 dictionary_factory = flow.factories:dictionary_factory
 
 redis_storage_singleton = flow.storage:redis_storage_singleton
+
 asynchronous_amqp_broker = flow.brokers.strategic_broker:StrategicAmqpBroker
+blocking_broker = flow.brokers.blocking:BlockingAmqpBroker
 publisher_confirm_acking = flow.brokers.acking_strategies:PublisherConfirmation
 immediate_acking = flow.broker.acking_strategies:Immediate
+
 orchestrator_service_interface = flow.orchestrator.client:OrchestratorClient
 shell_command_service_interface = flow.command_runner.client:CommandLineClient
+
 execute_node_handler = flow.orchestrator.handlers:ExecuteNodeHandler
 node_status_request_handler = flow.orchestrator.handlers:NodeStatusRequestHandler
 method_descriptor_handler = flow.orchestrator.handlers:MethodDescriptorHandler
@@ -25,6 +29,8 @@ method_descriptor_handler = flow.orchestrator.handlers:MethodDescriptorHandler
 command_line_submit_handler = flow.command_runner.handler:CommandLineSubmitMessageHandler
 command_line_local_executor = flow.command_runner.executors.local:SubprocessExecutor
 command_line_lsf_executor = flow.command_runner.executors.lsf:LSFExecutor
+
+node_status_requestor = flow.clients.node_status_requestor:NodeStatusRequestor
 '''
 
 setup(
