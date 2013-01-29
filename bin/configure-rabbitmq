@@ -4,13 +4,15 @@ import argparse
 import copy
 import json
 import itertools
+import os
 import sys
 import yaml
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('config_filename', help='Configuration file containing bindings and vhost')
+    parser.add_argument('--config', default=None,
+            help='Configuration file containing bindings and vhost')
     parser.add_argument('--output_filename', '-o',
             default=None, help='Defaults to STDOUT')
 
@@ -159,4 +161,7 @@ def make_binding_defs(bindings, vhost):
 
 if __name__ == '__main__':
     args = parse_arguments()
-    main(args.config_filename, args.output_filename)
+    config_filename = args.config
+    if not config_filename:
+        config_filename = os.getenv('FLOW_CONFIG')
+    main(config_filename, args.output_filename)
