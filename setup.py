@@ -8,6 +8,11 @@ status_response = flow.orchestrator.messages:NodeStatusResponseMessage
 submit_command = flow.command_runner.messages:CommandLineSubmitMessage
 command_result = flow.command_runner.messages:CommandLineResponseMessage
 
+[flow.commands]
+status = flow.commands.status:StatusCommand
+benchmark = flow.commands.benchmark:BenchmarkCommand
+orchestrator = flow.commands.orchestrator:OrchestratorCommand
+
 [flow.factories]
 service = flow.service:Service
 dictionary_factory = flow.factories:dictionary_factory

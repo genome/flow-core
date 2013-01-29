@@ -4,39 +4,39 @@ import logging
 import os
 import sys
 import traceback
-from flow.factories import general_factory
+from flow.factories import dictionary_factory
 import flow.configuration
 
 LOG = logging.getLogger()
 
 
-def main(executable_name=None, logging_mode=None,
-        config_filename=None, args=None):
-    if config_filename is None:
-        config_filename = os.getenv('FLOW_CONFIG')
-    config = flow.configuration.load_config(config_filename)
-
-    logging_config = config['logging_configurations'][logging_mode]
-    flow.configuration.setup_logging(logging_config)
-
-    exec_config = config['executables'][executable_name]
-    command = general_factory(**exec_config)
-    exit_code = command.run(*args)
-
-    return exit_code
-
-
 if __name__ == '__main__':
-    args, unparsed_argv = flow.configuration.parse_arguments()
-
     exit_code = 1
-
     try:
-        exit_code = main(executable_name=args.executable_name,
-                logging_mode=args.logging_mode, config_filename=args.config,
-                args=unparsed_argv)
-    except:
-        LOG.exception('Unhandled exception caught, exitting.')
-        traceback.print_exc()
+        commands = flow.configuration.load_commands()
 
-    sys.exit(exit_code)
+        arguments = flow.configuration.parse_arguments(commands)
+        logging_mode = arguments.logging_mode
+        if logging_mode is None:
+            logging_mode = arguments.command.default_logging_mode
+
+        config = flow.configuration.load_config(arguments.config)
+
+        logging_config = config['logging_configurations'][logging_mode]
+        flow.configuration.setup_logging(logging_config)
+
+        try:
+            command_config = config['commands'][arguments.command_name]
+            kwargs = dictionary_factory(**command_config)
+            command = arguments.command(**kwargs)
+            exit_code = command(arguments)
+        except:
+            LOG.exception('Command execution failed')
+
+    except SystemExit as e:
+        exit_code = e.exit_code
+    except:
+        print 'Unhandled exception'
+        traceback.print_exc()
+    finally:
+        sys.exit(exit_code)
