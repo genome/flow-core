@@ -1,6 +1,7 @@
 import logging
 
 from flow.orchestrator.messages import *
+from flow.petri.safenet import NotifyTransitionMessage, SetTokenMessage
 
 LOG = logging.getLogger(__name__)
 
@@ -8,8 +9,8 @@ class OrchestratorClient(object):
     def __init__(self, broker=None,
             execute_node_routing_key=None,
 
-            add_tokens_routing_key=None,
-            fire_transition_routing_key=None,
+            set_token_routing_key=None,
+            notify_transition_routing_key=None,
 
             submit_flow_routing_key=None,
             submit_flow_success_routing_key=None,
@@ -19,22 +20,25 @@ class OrchestratorClient(object):
         self.broker = broker
         self.execute_node_routing_key        = execute_node_routing_key
 
-        self.add_tokens_routing_key = add_tokens_routing_key
-        self.fire_transition_routing_key = fire_transition_routing_key
+        self.set_token_routing_key           = set_token_routing_key
+        self.notify_transition_routing_key   = notify_transition_routing_key
 
         self.submit_flow_routing_key         = submit_flow_routing_key
         self.submit_flow_success_routing_key = submit_flow_success_routing_key
         self.submit_flow_failure_routing_key = submit_flow_failure_routing_key
         self.submit_flow_error_routing_key   = submit_flow_error_routing_key
 
-    def add_tokens(self, place_key, num_tokens=1):
-        message = AddTokensMessage(place_key=place_key,
-                num_tokens=int(num_tokens))
-        self.broker.publish(self.add_tokens_routing_key, message)
+    def set_token(self, net_key, place_idx, token_key=None):
+        message = SetTokenMessage(net_key=net_key, place_idx=place_idx,
+                token_key=token_key)
+        self.broker.publish(self.set_token_routing_key, message)
 
-    def fire_transition(self, transition_key):
-        message = FireTransitionMessage(transition_key=transition_key)
-        self.broker.publish(self.fire_transition_routing_key, message)
+    def notify_transition(self, net_key, transition_idx, place_idx):
+        message = NotifyTransitionMessage(
+                net_key=net_key,
+                transition_idx=transition_idx,
+                place_idx=place_idx)
+        self.broker.publish(self.notify_transition_routing_key, message)
 
     def execute_node(self, node_key):
         message = ExecuteNodeMessage(node_key=node_key)

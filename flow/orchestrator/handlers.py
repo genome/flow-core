@@ -2,40 +2,42 @@ import logging
 import time
 import uuid
 
-from flow.petri.net import Place, Transition
+from flow.petri.safenet import SafeNet
 from flow.orchestrator.redisom import get_object, invoke_instance_method
 
 from flow.orchestrator.messages import NodeStatusRequestMessage, NodeStatusResponseMessage
 
 LOG = logging.getLogger(__name__)
 
-class PetriTokenHandler(object):
+class PetriSetTokenHandler(object):
     def __init__(self, redis=None, services=None):
         self.redis = redis
         self.services = services
 
     def __call__(self, message):
         try:
-            place = Place(self.redis, message.place_key)
-            place.add_tokens(message.num_tokens, services=self.services)
+            net = SafeNet(self.redis, message.net_key)
+            net.set_token(message.place_idx, message.token_key,
+                    services=self.services)
         except Exception as e:
-            LOG.error('Handler (%s) failed to add tokens to place %s: %s'
-                    % (self, message.place_key, str(e)))
+            LOG.error('Handler (%s) failed to add tokens to net %s place %d: %s'
+                    % (self, message.net_key, message.place_idx, str(e)))
             raise e
 
 
-class PetriTransitionHandler(object):
+class PetriNotifyTransitionHandler(object):
     def __init__(self, redis=None, services=None):
         self.redis = redis
         self.services = services
 
     def __call__(self, message):
         try:
-            transition = Transition(self.redis, message.transition_key)
-            transition.fire(services=self.services)
+            net = SafeNet(self.redis, message.net_key)
+            net.notify_transition(message.transition_idx, message.place_idx,
+                    services=self.services)
         except Exception as e:
             LOG.error('Handler (%s) failed to execute transition %s: %s'
-                    % (self, message.transition_key, str(e)))
+                    % (self, message.transition_idx, str(e)))
             raise e
 
 

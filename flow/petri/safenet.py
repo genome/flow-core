@@ -111,15 +111,17 @@ return {1, arcs_out}
 
 class SetTokenMessage(Message):
     required_fields = {
-            "place_key": basestring,
+            "net_key": basestring,
+            "place_idx": int,
             "token_key": basestring,
     }
 
 
 class NotifyTransitionMessage(Message):
     required_fields = {
-            "place_key": basestring,
-            "transition_key": basestring,
+            "net_key": basestring,
+            "place_idx": int,
+            "transition_idx": int,
     }
 
 
@@ -188,11 +190,14 @@ class SafeNet(object):
 
         for i, t in enumerate(trans_actions):
             key = self.subkey("trans/%d" % i)
-            trans = _SafeTransition.create(self.conn, key, name=t.name,
-                    action_key=t.key,
+            name = "" if t is None else t.name
+            action_key = None if t is None else t.key
+            trans = _SafeTransition.create(self.conn, key, name=name,
                     arcs_out=trans_arcs_out.get(i, {}),
                     arcs_in=trans_arcs_in.get(i, {}),
                     state=trans_arcs_in.get(i, {}))
+            if action_key is not None:
+                trans.action_key = action_key
 
         return self
 
@@ -244,7 +249,7 @@ class SafeNet(object):
         if tokens_pushed == 1:
             orchestrator = services['orchestrator']
             for place_idx in places_to_notify:
-                orchestrator.set_token(self.key, place_idx, token_key='')
+                orchestrator.set_token(self.key, int(place_idx), token_key='')
             self.conn.delete(tokens_pushed_key)
 
     def marking(self, place_idx=None):
@@ -267,13 +272,14 @@ class SafeNet(object):
                 raise PlaceCapacityError(
                     "Failed to add token %s to place %s: "
                     "a token already exists" %
-                    (token_key, self.key))
+                    (token_key, place.key))
+
 
         if self.conn.hexists(marking_key, place_idx):
             orchestrator = services['orchestrator']
             arcs_out = place.arcs_out.value
             for trans_idx in arcs_out:
-                orchestrator.notify_transition(self.key, trans_idx, place_idx)
+                orchestrator.notify_transition(self.key, int(trans_idx), int(place_idx))
 
 
 class TransitionAction(rom.Object):
