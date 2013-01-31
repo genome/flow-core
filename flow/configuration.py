@@ -15,6 +15,9 @@ except ImportError:
 def load_config(configuration_filename):
     if configuration_filename is None:
         configuration_filename = os.getenv('FLOW_CONFIG')
+    if configuration_filename is None:
+        raise ValueError("No configuration filename provided, and FLOW_CONFIG environment variable not set")
+
     with open(configuration_filename) as f:
         configuration_dict = yaml.load(f)
 
