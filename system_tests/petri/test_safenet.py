@@ -34,7 +34,8 @@ class TestBase(unittest.TestCase):
 class TestSafeNet(TestBase):
     def test_abstract_transition_action(self):
         act = sn.TransitionAction.create(self.conn, name="boom")
-        self.assertRaises(NotImplementedError, act.execute)
+        self.assertRaises(NotImplementedError, act.execute, net=None,
+                services=None)
 
     def test_no_transition_action(self):
         trans = sn._SafeTransition.create(self.conn, name="t")
