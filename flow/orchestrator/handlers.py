@@ -36,8 +36,8 @@ class PetriNotifyTransitionHandler(object):
             net.notify_transition(message.transition_idx, message.place_idx,
                     services=self.services)
         except Exception as e:
-            LOG.error('Handler (%s) failed to execute transition %s: %s'
-                    % (self, message.transition_idx, str(e)))
+            LOG.exception('Handler (%s) failed to execute transition %s: %s' %
+                         (self, message.transition_idx, str(e)))
             raise e
 
 
