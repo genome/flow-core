@@ -4,11 +4,14 @@ from uuid import uuid4
 import base64
 import flow.orchestrator.redisom as rom
 import hashlib
+import logging
 import os
 import subprocess
 import sys
 import time
 
+
+LOG = logging.getLogger(__name__)
 
 _set_token_script = """
 local marking_hash = KEYS[1]
@@ -212,6 +215,8 @@ class SafeNet(object):
         return _SafeTransition(self.conn, self.subkey("trans/%d" % int(idx)))
 
     def notify_transition(self, trans_idx=None, place_idx=None, services=None):
+        LOG.debug("notify transition #%d", trans_idx)
+
         if trans_idx is None or place_idx is None or services is None:
             raise TypeError(
                     "You must specify trans_idx, place_idx, and services")
@@ -231,6 +236,7 @@ class SafeNet(object):
                 enabler_key]
         args = [place_idx]
         rv = self._consume_tokens(connection=self.conn, keys=keys, args=args)
+        LOG.debug("Consume tokens rv=%r", rv)
 
         if rv[0] != 0:
             return
@@ -240,7 +246,7 @@ class SafeNet(object):
 
         action = trans.action
         if action is not None:
-            action.execute()
+            action.execute(self, services)
 
         keys = [active_tokens_key, arcs_in_key, arcs_out_key, marking_key,
                 new_token_key, state_key, tokens_pushed_key]
@@ -261,6 +267,7 @@ class SafeNet(object):
             return self.conn.hget(self.subkey("marking"), place_idx)
 
     def set_token(self, place_idx, token_key='', services=None):
+        LOG.debug("setting token for place %s", self.place(place_idx).name)
         place = self.place(place_idx)
         place.first_token_timestamp.setnx()
         marking_key = self.subkey("marking")
@@ -284,8 +291,10 @@ class SafeNet(object):
 
 class TransitionAction(rom.Object):
     name = rom.Property(rom.String)
+    args = rom.Property(rom.List)
+    place_refs = rom.Property(rom.List)
 
-    def execute(self):
+    def execute(self, net, services):
         raise NotImplementedError("In class %s: execute not implemented" %
                 self.__class__.__name__)
 
@@ -296,5 +305,19 @@ class CounterAction(TransitionAction):
     def _on_create(self):
         self.call_count = 0
 
-    def execute(self, **kwargs):
+    def execute(self, net, services):
         self.call_count.incr(1)
+
+
+class ShellCommandAction(TransitionAction):
+    def execute(self, net, services):
+        cmdline = self.args.value
+        rv = subprocess.call(cmdline)
+        orchestrator = services['orchestrator']
+        token = Token.create(self.connection, data={"return_code": rv})
+        if rv == 0:
+            return_place = self.place_refs[0]
+        else:
+            return_place = self.place_refs[1]
+
+        orchestrator.set_token(net.key, int(return_place), token_key=str(token.key))
