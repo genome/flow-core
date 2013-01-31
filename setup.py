@@ -14,6 +14,7 @@ benchmark = flow.commands.benchmark:BenchmarkCommand
 orchestrator = flow.commands.service:ServiceCommand
 local_command_line_service = flow.commands.service:ServiceCommand
 lsf_command_line_service = flow.commands.service:ServiceCommand
+configure_rabbit_mq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 
 [flow.factories]
 status_command = flow.commands.status:StatusCommand
