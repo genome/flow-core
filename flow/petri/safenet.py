@@ -205,6 +205,8 @@ class SafeNet(object):
         return self
 
     def __init__(self, conn, key):
+        if conn is None:
+            raise TypeError("You must supply a valid connection")
         self.conn = conn
         self.key = key
 

@@ -123,7 +123,8 @@ if __name__ == "__main__":
     net.add_trans_arc_out(t_ok, ok)
     net.add_trans_arc_out(t_fail, fail)
 
-    conn = redis.Redis()
+    host = os.environ['FLOW_REDIS_URL']
+    conn = redis.Redis(host)
     cnet = _compile_net(conn, net)
     net_key = cnet.key
     print "Compiled the net, key is", net_key
@@ -141,6 +142,7 @@ if __name__ == "__main__":
     print "Publishing message", body
 
     amqp_url = os.environ['AMQP_URL']
+    print "Sending a message to", amqp_url
     conn = pika.BlockingConnection(pika.URLParameters(amqp_url))
     qchannel = conn.channel()
     qchannel.basic_publish(

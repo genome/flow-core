@@ -12,7 +12,6 @@ command_result = flow.command_runner.messages:CommandLineResponseMessage
 
 [flow.commands]
 status = flow.commands.status:StatusCommand
-benchmark = flow.commands.benchmark:BenchmarkCommand
 orchestrator = flow.commands.service:ServiceCommand
 local_command_line_service = flow.commands.service:ServiceCommand
 lsf_command_line_service = flow.commands.service:ServiceCommand
@@ -37,6 +36,8 @@ shell_command_service_interface = flow.command_runner.client:CommandLineClient
 execute_node_handler = flow.orchestrator.handlers:ExecuteNodeHandler
 node_status_request_handler = flow.orchestrator.handlers:NodeStatusRequestHandler
 method_descriptor_handler = flow.orchestrator.handlers:MethodDescriptorHandler
+petri_set_token_handler = flow.orchestrator.handlers:PetriSetTokenHandler
+petri_notify_transition_handler = flow.orchestrator.handlers:PetriNotifyTransitionHandler
 
 command_line_submit_handler = flow.command_runner.handler:CommandLineSubmitMessageHandler
 command_line_local_executor = flow.command_runner.executors.local:SubprocessExecutor

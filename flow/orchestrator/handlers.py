@@ -10,9 +10,10 @@ from flow.orchestrator.messages import NodeStatusRequestMessage, NodeStatusRespo
 LOG = logging.getLogger(__name__)
 
 class PetriSetTokenHandler(object):
-    def __init__(self, redis=None, services=None):
+    def __init__(self, redis=None, services=None, queue_name=None):
         self.redis = redis
         self.services = services
+        self.queue_name = queue_name
 
     def __call__(self, message):
         try:
@@ -20,15 +21,16 @@ class PetriSetTokenHandler(object):
             net.set_token(message.place_idx, message.token_key,
                     services=self.services)
         except Exception as e:
-            LOG.error('Handler (%s) failed to add tokens to net %s place %d: %s'
+            LOG.exception('Handler (%s) failed to add tokens to net %s place %d: %s'
                     % (self, message.net_key, message.place_idx, str(e)))
             raise e
 
 
 class PetriNotifyTransitionHandler(object):
-    def __init__(self, redis=None, services=None):
+    def __init__(self, redis=None, services=None, queue_name=None):
         self.redis = redis
         self.services = services
+        self.queue_name = queue_name
 
     def __call__(self, message):
         try:
