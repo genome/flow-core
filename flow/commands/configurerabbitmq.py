@@ -8,11 +8,12 @@ LOG = logging.getLogger()
 
 
 class ConfigureRabbitMQCommand(CommandBase):
-    def __init__(self, bindings={}, vhost=''):
+    def __init__(self, bindings={}, vhost='', server_config={}):
 
         self.bindings_config = bindings
         self.vhost = vhost
-        self.rabbit_configuration = None
+        self.rabbit_configuration = server_config
+        self.is_generated = False
 
     @staticmethod
     def annotate_parser(parser):
@@ -21,14 +22,14 @@ class ConfigureRabbitMQCommand(CommandBase):
 
     def __call__(self, parsed_arguments):
 
-        if self.rabbit_configuration is None:
-            self.rabbit_configuration = self.empty_rabbit_configuration()
-
+        if not self.is_generated:
             self.parse_exchanges_queues_bindings()
 
             self.make_exchange_defs()
             self.make_queue_defs()
             self.make_binding_defs()
+
+            self.is_generated = True
 
         self.dump_config_to_file(parsed_arguments.output_filename)
 
@@ -108,37 +109,4 @@ class ConfigureRabbitMQCommand(CommandBase):
             of = sys.stdout
 
         json.dump(self.rabbit_configuration, of)
-
-
-    def empty_rabbit_configuration(self):
-        return {"rabbit_version":"3.0.1",
-            "parameters":[],
-            "policies":[],
-            "users":[
-                {"name":"guest",
-                "password_hash":"GvVZRv7FY1mtJZfvN42rcdkLQ/w=",
-                "tags":"administrator"}
-            ],
-            "vhosts":[{"name":"/"}, {"name":"workflow"}, {"name":"testing"}],
-
-            "permissions":[
-                {"user":"guest",
-                "vhost":"/",
-                "configure":".*",
-                "write":".*",
-                "read":".*"},
-
-                {"user":"guest",
-                "vhost":"workflow",
-                "configure":".*",
-                "write":".*",
-                "read":".*"},
-
-                {"user":"guest",
-                "vhost":"testing",
-                "configure":".*",
-                "write":".*",
-                "read":".*"}
-            ],
-        }
 
