@@ -48,12 +48,7 @@ class ConfigureRabbitMQCommand(CommandBase):
 
     def make_exchange_defs(self):
 
-        def new_exchange(name):
-            if name == 'alt':
-                args = {}
-            else:
-                args = { 'altername-exchange': 'alt'}
-
+        def new_exchange(name, args):
             return {'name': name,
                     'vhost': self.vhost,
                     'durable': True,
@@ -63,19 +58,14 @@ class ConfigureRabbitMQCommand(CommandBase):
                     'arguments': args,
                    }
 
-        result = []
+        result = [ new_exchange('alt', {}) ]
         for exch_name in itertools.chain(['alt'], self.exchanges, ['dead']):
-            result.append( new_exchange(exch_name) )
+            result.append( new_exchange(exch_name, { 'altername-exchange': 'alt'} ) )
         self.rabbit_configuration['exchanges'] = result
 
     def make_queue_defs(self):
 
-        def new_queue(name):
-            if name == 'missing_routing_key' or name.startswith('dead'):
-                args = {}
-            else:
-                args = { 'x-dead-letter-exchange': 'dead'}
-
+        def new_queue(name, args):
             return {'name': name,
                     'vhost': self.vhost,
                     'durable': True,
@@ -84,12 +74,12 @@ class ConfigureRabbitMQCommand(CommandBase):
                     }
 
 
-        result = []
+        result = [ new_queue( 'missing_routing_key', {} )]
         for queue_name in itertools.chain(['missing_routing_key'], self.queues):
-            result.append( new_queue(queue_name) )
+            result.append( new_queue(queue_name, { 'x-dead-letter-exchange': 'dead'} ) )
 
             if queue_name != 'missing_routing_key':
-                result.append( new_queue('dead_' + queue_name) )
+                result.append( new_queue('dead_' + queue_name, {}) )
         self.rabbit_configuration['queues'] = result
 
 
