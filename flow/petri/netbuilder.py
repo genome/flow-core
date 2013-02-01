@@ -1,5 +1,6 @@
 import pygraphviz
 import safenet as sn
+from copy import deepcopy
 
 def _make_transition_action(conn, transition):
     if transition.action_class is None:
@@ -10,17 +11,6 @@ def _make_transition_action(conn, transition):
             name=transition.name,
             args=transition.action_args,
             place_refs=transition.place_refs)
-
-def _compile_net(connection, net):
-    transition_actions = [_make_transition_action(connection, x)
-                          for x in net.transitions]
-    return sn.SafeNet.create(
-            connection=connection,
-            name=net.name,
-            place_names=net.places,
-            trans_actions=transition_actions,
-            place_arcs_out=net.place_arcs_out,
-            trans_arcs_out=net.trans_arcs_out)
 
 
 class Transition(object):
@@ -51,7 +41,7 @@ class Net(object):
         self.place_arcs_out.setdefault(src, set()).add(dst)
 
     def add_trans_arc_out(self, src, dst):
-        self.trans_arcs_out.setdefault(src, set()).add(dst)
+       self.trans_arcs_out.setdefault(src, set()).add(dst)
 
     def graph(self):
         graph = pygraphviz.AGraph(directed=True)
@@ -76,6 +66,47 @@ class Net(object):
                 graph.add_edge(tid, pid)
 
         return graph
+
+    def store(self, connection):
+        transition_actions = [_make_transition_action(connection, x)
+                              for x in self.transitions]
+        return sn.SafeNet.create(
+                connection=connection,
+                name=self.name,
+                place_names=self.places,
+                trans_actions=transition_actions,
+                place_arcs_out=self.place_arcs_out,
+                trans_arcs_out=self.trans_arcs_out)
+
+    def update(self, other, place_equivs):
+        other = deepcopy(other)
+
+        place_offset = len(self.places)
+        trans_offset = len(self.transitions)
+        self.places.extend(other.places)
+
+        for t in other.transitions:
+            if t.place_refs:
+                t.place_refs = [x + place_offset for x in t.place_refs]
+            self.transitions.append(t)
+
+        for src, dst_set in other.place_arcs_out.iteritems():
+            src += place_offset
+            for dst in dst_set:
+                dst += trans_offset
+                self.place_arcs_out.setdefault(src, set()).add(dst)
+
+        for src, dst_set in other.trans_arcs_out.iteritems():
+            src += trans_offset
+            for dst in dst_set:
+                dst += place_offset
+                self.trans_arcs_out.setdefault(src, set()).add(dst)
+
+        for src, dst in place_equivs.iteritems():
+            dst += place_offset
+            tid = self.add_transition(Transition(name="bridge"))
+            self.place_arcs_out.setdefault(src, set()).add(tid)
+            self.trans_arcs_out.setdefault(tid, set()).add(dst)
 
 
 if __name__ == "__main__":
@@ -123,9 +154,16 @@ if __name__ == "__main__":
     net.add_trans_arc_out(t_ok, ok)
     net.add_trans_arc_out(t_fail, fail)
 
+    net2 = deepcopy(net)
+    net2.transitions[0].action_args=["ls", "-al"]
+
+    net.update(net2, {ok: 0})
+
+    net.graph().draw("x.png", prog="dot")
+
     host = os.environ['FLOW_REDIS_URL']
     conn = redis.Redis(host)
-    cnet = _compile_net(conn, net)
+    cnet = net.store(conn)
     net_key = cnet.key
     print "Compiled the net, key is", net_key
 
