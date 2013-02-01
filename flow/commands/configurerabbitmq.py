@@ -60,7 +60,7 @@ class ConfigureRabbitMQCommand(CommandBase):
 
         result = [ new_exchange('alt', {}) ]
         for exch_name in itertools.chain(['alt'], self.exchanges, ['dead']):
-            result.append( new_exchange(exch_name, { 'altername-exchange': 'alt'} ) )
+            result.append( new_exchange(exch_name, { 'alternate-exchange': 'alt'} ) )
         self.rabbit_configuration['exchanges'] = result
 
     def make_queue_defs(self):
