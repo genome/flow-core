@@ -32,7 +32,18 @@ class Immediate(object):
         return [self._largest_receive_tag], True
 
 
-class PublisherConfirmation(object):
+class TagRelationships(object):
+    def __init__(self):
+        self.reset()
+
+    @property
+    def stats(self):
+        return {
+            'ackable_receive_tags': len(self._ackable_receive_tags),
+            'non_ackable_receive_tags': len(self._non_ackable_receive_tags),
+            'unconfirmed_publish_tags': len(self._unconfirmed_publish_tags)
+        }
+
     def reset(self):
         LOG.debug('Restting PublisherConfirmation state.')
         self._ackable_receive_tags = blist.sortedlist()
@@ -41,31 +52,6 @@ class PublisherConfirmation(object):
 
         self._publish_to_receive_map = {}
         self._receive_to_publish_set_map = collections.defaultdict(set)
-
-    def register_broker(self, broker):
-        self.broker = broker
-
-    def on_channel_open(self, channel):
-        LOG.debug('Enabling publisher confirms.')
-        channel.confirm_delivery()
-        channel.callbacks.add(channel.channel_number, Basic.Ack,
-                self._on_publisher_confirm_ack, one_shot=False)
-        channel.callbacks.add(channel.channel_number, Basic.Nack,
-                self._on_publisher_confirm_nack, one_shot=False)
-
-    def _on_publisher_confirm_ack(self, method_frame):
-        publish_tag = method_frame.method.delivery_tag
-        multiple = method_frame.method.multiple
-        LOG.debug('Got publisher confirm for message (%d), multiple = %s',
-                publish_tag, multiple)
-
-        self.remove_publish_tag(publish_tag, multiple=multiple)
-        self.broker.ack_if_able()
-
-    def _on_publisher_confirm_nack(self, method_frame):
-        LOG.critical('Got failed publisher confirm.  Killing broker.')
-        self.broker.disconnect()
-
 
     def add_receive_tag(self, receive_tag):
         self._ackable_receive_tags.add(receive_tag)
@@ -89,14 +75,14 @@ class PublisherConfirmation(object):
                     publish_tag, ready_tags)
 
             for tag in ready_tags:
-                self._remove_single_publish_tag(tag)
+                self.remove_single_publish_tag(tag)
         else:
             LOG.debug('Single confirm for (%d)', publish_tag)
             self._unconfirmed_publish_tags.remove(publish_tag)
-            self._remove_single_publish_tag(publish_tag)
+            self.remove_single_publish_tag(publish_tag)
 
 
-    def _remove_single_publish_tag(self, publish_tag):
+    def remove_single_publish_tag(self, publish_tag):
         receive_tag = self._publish_to_receive_map.pop(publish_tag)
         LOG.debug('Publish tag (%d) maps to receive tag (%d)',
                 publish_tag, receive_tag)
@@ -166,3 +152,47 @@ class PublisherConfirmation(object):
 
         self._ackable_receive_tags = blist.sortedlist()
         return ready_tags, multiple
+
+class PublisherConfirmation(object):
+    def __init__(self):
+        self._tag_relationships = TagRelationships()
+
+    def reset(self):
+        self._tag_relationships.reset()
+
+    def register_broker(self, broker):
+        self.broker = broker
+
+    def on_channel_open(self, channel):
+        LOG.debug('Enabling publisher confirms.')
+        channel.confirm_delivery()
+        channel.callbacks.add(channel.channel_number, Basic.Ack,
+                self._on_publisher_confirm_ack, one_shot=False)
+        channel.callbacks.add(channel.channel_number, Basic.Nack,
+                self._on_publisher_confirm_nack, one_shot=False)
+
+    def _on_publisher_confirm_ack(self, method_frame):
+        publish_tag = method_frame.method.delivery_tag
+        multiple = method_frame.method.multiple
+        LOG.debug('Got publisher confirm for message (%d), multiple = %s',
+                publish_tag, multiple)
+
+        self.remove_publish_tag(publish_tag, multiple=multiple)
+        self.broker.ack_if_able()
+
+    def _on_publisher_confirm_nack(self, method_frame):
+        LOG.critical('Got failed publisher confirm.  Killing broker.')
+        self.broker.disconnect()
+
+
+    def add_receive_tag(self, *args, **kwargs):
+        return self._tag_relationships.add_receive_tag(*args, **kwargs)
+
+    def add_publish_tag(self, *args, **kwargs):
+        return self._tag_relationships.add_publish_tag(*args, **kwargs)
+
+    def remove_publish_tag(self, *args, **kwargs):
+        return self._tag_relationships.remove_publish_tag(*args, **kwargs)
+
+    def pop_ackable_receive_tags(self):
+        return self._tag_relationships.pop_ackable_receive_tags()

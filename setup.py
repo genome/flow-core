@@ -52,6 +52,7 @@ setup(
         entry_points = entry_points,
         install_requires = [
             'argparse',
+            'blist',
             'pika',
             'platform-python-lsf-api',
             'pygraphviz',
