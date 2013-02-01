@@ -60,7 +60,7 @@ class ConfigureRabbitMQCommand(CommandBase):
                    }
 
         result = [ new_exchange('alt', {}) ]
-        for exch_name in itertools.chain(['alt'], self.exchanges, ['dead']):
+        for exch_name in itertools.chain(self.exchanges, ['dead']):
             result.append( new_exchange(exch_name, { 'alternate-exchange': 'alt'} ) )
         self.rabbit_configuration['exchanges'] = result
 
@@ -76,7 +76,7 @@ class ConfigureRabbitMQCommand(CommandBase):
 
 
         result = [ new_queue( 'missing_routing_key', {} )]
-        for queue_name in itertools.chain(['missing_routing_key'], self.queues):
+        for queue_name in itertools.chain(self.queues):
             result.append( new_queue(queue_name, { 'x-dead-letter-exchange': 'dead'} ) )
 
             if queue_name != 'missing_routing_key':
