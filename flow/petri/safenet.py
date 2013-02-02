@@ -186,6 +186,8 @@ class SafeNet(object):
             for t in trans_set:
                 trans_arcs_in.setdefault(t, set()).add(p)
 
+        self.conn.set(self.subkey("num_places"), len(place_names))
+
         for i, pname in enumerate(place_names):
             key = self.subkey("place/%d" % i)
             place = _SafePlace.create(connection=self.conn, key=key, name=pname,
@@ -209,6 +211,11 @@ class SafeNet(object):
             raise TypeError("You must supply a valid connection")
         self.conn = conn
         self.key = key
+
+    @property
+    def num_places(self):
+        np = self.conn.get(self.subkey("num_places")) or 0
+        return int(np)
 
     def place(self, idx):
         return _SafePlace(self.conn, self.subkey("place/%d" % int(idx)))

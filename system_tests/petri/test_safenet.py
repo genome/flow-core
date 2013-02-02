@@ -2,9 +2,11 @@
 
 import flow.petri.safenet as sn
 
+import mock
 import os
-import unittest
 import redis
+import sys
+import unittest
 
 class FakeOrchestrator(object):
     def __init__(self, conn):
@@ -19,6 +21,7 @@ class FakeOrchestrator(object):
         net = sn.SafeNet(self.conn, net_key)
         net.notify_transition(trans_idx, place_idx, services=self.services)
 
+
 class TestBase(unittest.TestCase):
     def setUp(self):
         redis_host = os.environ['FLOW_TEST_REDIS_URL']
@@ -32,10 +35,28 @@ class TestBase(unittest.TestCase):
 
 
 class TestSafeNet(TestBase):
+    def test_no_connection(self):
+        self.assertRaises(TypeError, sn.SafeNet.create, None)
+
     def test_abstract_transition_action(self):
         act = sn.TransitionAction.create(self.conn, name="boom")
         self.assertRaises(NotImplementedError, act.execute, net=None,
                 services=None)
+
+    def test_places(self):
+        action = sn.CounterAction.create(connection=self.conn, name="counter")
+        net = sn.SafeNet.create(
+                connection=self.conn,
+                place_names=["a", "b", "c"],
+                trans_actions = [action],
+                place_arcs_out={0: [0]}, # a -> t1
+                trans_arcs_out={0: [1, 2]}, # t1 -> b, c
+                )
+
+        self.assertEqual(3, net.num_places)
+        self.assertEqual("a", str(net.place(0).name))
+        self.assertEqual("b", str(net.place(1).name))
+        self.assertEqual("c", str(net.place(2).name))
 
     def test_no_transition_action(self):
         trans = sn._SafeTransition.create(self.conn, name="t")
@@ -48,7 +69,6 @@ class TestSafeNet(TestBase):
         self.assertRaises(TypeError, net.notify_transition, trans_idx=0)
         self.assertRaises(TypeError, net.notify_transition, trans_idx=0,
             place_idx=0)
-
 
     def test_fire_transition(self):
         places = ["place %d" % i for i in xrange(5)]
@@ -117,6 +137,39 @@ class TestSafeNet(TestBase):
 
         self.assertRaises(sn.PlaceCapacityError, net.set_token,
             place_idx, token2.key, self.services)
+
+
+class TestShellCommandAction(TestBase):
+    def test_execute(self):
+        success_place_id = 1
+        failure_place_id = 2
+
+        good_cmdline = [sys.executable, "-c", "import sys; sys.exit(0)"]
+        fail_cmdline = [sys.executable, "-c", "import sys; sys.exit(1)"]
+
+        action = sn.ShellCommandAction.create(
+            connection=self.conn,
+            name="TestAction",
+            args=good_cmdline,
+            place_refs=[success_place_id, failure_place_id],
+            )
+
+        orchestrator = mock.MagicMock()
+        services = {"orchestrator": orchestrator}
+        net = mock.MagicMock()
+        net.key = "netkey!"
+
+        action.execute(net, services)
+        orchestrator.set_token.assert_called_with(
+                net.key, success_place_id, token_key=mock.ANY)
+
+        action.args = fail_cmdline
+        orchestrator.reset_mock()
+
+        action.execute(net, services)
+        orchestrator.set_token.assert_called_with(
+                    net.key, failure_place_id, token_key=mock.ANY)
+
 
 if __name__ == "__main__":
     unittest.main()
