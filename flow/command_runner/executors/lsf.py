@@ -6,14 +6,22 @@ from flow.command_runner import util
 LOG = logging.getLogger(__name__)
 
 class LSFExecutor(object):
-    def __init__(self, default_queue='long',
+    def __init__(self, default_queue='long', wrapper_name=None,
             default_environment={}, manditory_environment={}):
         self.default_queue = default_queue
+        self.wrapper_name = wrapper_name
         self.default_environment = default_environment
         self.manditory_environment = manditory_environment
 
-    def __call__(self, command_line, working_directory=None,
-            environment={}, **kwargs):
+    def __call__(self, command_line, net_key=None,
+            running_place=None, success_place=None, failure_place=None,
+            environment={}, working_directory=None, **kwargs):
+
+        wrapper = self._make_wrapper_command_line(net_key=net_key,
+                running_place=running_place, success_place=success_place,
+                failure_place=failure_place)
+
+        full_command_line = wrapper + command_line
         command_string = ' '.join(map(str, command_line))
         LOG.debug("lsf command_string = '%s'", command_string)
 
@@ -42,6 +50,15 @@ class LSFExecutor(object):
                     submit_result)
             return False, submit_result
 
+    def _make_wrapper_command_line(self, net_key=None,
+            running_place=None, success_place=None, failure_place=None):
+        return [
+            'flow', self.wrapper_name,
+            '-n', net_key,
+            '-r', running_place,
+            '-s', success_place,
+            '-f', failure_place
+        ]
 
     def create_request(self, name=None, queue=None, stdout=None, stderr=None,
             beginTime=0, termTime=0, numProcessors=1, maxNumProcessors=1,
