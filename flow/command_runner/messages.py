@@ -4,16 +4,17 @@ from flow.protocol import exceptions
 
 class CommandLineSubmitMessage(Message):
     required_fields = {
-            'return_identifier': object,
             'command_line': list,
-
-            'success_routing_key': basestring,
-            'failure_routing_key': basestring,
-            'error_routing_key': basestring,
     }
 
     optional_fields = {
             'executor_options': dict,
+
+            # The following options are deprecated
+            'success_routing_key': basestring,
+            'failure_routing_key': basestring,
+            'error_routing_key': basestring,
+            'return_identifier': object,
     }
 
     def validate(self):
