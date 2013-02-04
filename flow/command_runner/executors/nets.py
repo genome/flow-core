@@ -64,8 +64,3 @@ class LSFCommandNet(nb.SuccessFailureNet):
 
         self.execute_success.arcs_out.add(self.success)
         self.execute_failure.arcs_out.add(self.failure)
-
-if __name__ == "__main__":
-    builder = nb.NetBuilder('test')
-    net = LSFCommandNet(builder, "test", ["ls", "-al"])
-    builder.graph().draw("x.ps", prog="dot")
