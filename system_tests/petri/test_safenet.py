@@ -1,11 +1,10 @@
-#!/usr/bin/env python
-
 import flow.petri.safenet as sn
 
 import mock
 import os
 import redis
 import sys
+import test_helpers
 import unittest
 
 class FakeOrchestrator(object):
@@ -22,16 +21,11 @@ class FakeOrchestrator(object):
         net.notify_transition(trans_idx, place_idx, services=self.services)
 
 
-class TestBase(unittest.TestCase):
+class TestBase(test_helpers.RedisTest):
     def setUp(self):
-        redis_host = os.environ['FLOW_TEST_REDIS_URL']
-        self.conn = redis.Redis(redis_host)
-        self.conn.flushall()
+        test_helpers.RedisTest.setUp(self)
         orch = FakeOrchestrator(self.conn)
         self.services = orch.services
-
-    def tearDown(self):
-        self.conn.flushall()
 
 
 class TestSafeNet(TestBase):

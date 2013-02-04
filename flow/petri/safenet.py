@@ -187,6 +187,7 @@ class SafeNet(object):
                 trans_arcs_in.setdefault(t, set()).add(p)
 
         self.conn.set(self.subkey("num_places"), len(place_names))
+        self.conn.set(self.subkey("num_transitions"), len(trans_actions))
 
         for i, pname in enumerate(place_names):
             key = self.subkey("place/%d" % i)
@@ -216,6 +217,11 @@ class SafeNet(object):
     def num_places(self):
         np = self.conn.get(self.subkey("num_places")) or 0
         return int(np)
+
+    @property
+    def num_transitions(self):
+        nt = self.conn.get(self.subkey("num_transitions")) or 0
+        return int(nt)
 
     def place(self, idx):
         return _SafePlace(self.conn, self.subkey("place/%d" % int(idx)))

@@ -50,7 +50,8 @@ setup(
         packages = find_packages(exclude=[
             'unit_tests',
             'integration_tests',
-            'system_tests'
+            'system_tests',
+            'test_helpers'
         ]),
         entry_points = entry_points,
         install_requires = [

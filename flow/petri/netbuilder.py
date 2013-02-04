@@ -13,12 +13,25 @@ def _make_transition_action(conn, transition):
             place_refs=transition.place_refs)
 
 
-class Transition(object):
+class Node(object):
+    def __init__(self):
+        self.arcs_out = set([])
+
+
+class Place(Node):
+    def __init__(self, name):
+        Node.__init__(self)
+        self.name = name
+
+
+class Transition(Node):
     def __init__(self, name, action_class=None, action_args=None, place_refs=None):
+        Node.__init__(self)
         self.name = name
         self.action_class = action_class
         self.action_args = action_args
         self.place_refs = place_refs
+        self.arcs_out = set([])
 
 
 class Net(object):
@@ -29,8 +42,8 @@ class Net(object):
         self.place_arcs_out = {}
         self.trans_arcs_out = {}
 
-    def add_place(self, name):
-        self.places.append(name)
+    def add_place(self, place):
+        self.places.append(place)
         return len(self.places) - 1
 
     def add_transition(self, transition):
@@ -47,7 +60,7 @@ class Net(object):
         graph = pygraphviz.AGraph(directed=True)
 
         for i, p in enumerate(self.places):
-            graph.add_node("p%d" % i, label=p)
+            graph.add_node("p%d" % i, label=p.name)
 
         for i, t in enumerate(self.transitions):
             graph.add_node("t%d" % i, label=t.name, shape="box",
@@ -78,7 +91,7 @@ class Net(object):
                 place_arcs_out=self.place_arcs_out,
                 trans_arcs_out=self.trans_arcs_out)
 
-    def update(self, other, place_equivs):
+    def update(self, other, place_bridges):
         other = deepcopy(other)
 
         place_offset = len(self.places)
@@ -102,92 +115,8 @@ class Net(object):
                 dst += place_offset
                 self.trans_arcs_out.setdefault(src, set()).add(dst)
 
-        for src, dst in place_equivs.iteritems():
+        for src, dst in place_bridges.iteritems():
             dst += place_offset
             tid = self.add_transition(Transition(name="bridge"))
             self.place_arcs_out.setdefault(src, set()).add(tid)
             self.trans_arcs_out.setdefault(tid, set()).add(dst)
-
-
-if __name__ == "__main__":
-    from flow.orchestrator.client import OrchestratorClient
-    import flow.brokers.amqp
-    import flow.orchestrator.redisom as rom
-    import flow.petri.safenet as sn
-    import json
-    import os
-    import pika
-    import redis
-    import sys
-
-
-    net = Net("hi")
-    start = net.add_place("start")
-    msg_ok = net.add_place("msg_ok")
-    msg_fail = net.add_place("msg_fail")
-
-
-    t_start = net.add_transition(
-            Transition(
-                name="t_start",
-                action_class=sn.ShellCommandAction,
-                action_args=["df", "/"],
-                place_refs=[msg_ok, msg_fail]
-            )
-    )
-
-    running = net.add_place("running")
-
-    t_ok = net.add_transition(Transition(name="t_ok"))
-
-    t_fail = net.add_transition(Transition(name="t_fail"))
-
-    ok = net.add_place("ok")
-    fail = net.add_place("fail")
-
-    net.add_place_arc_out(start, t_start)
-    net.add_trans_arc_out(t_start, running)
-    net.add_place_arc_out(running, t_ok)
-    net.add_place_arc_out(running, t_fail)
-    net.add_place_arc_out(msg_ok, t_ok)
-    net.add_place_arc_out(msg_fail, t_fail)
-    net.add_trans_arc_out(t_ok, ok)
-    net.add_trans_arc_out(t_fail, fail)
-
-    net2 = deepcopy(net)
-    net2.transitions[0].action_args=["ls", "-al"]
-
-    net.update(net2, {ok: 0})
-
-    net.graph().draw("x.png", prog="dot")
-
-    host = os.environ['FLOW_REDIS_URL']
-    conn = redis.Redis(host)
-    cnet = net.store(conn)
-    net_key = cnet.key
-    print "Compiled the net, key is", net_key
-
-    token = sn.Token.create(conn)
-
-    routing_key = "petri.place.set_token"
-    body = json.dumps({
-        "net_key": net_key,
-        "place_idx": 0,
-        "token_key": token.key,
-        "message_class": "SetTokenMessage",
-    })
-
-    print "Publishing message", body
-
-    amqp_url = os.environ['AMQP_URL']
-    print "Sending a message to", amqp_url
-    conn = pika.BlockingConnection(pika.URLParameters(amqp_url))
-    qchannel = conn.channel()
-    qchannel.basic_publish(
-        exchange="workflow",
-        routing_key=routing_key,
-        body=body,
-        properties=pika.BasicProperties(
-            delivery_mode=2,
-        )
-    )
