@@ -18,14 +18,15 @@ class Node(object):
     def id(self):
         return id(self)
 
-    def __init__(self):
+    def __init__(self, index, name):
         self.arcs_out = set([])
+        self.index = index
+        self.name = name
 
 
 class Place(Node):
-    def __init__(self, name):
-        Node.__init__(self)
-        self.name = name
+    def __init__(self, index, name):
+        Node.__init__(self, index, name)
 
     def graph(self, graph):
         label = self.name or " "
@@ -34,10 +35,10 @@ class Place(Node):
 
 
 class Transition(Node):
-    def __init__(self, name="", action_class=None, action_args=None,
+    def __init__(self, index, name="", action_class=None, action_args=None,
                 place_refs=None):
-        Node.__init__(self)
-        self.name = name
+        Node.__init__(self, index, name)
+
         self.action_class = action_class
         self.action_args = action_args
         self.place_refs = place_refs
@@ -64,15 +65,17 @@ class NetBuilder(object):
         self._trans_map = {}
 
     def add_place(self, name):
-        place = Place(name)
+        index = len(self.places)
+        place = Place(index, name)
         self.places.append(place)
-        self._place_map[place] = len(self.places) - 1
+        self._place_map[place] = index
         return place
 
     def add_transition(self, name="", **kwargs):
-        transition = Transition(name, **kwargs)
+        index = len(self.transitions)
+        transition = Transition(index, name, **kwargs)
         self.transitions.append(transition)
-        self._trans_map[transition] = len(self.transitions) - 1
+        self._trans_map[transition] = index
         return transition
 
     def _graph(self, graph, node, seen):

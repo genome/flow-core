@@ -11,7 +11,7 @@ class TestLSFCommandNet(unittest.TestCase):
         net = enets.LSFCommandNet(builder, "test lsf", cmdline)
         expected_places = ["start", "success", "failure", "dispatching",
             "dispatch_success_place", "dispatch_failure_place",
-            "pending", "execute_begin_place", "running",
+            "pending", "begin_execute_place", "running",
             "execute_success_place", "execute_failure_place",
             ]
 
@@ -22,14 +22,15 @@ class TestLSFCommandNet(unittest.TestCase):
         self.assertEqual(len(expected_places), len(net.places))
 
         self.assertTrue(isinstance(net.dispatch, nb.Transition))
-        self.assertEqual(enets.LSFDispatch, net.dispatch.action_class)
+        self.assertEqual(enets.LSFDispatchAction, net.dispatch.action_class)
         self.assertEqual(cmdline, net.dispatch.action_args)
 
         expected_place_refs = [
-                net.dispatch_success_place,
-                net.dispatch_failure_place,
-                net.execute_success_place,
-                net.execute_failure_place,
+                net.dispatch_success_place.index,
+                net.dispatch_failure_place.index,
+                net.begin_execute_place.index,
+                net.execute_success_place.index,
+                net.execute_failure_place.index,
         ]
         self.assertEqual(expected_place_refs, net.dispatch.place_refs)
 
