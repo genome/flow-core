@@ -13,13 +13,11 @@ class LSFExecutor(object):
         self.default_environment = default_environment
         self.manditory_environment = manditory_environment
 
-    def __call__(self, command_line, net_key=None,
-            running_place=None, success_place=None, failure_place=None,
+    def __call__(self, command_line, net_key=None, response_places=None,
             environment={}, working_directory=None, **kwargs):
 
         wrapper = self._make_wrapper_command_line(net_key=net_key,
-                running_place=running_place, success_place=success_place,
-                failure_place=failure_place)
+                response_places=response_places)
 
         full_command_line = wrapper + command_line
         command_string = ' '.join(map(str, command_line))
@@ -50,14 +48,13 @@ class LSFExecutor(object):
                     submit_result)
             return False, submit_result
 
-    def _make_wrapper_command_line(self, net_key=None,
-            running_place=None, success_place=None, failure_place=None):
+    def _make_wrapper_command_line(self, net_key=None, response_places=None):
         return [
             'flow', self.wrapper_name,
             '-n', net_key,
-            '-r', running_place,
-            '-s', success_place,
-            '-f', failure_place
+            '-r', response_places['begin_execute'],
+            '-s', response_places['execute_success'],
+            '-f', response_places['execute_failure']
         ]
 
     def create_request(self, name=None, queue=None, stdout=None, stderr=None,

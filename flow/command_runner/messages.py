@@ -5,6 +5,8 @@ from flow.protocol import exceptions
 class CommandLineSubmitMessage(Message):
     required_fields = {
             'command_line': list,
+            'net_key': basestring,
+            'response_places': dict,
     }
 
     optional_fields = {
