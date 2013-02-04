@@ -6,6 +6,7 @@ import flow.orchestrator.redisom as rom
 import hashlib
 import logging
 import os
+import pygraphviz
 import subprocess
 import sys
 import time
@@ -301,7 +302,37 @@ class SafeNet(object):
             orchestrator = services['orchestrator']
             arcs_out = place.arcs_out.value
             for trans_idx in arcs_out:
-                orchestrator.notify_transition(self.key, int(trans_idx), int(place_idx))
+                orchestrator.notify_transition(self.key, int(trans_idx),
+                        int(place_idx))
+
+    def graph(self):
+        graph = pygraphviz.AGraph(directed=True)
+
+        for i in xrange(self.num_transitions):
+            t = self.transition(i)
+            ident = "t%i" % i
+            graph.add_node(ident, label=str(t.name), shape="box",
+                    style="filled", fillcolor="black", fontcolor="white")
+
+        for i in xrange(self.num_places):
+            p = self.place(i)
+            ident = "p%i" % i
+            graph.add_node(ident, label=str(p.name))
+
+        for i in xrange(self.num_transitions):
+            t = self.transition(i)
+            ident = "t%i" % i
+            for dst in t.arcs_out.value:
+                graph.add_edge(ident, "p%d" % int(dst))
+
+        for i in xrange(self.num_places):
+            p = self.place(i)
+            ident = "p%i" % i
+            for dst in p.arcs_out.value:
+                graph.add_edge(ident, "t%d" % int(dst))
+
+        return graph
+
 
 
 class TransitionAction(rom.Object):

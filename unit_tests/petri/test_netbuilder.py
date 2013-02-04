@@ -5,43 +5,34 @@ from itertools import combinations
 
 class TestNet(unittest.TestCase):
     def test_construct_graph(self):
-        net = nb.Net("net")
+        builder = nb.NetBuilder("net")
 
-        places = []
-        for x in xrange(4):
-            places.append(net.add_place(nb.Place("p%d" % x)))
+        net = nb.Net(builder, "hi")
+        p1 = net.add_place("p1")
+        p2 = net.add_place("p2")
+        end = net.add_place("end")
 
-        t0 = net.add_transition(nb.Transition(name="t0"))
-        t1 = net.add_transition(nb.Transition(name="t1"))
+        t1 = net.add_transition(name="t1")
+        t2 = net.add_transition(name="t2")
 
-        net.add_place_arc_out(places[0], t0)
-        net.add_trans_arc_out(t0, places[1])
-        net.add_trans_arc_out(t0, places[2])
-        net.add_place_arc_out(places[1], t1)
-        net.add_place_arc_out(places[2], t1)
-        net.add_trans_arc_out(t1, places[3])
+        net.start.arcs_out.add(t1)
+        p1.arcs_out.add(t2)
+        p2.arcs_out.add(t1)
+        t1.arcs_out.add(p1)
+        t1.arcs_out.add(p2)
+        t2.arcs_out.add(end)
 
-        place_names = [x.name for x in net.places]
-        self.assertEqual(["p%d" % x for x in xrange(4)], place_names)
-        self.assertEqual(["t0", "t1"], [x.name for x in net.transitions])
-        expected_trans_arcs_out = {
-            t0: set([places[1], places[2]]),
-            t1: set([places[3]]),
-        }
-        expected_place_arcs_out = {
-            places[0]: set([t0]),
-            places[1]: set([t1]),
-            places[2]: set([t1])
-        }
-        self.assertEqual(expected_place_arcs_out, net.place_arcs_out)
-        self.assertEqual(expected_trans_arcs_out, net.trans_arcs_out)
+        expected_place_names = ["start", "p1", "p2", "end"]
+        place_names = [x.name for x in builder.places]
+        self.assertEqual(expected_place_names, place_names)
+        self.assertEqual(["t1", "t2"], [x.name for x in net.transitions])
 
-        graph = net.graph()
+        graph = builder.graph()
         self.assertEqual(6, len(graph.nodes()))
         self.assertEqual(6, len(graph.edges()))
 
-        expected_node_labels = ["p%d" % x for x in xrange(4)] + ["t0", "t1"]
-        node_labels = [x.attr["label"] for x in graph.nodes()]
+        expected_node_labels = sorted(expected_place_names + ["t1", "t2"])
+        node_labels = sorted([x.attr["label"] for x in graph.nodes()])
         self.assertEqual(expected_node_labels, node_labels)
 
         # Make sure the graph is bipartite. Place and transition nodes in the
@@ -50,47 +41,34 @@ class TestNet(unittest.TestCase):
         # our net.
         for edge in graph.edges():
             # all edges should be between some "p_x" and "t_x"
-            edge = list(sorted(edge))
-            self.assertEqual("p", edge[0][0])
-            self.assertEqual("t", edge[1][0])
+            nodes = [graph.get_node(x) for x in edge]
+            node_types = sorted([x.attr["_type"] for x in nodes])
+            self.assertEqual(["Place", "Transition"], node_types)
 
-    def test_update(self):
-        netA = nb.Net("netA")
-        netB = nb.Net("netB")
+    def test_success_failure_net(self):
+        builder = nb.NetBuilder("test")
+        net = nb.SuccessFailureNet(builder, "sfnet")
+        expected_places = ["start", "success", "failure"]
+        for place_name in expected_places:
+            place = getattr(net, place_name)
+            self.assertTrue(isinstance(place, nb.Place))
 
-        pA0 = netA.add_place(nb.Place("pA0"))
-        pA1 = netA.add_place(nb.Place("pA1"))
+        self.assertEqual(len(expected_places), len(net.places))
+        self.assertEqual([], net.transitions)
 
-        pB0 = netB.add_place(nb.Place("pB0"))
-        pB1 = netB.add_place(nb.Place("pB1"))
+    def test_shell_command_net(self):
+        builder = nb.NetBuilder("test")
+        net = nb.ShellCommandNet(builder, "scnet", ["ls", "-al"])
 
-        tA0 = netA.add_transition(nb.Transition(name="tA0", place_refs=[pA0]))
-        tB0 = netB.add_transition(nb.Transition(name="tB0", place_refs=[pB0]))
+        expected_places = ["start", "success", "failure", "on_success_place",
+                "on_failure_place", "running"]
 
-        netA.add_place_arc_out(pA0, tA0)
-        netA.add_trans_arc_out(tA0, pA1)
+        for place_name in expected_places:
+            place = getattr(net, place_name)
+            self.assertTrue(isinstance(place, nb.Place))
 
-        netB.add_place_arc_out(pB0, tB0)
-        netB.add_trans_arc_out(tB0, pB1)
-
-        netA.update(netB, {pA1: pB0})
-
-        # make sure netB is unchanged
-        self.assertEqual(["pB0", "pB1"], [x.name for x in netB.places])
-        self.assertEqual(["tB0"], [x.name for x in netB.transitions])
-        self.assertEqual({pB0: set([tB0])}, netB.place_arcs_out)
-        self.assertEqual({tB0: set([pB1])}, netB.trans_arcs_out)
-
-        place_names = [x.name for x in netA.places]
-        self.assertEqual(["pA0", "pA1", "pB0", "pB1"], place_names)
-        trans_names = set([x.name for x in netA.transitions])
-        self.assertTrue("tA0" in trans_names)
-        self.assertTrue("tB0" in trans_names)
-
-        tA0_ref = netA.transitions[0].place_refs[0]
-        tB0_ref = netA.transitions[1].place_refs[0]
-        self.assertEqual("pA0", netA.places[tA0_ref].name)
-        self.assertEqual("pB0", netA.places[tB0_ref].name)
+        self.assertEqual(len(expected_places), len(net.places))
+        self.assertEqual(3, len(net.transitions))
 
 
 if __name__ == "__main__":

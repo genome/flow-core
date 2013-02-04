@@ -132,6 +132,17 @@ class TestSafeNet(TestBase):
         self.assertRaises(sn.PlaceCapacityError, net.set_token,
             place_idx, token2.key, self.services)
 
+    def test_graph(self):
+        net = sn.SafeNet.create(self.conn, place_names=["p1", "p2"],
+                trans_actions=[None], place_arcs_out={0: set([0])},
+                trans_arcs_out={0: set([1])})
+
+        graph = net.graph()
+        nodes = graph.nodes()
+        edges = graph.edges()
+        self.assertEqual(3, len(nodes))
+        self.assertEqual(2, len(edges))
+
 
 class TestShellCommandAction(TestBase):
     def test_execute(self):

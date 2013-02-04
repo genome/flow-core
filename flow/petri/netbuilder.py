@@ -14,6 +14,10 @@ def _make_transition_action(conn, transition):
 
 
 class Node(object):
+    @property
+    def id(self):
+        return id(self)
+
     def __init__(self):
         self.arcs_out = set([])
 
@@ -23,100 +27,156 @@ class Place(Node):
         Node.__init__(self)
         self.name = name
 
+    def graph(self, graph):
+        label = self.name or " "
+        graph.add_node(self.id, label=label)
+        graph.get_node(self.id).attr["_type"] = "Place"
+
 
 class Transition(Node):
-    def __init__(self, name, action_class=None, action_args=None, place_refs=None):
+    def __init__(self, name="", action_class=None, action_args=None,
+                place_refs=None):
         Node.__init__(self)
         self.name = name
         self.action_class = action_class
         self.action_args = action_args
         self.place_refs = place_refs
+        self.arcs_in = set([])
         self.arcs_out = set([])
 
+    def graph(self, graph):
+        label = self.name or " "
+        node = graph.add_node(self.id, label=label, shape="box",
+            fillcolor="black", style="filled", fontcolor="white")
+        graph.get_node(self.id).attr["_type"] = "Transition"
 
-class Net(object):
+
+
+
+class NetBuilder(object):
     def __init__(self, name):
         self.name = name
+
         self.places = []
         self.transitions = []
-        self.place_arcs_out = {}
-        self.trans_arcs_out = {}
 
-    def add_place(self, place):
+        self._place_map = {}
+        self._trans_map = {}
+
+    def add_place(self, name):
+        place = Place(name)
         self.places.append(place)
-        return len(self.places) - 1
+        self._place_map[place] = len(self.places) - 1
+        return place
 
-    def add_transition(self, transition):
+    def add_transition(self, name="", **kwargs):
+        transition = Transition(name, **kwargs)
         self.transitions.append(transition)
-        return len(self.transitions) - 1
+        self._trans_map[transition] = len(self.transitions) - 1
+        return transition
 
-    def add_place_arc_out(self, src, dst):
-        self.place_arcs_out.setdefault(src, set()).add(dst)
+    def _graph(self, graph, node, seen):
+        if node in seen:
+            return
 
-    def add_trans_arc_out(self, src, dst):
-       self.trans_arcs_out.setdefault(src, set()).add(dst)
+        node.graph(graph)
+        seen.add(node)
+
+        for x in node.arcs_out:
+            self._graph(graph, x, seen)
+            graph.add_edge(node.id, x.id)
 
     def graph(self):
         graph = pygraphviz.AGraph(directed=True)
+        for place in self.places:
+            self._graph(graph, place, set())
 
-        for i, p in enumerate(self.places):
-            graph.add_node("p%d" % i, label=p.name)
-
-        for i, t in enumerate(self.transitions):
-            graph.add_node("t%d" % i, label=t.name, shape="box",
-                    style="filled", fillcolor="black", fontcolor="white")
-
-        for src, dst_set in self.place_arcs_out.iteritems():
-            for dst in dst_set:
-                pid = "p%d" % src
-                tid = "t%d" % dst
-                graph.add_edge(pid, tid)
-
-        for src, dst_set in self.trans_arcs_out.iteritems():
-            for dst in dst_set:
-                tid = "t%d" % src
-                pid = "p%d" % dst
-                graph.add_edge(tid, pid)
+        for place in self.transitions:
+            self._graph(graph, place, set())
 
         return graph
 
     def store(self, connection):
-        transition_actions = [_make_transition_action(connection, x)
-                              for x in self.transitions]
+        place_names = []
+        place_arcs_out = {}
+        for p in self.places:
+            place_names.append(p.name)
+            src_id = self._place_map[p]
+            dst_ids = [self._trans_map[x] for x in p.arcs_out]
+            place_arcs_out.setdefault(src_id, set()).update(dst_ids)
+
+        transition_actions = []
+        trans_arcs_out = {}
+        for t in self.transitions:
+            transition_actions.append(_make_transition_action(connection, t))
+            src_id = self._trans_map[t]
+            dst_ids = [self._place_map[x] for x in t.arcs_out]
+            trans_arcs_out.setdefault(src_id, set()).update(dst_ids)
+
         return sn.SafeNet.create(
                 connection=connection,
                 name=self.name,
-                place_names=self.places,
+                place_names=place_names,
                 trans_actions=transition_actions,
-                place_arcs_out=self.place_arcs_out,
-                trans_arcs_out=self.trans_arcs_out)
+                place_arcs_out=place_arcs_out,
+                trans_arcs_out=trans_arcs_out)
 
-    def update(self, other, place_bridges):
-        other = deepcopy(other)
 
-        place_offset = len(self.places)
-        trans_offset = len(self.transitions)
-        self.places.extend(other.places)
+class Net(object):
+    def __init__(self, builder, name):
+        self.builder = builder
+        self.name = name
 
-        for t in other.transitions:
-            if t.place_refs:
-                t.place_refs = [x + place_offset for x in t.place_refs]
-            self.transitions.append(t)
+        self.places = []
+        self.transitions = []
 
-        for src, dst_set in other.place_arcs_out.iteritems():
-            src += place_offset
-            for dst in dst_set:
-                dst += trans_offset
-                self.place_arcs_out.setdefault(src, set()).add(dst)
+        self.start = self.add_place("start")
 
-        for src, dst_set in other.trans_arcs_out.iteritems():
-            src += trans_offset
-            for dst in dst_set:
-                dst += place_offset
-                self.trans_arcs_out.setdefault(src, set()).add(dst)
+    def add_place(self, name):
+        place = self.builder.add_place(name)
+        self.places.append(place)
+        return place
 
-        for src, dst in place_bridges.iteritems():
-            dst += place_offset
-            tid = self.add_transition(Transition(name="bridge"))
-            self.place_arcs_out.setdefault(src, set()).add(tid)
-            self.trans_arcs_out.setdefault(tid, set()).add(dst)
+    def add_transition(self, name="", **kwargs):
+        transition = self.builder.add_transition(name, **kwargs)
+        self.transitions.append(transition)
+        return transition
+
+
+class SuccessFailureNet(Net):
+    def __init__(self, builder, name):
+        Net.__init__(self, builder, name)
+
+        self.success = self.add_place("success")
+        self.failure = self.add_place("failure")
+
+
+class ShellCommandNet(SuccessFailureNet):
+    def __init__(self, builder, name, cmdline):
+        SuccessFailureNet.__init__(self, builder, name)
+
+        self.cmdline = cmdline
+
+        self.running = self.add_place("running")
+        self.on_success_place = self.add_place("on_success")
+        self.on_failure_place = self.add_place("on_failure")
+
+        self.execute = self.add_transition(
+                name="execute",
+                action_class=sn.ShellCommandAction,
+                action_args = cmdline,
+                place_refs=[self.on_success_place, self.on_failure_place],
+                )
+
+        self.on_success = self.add_transition()
+        self.on_failure = self.add_transition()
+
+        self.start.arcs_out.add(self.execute)
+        self.execute.arcs_out.add(self.running)
+        self.running.arcs_out.add(self.on_success)
+        self.running.arcs_out.add(self.on_failure)
+        self.on_success.arcs_out.add(self.success)
+        self.on_failure.arcs_out.add(self.failure)
+
+        self.on_success_place.arcs_out.add(self.on_success)
+        self.on_failure_place.arcs_out.add(self.on_failure)

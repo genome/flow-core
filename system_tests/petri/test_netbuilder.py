@@ -11,35 +11,34 @@ import test_helpers
 
 class TestNetBuilder(test_helpers.RedisTest):
     def test_store(self):
-        net = nb.Net("net")
-        places = []
-        for x in xrange(4):
-            places.append(net.add_place("p%d" % x))
+        builder = nb.NetBuilder("net")
 
-        t0 = net.add_transition(nb.Transition(
-                name="t0",
-                action_class=sn.CounterAction))
+        net = nb.Net(builder, "hi")
+        p1 = net.add_place("p1")
+        p2 = net.add_place("p2")
+        end = net.add_place("end")
 
-        t1 = net.add_transition(nb.Transition(name="t1"))
+        t1 = net.add_transition("t1", action_class=sn.CounterAction)
+        t2 = net.add_transition("t2")
 
-        net.add_place_arc_out(places[0], t1)
-        net.add_trans_arc_out(t0, places[1])
-        net.add_trans_arc_out(t0, places[2])
-        net.add_trans_arc_out(places[1], t1)
-        net.add_trans_arc_out(places[2], t1)
-        net.add_trans_arc_out(t1, places[3])
+        net.start.arcs_out.add(t1)
+        t1.arcs_out.add(p1)
+        t1.arcs_out.add(p2)
+        p1.arcs_out.add(t2)
+        p2.arcs_out.add(t2)
+        t2.arcs_out.add(end)
 
-        stored_net = net.store(self.conn)
+        stored_net = builder.store(self.conn)
 
         self.assertEqual(4, stored_net.num_places)
         self.assertEqual(2, stored_net.num_transitions)
 
-        for x in xrange(4):
-            self.assertEqual("p%d" % x, str(stored_net.place(x).name))
+        expected_names = ["start", "p1", "p2", "end"]
+        place_names = [str(stored_net.place(x).name) for x in xrange(4)]
+        self.assertEqual(expected_names, place_names)
 
         action = stored_net.transition(0).action
         self.assertTrue(isinstance(action, sn.CounterAction))
-        self.assertEqual("t0", str(action.name))
+        self.assertEqual("t1", str(action.name))
 
         self.assertTrue(stored_net.transition(1).action is None)
-
