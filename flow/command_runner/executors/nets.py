@@ -15,6 +15,9 @@ class CommandLineDispatchAction(sn.TransitionAction):
             "In class %s: _response_place not implemented" %
             self.__class__.__name__)
 
+    def _command_line(self):
+        return self.args["command_line"]
+
     def execute(self, input_data, net, services=None):
         env = net.attribute("environment")
         user_id = net.attribute("user_id")
@@ -28,7 +31,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
 
         response_places = self._response_places()
         services[self.service_name].submit(
-                command_line=self.args["command_line"],
+                command_line=self._command_line(),
                 net_key=net.key,
                 response_places=response_places,
                 **executor_options
