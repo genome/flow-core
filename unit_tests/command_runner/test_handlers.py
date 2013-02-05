@@ -24,8 +24,8 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
                 routing_key=self.routing_key)
 
         self.net_key = mock.Mock(str)
-        self.dispatch_success_place_idx = mock.Mock(int)
-        self.dispatch_failure_place_idx = mock.Mock(int)
+        self.dispatch_success_place_idx = 0
+        self.dispatch_failure_place_idx = 1
         self.response_places = {
                 'dispatch_success': self.dispatch_success_place_idx,
                 'dispatch_failure': self.dispatch_failure_place_idx
