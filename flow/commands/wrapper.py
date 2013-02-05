@@ -8,7 +8,7 @@ LOG = logging.getLogger()
 
 
 class WrapperCommand(CommandBase):
-    default_logging_mode = 'silent'
+    default_logging_mode = 'debug'
 
     def __init__(self, broker=None, storage=None, routing_key=None):
         self.broker = broker
@@ -29,16 +29,16 @@ class WrapperCommand(CommandBase):
         self.send_token(net_key=parsed_arguments.net_key,
                 place_idx=parsed_arguments.running_place_id)
 
-        success = subprocess.call(parsed_arguments.command_line)
+        rv = subprocess.call(parsed_arguments.command_line)
 
-        if success:
+        if rv == 0:
             self.send_token(net_key=parsed_arguments.net_key,
                     place_idx=parsed_arguments.success_place_id)
-            return 0
         else:
             self.send_token(net_key=parsed_arguments.net_key,
                     place_idx=parsed_arguments.failure_place_id)
-            return 1
+
+        return rv
 
     def send_token(self, net_key=None, place_idx=None):
         self.broker.connect()
