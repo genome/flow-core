@@ -189,8 +189,20 @@ class TestSafeNet(TestBase):
         self.assertEqual(2, len(edges))
 
 
-class TestShellCommandAction(TestBase):
-    def test_execute(self):
+class TestTransitionActions(TestBase):
+    def test_argument_encoding(self):
+        arguments = {
+            "integer": 7,
+            "float": 1.23,
+            "string": "hello",
+            "list": [1, 2, "three"],
+            "hash": {"x": "y"},
+        }
+        action = sn.CounterAction.create(connection=self.conn, args=arguments)
+
+        self.assertEqual(action.args.value, arguments)
+
+    def test_shell_command_action(self):
         success_place_id = 1
         failure_place_id = 2
 
@@ -203,6 +215,8 @@ class TestShellCommandAction(TestBase):
             args={"command_line": good_cmdline},
             place_refs=[success_place_id, failure_place_id],
             )
+
+        self.assertEqual(good_cmdline, action.args["command_line"])
 
         orchestrator = mock.MagicMock()
         services = {"orchestrator": orchestrator}
