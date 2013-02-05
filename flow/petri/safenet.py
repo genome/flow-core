@@ -208,6 +208,12 @@ class SafeNet(object):
 
         return self
 
+    def set_attribute(self, key, value):
+        return self.conn.hset(self.subkey("attributes"), key, value)
+
+    def attribute(self, key):
+        return self.conn.hget(self.subkey("attributes"), key)
+
     def __init__(self, conn, key):
         if conn is None:
             raise TypeError("You must supply a valid connection")
