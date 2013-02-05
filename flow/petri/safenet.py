@@ -4,6 +4,7 @@ from uuid import uuid4
 import base64
 import flow.orchestrator.redisom as rom
 import hashlib
+import json
 import logging
 import os
 import pygraphviz
@@ -175,9 +176,9 @@ class SafeNet(object):
         return "/".join([self.key] + [str(x) for x in args])
 
     @classmethod
-    def create(cls, connection=None, name=None, place_names=None,
-               trans_actions=None, place_arcs_out=None,
-               trans_arcs_out=None):
+    def create(cls, connection=None, name=None, place_names=[],
+               trans_actions=[], place_arcs_out={},
+               trans_arcs_out={}):
 
         key = base64.b64encode(uuid4().bytes)
         self = cls(connection, key)
@@ -209,10 +210,12 @@ class SafeNet(object):
         return self
 
     def set_attribute(self, key, value):
+        value = json.dumps(value)
         return self.conn.hset(self.subkey("attributes"), key, value)
 
     def attribute(self, key):
-        return self.conn.hget(self.subkey("attributes"), key)
+        value = self.conn.hget(self.subkey("attributes"), key)
+        return json.loads(value)
 
     def __init__(self, conn, key):
         if conn is None:
@@ -372,4 +375,4 @@ class ShellCommandAction(TransitionAction):
         else:
             return_place = self.place_refs[1]
 
-        orchestrator.set_token(net.key, int(return_place), token_key=str(token.key))
+        orchestrator.set_token(net.key, int(return_place), token_key=token.key)

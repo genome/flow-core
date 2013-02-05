@@ -37,6 +37,12 @@ class TestSafeNet(TestBase):
         self.assertRaises(NotImplementedError, act.execute, net=None,
                 services=None)
 
+    def test_attributes(self):
+        net = sn.SafeNet.create(connection=self.conn)
+        env = {"PATH": "/bin:/usr/bin", "USER": "flow"}
+        net.set_attribute("environment", env)
+        self.assertEqual(env, net.attribute("environment"))
+
     def test_places(self):
         action = sn.CounterAction.create(connection=self.conn, name="counter")
         net = sn.SafeNet.create(
