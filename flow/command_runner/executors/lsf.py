@@ -20,7 +20,7 @@ class LSFExecutor(object):
                 response_places=response_places)
 
         full_command_line = wrapper + command_line
-        command_string = ' '.join(map(str, command_line))
+        command_string = ' '.join(map(str, full_command_line))
         LOG.debug("lsf command_string = '%s'", command_string)
 
         request = self.create_request(working_directory=working_directory,
@@ -54,7 +54,8 @@ class LSFExecutor(object):
             '-n', net_key,
             '-r', response_places['begin_execute'],
             '-s', response_places['execute_success'],
-            '-f', response_places['execute_failure']
+            '-f', response_places['execute_failure'],
+            '--',
         ]
 
     def create_request(self, name=None, queue=None, stdout=None, stderr=None,

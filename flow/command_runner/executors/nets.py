@@ -1,6 +1,8 @@
 import flow.petri.netbuilder as nb
 import flow.petri.safenet as sn
 
+import os
+
 class LSFDispatchAction(sn.TransitionAction):
     dispatch_success = 0
     dispatch_failure = 1
@@ -10,20 +12,43 @@ class LSFDispatchAction(sn.TransitionAction):
 
     def _response_places(self):
         return {
-            'dispatch_success_place': self.place_refs[self.dispatch_success],
-            'dispatch_failure_place': self.place_refs[self.dispatch_failure],
-            'begin_execute_place': self.place_refs[self.begin_execute],
-            'execute_success_place': self.place_refs[self.execute_success],
-            'execute_failure_place': self.place_refs[self.execute_failure],
+            'dispatch_success': self.place_refs[self.dispatch_success],
+            'dispatch_failure': self.place_refs[self.dispatch_failure],
+            'begin_execute': self.place_refs[self.begin_execute],
+            'execute_success': self.place_refs[self.execute_success],
+            'execute_failure': self.place_refs[self.execute_failure],
         }
 
     def execute(self, net, services=None):
-        #services["genome_execute"].submit(
-                #command_line=self.args,
-                #net_key=net.key,
-                #response_places=self._response_places()
-                #)
+        env = os.environ.data
+        user_id = 13028
+        working_directory = "/gscuser/tabbott/tmp"
+
+        #net.attribute("environment")
+        #user_id = net.attribute("user_id")
+        #working_directory = net.attribute("working_directory")
+
+        executor_options = {
+                "environment": env,
+                "user_id": user_id,
+                "working_directory": working_directory,
+                "mail_user": "tabbott@genome.wustl.edu",
+                #"stdout": str(self.stdout_log_file),
+                #"stderr": str(self.stderr_log_file),
+                }
+
+        response_places = self._response_places()
         print "Execute %r" % self.args.value
+        print "Options: %r" % executor_options
+        print "Response places: %r" % response_places
+
+        services["lsf"].submit(
+                command_line=self.args.value,
+                net_key=str(net.key),
+                response_places=response_places,
+                **executor_options
+                )
+
 
 
 class LSFCommandNet(nb.SuccessFailureNet):

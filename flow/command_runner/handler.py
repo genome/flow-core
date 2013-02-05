@@ -20,14 +20,14 @@ class CommandLineSubmitMessageHandler(object):
         response_places = message.response_places
         net_key = message.net_key
 
-        place_idx = response_places['dispatch_failure']
+        place_idx = int(response_places['dispatch_failure'])
         try:
             success, executor_result = self.executor(message.command_line,
                     net_key=net_key, response_places=response_places,
                     **executor_options)
 
             if success:
-                place_idx = response_places['dispatch_success']
+                place_idx = int(response_places['dispatch_success'])
 
         except RuntimeError:
             LOG.exception('Got unhandled exception')
