@@ -170,6 +170,8 @@ class _SafeTransition(_SafeNode):
     tokens_pushed = rom.Property(rom.Int)
     enabler = rom.Property(rom.String)
     token_merger_key = rom.Property(rom.String)
+    _input_data = rom.Property(rom.Hash, value_encoder=rom.json_enc,
+            value_decoder=rom.json_dec)
 
     @property
     def input_data(self):
@@ -178,9 +180,11 @@ class _SafeTransition(_SafeNode):
 
         try:
             merger = rom.get_object(self.connection, self.token_merger_key.value)
-            return merger.merge(tokens)
+            self._input_data = merger.merge(tokens)
         except rom.NotInRedisError:
-            return _default_token_merger(tokens)
+            self._input_data = _default_token_merger(tokens)
+
+        return self._input_data
 
     @property
     def action(self):
@@ -297,6 +301,8 @@ class SafeNet(object):
         action = trans.action
         if action is not None:
             action.execute(trans.input_data, net=self, services=services)
+
+        trans.input_data.delete()
 
         keys = [active_tokens_key, arcs_in_key, arcs_out_key, marking_key,
                 new_token_key, state_key, tokens_pushed_key]

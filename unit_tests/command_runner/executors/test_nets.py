@@ -8,7 +8,9 @@ class TestLSFCommandNet(unittest.TestCase):
     def test_construct(self):
         builder = nb.NetBuilder("test")
         cmdline = ["ls", "-al"]
-        net = enets.LSFCommandNet(builder, "test lsf", cmdline)
+        net = enets.LSFCommandNet(builder, "test lsf",
+                action_class=enets.LSFDispatchAction,
+                action_args={"command_line": cmdline})
         expected_places = ["start", "success", "failure", "dispatching",
             "dispatch_success_place", "dispatch_failure_place",
             "pending", "begin_execute_place", "running",

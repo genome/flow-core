@@ -15,7 +15,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
             "In class %s: _response_place not implemented" %
             self.__class__.__name__)
 
-    def _command_line(self):
+    def _command_line(self, net, input_data_key):
         return self.args["command_line"]
 
     def execute(self, input_data, net, services=None):
@@ -31,7 +31,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
 
         response_places = self._response_places()
         services[self.service_name].submit(
-                command_line=self._command_line(),
+                command_line=self._command_line(net, input_data.key),
                 net_key=net.key,
                 response_places=response_places,
                 **executor_options
@@ -62,7 +62,7 @@ class LocalDispatchAction(CommandLineDispatchAction):
 
 
 class LSFCommandNet(nb.SuccessFailureNet):
-    def __init__(self, builder, name, cmdline):
+    def __init__(self, builder, name, action_class, action_args):
         nb.SuccessFailureNet.__init__(self, builder, name)
 
         self.dispatching = self.add_place("dispatching")
@@ -74,11 +74,10 @@ class LSFCommandNet(nb.SuccessFailureNet):
         self.execute_success_place = self.add_place("msg: execute_success")
         self.execute_failure_place = self.add_place("msg: execute_failure")
 
-
         self.dispatch = self.add_transition(
                 name="dispatch",
-                action_class=LSFDispatchAction,
-                action_args={"command_line": cmdline},
+                action_class=action_class,
+                action_args=action_args,
                 place_refs=[
                     self.dispatch_success_place.index,
                     self.dispatch_failure_place.index,
@@ -87,6 +86,7 @@ class LSFCommandNet(nb.SuccessFailureNet):
                     self.execute_failure_place.index,
                     ]
                 )
+
         self.dispatch_success = self.add_transition("dispatch_success")
         self.dispatch_failure = self.add_transition("dispatch_failure")
         self.begin_execute = self.add_transition("begin_execute")
@@ -117,7 +117,7 @@ class LSFCommandNet(nb.SuccessFailureNet):
 
 
 class LocalCommandNet(nb.SuccessFailureNet):
-    def __init__(self, builder, name, cmdline):
+    def __init__(self, builder, name, action_class, action_args):
         nb.SuccessFailureNet.__init__(self, builder, name)
 
         self.running = builder.add_place("running")
@@ -125,8 +125,8 @@ class LocalCommandNet(nb.SuccessFailureNet):
         self.on_failure = builder.add_place("on_failure")
         self.transition = builder.add_transition(
                 name="dispatch",
-                action_class=LocalDispatchAction,
-                action_args={"command_line": cmdline},
+                action_class=action_class,
+                action_args=action_args,
                 place_refs=[self.on_success.index, self.on_failure.index],
                 )
 

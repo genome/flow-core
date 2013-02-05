@@ -39,7 +39,7 @@ class TestTransition(TestBase):
         token_keys = [x.key for x in tokens]
         transition = sn._SafeTransition.create(self.conn,
                 active_tokens=token_keys)
-        self.assertEqual(expected, transition.input_data)
+        self.assertEqual(expected, transition.input_data.value)
 
     def test_abstract_base(self):
         merger = sn.TokenMerger.create(self.conn)
@@ -64,7 +64,7 @@ class TestTransition(TestBase):
         transition = sn._SafeTransition.create(self.conn,
                 active_tokens=token_keys,
                 token_merger_key=merger.key)
-        self.assertEqual(expected, transition.input_data)
+        self.assertEqual(expected, transition.input_data.value)
 
 
 class TestSafeNet(TestBase):

@@ -8,7 +8,9 @@ class TestLSFDispatchAction(test_helpers.RedisTest):
     def test_response_places(self):
         cmdline = ["ls", "-al"]
         builder = nb.NetBuilder("test")
-        net = enets.LSFCommandNet(builder, name="test", cmdline=cmdline)
+        net = enets.LSFCommandNet(builder, name="test",
+                action_class=enets.LSFDispatchAction,
+                action_args={"command_line": cmdline})
 
         expected = {
             'dispatch_success': str(net.dispatch_success_place.index),
@@ -32,7 +34,9 @@ class TestLocalDispatchAction(test_helpers.RedisTest):
     def test_response_places(self):
         cmdline = ["ls", "-al"]
         builder = nb.NetBuilder("test")
-        net = enets.LocalCommandNet(builder, name="test", cmdline=cmdline)
+        net = enets.LocalCommandNet(builder, name="test",
+                action_class=enets.LocalDispatchAction,
+                action_args={"command_line": cmdline})
 
         expected = {
             'dispatch_success': str(net.on_success.index),
