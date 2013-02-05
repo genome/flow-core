@@ -3,7 +3,7 @@ import flow.petri.netbuilder as nb
 import unittest
 from itertools import combinations
 
-class TestNet(unittest.TestCase):
+class TestNetBuilder(unittest.TestCase):
     def test_construct_graph(self):
         builder = nb.NetBuilder("net")
 
@@ -69,6 +69,28 @@ class TestNet(unittest.TestCase):
 
         self.assertEqual(len(expected_places), len(net.places))
         self.assertEqual(3, len(net.transitions))
+
+    # TODO: implement and test that trying to bridge places unknown by the
+    # NetBuilder instance raises an exception
+    def test_bridge_places(self):
+        builder = nb.NetBuilder("test")
+        netA = nb.SuccessFailureNet(builder, name="netA")
+        netB = nb.SuccessFailureNet(builder, name="netB")
+
+        self.assertEqual(len(builder.places),
+                len(netA.places) + len(netB.places))
+
+        self.assertEqual([], builder.transitions)
+
+        builder.bridge_places(netA.failure, netB.start)
+        self.assertEqual(len(builder.places),
+                len(netA.places) + len(netB.places))
+
+        self.assertEqual(1, len(builder.transitions))
+        bridge = builder.transitions[0]
+        self.assertEqual(bridge, iter(netA.failure.arcs_out).next())
+        self.assertEqual(netB.start, iter(bridge.arcs_out).next())
+
 
 
 if __name__ == "__main__":

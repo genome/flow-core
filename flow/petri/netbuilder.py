@@ -1,6 +1,6 @@
+from copy import deepcopy
 import pygraphviz
 import safenet as sn
-from copy import deepcopy
 
 def _make_transition_action(conn, transition):
     if transition.action_class is None:
@@ -52,8 +52,6 @@ class Transition(Node):
         graph.get_node(self.id).attr["_type"] = "Transition"
 
 
-
-
 class NetBuilder(object):
     def __init__(self, name):
         self.name = name
@@ -76,6 +74,12 @@ class NetBuilder(object):
         transition = Transition(index, name, **kwargs)
         self.transitions.append(transition)
         self._trans_map[transition] = index
+        return transition
+
+    def bridge_places(self, p1, p2):
+        transition = self.add_transition("bridge %s -> %s" % (p1.name, p2.name))
+        p1.arcs_out.add(transition)
+        transition.arcs_out.add(p2)
         return transition
 
     def _graph(self, graph, node, seen):
