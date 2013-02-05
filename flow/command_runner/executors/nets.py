@@ -28,7 +28,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
 
         response_places = self._response_places()
         services[self.service_name].submit(
-                command_line=self.args.value,
+                command_line=self.args["command_line"],
                 net_key=net.key,
                 response_places=response_places,
                 **executor_options
