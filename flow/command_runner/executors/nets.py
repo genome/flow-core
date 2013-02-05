@@ -20,31 +20,20 @@ class LSFDispatchAction(sn.TransitionAction):
         }
 
     def execute(self, net, services=None):
-        env = os.environ.data
-        user_id = 13028
-        working_directory = "/gscuser/tabbott/tmp"
-
-        #net.attribute("environment")
-        #user_id = net.attribute("user_id")
-        #working_directory = net.attribute("working_directory")
+        env = net.attribute("environment")
+        user_id = net.attribute("user_id")
+        working_directory = net.attribute("working_directory")
 
         executor_options = {
                 "environment": env,
                 "user_id": user_id,
                 "working_directory": working_directory,
-                "mail_user": "tabbott@genome.wustl.edu",
-                #"stdout": str(self.stdout_log_file),
-                #"stderr": str(self.stderr_log_file),
                 }
 
         response_places = self._response_places()
-        print "Execute %r" % self.args.value
-        print "Options: %r" % executor_options
-        print "Response places: %r" % response_places
-
         services["lsf"].submit(
                 command_line=self.args.value,
-                net_key=str(net.key),
+                net_key=net.key,
                 response_places=response_places,
                 **executor_options
                 )
