@@ -27,5 +27,28 @@ class TestLSFDispatchAction(test_helpers.RedisTest):
         response_places = action._response_places()
         self.assertEqual(expected, response_places)
 
+
+class TestLocalDispatchAction(test_helpers.RedisTest):
+    def test_response_places(self):
+        cmdline = ["ls", "-al"]
+        builder = nb.NetBuilder("test")
+        net = enets.LocalCommandNet(builder, name="test", cmdline=cmdline)
+
+        expected = {
+            'dispatch_success': str(net.on_success.index),
+            'dispatch_failure': str(net.on_failure.index),
+        }
+
+        stored_net = builder.store(self.conn)
+        dispatch_transition = stored_net.transition(0)
+        self.assertEqual("dispatch", str(dispatch_transition.name))
+        action = dispatch_transition.action
+        self.assertIsInstance(action, enets.LocalDispatchAction)
+
+        response_places = action._response_places()
+        self.assertEqual(expected, response_places)
+
+
+
 if __name__ == "__main__":
     unittest.main()
