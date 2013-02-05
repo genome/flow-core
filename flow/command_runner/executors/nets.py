@@ -4,7 +4,6 @@ import flow.petri.safenet as sn
 import os
 
 class CommandLineDispatchAction(sn.TransitionAction):
-
     dispatch_success = 0
     dispatch_failure = 1
     begin_execute = 2
@@ -16,7 +15,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
             "In class %s: _response_place not implemented" %
             self.__class__.__name__)
 
-    def execute(self, net, services=None):
+    def execute(self, input_data, net, services=None):
         env = net.attribute("environment")
         user_id = net.attribute("user_id")
         working_directory = net.attribute("working_directory")

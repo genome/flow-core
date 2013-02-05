@@ -139,6 +139,19 @@ class Token(rom.Object):
             value_decoder=rom.json_dec)
 
 
+class TokenMerger(rom.Object):
+    def merge(self, tokens):
+        raise NotImplementedError("In class %s: merge not implemented" %
+                self.__class__.__name__)
+
+
+def _default_token_merger(tokens):
+    data = {}
+    for token in tokens:
+        data.update(token.data.value)
+    return data
+
+
 class _SafeNode(rom.Object):
     name = rom.Property(rom.String)
     arcs_out = rom.Property(rom.List)
@@ -156,6 +169,18 @@ class _SafeTransition(_SafeNode):
     state = rom.Property(rom.Set)
     tokens_pushed = rom.Property(rom.Int)
     enabler = rom.Property(rom.String)
+    token_merger_key = rom.Property(rom.String)
+
+    @property
+    def input_data(self):
+        tokens = [Token(self.connection, key)
+                  for key in self.active_tokens.value]
+
+        try:
+            merger = rom.get_object(self.connection, self.token_merger_key.value)
+            return merger.merge(tokens)
+        except rom.NotInRedisError:
+            return _default_token_merger(tokens)
 
     @property
     def action(self):
@@ -271,7 +296,7 @@ class SafeNet(object):
 
         action = trans.action
         if action is not None:
-            action.execute(self, services)
+            action.execute(trans.input_data, net=self, services=services)
 
         keys = [active_tokens_key, arcs_in_key, arcs_out_key, marking_key,
                 new_token_key, state_key, tokens_pushed_key]
@@ -349,7 +374,7 @@ class TransitionAction(rom.Object):
     args = rom.Property(rom.List)
     place_refs = rom.Property(rom.List)
 
-    def execute(self, net, services):
+    def execute(self, input_data, net, services):
         raise NotImplementedError("In class %s: execute not implemented" %
                 self.__class__.__name__)
 
@@ -360,12 +385,12 @@ class CounterAction(TransitionAction):
     def _on_create(self):
         self.call_count = 0
 
-    def execute(self, net, services):
+    def execute(self, input_data, net, services):
         self.call_count.incr(1)
 
 
 class ShellCommandAction(TransitionAction):
-    def execute(self, net, services):
+    def execute(self, input_data, net, services):
         cmdline = self.args.value
         rv = subprocess.call(cmdline)
         orchestrator = services['orchestrator']

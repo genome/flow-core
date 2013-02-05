@@ -28,14 +28,53 @@ class TestBase(test_helpers.RedisTest):
         self.services = orch.services
 
 
+class TestTransition(TestBase):
+    def test_default_token_merger(self):
+        tokens = []
+        expected = {}
+        for i in xrange(10):
+            expected[str(i)] = i
+            tokens.append(sn.Token.create(self.conn, data={i: i}))
+
+        token_keys = [x.key for x in tokens]
+        transition = sn._SafeTransition.create(self.conn,
+                active_tokens=token_keys)
+        self.assertEqual(expected, transition.input_data)
+
+    def test_abstract_base(self):
+        merger = sn.TokenMerger.create(self.conn)
+        self.assertRaises(NotImplementedError, merger.merge, [])
+
+    def test_custom_token_merger(self):
+        class PrependingTokenMerger(sn.TokenMerger):
+            def merge(self, tokens):
+                data = {}
+                for t in tokens:
+                    data.update({"x" + k: v for k, v in t.data.iteritems()})
+                return data
+
+        tokens = []
+        expected = {}
+        for i in xrange(10):
+            expected["x" + str(i)] = i
+            tokens.append(sn.Token.create(self.conn, data={i: i}))
+
+        token_keys = [x.key for x in tokens]
+        merger = PrependingTokenMerger.create(self.conn)
+        transition = sn._SafeTransition.create(self.conn,
+                active_tokens=token_keys,
+                token_merger_key=merger.key)
+        self.assertEqual(expected, transition.input_data)
+
+
 class TestSafeNet(TestBase):
     def test_no_connection(self):
         self.assertRaises(TypeError, sn.SafeNet.create, None)
 
     def test_abstract_transition_action(self):
         act = sn.TransitionAction.create(self.conn, name="boom")
-        self.assertRaises(NotImplementedError, act.execute, net=None,
-                services=None)
+        self.assertRaises(NotImplementedError, act.execute, input_data={},
+                net=None, services=None)
 
     def test_attributes(self):
         net = sn.SafeNet.create(connection=self.conn)
@@ -170,14 +209,15 @@ class TestShellCommandAction(TestBase):
         net = mock.MagicMock()
         net.key = "netkey!"
 
-        action.execute(net, services)
+        input_data = {}
+        action.execute(input_data, net, services)
         orchestrator.set_token.assert_called_with(
                 net.key, success_place_id, token_key=mock.ANY)
 
         action.args = fail_cmdline
         orchestrator.reset_mock()
 
-        action.execute(net, services)
+        action.execute(input_data, net, services)
         orchestrator.set_token.assert_called_with(
                     net.key, failure_place_id, token_key=mock.ANY)
 
