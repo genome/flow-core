@@ -23,7 +23,8 @@ class TestLSFCommandNet(unittest.TestCase):
 
         self.assertTrue(isinstance(net.dispatch, nb.Transition))
         self.assertEqual(enets.LSFDispatchAction, net.dispatch.action_class)
-        self.assertEqual(cmdline, net.dispatch.action_args)
+        expected_args = {"command_line": cmdline}
+        self.assertEqual(expected_args, net.dispatch.action_args)
 
         expected_place_refs = [
                 net.dispatch_success_place.index,

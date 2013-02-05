@@ -371,7 +371,8 @@ class SafeNet(object):
 
 class TransitionAction(rom.Object):
     name = rom.Property(rom.String)
-    args = rom.Property(rom.List)
+    args = rom.Property(rom.Hash, value_encoder=rom.json_enc,
+            value_decoder=rom.json_dec)
     place_refs = rom.Property(rom.List)
 
     def execute(self, input_data, net, services):
@@ -391,7 +392,7 @@ class CounterAction(TransitionAction):
 
 class ShellCommandAction(TransitionAction):
     def execute(self, input_data, net, services):
-        cmdline = self.args.value
+        cmdline = self.args["command_line"]
         rv = subprocess.call(cmdline)
         orchestrator = services['orchestrator']
         token = Token.create(self.connection, data={"return_code": rv})

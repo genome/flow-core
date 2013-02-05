@@ -75,7 +75,7 @@ class LSFCommandNet(nb.SuccessFailureNet):
         self.dispatch = self.add_transition(
                 name="dispatch",
                 action_class=LSFDispatchAction,
-                action_args=cmdline,
+                action_args={"command_line": cmdline},
                 place_refs=[
                     self.dispatch_success_place.index,
                     self.dispatch_failure_place.index,
@@ -123,7 +123,7 @@ class LocalCommandNet(nb.SuccessFailureNet):
         self.transition = builder.add_transition(
                 name="dispatch",
                 action_class=LocalDispatchAction,
-                action_args=cmdline,
+                action_args={"command_line": cmdline},
                 place_refs=[self.on_success.index, self.on_failure.index],
                 )
 

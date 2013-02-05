@@ -200,7 +200,7 @@ class TestShellCommandAction(TestBase):
         action = sn.ShellCommandAction.create(
             connection=self.conn,
             name="TestAction",
-            args=good_cmdline,
+            args={"command_line": good_cmdline},
             place_refs=[success_place_id, failure_place_id],
             )
 
@@ -214,7 +214,7 @@ class TestShellCommandAction(TestBase):
         orchestrator.set_token.assert_called_with(
                 net.key, success_place_id, token_key=mock.ANY)
 
-        action.args = fail_cmdline
+        action.args["command_line"] = fail_cmdline
         orchestrator.reset_mock()
 
         action.execute(input_data, net, services)

@@ -171,7 +171,7 @@ class ShellCommandNet(SuccessFailureNet):
         self.execute = self.add_transition(
                 name="execute",
                 action_class=sn.ShellCommandAction,
-                action_args = cmdline,
+                action_args = {"command_line": cmdline},
                 place_refs=[self.on_success_place, self.on_failure_place],
                 )
 
