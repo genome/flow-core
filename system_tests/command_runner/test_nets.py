@@ -2,6 +2,7 @@ import flow.command_runner.executors.nets as enets
 import flow.petri.netbuilder as nb
 
 import test_helpers
+import unittest
 
 class TestLSFDispatchAction(test_helpers.RedisTest):
     def test_response_places(self):
@@ -10,11 +11,11 @@ class TestLSFDispatchAction(test_helpers.RedisTest):
         net = enets.LSFCommandNet(builder, name="test", cmdline=cmdline)
 
         expected = {
-            'dispatch_success_place': str(net.dispatch_success_place.index),
-            'dispatch_failure_place': str(net.dispatch_failure_place.index),
-            'begin_execute_place': str(net.begin_execute_place.index),
-            'execute_success_place': str(net.execute_success_place.index),
-            'execute_failure_place': str(net.execute_failure_place.index),
+            'dispatch_success': str(net.dispatch_success_place.index),
+            'dispatch_failure': str(net.dispatch_failure_place.index),
+            'begin_execute': str(net.begin_execute_place.index),
+            'execute_success': str(net.execute_success_place.index),
+            'execute_failure': str(net.execute_failure_place.index),
         }
 
         stored_net = builder.store(self.conn)
@@ -25,3 +26,6 @@ class TestLSFDispatchAction(test_helpers.RedisTest):
 
         response_places = action._response_places()
         self.assertEqual(expected, response_places)
+
+if __name__ == "__main__":
+    unittest.main()
