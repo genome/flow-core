@@ -13,8 +13,8 @@ class TestLSFDispatchAction(test_helpers.RedisTest):
                 action_args={"command_line": cmdline})
 
         expected = {
-            'dispatch_success': str(net.dispatch_success_place.index),
-            'dispatch_failure': str(net.dispatch_failure_place.index),
+            'post_dispatch_success': str(net.dispatch_success_place.index),
+            'post_dispatch_failure': str(net.dispatch_failure_place.index),
             'begin_execute': str(net.begin_execute_place.index),
             'execute_success': str(net.execute_success_place.index),
             'execute_failure': str(net.execute_failure_place.index),
@@ -39,8 +39,9 @@ class TestLocalDispatchAction(test_helpers.RedisTest):
                 action_args={"command_line": cmdline})
 
         expected = {
-            'dispatch_success': str(net.on_success.index),
-            'dispatch_failure': str(net.on_failure.index),
+            'pre_dispatch': str(net.on_begin_execute.index),
+            'post_dispatch_success': str(net.on_execute_success.index),
+            'post_dispatch_failure': str(net.on_execute_failure.index),
         }
 
         stored_net = builder.store(self.conn)

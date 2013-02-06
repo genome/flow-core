@@ -7,7 +7,8 @@ class TestNetBuilder(unittest.TestCase):
     def test_construct_graph(self):
         builder = nb.NetBuilder("net")
 
-        net = nb.Net(builder, "hi")
+        net = nb.EmptyNet(builder, "hi")
+        start = net.add_place("start")
         p1 = net.add_place("p1")
         p2 = net.add_place("p2")
         end = net.add_place("end")
@@ -15,7 +16,7 @@ class TestNetBuilder(unittest.TestCase):
         t1 = net.add_transition(name="t1")
         t2 = net.add_transition(name="t2")
 
-        net.start.arcs_out.add(t1)
+        start.arcs_out.add(t1)
         p1.arcs_out.add(t2)
         p2.arcs_out.add(t1)
         t1.arcs_out.add(p1)

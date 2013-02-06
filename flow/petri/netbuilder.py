@@ -1,4 +1,5 @@
 from copy import deepcopy
+import itertools
 import pygraphviz
 import safenet as sn
 
@@ -58,9 +59,15 @@ class NetBuilder(object):
 
         self.places = []
         self.transitions = []
+        self.subnets = []
 
         self._place_map = {}
         self._trans_map = {}
+
+    def add_subnet(self, cls, *args, **kwargs):
+        subnet = cls(self, *args, **kwargs)
+        self.subnets.append(subnet)
+        return subnet
 
     def add_place(self, name):
         index = len(self.places)
@@ -77,10 +84,24 @@ class NetBuilder(object):
         return transition
 
     def bridge_places(self, p1, p2):
+        if not (isinstance(p1, Place) and isinstance(p2, Place)):
+            raise RuntimeError(
+                    "bridge_place called with something other than two places")
+
         transition = self.add_transition("bridge %s -> %s" % (p1.name, p2.name))
         p1.arcs_out.add(transition)
         transition.arcs_out.add(p2)
         return transition
+
+    def bridge_transitions(self, t1, t2):
+        if not (isinstance(t1, Transition) and isinstance(t2, Transition)):
+            raise RuntimeError(
+                    "bridge_place called with something other than two places")
+
+        place = self.add_place("bridge %s -> %s" % (t1.name, t2.name))
+        t1.arcs_out.add(place)
+        place.arcs_out.add(t2)
+        return place
 
     def _graph(self, graph, node, seen):
         if node in seen:
@@ -93,13 +114,24 @@ class NetBuilder(object):
             self._graph(graph, x, seen)
             graph.add_edge(node.id, x.id)
 
-    def graph(self):
-        graph = pygraphviz.AGraph(directed=True)
-        for place in self.places:
-            self._graph(graph, place, set())
+    def _graph_subnet(self, graph, subnet, seen, cluster_id):
+        name = name="cluster_%d" % cluster_id
+        cluster = graph.add_subgraph(name=name, label=subnet.name,
+                color="blue")
 
-        for place in self.transitions:
-            self._graph(graph, place, set())
+        for node in itertools.chain(subnet.places, subnet.transitions):
+            node.graph(cluster)
+
+    def graph(self, subnets=False):
+        graph = pygraphviz.AGraph(directed=True)
+        seen = set()
+
+        if subnets:
+            for i, subnet in enumerate(self.subnets):
+                self._graph_subnet(graph, subnet, seen, i)
+
+        for node in itertools.chain(self.places, self.transitions):
+            self._graph(graph, node, seen)
 
         return graph
 
@@ -129,7 +161,7 @@ class NetBuilder(object):
                 trans_arcs_out=trans_arcs_out)
 
 
-class Net(object):
+class EmptyNet(object):
     def __init__(self, builder, name):
         self.builder = builder
         self.name = name
@@ -137,23 +169,27 @@ class Net(object):
         self.places = []
         self.transitions = []
 
-        self.start = self.add_place("start")
-
     def add_place(self, name):
+        if not name:
+            name = "p%d" % len(self.places)
         place = self.builder.add_place(name)
         self.places.append(place)
         return place
 
     def add_transition(self, name="", **kwargs):
+        if not name:
+            name = "t%d" % len(self.places)
+
         transition = self.builder.add_transition(name, **kwargs)
         self.transitions.append(transition)
         return transition
 
 
-class SuccessFailureNet(Net):
+class SuccessFailureNet(EmptyNet):
     def __init__(self, builder, name):
-        Net.__init__(self, builder, name)
+        EmptyNet.__init__(self, builder, name)
 
+        self.start = self.add_place("start")
         self.success = self.add_place("success")
         self.failure = self.add_place("failure")
 
