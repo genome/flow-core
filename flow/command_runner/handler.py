@@ -20,19 +20,20 @@ class CommandLineSubmitMessageHandler(object):
         response_places = message.response_places
         net_key = message.net_key
 
-        place_idx = int(response_places['dispatch_failure'])
-        try:
-            success, executor_result = self.executor(message.command_line,
-                    net_key=net_key, response_places=response_places,
-                    **executor_options)
+        self.set_token(net_key, response_places.get('pre_dispatch'))
 
-            if success:
-                place_idx = int(response_places['dispatch_success'])
+        success, executor_result = self.executor(message.command_line,
+                net_key=net_key, response_places=response_places,
+                **executor_options)
 
-        except RuntimeError:
-            LOG.exception('Got unhandled exception')
+        if success:
+            self.set_token(net_key, response_places['post_dispatch_success'])
+        else:
+            self.set_token(net_key, response_places['post_dispatch_failure'])
 
-        token = Token.create(self.storage)
-        response_message = SetTokenMessage(token_key=token.key,
-                net_key=net_key, place_idx=place_idx)
-        self.broker.publish(self.routing_key, response_message)
+    def set_token(self, net_key, place_idx):
+        if place_idx is not None:
+            token = Token.create(self.storage)
+            response_message = SetTokenMessage(token_key=token.key,
+                    net_key=net_key, place_idx=int(place_idx))
+            self.broker.publish(self.routing_key, response_message)

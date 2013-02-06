@@ -24,11 +24,13 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
                 routing_key=self.routing_key)
 
         self.net_key = mock.Mock(str)
-        self.dispatch_success_place_idx = 0
-        self.dispatch_failure_place_idx = 1
+        self.pre_dispatch_place_idx = 0
+        self.dispatch_success_place_idx = 1
+        self.dispatch_failure_place_idx = 2
         self.response_places = {
-                'dispatch_success': self.dispatch_success_place_idx,
-                'dispatch_failure': self.dispatch_failure_place_idx
+                'pre_dispatch': self.pre_dispatch_place_idx,
+                'post_dispatch_success': self.dispatch_success_place_idx,
+                'post_dispatch_failure': self.dispatch_failure_place_idx
         }
 
         self.message = mock.Mock()
@@ -38,52 +40,59 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
         self.message.executor_options = {'passthru': True}
 
 
-    def test_message_handler_executor_success(self):
-        executor_result = 'my_job_id'
-        self.executor.return_value = (True, executor_result)
+    def test_set_token(self):
         with mock.patch("flow.command_runner.handler.Token") as T:
             T.create = mock.Mock()
             token = mock.Mock
             token.key = mock.Mock(str)
             T.create.return_value = token
 
-            self.handler(self.message)
+            place_idx = self.dispatch_success_place_idx
 
-            self.executor.assert_called_once_with(self.message.command_line,
-                    net_key=self.net_key, response_places=self.response_places,
-                    passthru=True)
+            self.handler.set_token(self.net_key, place_idx)
 
             T.create.assert_called_once_with(self.storage)
 
             response_message = SetTokenMessage(token_key=token.key,
                     net_key=self.net_key,
-                    place_idx=self.dispatch_success_place_idx)
+                    place_idx=place_idx)
             self.broker.publish.assert_called_once_with(
                     self.routing_key, response_message)
+
+
+    def test_message_handler_executor_success(self):
+        executor_result = 'my_job_id'
+        self.executor.return_value = (True, executor_result)
+
+        set_token = mock.Mock()
+        self.handler.set_token = set_token
+
+        self.handler(self.message)
+
+        self.executor.assert_called_once_with(self.message.command_line,
+                net_key=self.net_key, response_places=self.response_places,
+                passthru=True)
+
+        self.assertEqual([mock.call(self.net_key, self.pre_dispatch_place_idx),
+                          mock.call(self.net_key, self.dispatch_success_place_idx)],
+                         set_token.mock_calls)
 
     def test_message_handler_executor_failure(self):
         executor_result = mock.Mock()
         self.executor.return_value = (False, executor_result)
 
-        with mock.patch("flow.command_runner.handler.Token") as T:
-            T.create = mock.Mock()
-            token = mock.Mock
-            token.key = mock.Mock(str)
-            T.create.return_value = token
+        set_token = mock.Mock()
+        self.handler.set_token = set_token
 
-            self.handler(self.message)
+        self.handler(self.message)
 
-            self.executor.assert_called_once_with(self.message.command_line,
-                    net_key=self.net_key, response_places=self.response_places,
-                    passthru=True)
+        self.executor.assert_called_once_with(self.message.command_line,
+                net_key=self.net_key, response_places=self.response_places,
+                passthru=True)
 
-            T.create.assert_called_once_with(self.storage)
-
-            response_message = SetTokenMessage(token_key=token.key,
-                    net_key=self.net_key,
-                    place_idx=self.dispatch_failure_place_idx)
-            self.broker.publish.assert_called_once_with(
-                    self.routing_key, response_message)
+        self.assertEqual([mock.call(self.net_key, self.pre_dispatch_place_idx),
+                          mock.call(self.net_key, self.dispatch_failure_place_idx)],
+                         set_token.mock_calls)
 
 
 
@@ -96,19 +105,11 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
             token.key = mock.Mock(str)
             T.create.return_value = token
 
-            self.handler(self.message)
+            self.assertRaises(RuntimeError, self.handler, self.message)
 
             self.executor.assert_called_once_with(self.message.command_line,
                     net_key=self.net_key, response_places=self.response_places,
                     passthru=True)
-
-            T.create.assert_called_once_with(self.storage)
-
-            response_message = SetTokenMessage(token_key=token.key,
-                    net_key=self.net_key,
-                    place_idx=self.dispatch_failure_place_idx)
-            self.broker.publish.assert_called_once_with(
-                    self.routing_key, response_message)
 
 
 if '__main__' == __name__:
