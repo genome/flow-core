@@ -374,7 +374,6 @@ class SafeNet(object):
         return graph
 
 
-
 class TransitionAction(rom.Object):
     name = rom.Property(rom.String)
     args = rom.Property(rom.Hash, value_encoder=rom.json_enc,

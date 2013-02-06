@@ -62,7 +62,7 @@ class LocalDispatchAction(CommandLineDispatchAction):
 
 
 class LSFCommandNet(nb.SuccessFailureNet):
-    def __init__(self, builder, name, action_class, action_args):
+    def __init__(self, builder, name, action_class, action_args={}):
         nb.SuccessFailureNet.__init__(self, builder, name)
 
         self.dispatching = self.add_place("dispatching")
@@ -117,7 +117,7 @@ class LSFCommandNet(nb.SuccessFailureNet):
 
 
 class LocalCommandNet(nb.SuccessFailureNet):
-    def __init__(self, builder, name, action_class, action_args):
+    def __init__(self, builder, name, action_class, action_args={}):
         nb.SuccessFailureNet.__init__(self, builder, name)
 
         self.running = builder.add_place("running")
