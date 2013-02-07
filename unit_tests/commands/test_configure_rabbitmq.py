@@ -158,7 +158,7 @@ commands:
               factory_name: command_line_submit_handler
               executor:
                   factory_name: command_line_local_executor
-                  manditory_environment: {
+                  mandatory_environment: {
                       MASKED_ENVIRONMENT_VARIABLE: 'Bad panda!  Do not look here!'
                   }
 
@@ -181,7 +181,7 @@ commands:
                       LSF_BINDIR: '/usr/local/lsf/8.0/linux2.6-glibc2.3-x86_64/bin',
                       LSF_ENVDIR: '/usr/local/lsf/conf'
                   }
-                  manditory_environment: {
+                  mandatory_environment: {
                       MASKED_ENVIRONMENT_VARIABLE: 'Bad panda!  Do not look here!'
                   }
 

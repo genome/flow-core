@@ -1,5 +1,7 @@
 from flow.commands.base import CommandBase
 from flow.petri.safenet import Token, SetTokenMessage
+from tempfile import NamedTemporaryFile
+import json
 import subprocess
 
 import logging
@@ -22,6 +24,9 @@ class WrapperCommand(CommandBase):
         parser.add_argument('--running-place-id', '-r', type=int)
         parser.add_argument('--success-place-id', '-s', type=int)
         parser.add_argument('--failure-place-id', '-f', type=int)
+        parser.add_argument('--with-inputs', default=None, type=str)
+        parser.add_argument('--with-outputs', default=False,
+                action="store_true")
 
         parser.add_argument('command_line', nargs='+')
 
@@ -29,20 +34,41 @@ class WrapperCommand(CommandBase):
         self.send_token(net_key=parsed_arguments.net_key,
                 place_idx=parsed_arguments.running_place_id)
 
-        rv = subprocess.call(parsed_arguments.command_line)
+        rv = 1
+        cmdline = parsed_arguments.command_line
 
-        if rv == 0:
-            self.send_token(net_key=parsed_arguments.net_key,
-                    place_idx=parsed_arguments.success_place_id)
-        else:
-            self.send_token(net_key=parsed_arguments.net_key,
-                    place_idx=parsed_arguments.failure_place_id)
+        with NamedTemporaryFile() as inputs_file:
+            with NamedTemporaryFile() as outputs_file:
+                if parsed_arguments.with_inputs:
+                    inputs = self.storage.hgetall(parsed_arguments.with_inputs)
+
+                    LOG.debug("Fetched inputs from key %s" % parsed_arguments.with_inputs)
+                    LOG.debug("Input values: %r" % inputs)
+
+                    json.dump(inputs, inputs_file)
+                    inputs_file.flush()
+                    cmdline += ["--inputs-file", inputs_file.name]
+
+                if parsed_arguments.with_outputs:
+                    cmdline += ["--outputs-file", outputs_file.name]
+
+                rv = subprocess.call(cmdline)
+
+                if rv == 0:
+                    if parsed_arguments.with_outputs:
+                        outputs = json.load(outputs_file)
+                    self.send_token(net_key=parsed_arguments.net_key,
+                            place_idx=parsed_arguments.success_place_id,
+                            data=outputs)
+                else:
+                    self.send_token(net_key=parsed_arguments.net_key,
+                            place_idx=parsed_arguments.failure_place_id)
 
         return rv
 
-    def send_token(self, net_key=None, place_idx=None):
+    def send_token(self, net_key=None, place_idx=None, data=None):
         self.broker.connect()
-        token = Token.create(self.storage)
+        token = Token.create(self.storage, data=data)
 
         message = SetTokenMessage(net_key=net_key, place_idx=place_idx,
                 token_key=token.key)

@@ -39,9 +39,9 @@ class TestLocalDispatchAction(test_helpers.RedisTest):
                 action_args={"command_line": cmdline})
 
         expected = {
-            'pre_dispatch': str(net.on_begin_execute.index),
-            'post_dispatch_success': str(net.on_execute_success.index),
-            'post_dispatch_failure': str(net.on_execute_failure.index),
+            'begin_execute': str(net.on_begin_execute.index),
+            'execute_success': str(net.on_execute_success.index),
+            'execute_failure': str(net.on_execute_failure.index),
         }
 
         stored_net = builder.store(self.conn)

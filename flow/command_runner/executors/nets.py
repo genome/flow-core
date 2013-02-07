@@ -4,6 +4,8 @@ import flow.petri.safenet as sn
 import os
 
 class CommandLineDispatchAction(sn.TransitionAction):
+    net_variables = ["environment", "user_id", "working_directory", "mail_user"]
+
     def _response_places(self):
         raise NotImplementedError(
             "In class %s: _response_place not implemented" %
@@ -12,16 +14,32 @@ class CommandLineDispatchAction(sn.TransitionAction):
     def _command_line(self, net, input_data_key):
         return self.args["command_line"]
 
+    def _executor_options(self, input_data, net):
+        # Collect net-wide variables
+        executor_options = {}
+        for opt in self.net_variables:
+            value = net.attribute(opt)
+            if value:
+                executor_options[opt] = value
+
+        # Collect job-specific variables
+        with_outputs = self.args.get("with_outputs")
+
+        if len(input_data):
+            executor_options["with_inputs"] = input_data.key
+
+        if with_outputs:
+            executor_options["with_outputs"] = with_outputs
+
+        return executor_options
+
+
     def execute(self, input_data, net, services=None):
         env = net.attribute("environment")
         user_id = net.attribute("user_id")
         working_directory = net.attribute("working_directory")
 
-        executor_options = {
-                "environment": env,
-                "user_id": user_id,
-                "working_directory": working_directory,
-                }
+        executor_options = self._executor_options(input_data, net)
 
         response_places = self._response_places()
         services[self.service_name].submit(
@@ -60,9 +78,9 @@ class LocalDispatchAction(CommandLineDispatchAction):
 
     def _response_places(self):
         return {
-            'pre_dispatch': self.place_refs[self.begin_execute],
-            'post_dispatch_success': self.place_refs[self.execute_success],
-            'post_dispatch_failure': self.place_refs[self.execute_failure],
+            'begin_execute': self.place_refs[self.begin_execute],
+            'execute_success': self.place_refs[self.execute_success],
+            'execute_failure': self.place_refs[self.execute_failure],
         }
 
 

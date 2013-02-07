@@ -295,12 +295,16 @@ class SafeNet(object):
         if rv[0] != 0:
             return
 
-        new_token = Token.create(self.conn, data={})
+        input_data = trans.input_data
+        LOG.debug("Transition input data (key=%s): %r", input_data.key,
+                input_data.value)
+
+        new_token = Token.create(self.conn, data=input_data.value)
         new_token_key = new_token.key
 
         action = trans.action
         if action is not None:
-            action.execute(trans.input_data, net=self, services=services)
+            action.execute(new_token.data, net=self, services=services)
 
         trans.input_data.delete()
 

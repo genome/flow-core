@@ -16,7 +16,7 @@ set-token = flow.commands.set_token:SetTokenCommand
 orchestrator = flow.commands.service:ServiceCommand
 local_command_line_service = flow.commands.service:ServiceCommand
 lsf_command_line_service = flow.commands.service:ServiceCommand
-lsf_command_line_wrapper = flow.commands.wrapper:WrapperCommand
+command_line_wrapper = flow.commands.wrapper:WrapperCommand
 configure_rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 
 [flow.factories]

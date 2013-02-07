@@ -1,25 +1,25 @@
 import logging
 from pythonlsf import lsf
+from flow.command_runner.executor import ExecutorBase
 
 from flow.command_runner import util
 
 LOG = logging.getLogger(__name__)
 
-class LSFExecutor(object):
-    def __init__(self, default_queue='long', wrapper_name=None,
-            default_environment={}, manditory_environment={}):
+class LSFExecutor(ExecutorBase):
+    def __init__(self, default_queue='long', **kwargs):
+        ExecutorBase.__init__(self, **kwargs)
+
         self.default_queue = default_queue
-        self.wrapper_name = wrapper_name
-        self.default_environment = default_environment
-        self.manditory_environment = manditory_environment
 
     def __call__(self, command_line, net_key=None, response_places=None,
-            environment={}, working_directory=None, **kwargs):
+            environment={}, working_directory=None, with_inputs=None,
+            with_outputs=False, **kwargs):
 
-        wrapper = self._make_wrapper_command_line(net_key=net_key,
-                response_places=response_places)
+        full_command_line = self._make_command_line(command_line,
+                net_key=net_key, response_places=response_places,
+                with_inputs=with_inputs, with_outputs=with_outputs)
 
-        full_command_line = wrapper + command_line
         command_string = ' '.join(map(str, full_command_line))
         LOG.debug("lsf command_string = '%s'", command_string)
 
@@ -30,7 +30,7 @@ class LSFExecutor(object):
         reply = _create_reply()
 
         with util.environment([self.default_environment, environment,
-                               self.manditory_environment]):
+                               self.mandatory_environment]):
             try:
                 submit_result = lsf.lsb_submit(request, reply)
             except Exception as e:
@@ -47,16 +47,6 @@ class LSFExecutor(object):
             LOG.debug('failed to submit lsf job, return value = (%s)',
                     submit_result)
             return False, submit_result
-
-    def _make_wrapper_command_line(self, net_key=None, response_places=None):
-        return [
-            'flow', self.wrapper_name,
-            '-n', net_key,
-            '-r', response_places['begin_execute'],
-            '-s', response_places['execute_success'],
-            '-f', response_places['execute_failure'],
-            '--',
-        ]
 
     def create_request(self, name=None, queue=None, stdout=None, stderr=None,
             beginTime=0, termTime=0, numProcessors=1, maxNumProcessors=1,

@@ -2,24 +2,23 @@ import logging
 import os
 import subprocess
 
+from flow.command_runner.executor import ExecutorBase
 from flow.command_runner import util
 
 LOG = logging.getLogger(__name__)
 
-class SubprocessExecutor(object):
-    def __init__(self, default_environment={}, manditory_environment={}):
-        self.default_environment = default_environment
-        self.manditory_environment = manditory_environment
-
+class SubprocessExecutor(ExecutorBase):
     def __call__(self, command_line, net_key=None, response_places=None,
             working_directory=None, environment={},
-            stdout=None, stderr=None, **kwargs):
+            stdout=None, stderr=None, with_inputs=None, with_outputs=False,
+            **kwargs):
+
+        full_command_line = self._make_command_line(command_line,
+                net_key=net_key, response_places=response_places,
+                with_inputs=with_inputs, with_outputs=with_outputs)
 
         with util.environment([self.default_environment, environment,
-                               self.manditory_environment]):
-            LOG.debug('executing subprocess using command_line: %s',
-                    command_line)
-
+                               self.mandatory_environment]):
             try:
                 if stdout:
                     stdout_fh = open(stdout, 'a')
@@ -32,7 +31,8 @@ class SubprocessExecutor(object):
 
                 LOG.debug('working_directory = %s', working_directory)
                 LOG.debug('PATH = %s', os.getenv('PATH'))
-                exit_code = subprocess.call(map(str, command_line),
+                LOG.debug('executing command %r', full_command_line)
+                exit_code = subprocess.call(full_command_line,
                         stdout=stdout_fh, stderr=stderr_fh,
                         cwd=working_directory)
             except OSError as e:
