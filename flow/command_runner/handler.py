@@ -27,9 +27,9 @@ class CommandLineSubmitMessageHandler(object):
                 **executor_options)
 
         if success:
-            self.set_token(net_key, response_places['post_dispatch_success'])
+            self.set_token(net_key, response_places.get('post_dispatch_success'))
         else:
-            self.set_token(net_key, response_places['post_dispatch_failure'])
+            self.set_token(net_key, response_places.get('post_dispatch_failure'))
 
     def set_token(self, net_key, place_idx):
         if place_idx is not None:
