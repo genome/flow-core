@@ -18,14 +18,14 @@ class CommandLineDispatchAction(sn.TransitionAction):
         # Collect net-wide variables
         executor_options = {}
         for opt in self.net_variables:
-            value = net.attribute(opt)
+            value = net.constant(opt)
             if value:
                 executor_options[opt] = value
 
         # Collect job-specific variables
         with_outputs = self.args.get("with_outputs")
 
-        if len(input_data):
+        if input_data and len(input_data):
             executor_options["with_inputs"] = input_data.key
 
         if with_outputs:
@@ -35,10 +35,6 @@ class CommandLineDispatchAction(sn.TransitionAction):
 
 
     def execute(self, input_data, net, services=None):
-        env = net.attribute("environment")
-        user_id = net.attribute("user_id")
-        working_directory = net.attribute("working_directory")
-
         executor_options = self._executor_options(input_data, net)
 
         response_places = self._response_places()
