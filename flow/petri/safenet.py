@@ -140,6 +140,7 @@ class PlaceCapacityError(Exception):
 
 
 class Token(rom.Object):
+    data_type = rom.Property(rom.String)
     data = rom.Property(rom.Hash, value_encoder=rom.json_enc,
             value_decoder=rom.json_dec)
 
@@ -175,8 +176,6 @@ class _SafeTransition(_SafeNode):
     tokens_pushed = rom.Property(rom.Int)
     enabler = rom.Property(rom.String)
     token_merger_key = rom.Property(rom.String)
-    _input_data = rom.Property(rom.Hash, value_encoder=rom.json_enc,
-            value_decoder=rom.json_dec)
 
     @property
     def input_data(self):
@@ -185,11 +184,9 @@ class _SafeTransition(_SafeNode):
 
         try:
             merger = rom.get_object(self.connection, self.token_merger_key.value)
-            self._input_data = merger.merge(tokens)
+            return merger.merge(tokens)
         except rom.NotInRedisError:
-            self._input_data = _default_token_merger(tokens)
-
-        return self._input_data
+            return _default_token_merger(tokens)
 
     @property
     def action(self):
@@ -243,13 +240,25 @@ class SafeNet(object):
 
         return self
 
-    def set_attribute(self, key, value):
+    def set_constant(self, key, value):
         value = json.dumps(value)
-        return self.conn.hset(self.subkey("attributes"), key, value)
+        ret = self.conn.hsetnx(self.subkey("attributes"), key, value)
+        if ret == 0:
+            raise TypeError("Attempted to reassign constant property %s" % key)
 
-    def attribute(self, key):
+    def constant(self, key):
         value = self.conn.hget(self.subkey("attributes"), key)
-        return json.loads(value)
+        if value is not None:
+            return json.loads(value)
+
+    def set_variable(self, key, value):
+        value = json.dumps(value)
+        return self.conn.hset(self.subkey("variables"), key, value)
+
+    def variable(self, key):
+        value = self.conn.hget(self.subkey("variables"), key)
+        if value is not None:
+            return json.loads(value)
 
     def __init__(self, conn, key):
         if conn is None:
@@ -301,17 +310,14 @@ class SafeNet(object):
             return
 
         input_data = trans.input_data
-        LOG.debug("Transition input data (key=%s): %r", input_data.key,
-                input_data.value)
+        LOG.debug("Transition input data: %r", input_data)
 
-        new_token = Token.create(self.conn, data=input_data.value)
+        new_token = Token.create(self.conn, data=input_data)
         new_token_key = new_token.key
 
         action = trans.action
         if action is not None:
             action.execute(new_token.data, net=self, services=services)
-
-        trans.input_data.delete()
 
         keys = [active_tokens_key, arcs_in_key, arcs_out_key, marking_key,
                 new_token_key, state_key, tokens_pushed_key]

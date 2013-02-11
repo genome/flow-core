@@ -26,7 +26,7 @@ class TestTransition(TestBase):
         token_keys = [x.key for x in tokens]
         transition = sn._SafeTransition.create(self.conn,
                 active_tokens=token_keys)
-        self.assertEqual(expected, transition.input_data.value)
+        self.assertEqual(expected, transition.input_data)
 
     def test_abstract_base(self):
         merger = sn.TokenMerger.create(self.conn)
@@ -51,7 +51,7 @@ class TestTransition(TestBase):
         transition = sn._SafeTransition.create(self.conn,
                 active_tokens=token_keys,
                 token_merger_key=merger.key)
-        self.assertEqual(expected, transition.input_data.value)
+        self.assertEqual(expected, transition.input_data)
 
 
 class TestSafeNet(TestBase):
@@ -63,11 +63,38 @@ class TestSafeNet(TestBase):
         self.assertRaises(NotImplementedError, act.execute, input_data={},
                 net=None, services=None)
 
-    def test_attributes(self):
+    def test_constants(self):
         net = sn.SafeNet.create(connection=self.conn)
         env = {"PATH": "/bin:/usr/bin", "USER": "flow"}
-        net.set_attribute("environment", env)
-        self.assertEqual(env, net.attribute("environment"))
+        net.set_constant("environment", env)
+        self.assertEqual(env, net.constant("environment"))
+        self.assertRaises(TypeError, net.set_constant, "environment", 10)
+
+        user_id = 1234
+        no_user_id = net.constant("user_id")
+        self.assertIsNone(no_user_id)
+        net.set_constant("user_id", user_id)
+        self.assertRaises(TypeError, net.set_constant, "user_id", 10)
+        self.assertEqual(1234, net.constant("user_id"))
+
+    def test_variables(self):
+        net = sn.SafeNet.create(connection=self.conn)
+
+        foo = net.variable("foo")
+        self.assertIsNone(foo)
+        net.set_variable("foo", 123)
+        self.assertEqual(123, net.variable("foo"))
+
+        bar = net.variable("bar")
+        self.assertIsNone(bar)
+        net.set_variable("bar", {"x": "y"})
+        self.assertEqual({"x": "y"}, net.variable("bar"))
+
+        baz = net.variable("baz")
+        self.assertIsNone(baz)
+        net.set_variable("bar", [1, 2, 3])
+        self.assertEqual([1, 2, 3], net.variable("bar"))
+
 
     def test_places(self):
         action = sn.CounterAction.create(connection=self.conn, name="counter")
