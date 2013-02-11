@@ -95,7 +95,6 @@ class TestSafeNet(TestBase):
         net.set_variable("bar", [1, 2, 3])
         self.assertEqual([1, 2, 3], net.variable("bar"))
 
-
     def test_places(self):
         action = sn.CounterAction.create(connection=self.conn, name="counter")
         net = sn.SafeNet.create(
