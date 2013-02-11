@@ -65,8 +65,13 @@ local token_keys = {}
 for i, place_id in pairs(arcs_in) do
     token_keys[i] = redis.call('HGET', marking_hash, place_id)
     if token_keys[i] == false then
-        return {-2, "Not enough tokens to fire", place_id}
+        redis.call('SADD', state_set_key, place_id)
     end
+end
+
+remaining = redis.call('SCARD', state_set_key)
+if remaining > 0 then
+    return {remaining, "Incoming tokens remaining"}
 end
 
 for i, k in ipairs(token_keys) do
@@ -327,8 +332,8 @@ class SafeNet(object):
             return self.conn.hget(self.subkey("marking"), place_idx)
 
     def set_token(self, place_idx, token_key='', services=None):
-        LOG.debug("setting token for place %s", self.place(place_idx).name)
         place = self.place(place_idx)
+        LOG.debug("setting token %s for place %s", token_key, place.name)
         place.first_token_timestamp.setnx()
         marking_key = self.subkey("marking")
 
