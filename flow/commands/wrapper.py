@@ -55,8 +55,10 @@ class WrapperCommand(CommandBase):
                 rv = subprocess.call(cmdline)
 
                 if rv == 0:
+                    outputs = None
                     if parsed_arguments.with_outputs:
                         outputs = json.load(outputs_file)
+
                     self.send_token(net_key=parsed_arguments.net_key,
                             place_idx=parsed_arguments.success_place_id,
                             data=outputs)
