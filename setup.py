@@ -68,6 +68,7 @@ setup(
             'nose',
         ],
         tests_require = [
+            'blist',
             'mock',
             'nose',
             'coverage',
