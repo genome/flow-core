@@ -13,7 +13,7 @@ class TestNetBuilder(test_helpers.RedisTest):
     def test_store(self):
         builder = nb.NetBuilder("net")
 
-        net = nb.EmptyNet(builder, "hi")
+        net = builder.add_subnet(nb.EmptyNet, "hi")
         start = net.add_place("start")
         p1 = net.add_place("p1")
         p2 = net.add_place("p2")
@@ -21,6 +21,9 @@ class TestNetBuilder(test_helpers.RedisTest):
 
         t1 = net.add_transition("t1", action_class=sn.CounterAction)
         t2 = net.add_transition("t2")
+
+        builder.variables["x"] = "y"
+        builder.variables["123"] = "456"
 
         start.arcs_out.add(t1)
         t1.arcs_out.add(p1)
@@ -43,3 +46,7 @@ class TestNetBuilder(test_helpers.RedisTest):
         self.assertEqual("t1", str(action.name))
 
         self.assertTrue(stored_net.transition(1).action is None)
+
+        self.assertEqual("y", stored_net.variable("x"))
+        self.assertEqual("456", stored_net.variable("123"))
+        self.assertIsNone(stored_net.variable("nothing"))

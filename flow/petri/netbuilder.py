@@ -60,6 +60,7 @@ class NetBuilder(object):
         self.places = []
         self.transitions = []
         self.subnets = []
+        self.variables = {}
 
         self._place_map = {}
         self._trans_map = {}
@@ -159,13 +160,18 @@ class NetBuilder(object):
             dst_ids = [self._place_map[x] for x in t.arcs_out]
             trans_arcs_out.setdefault(src_id, set()).update(dst_ids)
 
-        return sn.SafeNet.create(
+        net = sn.SafeNet.create(
                 connection=connection,
                 name=self.name,
                 place_names=place_names,
                 trans_actions=transition_actions,
                 place_arcs_out=place_arcs_out,
                 trans_arcs_out=trans_arcs_out)
+
+        for key, value in self.variables.iteritems():
+            net.set_variable(key, value)
+
+        return net
 
 
 class EmptyNet(object):

@@ -201,6 +201,24 @@ class TestSafeNet(TestBase):
         self.assertEqual(3, len(nodes))
         self.assertEqual(2, len(edges))
 
+        # Test that marked places show up in red
+        token = sn.Token.create(self.conn)
+        rv = net._set_token(self.conn, keys=[net.subkey("marking")],
+                args=[0, token.key])
+
+        marked_graph = net.graph()
+        nodes = marked_graph.nodes()
+        p1 = [x for x in nodes if x.attr["label"] == "p1"]
+        p2 = [x for x in nodes if x.attr["label"] == "p2"]
+
+        self.assertEqual(1, len(p1))
+        self.assertEqual(1, len(p2))
+        p1 = p1[0]
+        p2 = p2[0]
+
+        self.assertEqual("red", p1.attr["fillcolor"])
+        self.assertEqual("white", p2.attr["fillcolor"])
+
 
 class TestTransitionActions(TestBase):
     def test_argument_encoding(self):

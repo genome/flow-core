@@ -303,17 +303,19 @@ class SafeNet(object):
             return
 
         input_data = trans.input_data
-        LOG.debug("Transition input data: %r", input_data)
-
-        new_token = Token.create(self.conn, data=input_data)
-        new_token_key = new_token.key
 
         action = trans.action
+        new_token = None
         if action is not None:
-            action.execute(new_token.data, net=self, services=services)
+            new_token = action.execute(input_data, net=self,
+                    services=services)
+
+        if new_token is None:
+            new_token = Token.create(self.conn)
+
 
         keys = [active_tokens_key, arcs_in_key, arcs_out_key, marking_key,
-                new_token_key, state_key, tokens_pushed_key]
+                new_token.key, state_key, tokens_pushed_key]
         rv = self._push_tokens(connection=self.conn, keys=keys)
         tokens_pushed, places_to_notify = rv
         if tokens_pushed == 1:
@@ -333,9 +335,6 @@ class SafeNet(object):
     def set_token(self, place_idx, token_key='', services=None):
         place = self.place(place_idx)
         LOG.debug("setting token %s for place %s", token_key, place.name)
-
-        tok = Token(self.conn, token_key)
-        LOG.info("place %s, token data: %r", place.name, tok.data.value)
 
         place.first_token_timestamp.setnx()
         marking_key = self.subkey("marking")
