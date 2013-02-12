@@ -1,5 +1,3 @@
-from flow.protocol import codec
-from flow.protocol.exceptions import InvalidMessageException
 from pika.spec import Basic
 
 import collections
@@ -10,6 +8,10 @@ LOG = logging.getLogger(__name__)
 
 
 class Immediate(object):
+    def __init__(self):
+        self._largest_receive_tag = 0
+        self.broker = None
+
     def reset(self):
         self._largest_receive_tag = 0
 
@@ -134,7 +136,7 @@ class TagRelationships(object):
 
         unackable_tags = self._non_ackable_receive_tags
         if (not unackable_tags) or (unackable_tags[0] > ackable_tags[-1]):
-            LOG.debug('All ackable tags are smaller than smallest unackable tag')
+            LOG.debug('Ackable tags are smaller than smallest unackable tag')
             ready_tags = [ackable_tags[-1]]
             multiple = len(ackable_tags) > 1
         else:
@@ -156,6 +158,7 @@ class TagRelationships(object):
 class PublisherConfirmation(object):
     def __init__(self):
         self._tag_relationships = TagRelationships()
+        self.broker = None
 
     def reset(self):
         self._tag_relationships.reset()
@@ -180,7 +183,7 @@ class PublisherConfirmation(object):
         self.remove_publish_tag(publish_tag, multiple=multiple)
         self.broker.ack_if_able()
 
-    def _on_publisher_confirm_nack(self, method_frame):
+    def _on_publisher_confirm_nack(self, _):
         LOG.critical('Got failed publisher confirm.  Killing broker.')
         self.broker.disconnect()
 
