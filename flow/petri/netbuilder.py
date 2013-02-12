@@ -85,8 +85,11 @@ class NetBuilder(object):
 
     def bridge_places(self, p1, p2):
         if not (isinstance(p1, Place) and isinstance(p2, Place)):
-            raise RuntimeError(
-                    "bridge_place called with something other than two places")
+            raise TypeError(
+                    "bridge_places called with something other than two places")
+
+        if p1 not in self._place_map or p2 not in self._place_map:
+            raise RuntimeError("bridge_places called with an unknown place")
 
         transition = self.add_transition("bridge %s -> %s" % (p1.name, p2.name))
         p1.arcs_out.add(transition)
@@ -95,8 +98,12 @@ class NetBuilder(object):
 
     def bridge_transitions(self, t1, t2):
         if not (isinstance(t1, Transition) and isinstance(t2, Transition)):
-            raise RuntimeError(
+            raise TypeError(
                     "bridge_place called with something other than two places")
+
+        if t1 not in self._trans_map or t2 not in self._trans_map:
+            raise RuntimeError(
+                    "bridge_transitions called with an unknown transition")
 
         place = self.add_place("bridge %s -> %s" % (t1.name, t2.name))
         t1.arcs_out.add(place)
@@ -169,7 +176,7 @@ class EmptyNet(object):
         self.places = []
         self.transitions = []
 
-    def add_place(self, name):
+    def add_place(self, name=""):
         if not name:
             name = "p%d" % len(self.places)
         place = self.builder.add_place(name)
