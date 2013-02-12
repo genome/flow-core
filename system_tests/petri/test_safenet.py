@@ -16,42 +16,26 @@ class TestBase(RedisTest):
 
 
 class TestTransition(TestBase):
-    def test_default_token_merger(self):
+    def test_token_merger(self):
         tokens = []
-        expected = {}
+        expected_all = {}
+        expected_outputs = {}
+
         for i in xrange(10):
-            expected[str(i)] = i
-            tokens.append(sn.Token.create(self.conn, data={i: i}))
+            expected_all[str(i)] = i
+            token = sn.Token.create(self.conn, data={i: i})
+            token.data_type = "output"
+            tokens.append(token)
 
-        token_keys = [x.key for x in tokens]
-        transition = sn._SafeTransition.create(self.conn,
-                active_tokens=token_keys)
-        self.assertEqual(expected, transition.input_data)
+        expected_outputs = dict(expected_all)
+        del expected_outputs['4']
+        tokens[4].data_type = "input"
 
-    def test_abstract_base(self):
-        merger = sn.TokenMerger.create(self.conn)
-        self.assertRaises(NotImplementedError, merger.merge, [])
+        merged = sn.merge_token_data(tokens)
+        self.assertEqual(expected_all, merged)
 
-    def test_custom_token_merger(self):
-        class PrependingTokenMerger(sn.TokenMerger):
-            def merge(self, tokens):
-                data = {}
-                for t in tokens:
-                    data.update({"x" + k: v for k, v in t.data.iteritems()})
-                return data
-
-        tokens = []
-        expected = {}
-        for i in xrange(10):
-            expected["x" + str(i)] = i
-            tokens.append(sn.Token.create(self.conn, data={i: i}))
-
-        token_keys = [x.key for x in tokens]
-        merger = PrependingTokenMerger.create(self.conn)
-        transition = sn._SafeTransition.create(self.conn,
-                active_tokens=token_keys,
-                token_merger_key=merger.key)
-        self.assertEqual(expected, transition.input_data)
+        merged = sn.merge_token_data(tokens, "output")
+        self.assertEqual(expected_outputs, merged)
 
 
 class TestSafeNet(TestBase):
@@ -60,8 +44,8 @@ class TestSafeNet(TestBase):
 
     def test_abstract_transition_action(self):
         act = sn.TransitionAction.create(self.conn, name="boom")
-        self.assertRaises(NotImplementedError, act.execute, input_data={},
-                net=None, services=None)
+        self.assertRaises(NotImplementedError, act.execute, net=None,
+                services=None, active_tokens_key=None)
 
     def test_constants(self):
         net = sn.SafeNet.create(connection=self.conn)
@@ -254,15 +238,15 @@ class TestTransitionActions(TestBase):
         net = mock.MagicMock()
         net.key = "netkey!"
 
-        input_data = {}
-        action.execute(input_data, net, services)
+        active_tokens_key = "x"
+        action.execute(active_tokens_key, net, services)
         orchestrator.set_token.assert_called_with(
                 net.key, success_place_id, token_key=mock.ANY)
 
         action.args["command_line"] = fail_cmdline
         orchestrator.reset_mock()
 
-        action.execute(input_data, net, services)
+        action.execute(active_tokens_key, net, services)
         orchestrator.set_token.assert_called_with(
                     net.key, failure_place_id, token_key=mock.ANY)
 

@@ -25,7 +25,7 @@ class _TestDispatchActionMixIn(object):
                 input_data_key=None))
 
     def test_executor_options(self):
-        executor_options = self.action._executor_options(input_data=None,
+        executor_options = self.action._executor_options(input_data_key=None,
                 net=self.stored_net)
 
         self.assertEqual({}, executor_options)
@@ -33,25 +33,25 @@ class _TestDispatchActionMixIn(object):
         self.stored_net.set_constant("environment", env)
 
         expected = {"environment": env}
-        executor_options = self.action._executor_options(input_data=None,
+        executor_options = self.action._executor_options(input_data_key=None,
                 net=self.stored_net)
         self.assertEqual(expected, executor_options)
 
         self.stored_net.set_constant("user_id", 123)
         expected["user_id"] = 123
-        executor_options = self.action._executor_options(input_data=None,
+        executor_options = self.action._executor_options(input_data_key=None,
                 net=self.stored_net)
         self.assertEqual(expected, executor_options)
 
         self.stored_net.set_constant("working_directory", "/tmp")
         expected["working_directory"] = "/tmp"
-        executor_options = self.action._executor_options(input_data=None,
+        executor_options = self.action._executor_options(input_data_key=None,
                 net=self.stored_net)
         self.assertEqual(expected, executor_options)
 
         self.stored_net.set_constant("mail_user", "foo@bar.com")
         expected["mail_user"] = "foo@bar.com"
-        executor_options = self.action._executor_options(input_data=None,
+        executor_options = self.action._executor_options(input_data_key=None,
                 net=self.stored_net)
         self.assertEqual(expected, executor_options)
 

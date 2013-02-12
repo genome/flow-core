@@ -2,6 +2,9 @@ import flow.petri.netbuilder as nb
 import flow.petri.safenet as sn
 
 import os
+import logging
+
+LOG = logging.getLogger(__name__)
 
 class CommandLineDispatchAction(sn.TransitionAction):
     net_variables = ["environment", "user_id", "working_directory", "mail_user"]
@@ -14,7 +17,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
     def _command_line(self, net, input_data_key):
         return self.args["command_line"]
 
-    def _executor_options(self, input_data, net):
+    def _executor_options(self, input_data_key, net):
         # Collect net-wide variables
         executor_options = {}
         for opt in self.net_variables:
@@ -25,25 +28,37 @@ class CommandLineDispatchAction(sn.TransitionAction):
         # Collect job-specific variables
         with_outputs = self.args.get("with_outputs")
 
-        if input_data and len(input_data):
-            executor_options["with_inputs"] = input_data.key
+        if input_data_key:
+            executor_options["with_inputs"] = input_data_key
 
         if with_outputs:
             executor_options["with_outputs"] = with_outputs
 
         return executor_options
 
+    def execute(self, active_tokens_key, net, services=None):
+        token = None
+        input_data_key = None
 
-    def execute(self, input_data, net, services=None):
-        executor_options = self._executor_options(input_data, net)
+        LOG.info("Collecting input data for %s", self.name)
+        input_data = self.input_data(active_tokens_key, net)
+        LOG.info("Inputs are %r", input_data)
+        if input_data:
+            token = sn.Token.create(self.connection, data=input_data,
+                    data_type=self.output_token_type)
+            input_data_key = token.data.key
+
+        executor_options = self._executor_options(input_data_key, net)
 
         response_places = self._response_places()
         services[self.service_name].submit(
-                command_line=self._command_line(net, input_data.key),
+                command_line=self._command_line(net, input_data_key),
                 net_key=net.key,
                 response_places=response_places,
                 **executor_options
                 )
+
+        return token
 
 
 class LSFDispatchAction(CommandLineDispatchAction):

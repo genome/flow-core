@@ -70,7 +70,7 @@ class WrapperCommand(CommandBase):
 
     def send_token(self, net_key=None, place_idx=None, data=None):
         self.broker.connect()
-        token = Token.create(self.storage, data=data)
+        token = Token.create(self.storage, data=data, data_type="output")
 
         message = SetTokenMessage(net_key=net_key, place_idx=place_idx,
                 token_key=token.key)

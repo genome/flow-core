@@ -139,17 +139,18 @@ class Token(rom.Object):
     data = rom.Property(rom.Hash, value_encoder=rom.json_enc,
             value_decoder=rom.json_dec)
 
+    def _on_create(self):
+        try:
+            self.data_type.value
+        except rom.NotInRedisError:
+            self.data_type = ""
 
-class TokenMerger(rom.Object):
-    def merge(self, tokens):
-        raise NotImplementedError("In class %s: merge not implemented" %
-                self.__class__.__name__)
 
-
-def _default_token_merger(tokens):
+def merge_token_data(tokens, data_type=None):
     data = {}
     for token in tokens:
-        data.update(token.data.value)
+        if not data_type or token.data_type.value == data_type:
+            data.update(token.data.value)
     return data
 
 
@@ -169,19 +170,6 @@ class _SafeTransition(_SafeNode):
     state = rom.Property(rom.Set)
     tokens_pushed = rom.Property(rom.Int)
     enabler = rom.Property(rom.String)
-    token_merger_key = rom.Property(rom.String)
-
-    @property
-    def input_data(self):
-        tokens = [Token(self.connection, key)
-                  for key in self.active_tokens.value]
-
-        try:
-            merger = rom.get_object(self.connection,
-                    self.token_merger_key.value)
-            return merger.merge(tokens)
-        except rom.NotInRedisError:
-            return _default_token_merger(tokens)
 
     @property
     def action(self):
@@ -302,17 +290,14 @@ class SafeNet(object):
         if rv[0] != 0:
             return
 
-        input_data = trans.input_data
-
         action = trans.action
         new_token = None
         if action is not None:
-            new_token = action.execute(input_data, net=self,
+            new_token = action.execute(active_tokens_key, net=self,
                     services=services)
 
         if new_token is None:
             new_token = Token.create(self.conn)
-
 
         keys = [active_tokens_key, arcs_in_key, arcs_out_key, marking_key,
                 new_token.key, state_key, tokens_pushed_key]
@@ -395,12 +380,17 @@ class SafeNet(object):
 
 
 class TransitionAction(rom.Object):
+    output_token_type = ""
+
     name = rom.Property(rom.String)
     args = rom.Property(rom.Hash, value_encoder=rom.json_enc,
             value_decoder=rom.json_dec)
     place_refs = rom.Property(rom.List)
 
-    def execute(self, input_data, net, services):
+    def input_data(self, active_tokens_key, net):
+        return None
+
+    def execute(self, active_tokens_key, net, services):
         raise NotImplementedError("In class %s: execute not implemented" %
                 self.__class__.__name__)
 
@@ -411,12 +401,12 @@ class CounterAction(TransitionAction):
     def _on_create(self):
         self.call_count.value = 0
 
-    def execute(self, input_data, net, services):
+    def execute(self, active_tokens_key, net, services):
         self.call_count.incr(1)
 
 
 class ShellCommandAction(TransitionAction):
-    def execute(self, input_data, net, services):
+    def execute(self, active_tokens_key, net, services):
         cmdline = self.args["command_line"]
         rv = subprocess.call(cmdline)
         orchestrator = services['orchestrator']
