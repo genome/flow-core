@@ -6,10 +6,7 @@ import yaml
 
 import flow.commands.base
 
-try:
-    from logging.config import dictConfig
-except ImportError:
-    from flow.compat.dictconfig import dictConfig
+from logging.config import dictConfig
 
 
 def load_config(configuration_filename):

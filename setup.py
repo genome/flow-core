@@ -2,11 +2,8 @@ from setuptools import setup, find_packages
 
 entry_points = '''
 [flow.protocol.message_classes]
-execute_node = flow.orchestrator.messages:ExecuteNodeMessage
-add_tokens = flow.petri.safenet:SetTokenMessage
+set_tokens = flow.petri.safenet:SetTokenMessage
 notify_transition = flow.petri.safenet:NotifyTransitionMessage
-status_request = flow.orchestrator.messages:NodeStatusRequestMessage
-status_response = flow.orchestrator.messages:NodeStatusResponseMessage
 submit_command = flow.command_runner.messages:CommandLineSubmitMessage
 command_result = flow.command_runner.messages:CommandLineResponseMessage
 
@@ -20,9 +17,6 @@ command_line_wrapper = flow.commands.wrapper:WrapperCommand
 configure_rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 
 [flow.factories]
-status_command = flow.commands.status:StatusCommand
-
-
 dictionary_factory = flow.factories:dictionary_factory
 
 redis_storage_singleton = flow.storage:redis_storage_singleton
@@ -35,9 +29,6 @@ immediate_acking = flow.broker.acking_strategies:Immediate
 orchestrator_service_interface = flow.orchestrator.client:OrchestratorClient
 shell_command_service_interface = flow.command_runner.client:CommandLineClient
 
-execute_node_handler = flow.orchestrator.handlers:ExecuteNodeHandler
-node_status_request_handler = flow.orchestrator.handlers:NodeStatusRequestHandler
-method_descriptor_handler = flow.orchestrator.handlers:MethodDescriptorHandler
 petri_set_token_handler = flow.orchestrator.handlers:PetriSetTokenHandler
 petri_notify_transition_handler = flow.orchestrator.handlers:PetriNotifyTransitionHandler
 
@@ -68,7 +59,6 @@ setup(
             'nose',
         ],
         tests_require = [
-            'blist',
             'mock',
             'nose',
             'coverage',
