@@ -11,7 +11,7 @@ class TestBase(test_helpers.RedisTest):
 
         self.cmdline = ["ls", "-al"]
         self.builder = nb.NetBuilder("test")
-        self.net = enets.LSFCommandNet(self.builder, name="test",
+        self.net = self.net_class(self.builder, name="test",
                 action_class=self.action_class,
                 action_args={"command_line": self.cmdline})
         self.stored_net = self.builder.store(self.conn)
@@ -56,6 +56,7 @@ class _TestDispatchActionMixIn(object):
         self.assertEqual(expected, executor_options)
 
 class TestLsfDispatchAction(TestBase, _TestDispatchActionMixIn):
+    net_class = enets.LSFCommandNet
     action_class = enets.LSFDispatchAction
 
     def test_response_places(self):
@@ -75,28 +76,20 @@ class TestLsfDispatchAction(TestBase, _TestDispatchActionMixIn):
 
 
 class TestLocalDispatchAction(TestBase, _TestDispatchActionMixIn):
+    net_class = enets.LocalCommandNet
     action_class = enets.LocalDispatchAction
 
     def test_response_places(self):
-        cmdline = ["ls", "-al"]
-        builder = nb.NetBuilder("test")
-        net = enets.LocalCommandNet(builder, name="test",
-                action_class=enets.LocalDispatchAction,
-                action_args={"command_line": cmdline})
-
         expected = {
-            'begin_execute': str(net.on_begin_execute.index),
-            'execute_success': str(net.on_execute_success.index),
-            'execute_failure': str(net.on_execute_failure.index),
+            'begin_execute': str(self.net.on_begin_execute.index),
+            'execute_success': str(self.net.on_execute_success.index),
+            'execute_failure': str(self.net.on_execute_failure.index),
         }
 
-        stored_net = builder.store(self.conn)
-        dispatch_transition = stored_net.transition(0)
-        self.assertEqual("dispatch", str(dispatch_transition.name))
-        action = dispatch_transition.action
-        self.assertIsInstance(action, enets.LocalDispatchAction)
+        self.assertEqual("dispatch", str(self.dispatch_transition.name))
+        self.assertIsInstance(self.action, enets.LocalDispatchAction)
 
-        response_places = action._response_places()
+        response_places = self.action._response_places()
         self.assertEqual(expected, response_places)
 
 

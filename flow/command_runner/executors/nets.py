@@ -146,7 +146,7 @@ class LocalCommandNet(nb.SuccessFailureNet):
         self.on_execute_success = self.add_place("msg: execute_success")
         self.on_execute_failure = self.add_place("msg: execute_failure")
 
-        self.transition = self.add_transition(
+        self.dispatch = self.add_transition(
                 name="dispatch",
                 action_class=action_class,
                 action_args=action_args,
@@ -161,8 +161,8 @@ class LocalCommandNet(nb.SuccessFailureNet):
         self.execute_success = self.add_transition("execute_success")
         self.execute_failure = self.add_transition("execute_failure")
 
-        self.start.arcs_out.add(self.transition)
-        self.transition.arcs_out.add(self.dispatched)
+        self.start.arcs_out.add(self.dispatch)
+        self.dispatch.arcs_out.add(self.dispatched)
 
         self.dispatched.arcs_out.add(self.t_begin_execute)
         self.on_begin_execute.arcs_out.add(self.t_begin_execute)
@@ -170,14 +170,7 @@ class LocalCommandNet(nb.SuccessFailureNet):
 
         self.running.arcs_out.add(self.execute_success)
         self.running.arcs_out.add(self.execute_failure)
-        self.on_execute_success.arcs_out.add(self.execute_failure)
+        self.on_execute_success.arcs_out.add(self.execute_success)
         self.on_execute_failure.arcs_out.add(self.execute_failure)
         self.execute_success.arcs_out.add(self.success)
         self.execute_failure.arcs_out.add(self.failure)
-
-if __name__ == "__main__":
-    builder = nb.NetBuilder("test")
-    net = LocalCommandNet(builder, "test", LocalDispatchAction,
-            {"command_line": ["ls"]})
-
-    builder.graph().draw("x.ps", prog="dot")
