@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import flow.orchestrator.redisom as rom
+import flow.redisom as rom
 
 import os
 import redis

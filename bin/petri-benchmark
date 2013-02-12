@@ -3,7 +3,7 @@
 from flow.orchestrator.client import OrchestratorClient
 import argparse
 import flow.brokers.amqp
-import flow.orchestrator.redisom as rom
+import flow.redisom as rom
 import flow.petri.net as pn
 import json
 import os

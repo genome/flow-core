@@ -1,4 +1,4 @@
-import flow.orchestrator.redisom as rom
+import flow.redisom as rom
 import pygraphviz
 from collections import defaultdict
 import subprocess

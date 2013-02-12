@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import redisom as rom
+from flow import redisom as rom
 import time
 import logging
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import flow.orchestrator.redisom as rom
-from flow.orchestrator.redisom import NotInRedisError
+import flow.redisom as rom
+from flow.redisom import NotInRedisError
 
 import os
 import unittest

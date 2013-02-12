@@ -5,7 +5,7 @@ import uuid
 import flow_workflow.nets
 
 from flow.petri.safenet import SafeNet
-from flow.orchestrator.redisom import get_object, invoke_instance_method
+from flow.redisom import get_object, invoke_instance_method
 
 from flow.orchestrator.messages import NodeStatusRequestMessage, NodeStatusResponseMessage
 

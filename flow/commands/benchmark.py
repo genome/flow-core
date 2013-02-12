@@ -3,7 +3,7 @@ from flow.commands.base import CommandBase
 import argparse
 import logging
 import flow.orchestrator.types as nodes
-import flow.orchestrator.redisom as rom
+import flow.redisom as rom
 import time
 from flow.orchestrator.messages import ExecuteNodeMessage
 

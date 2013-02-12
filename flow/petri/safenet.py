@@ -2,7 +2,7 @@ from collections import defaultdict
 from flow.protocol.message import Message
 from uuid import uuid4
 import base64
-import flow.orchestrator.redisom as rom
+import flow.redisom as rom
 import hashlib
 import json
 import logging
