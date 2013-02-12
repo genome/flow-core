@@ -1,12 +1,10 @@
 import flow.redisom as rom
 import pygraphviz
-from collections import defaultdict
 import subprocess
-from uuid import uuid4
 
 class Node(rom.Object):
-    name = rom.Property(rom.Scalar)
-    net_key = rom.Property(rom.Scalar)
+    name = rom.Property(rom.String)
+    net_key = rom.Property(rom.String)
 
     @property
     def net(self):
@@ -14,17 +12,17 @@ class Node(rom.Object):
 
 
 class Place(Node):
-    tokens = rom.Property(rom.Scalar)
+    tokens = rom.Property(rom.Int)
     arcs_out = rom.Property(rom.Set)
     last_token_timestamp = rom.Property(rom.Timestamp)
 
     def consume_token(self):
-        self.tokens.increment(-1)
+        self.tokens.decr()
 
     def add_tokens(self, n, services=None):
         self.last_token_timestamp.set()
         n = int(n)
-        self.tokens.increment(n)
+        self.tokens.incr(n)
 
         if not self.arcs_out:
             print "Stopping in '%s'" % self.name
@@ -72,8 +70,8 @@ class TransitionAction(rom.Object):
 
 class ShellCommand(TransitionAction):
     cmdline = rom.Property(rom.List)
-    success_place_key = rom.Property(rom.Scalar)
-    failure_place_key = rom.Property(rom.Scalar)
+    success_place_key = rom.Property(rom.String)
+    failure_place_key = rom.Property(rom.String)
 
     def execute(self, **kwargs):
         rv = subprocess.call(self.cmdline.value)
@@ -88,7 +86,7 @@ class ShellCommand(TransitionAction):
 class PetriNet(Node):
     places = rom.Property(rom.Set)
     transitions = rom.Property(rom.Set)
-    start_key = rom.Property(rom.Scalar)
+    start_key = rom.Property(rom.String)
 
     def _on_create(self):
         self.start_key = self.add_place(name="start").key
@@ -161,8 +159,8 @@ class PetriNet(Node):
 
 
 class SuccessFailurePetriNet(PetriNet):
-    success_key = rom.Property(rom.Scalar)
-    failure_key = rom.Property(rom.Scalar)
+    success_key = rom.Property(rom.String)
+    failure_key = rom.Property(rom.String)
 
     def _on_create(self):
         PetriNet._on_create(self)
@@ -171,7 +169,6 @@ class SuccessFailurePetriNet(PetriNet):
 
     @property
     def status(self):
-        active = []
         if int(self.success.tokens) > 0:
             return "success"
         if int(self.failure.tokens) > 0:
