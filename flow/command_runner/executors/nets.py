@@ -158,8 +158,8 @@ class LocalCommandNet(nb.SuccessFailureNet):
             )
 
         self.t_begin_execute = self.add_transition()
-        self.t_success = self.add_transition()
-        self.t_failure = self.add_transition()
+        self.execute_success = self.add_transition()
+        self.execute_failure = self.add_transition()
 
         self.start.arcs_out.add(self.transition)
         self.transition.arcs_out.add(self.dispatched)
@@ -168,9 +168,9 @@ class LocalCommandNet(nb.SuccessFailureNet):
         self.on_begin_execute.arcs_out.add(self.t_begin_execute)
         self.t_begin_execute.arcs_out.add(self.running)
 
-        self.running.arcs_out.add(self.t_success)
-        self.running.arcs_out.add(self.t_failure)
-        self.on_execute_success.arcs_out.add(self.t_success)
-        self.on_execute_failure.arcs_out.add(self.t_failure)
-        self.t_success.arcs_out.add(self.success)
-        self.t_failure.arcs_out.add(self.failure)
+        self.running.arcs_out.add(self.execute_success)
+        self.running.arcs_out.add(self.execute_failure)
+        self.on_execute_success.arcs_out.add(self.execute_failure)
+        self.on_execute_failure.arcs_out.add(self.execute_failure)
+        self.execute_success.arcs_out.add(self.success)
+        self.execute_failure.arcs_out.add(self.failure)
