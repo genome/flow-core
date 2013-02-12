@@ -215,10 +215,12 @@ class Set(Value):
         return self.connection.smembers(self.key)
 
     def _value_setter(self, val):
-        # TODO: pipeline
-        self.connection.delete(self.key)
+        pipe = self.connection.pipeline()
+        pipe.delete(self.key)
         if val:
-            return self.connection.sadd(self.key, *val)
+            pipe.sadd(self.key, *val)
+        size, value = pipe.execute()
+        return value
 
     value = property(_value_getter, _value_setter)
 
@@ -365,46 +367,46 @@ class ObjectMeta(type):
     def __new__(mcs, class_name, bases, class_dict):
         cls = type.__new__(mcs, class_name, bases, class_dict)
 
-        # TODO could use some refactoring
         members = {}
-        cls._rom_scripts = {}
-        cls._rom_properties = {}
-        cls._rom_references = {}
         for base in bases:
             members.update(base.__dict__)
-            cls._rom_scripts.update(getattr(base, "_rom_scripts", {}))
-            cls._rom_properties.update(getattr(base, "_rom_properties", {}))
-            cls._rom_references.update(getattr(base, "_rom_references", {}))
         members.update(class_dict)
 
-        for name, value in members.iteritems():
-            if isinstance(value, Property):
-                cls._rom_properties[name] = value
-                delattr(cls, name)
-            elif isinstance(value, Reference):
-                cls._rom_references[name] = value
-                delattr(cls, name)
-            elif isinstance(value, Script):
-                cls._rom_scripts[name] = value
-                delattr(cls, name)
+        rom_dict = {
+                "_rom_scripts":Script,
+                "_rom_properties":Property,
+                "_rom_references":Reference,
+                }
+
+        for hidden_variable, hidden_class in rom_dict.items():
+            setattr(cls, hidden_variable, {})
+            this_hv = getattr(cls, hidden_variable)
+
+            for base in bases:
+                this_hv.update(getattr(base, hidden_variable, {}))
+
+            for name, value in members.iteritems():
+                if isinstance(value, hidden_class):
+                    this_hv[name] = value
+                    delattr(cls, name)
 
         class_info = "%s:%s" % (cls.__module__, cls.__name__)
         mcs._class_registry[class_info] = cls
         cls._info = class_info
         return cls
 
-    def get_class(mcs, class_info):
+    def get_class(cls, class_info):
         try:
-            return mcs._class_registry[class_info]
+            return cls._class_registry[class_info]
         except KeyError:
-            if mcs._class_info_re.match(class_info) is None:
+            if cls._class_info_re.match(class_info) is None:
                 raise TypeError("Improperly formatted class_info (%s) must "
                         "be formatted as <module>:<class_name>" % class_info)
 
             class_module, class_name = class_info.split(':')
             __import__(class_module)
             try:
-                return mcs._class_registry[class_info]
+                return cls._class_registry[class_info]
             except KeyError:
                 raise ImportError("Expected to register class %s when loading "
                         "module %s but failed to." % (class_name, class_module))
@@ -471,9 +473,9 @@ class Object(object):
 
                 expected_class_info = self._rom_references[name].class_info
                 if cls._info != expected_class_info:
-                        raise TypeError("Attempted to assign to %s but %s "
-                                "doesn't match the expected class info (%s)" %
-                                (name, cls._info, expected_class_info))
+                    raise TypeError("Attempted to assign to %s but %s "
+                            "doesn't match the expected class info (%s)" %
+                            (name, cls._info, expected_class_info))
                 obj = cls(self.connection, key)
             else:
                 expected_class_info = self._rom_references[name].class_info
@@ -512,7 +514,7 @@ class Object(object):
 
         if class_info != self._info:
             raise TypeError("Classinfo for %s isn't correct, found '%s' "
-                            "expected '%s'" % (self.key, class_info, self._info))
+                    "expected '%s'" % (self.key, class_info, self._info))
         return True
 
     def _on_create(self):
