@@ -93,6 +93,14 @@ class TestNetBuilder(unittest.TestCase):
         self.assertEqual(netB.start, iter(bridge.arcs_out).next())
 
 
+class TestEmptyNet(unittest.TestCase):
+    def test_transition_name_auto_increment(self):
+        builder = nb.NetBuilder("test")
+        net = nb.EmptyNet(builder, "test")
+        transitions = [net.add_transition() for x in range(3)]
+        names = [t.name for t in transitions]
+        self.assertEqual(["t0", "t1", "t2"], names)
+
 
 if __name__ == "__main__":
     unittest.main()

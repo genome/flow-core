@@ -100,7 +100,5 @@ class TestLocalDispatchAction(TestBase, _TestDispatchActionMixIn):
         self.assertEqual(expected, response_places)
 
 
-
-
 if __name__ == "__main__":
     unittest.main()

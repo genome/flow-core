@@ -157,9 +157,9 @@ class LocalCommandNet(nb.SuccessFailureNet):
                 ],
             )
 
-        self.t_begin_execute = self.add_transition()
-        self.execute_success = self.add_transition()
-        self.execute_failure = self.add_transition()
+        self.t_begin_execute = self.add_transition("begin execute")
+        self.execute_success = self.add_transition("execute_success")
+        self.execute_failure = self.add_transition("execute_failure")
 
         self.start.arcs_out.add(self.transition)
         self.transition.arcs_out.add(self.dispatched)
@@ -174,3 +174,10 @@ class LocalCommandNet(nb.SuccessFailureNet):
         self.on_execute_failure.arcs_out.add(self.execute_failure)
         self.execute_success.arcs_out.add(self.success)
         self.execute_failure.arcs_out.add(self.failure)
+
+if __name__ == "__main__":
+    builder = nb.NetBuilder("test")
+    net = LocalCommandNet(builder, "test", LocalDispatchAction,
+            {"command_line": ["ls"]})
+
+    builder.graph().draw("x.ps", prog="dot")

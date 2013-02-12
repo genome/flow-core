@@ -333,6 +333,10 @@ class SafeNet(object):
     def set_token(self, place_idx, token_key='', services=None):
         place = self.place(place_idx)
         LOG.debug("setting token %s for place %s", token_key, place.name)
+
+        tok = Token(self.conn, token_key)
+        LOG.info("place %s, token data: %r", place.name, tok.data.value)
+
         place.first_token_timestamp.setnx()
         marking_key = self.subkey("marking")
 
@@ -356,6 +360,8 @@ class SafeNet(object):
     def graph(self):
         graph = pygraphviz.AGraph(directed=True)
 
+        marking = self.marking()
+
         for i in xrange(self.num_transitions):
             t = self.transition(i)
             ident = "t%i" % i
@@ -365,7 +371,14 @@ class SafeNet(object):
         for i in xrange(self.num_places):
             p = self.place(i)
             ident = "p%i" % i
-            graph.add_node(ident, label=str(p.name))
+
+            if str(i) in marking:
+                color = "red"
+            else:
+                color = "white"
+
+            graph.add_node(ident, label=str(p.name), style="filled",
+                    fillcolor=color)
 
         for i in xrange(self.num_transitions):
             t = self.transition(i)

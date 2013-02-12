@@ -178,7 +178,7 @@ class EmptyNet(object):
 
     def add_transition(self, name="", **kwargs):
         if not name:
-            name = "t%d" % len(self.places)
+            name = "t%d" % len(self.transitions)
 
         transition = self.builder.add_transition(name, **kwargs)
         self.transitions.append(transition)
