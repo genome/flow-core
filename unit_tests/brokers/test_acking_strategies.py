@@ -93,7 +93,7 @@ class TestTagRelationships(unittest.TestCase):
 
             {'label': '2 receives gives multiple ack',
              'receive_tags': [7, 8],
-             'publish_tags': [[], [], []],
+             'publish_tags': [[], []],
              'post_setup_stats': {
                  'ackable_receive_tags': 2,
                  'non_ackable_receive_tags': 0,
@@ -127,7 +127,150 @@ class TestTagRelationships(unittest.TestCase):
              'pop_multiple': False,
             },
 
-            # XXX Still need more test cases
+            {'label': '2 publish tags 1 single confirm',
+             'receive_tags': [7],
+             'publish_tags': [[3, 4]],
+             'post_setup_stats': {
+                 'ackable_receive_tags': 0,
+                 'non_ackable_receive_tags': 1,
+                 'unconfirmed_publish_tags': 2
+             },
+             'confirms_received': [(4, False)],
+             'post_confirm_stats': {
+                 'ackable_receive_tags': 0,
+                 'non_ackable_receive_tags': 1,
+                 'unconfirmed_publish_tags': 1
+             },
+             'pop_ackable_tags': [],
+             'pop_multiple': False,
+            },
+
+            {'label': '2 publish tags 1 multiple confirm',
+             'receive_tags': [7],
+             'publish_tags': [[3, 4]],
+             'post_setup_stats': {
+                 'ackable_receive_tags': 0,
+                 'non_ackable_receive_tags': 1,
+                 'unconfirmed_publish_tags': 2
+             },
+             'confirms_received': [(4, True)],
+             'post_confirm_stats': {
+                 'ackable_receive_tags': 1,
+                 'non_ackable_receive_tags': 0,
+                 'unconfirmed_publish_tags': 0
+             },
+             'pop_ackable_tags': [7],
+             'pop_multiple': False,
+            },
+
+            {'label': '2 publish tags 2 single confirms',
+             'receive_tags': [7],
+             'publish_tags': [[3, 4]],
+             'post_setup_stats': {
+                 'ackable_receive_tags': 0,
+                 'non_ackable_receive_tags': 1,
+                 'unconfirmed_publish_tags': 2
+             },
+             'confirms_received': [(4, False), (3, False)],
+             'post_confirm_stats': {
+                 'ackable_receive_tags': 1,
+                 'non_ackable_receive_tags': 0,
+                 'unconfirmed_publish_tags': 0
+             },
+             'pop_ackable_tags': [7],
+             'pop_multiple': False,
+            },
+
+            {'label': '3 receive tags multiple publish tags single confirm',
+             'receive_tags': [6, 7, 8],
+             'publish_tags': [[], [3, 4], [5, 6]],
+             'post_setup_stats': {
+                 'ackable_receive_tags': 1,
+                 'non_ackable_receive_tags': 2,
+                 'unconfirmed_publish_tags': 4
+             },
+             'confirms_received': [(4, False)],
+             'post_confirm_stats': {
+                 'ackable_receive_tags': 1,
+                 'non_ackable_receive_tags': 2,
+                 'unconfirmed_publish_tags': 3
+             },
+             'pop_ackable_tags': [6],
+             'pop_multiple': False,
+            },
+
+            {'label': '3 receive tags multiple publish tags 1 multiple confirm',
+             'receive_tags': [6, 7, 8],
+             'publish_tags': [[], [3, 4], [5, 6]],
+             'post_setup_stats': {
+                 'ackable_receive_tags': 1,
+                 'non_ackable_receive_tags': 2,
+                 'unconfirmed_publish_tags': 4
+             },
+             'confirms_received': [(5, True)],
+             'post_confirm_stats': {
+                 'ackable_receive_tags': 2,
+                 'non_ackable_receive_tags': 1,
+                 'unconfirmed_publish_tags': 1
+             },
+             'pop_ackable_tags': [7],
+             'pop_multiple': True,
+            },
+
+            {'label': '3 receive tags multiple publish tags 1 big multiple confirm',
+             'receive_tags': [6, 7, 8],
+             'publish_tags': [[], [3, 4], [5, 6]],
+             'post_setup_stats': {
+                 'ackable_receive_tags': 1,
+                 'non_ackable_receive_tags': 2,
+                 'unconfirmed_publish_tags': 4
+             },
+             'confirms_received': [(6, True)],
+             'post_confirm_stats': {
+                 'ackable_receive_tags': 3,
+                 'non_ackable_receive_tags': 0,
+                 'unconfirmed_publish_tags': 0
+             },
+             'pop_ackable_tags': [8],
+             'pop_multiple': True,
+            },
+
+            {'label': 'smallest unackable tag is in early middle of list',
+             'receive_tags': [6, 7, 8, 9],
+             'publish_tags': [[2], [4], [], [6]],
+             'post_setup_stats': {
+                 'ackable_receive_tags': 1,
+                 'non_ackable_receive_tags': 3,
+                 'unconfirmed_publish_tags': 3
+             },
+             'confirms_received': [(2, False)],
+             'post_confirm_stats': {
+                 'ackable_receive_tags': 2,
+                 'non_ackable_receive_tags': 2,
+                 'unconfirmed_publish_tags': 2
+             },
+             'pop_ackable_tags': [6, 8],
+             'pop_multiple': False,
+            },
+
+            {'label': 'smallest unackable tag is in late middle of list',
+             'receive_tags': [6, 7, 8, 9, 10, 11, 12],
+             'publish_tags': [[6], [], [], [9], [10], [], [12]],
+             'post_setup_stats': {
+                 'ackable_receive_tags': 3,
+                 'non_ackable_receive_tags': 4,
+                 'unconfirmed_publish_tags': 4
+             },
+             'confirms_received': [(9, True)],
+             'post_confirm_stats': {
+                 'ackable_receive_tags': 5,
+                 'non_ackable_receive_tags': 2,
+                 'unconfirmed_publish_tags': 2
+             },
+             'pop_ackable_tags': [9, 11],
+             'pop_multiple': True,
+            },
+
     ]
 
     def add_tags(self, tr, receive_tags=None, publish_tags=None):
@@ -153,6 +296,7 @@ class TestTagRelationships(unittest.TestCase):
         }
 
         for data in self.TEST_DATA:
+            print "Testing %s" % data['label']
             tr = acking_strategies.TagRelationships()
 
             label = data['label']
