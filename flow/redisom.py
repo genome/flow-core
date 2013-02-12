@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# pylint: disable=W0212
+
 from uuid import uuid4
 import functools
 import hashlib
@@ -37,7 +39,8 @@ class Script(object):
         num_keys = len(keys)
         keys_and_args = keys + args
         try:
-            return connection.evalsha(self.script_hash, num_keys, *keys_and_args)
+            return connection.evalsha(self.script_hash,
+                    num_keys, *keys_and_args)
         except redis.exceptions.NoScriptError:
             return connection.eval(self.script_body, num_keys, *keys_and_args)
 
@@ -118,17 +121,18 @@ class Timestamp(Value):
     @property
     def now(self):
         sec, usec = self.connection.time()
-        return "%d.%d" %(sec, usec)
+        return "%d.%d" % (sec, usec)
 
     def set(self):
         now = self.now
         self.connection.set(self.key, now)
         return now
 
-    def setnx(self):
-        now = self.now
-        if self.connection.setnx(self.key, now):
-            return now
+    def setnx(self, value=None):
+        if value is None:
+            value = self.now
+        if self.connection.setnx(self.key, value):
+            return value
         return False
 
 class Int(Value):
@@ -356,8 +360,8 @@ def _make_key(*args):
 
 class ObjectMeta(type):
     _class_registry = {}
-    def __new__(meta, class_name, bases, class_dict):
-        cls = type.__new__(meta, class_name, bases, class_dict)
+    def __new__(mcs, class_name, bases, class_dict):
+        cls = type.__new__(mcs, class_name, bases, class_dict)
 
         # TODO could use some refactoring
         members = {}
@@ -382,11 +386,11 @@ class ObjectMeta(type):
                 cls._rom_scripts[name] = value
                 delattr(cls, name)
 
-        meta._class_registry[class_name] = cls
+        mcs._class_registry[class_name] = cls
         return cls
 
-    def get_registered_class(meta, class_name):
-        return meta._class_registry[class_name]
+    def get_registered_class(cls, class_name):
+        return cls._class_registry[class_name]
 
 
 class Object(object):
@@ -450,14 +454,15 @@ class Object(object):
 
                 expected_class_name = self._rom_references[name].class_name
                 if cls.__name__ != expected_class_name:
-                        raise TypeError("Attempted to assign a reference to "
+                    raise TypeError("Attempted to assign a reference to "
                         "%s but %s must only reference class %s" %
                         (cls.__name__, name, expected_class_name))
                 obj = cls(self.connection, key)
             else:
                 expected_class_name = self._rom_references[name].class_name
-                if not isinstance(value, Object) or value.__class__.__name__ != expected_class_name:
-                        raise TypeError("Attempted to assign a reference to "
+                if (not isinstance(value, Object) or
+                        value.__class__.__name__ != expected_class_name):
+                    raise TypeError("Attempted to assign a reference to "
                         "%s but %s must only reference class %s" %
                         (repr(value), name, expected_class_name))
                 key = value.key
@@ -473,7 +478,8 @@ class Object(object):
             getattr(self, name).delete()
         elif name in self._rom_references:
             self.connection.delete(self.subkey(name))
-            ref = self._rom_references[name]
+            # Is it a bug that this is unused?
+#            ref = self._rom_references[name]
 
         if name in self._cache:
             del self._cache[name]
