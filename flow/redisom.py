@@ -7,6 +7,7 @@ import functools
 import hashlib
 import redis
 import json
+import re
 
 KEY_DELIM = '/'
 
@@ -54,15 +55,15 @@ class Property(object):
         self.kwargs = kwargs
 
 class Reference(object):
-    def __init__(self, class_or_class_name, weak=True, **kwargs):
-        if isinstance(class_or_class_name, basestring):
-            self.class_name = class_or_class_name
+    def __init__(self, class_or_class_info, weak=True, **kwargs):
+        if isinstance(class_or_class_info, basestring):
+            self.class_info = class_or_class_info
         else:
-            cls = class_or_class_name
+            cls = class_or_class_info
             if not issubclass(cls, Object):
                 raise TypeError("References must be to subclasses of Object "
                     "and (%s) is not!" % cls.__name__)
-            self.class_name = cls.__name__
+            self.class_info = cls._info
 
         self.weak = weak
         self.kwargs = kwargs
@@ -360,6 +361,7 @@ def _make_key(*args):
 
 class ObjectMeta(type):
     _class_registry = {}
+    _class_info_re = re.compile(r"^[A-Za-z0-9_.]+:[A-Za-z0-9_]+$")
     def __new__(mcs, class_name, bases, class_dict):
         cls = type.__new__(mcs, class_name, bases, class_dict)
 
@@ -386,11 +388,26 @@ class ObjectMeta(type):
                 cls._rom_scripts[name] = value
                 delattr(cls, name)
 
-        mcs._class_registry[class_name] = cls
+        class_info = "%s:%s" % (cls.__module__, cls.__name__)
+        mcs._class_registry[class_info] = cls
+        cls._info = class_info
         return cls
 
-    def get_registered_class(cls, class_name):
-        return cls._class_registry[class_name]
+    def get_class(mcs, class_info):
+        try:
+            return mcs._class_registry[class_info]
+        except KeyError:
+            if mcs._class_info_re.match(class_info) is None:
+                raise TypeError("Improperly formatted class_info (%s) must "
+                        "be formatted as <module>:<class_name>" % class_info)
+
+            class_module, class_name = class_info.split(':')
+            __import__(class_module)
+            try:
+                return mcs._class_registry[class_info]
+            except KeyError:
+                raise ImportError("Expected to register class %s when loading "
+                        "module %s but failed to." % (class_name, class_module))
 
 
 class Object(object):
@@ -402,7 +419,7 @@ class Object(object):
         self.__dict__.update({
             "key": key,
             "_cache": {},
-            "_class_name": String(connection=connection, key=key),
+            "_class_info": String(connection=connection, key=key),
             "connection": connection,
         })
 
@@ -427,7 +444,7 @@ class Object(object):
                     key = self.connection.get(self.subkey(name))
                     if key is None:
                         raise RuntimeError("Reference has not been set yet.")
-                    cls = Object.get_registered_class(propdef.class_name)
+                    cls = Object.get_class(propdef.class_info)
                     prop = cls(connection=self.connection, key=key,
                             **propdef.kwargs)
                     self._cache[name] = prop
@@ -446,25 +463,28 @@ class Object(object):
         elif name in self._rom_references:
             if isinstance(value, basestring):
                 key = value
-                class_name = self.connection.get(key)
-                if class_name is None:
+                class_info = self.connection.get(key)
+                if class_info is None:
                     raise NotInRedisError("Redis has no data for key (%s)." %
                             key)
-                cls = Object.get_registered_class(class_name)
+                cls = Object.get_class(class_info)
 
-                expected_class_name = self._rom_references[name].class_name
-                if cls.__name__ != expected_class_name:
-                    raise TypeError("Attempted to assign a reference to "
-                        "%s but %s must only reference class %s" %
-                        (cls.__name__, name, expected_class_name))
+                expected_class_info = self._rom_references[name].class_info
+                if cls._info != expected_class_info:
+                        raise TypeError("Attempted to assign to %s but %s "
+                                "doesn't match the expected class info (%s)" %
+                                (name, cls._info, expected_class_info))
                 obj = cls(self.connection, key)
             else:
-                expected_class_name = self._rom_references[name].class_name
-                if (not isinstance(value, Object) or
-                        value.__class__.__name__ != expected_class_name):
-                    raise TypeError("Attempted to assign a reference to "
-                        "%s but %s must only reference class %s" %
-                        (repr(value), name, expected_class_name))
+                expected_class_info = self._rom_references[name].class_info
+                if not isinstance(value, Object):
+                    raise TypeError("Attempted to assign to %s but %s isn't an"
+                            "instance of Object")
+                else:
+                    if value._info != expected_class_info:
+                        raise TypeError("Attempted to assign to %s but %s "
+                                "doesn't match the expected class info (%s)" %
+                                (name, value._info, expected_class_info))
                 key = value.key
                 obj = value
 
@@ -486,12 +506,13 @@ class Object(object):
 
     def exists(self):
         try:
-            class_name = self._class_name.value
+            class_info = self._class_info.value
         except NotInRedisError:
             return False
 
-        if class_name != self.__class__.__name__:
-            raise TypeError("Class mismatch for object (%s)" % self.key)
+        if class_info != self._info:
+            raise TypeError("Classinfo for %s isn't correct, found '%s' "
+                            "expected '%s'" % (self.key, class_info, self._info))
         return True
 
     def _on_create(self):
@@ -504,7 +525,7 @@ class Object(object):
                             uuid4().hex)
 
         obj = cls(connection=connection, key=key)
-        obj._class_name.value = cls.__name__
+        obj._class_info.value = cls._info
 
         for k, v in kwargs.iteritems():
             if k not in obj._rom_properties and k not in obj._rom_references:
@@ -545,15 +566,18 @@ class Object(object):
                     pass
                 else:
                     r.delete()
-        self._class_name.delete()
+        self._class_info.delete()
 
 
 def get_object(connection=None, key=None):
     if connection is None or key is None:
         raise TypeError("You must specify connection and key")
 
-    class_name = connection.get(key)
-    cls = Object.get_registered_class(class_name)
+    class_info = connection.get(key)
+    if class_info is None:
+        raise KeyError("No object found in redis with key (%s)" % key)
+
+    cls = Object.get_class(class_info)
     return cls(connection=connection, key=key)
 
 

@@ -16,8 +16,8 @@ class SimpleObj(rom.Object):
     alist = rom.Property(rom.List)
     aset = rom.Property(rom.Set)
     a_method_arg = rom.Property(rom.String)
-    aref = rom.Reference('SimpleObj')
-    astrongref = rom.Reference('SimpleObj', weak=False)
+    aref = rom.Reference('%s:SimpleObj' % __module__)
+    astrongref = rom.Reference('%s:SimpleObj' % __module__, weak=False)
 
     def a_method(self, arg=None):
         self.a_method_arg = arg
@@ -102,7 +102,7 @@ class TestReference(TestBase):
 
         def bad_assignment2():
             self.x.astrongref = '/y/ascalar'
-        self.assertRaises(KeyError, bad_assignment2)
+        self.assertRaises(TypeError, bad_assignment2)
 
         class Z(rom.Object):
             pass
@@ -668,6 +668,14 @@ class TestObject(TestBase):
         z = SimpleObj.create(connection=self.conn, key="/z", aref=x)
         self.assertEqual(y.aref.ascalar.value, 'x-scalar')
 
+    def test_non_object_as_reference(self):
+        x = SimpleObj.create(connection=self.conn, key="/x", ascalar='x-scalar')
+        y = SimpleObj.create(connection=self.conn, key="/y", aref='/x')
+
+        self.assertRaises(TypeError, setattr, x, 'aref', 5)
+        self.assertRaises(TypeError, SimpleObj.create, connection=self.conn,
+                key='/z', aref=5)
+
     def test_create_invalid_prop(self):
         self.assertRaises(AttributeError, SimpleObj.create,
                 connection=self.conn, key="x", badprop="bad")
@@ -734,6 +742,27 @@ class TestObject(TestBase):
         # redis quirk: smembers returns list([]) when fetching an empty list
         self.assertEqual(0, self.conn.llen(key))
 
+    def test_class_not_loaded_yet(self):
+        # must be set manually, since the module hasn't been loaded yet...
+        class_info = 'unit_tests.loadable_obj:LoadableObj'
+        self.conn.set('/y', class_info)
+        self.conn.set('/y/ascalar', '1234')
+
+        class UsesLoadableObj(rom.Object):
+            aref = rom.Reference(class_info)
+        x = UsesLoadableObj.create(self.conn, '/x')
+        x.aref = '/y'
+
+        self.assertEqual(x.aref.key, '/y')
+        self.assertEqual(x.aref.ascalar.value, '1234')
+
+    def test_class_not_loaded_in_specified_module(self):
+        class_info = 'unit_tests:LoadableObj'
+        self.conn.set('/y', class_info)
+        self.conn.set('/y/ascalar', '1234')
+
+        self.assertRaises(ImportError, rom.get_object, self.conn, '/y')
+        self.assertRaises(ImportError, rom.Object.get_class, class_info)
 
 if __name__ == "__main__":
     unittest.main()
