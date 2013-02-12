@@ -1,21 +1,16 @@
-from collections import defaultdict
 from flow.protocol.message import Message
 from uuid import uuid4
 import base64
 import flow.redisom as rom
-import hashlib
 import json
 import logging
-import os
 import pygraphviz
 import subprocess
-import sys
-import time
 
 
 LOG = logging.getLogger(__name__)
 
-_set_token_script = """
+_SET_TOKEN_SCRIPT = """
 local marking_hash = KEYS[1]
 local place_key = ARGV[1]
 local token_key = ARGV[2]
@@ -32,7 +27,7 @@ end
 return 0
 """
 
-_consume_tokens_script = """
+_CONSUME_TOKENS_SCRIPT = """
 local state_set_key = KEYS[1]
 local active_tokens_key = KEYS[2]
 local arcs_in_key = KEYS[3]
@@ -81,7 +76,7 @@ end
 return {0, "Transition enabled"}
 """
 
-_push_tokens_script = """
+_PUSH_TOKENS_SCRIPT = """
 local active_tokens_key = KEYS[1]
 local arcs_in_key = KEYS[2]
 local arcs_out_key = KEYS[3]
@@ -166,7 +161,6 @@ class _SafeNode(rom.Object):
 
 class _SafePlace(_SafeNode):
     first_token_timestamp = rom.Property(rom.Timestamp)
-    pass
 
 
 class _SafeTransition(_SafeNode):
@@ -183,7 +177,8 @@ class _SafeTransition(_SafeNode):
                   for key in self.active_tokens.value]
 
         try:
-            merger = rom.get_object(self.connection, self.token_merger_key.value)
+            merger = rom.get_object(self.connection,
+                    self.token_merger_key.value)
             return merger.merge(tokens)
         except rom.NotInRedisError:
             return _default_token_merger(tokens)
@@ -199,9 +194,9 @@ class _SafeTransition(_SafeNode):
 
 
 class SafeNet(object):
-    _consume_tokens = rom.Script(_consume_tokens_script)
-    _push_tokens = rom.Script(_push_tokens_script)
-    _set_token = rom.Script(_set_token_script)
+    _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
+    _push_tokens = rom.Script(_PUSH_TOKENS_SCRIPT)
+    _set_token = rom.Script(_SET_TOKEN_SCRIPT)
 
     def subkey(self, *args):
         return "/".join([self.key] + [str(x) for x in args])
@@ -224,7 +219,7 @@ class SafeNet(object):
 
         for i, pname in enumerate(place_names):
             key = self.subkey("place/%d" % i)
-            place = _SafePlace.create(connection=self.conn, key=key, name=pname,
+            _SafePlace.create(connection=self.conn, key=key, name=pname,
                     arcs_out=place_arcs_out.get(i, {}))
 
         for i, t in enumerate(trans_actions):
@@ -268,13 +263,11 @@ class SafeNet(object):
 
     @property
     def num_places(self):
-        np = self.conn.get(self.subkey("num_places")) or 0
-        return int(np)
+        return int(self.conn.get(self.subkey("num_places")) or 0)
 
     @property
     def num_transitions(self):
-        nt = self.conn.get(self.subkey("num_transitions")) or 0
-        return int(nt)
+        return int(self.conn.get(self.subkey("num_transitions")) or 0)
 
     def place(self, idx):
         return _SafePlace(self.conn, self.subkey("place/%d" % int(idx)))
@@ -404,7 +397,7 @@ class CounterAction(TransitionAction):
     call_count = rom.Property(rom.Int)
 
     def _on_create(self):
-        self.call_count = 0
+        self.call_count.value = 0
 
     def execute(self, input_data, net, services):
         self.call_count.incr(1)
