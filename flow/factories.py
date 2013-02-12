@@ -52,5 +52,5 @@ def get_concrete_factory(factory_name, category='flow.factories'):
                 ep, factory_name)
         return ep.load()
 
-    raise RuntimeError('Found no entry point for factory_name %s',
+    raise RuntimeError('Found no entry point for factory_name %s' %
             factory_name)
