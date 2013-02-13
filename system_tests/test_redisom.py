@@ -6,6 +6,8 @@ import os
 import redis
 import unittest
 
+from test_helpers import redistest
+
 _good_script = "return {1, 2, '3'}"
 
 _bad_script = "i am bad"
@@ -21,15 +23,9 @@ class ScriptObj(rom.Object):
     args = rom.Script(script_body=_return_args_script)
 
 
-class TestBase(unittest.TestCase):
+class TestRedisOm(redistest.RedisTest):
     def setUp(self):
-        redis_host = os.environ['FLOW_TEST_REDIS_URL']
-        self.conn = redis.Redis(redis_host)
-
-
-class TestRedisOm(TestBase):
-    def setUp(self):
-        TestBase.setUp(self)
+        redistest.RedisTest.setUp(self)
         self.obj = ScriptObj(self.conn, key="x")
 
     def test_good(self):

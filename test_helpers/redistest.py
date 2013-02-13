@@ -3,16 +3,21 @@ import redis
 import unittest
 
 _redis_url_var = "FLOW_TEST_REDIS_URL"
+_redis_unix_socket_var = "FLOW_TEST_REDIS_SOCKET"
 
 class RedisTest(unittest.TestCase):
     def setUp(self):
         try:
-            redis_host = os.environ[_redis_url_var]
+            redis_ud_socket = os.environ[_redis_unix_socket_var]
+            self.conn = redis.Redis(unix_socket_path=redis_ud_socket)
         except KeyError:
-            raise KeyError("You must set the %s environment variable to run "
-                    "this test case" % _redis_url_var)
+            try:
+                redis_host = os.environ[_redis_url_var]
+                self.conn = redis.Redis(redis_host)
+            except KeyError:
+                raise KeyError("You must set either %s or %s to run "
+                        "this test case" % (_redis_url_var, _redis_unix_socket_var))
 
-        self.conn = redis.Redis(redis_host)
 
         try:
             self.conn.ping()
