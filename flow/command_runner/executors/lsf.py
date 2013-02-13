@@ -14,7 +14,7 @@ class LSFExecutor(ExecutorBase):
 
     def __call__(self, command_line, net_key=None, response_places=None,
             environment={}, working_directory=None, with_inputs=None,
-            with_outputs=False, **kwargs):
+            with_outputs=False, user_id=None, **kwargs):
 
         full_command_line = self._make_command_line(command_line,
                 net_key=net_key, response_places=response_places,
@@ -32,7 +32,8 @@ class LSFExecutor(ExecutorBase):
         with util.environment([self.default_environment, environment,
                                self.mandatory_environment]):
             try:
-                submit_result = lsf.lsb_submit(request, reply)
+                with util.seteuid(user_id):
+                    submit_result = lsf.lsb_submit(request, reply)
             except Exception as e:
                 LOG.error("lsb_submit failed for command string: '%s'",
                         command_string)

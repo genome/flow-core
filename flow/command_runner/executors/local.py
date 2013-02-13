@@ -9,7 +9,7 @@ LOG = logging.getLogger(__name__)
 
 class SubprocessExecutor(ExecutorBase):
     def __call__(self, command_line, net_key=None, response_places=None,
-            working_directory=None, environment={},
+            working_directory=None, environment={}, user_id=None,
             stdout=None, stderr=None, with_inputs=None, with_outputs=False,
             **kwargs):
 
@@ -31,10 +31,13 @@ class SubprocessExecutor(ExecutorBase):
 
                 LOG.debug('working_directory = %s', working_directory)
                 LOG.debug('PATH = %s', os.getenv('PATH'))
+
                 LOG.debug('executing command %r', full_command_line)
-                exit_code = subprocess.call(full_command_line,
-                        stdout=stdout_fh, stderr=stderr_fh,
-                        cwd=working_directory)
+                with util.seteuid(user_id):
+                    exit_code = subprocess.call(full_command_line,
+                            stdout=stdout_fh, stderr=stderr_fh,
+                            cwd=working_directory)
+
             except OSError as e:
                 error_message = 'Executor got error number (%d): %s' % (
                         e.errno, os.strerror(e.errno))
