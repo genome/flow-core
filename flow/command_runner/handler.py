@@ -5,12 +5,13 @@ LOG = logging.getLogger(__name__)
 
 class CommandLineSubmitMessageHandler(object):
     def __init__(self, executor=None, broker=None, storage=None,
-            queue_name=None, routing_key=None):
+            queue_name=None, exchange=None, routing_key=None):
         self.executor = executor
         self.broker = broker
         self.queue_name = queue_name
         self.storage = storage
 
+        self.exchange = exchange
         self.routing_key = routing_key
 
     def __call__(self, message):
@@ -36,4 +37,5 @@ class CommandLineSubmitMessageHandler(object):
             token = Token.create(self.storage)
             response_message = SetTokenMessage(token_key=token.key,
                     net_key=net_key, place_idx=int(place_idx))
-            self.broker.publish(self.routing_key, response_message)
+            self.broker.publish(self.exchange,
+                    self.routing_key, response_message)

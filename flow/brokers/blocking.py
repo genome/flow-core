@@ -6,8 +6,7 @@ LOG = logging.getLogger()
 
 
 class BlockingAmqpBroker(object):
-    def __init__(self, exchange_name=None, amqp_url=None):
-        self.exchange_name = exchange_name
+    def __init__(self, amqp_url=None):
         self.amqp_url = amqp_url
 
     def connect(self):
@@ -24,9 +23,9 @@ class BlockingAmqpBroker(object):
 
         self.channel.queue_bind(queue_name, exchange_name, topic)
 
-    def publish(self, routing_key, message):
+    def publish(self, exchange_name, routing_key, message):
         encoded_message = codec.encode(message)
-        self.channel.basic_publish(self.exchange_name,
+        self.channel.basic_publish(exchange_name,
                 routing_key, encoded_message)
 
     def get(self, queue_name):

@@ -15,13 +15,14 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
 
         self.broker = mock.Mock()
         self.broker.publish = mock.Mock()
+        self.exchange = mock.Mock()
         self.routing_key = mock.Mock()
 
         self.storage = mock.Mock()
 
         self.handler = CommandLineSubmitMessageHandler(executor=self.executor,
                 broker=self.broker, storage=self.storage,
-                routing_key=self.routing_key)
+                exchange=self.exchange, routing_key=self.routing_key)
 
         self.net_key = mock.Mock(str)
         self.pre_dispatch_place_idx = 0
@@ -57,7 +58,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
                     net_key=self.net_key,
                     place_idx=place_idx)
             self.broker.publish.assert_called_once_with(
-                    self.routing_key, response_message)
+                    self.exchange, self.routing_key, response_message)
 
 
     def test_message_handler_executor_success(self):

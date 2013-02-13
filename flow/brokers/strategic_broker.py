@@ -16,9 +16,8 @@ TERMINATION_SIGNALS = [signal.SIGINT, signal.SIGTERM]
 
 
 class StrategicAmqpBroker(object):
-    def __init__(self, exchange_name=None, amqp_url=None, prefetch_count=None,
+    def __init__(self, amqp_url=None, prefetch_count=None,
             acking_strategy=None):
-        self.exchange_name = exchange_name
         self.amqp_url = amqp_url
         self.prefetch_count = prefetch_count
         self.acking_strategy = acking_strategy
@@ -62,7 +61,7 @@ class StrategicAmqpBroker(object):
         self._listeners[queue_name] = listener
 
 
-    def publish(self, routing_key, message):
+    def publish(self, exchange_name, routing_key, message):
         receive_tag = self._last_receive_tag
         encoded_message = codec.encode(message)
 
@@ -74,7 +73,7 @@ class StrategicAmqpBroker(object):
         self.acking_strategy.add_publish_tag(receive_tag=receive_tag,
                 publish_tag=publish_tag)
 
-        self._channel.basic_publish(exchange=self.exchange_name,
+        self._channel.basic_publish(exchange=exchange_name,
                 routing_key=routing_key, body=encoded_message,
                 properties=self._publish_properties)
 
