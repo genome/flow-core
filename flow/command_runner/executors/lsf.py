@@ -44,7 +44,6 @@ class LSFExecutor(ExecutorBase):
             LOG.debug('successfully submitted lsf job: %s', submit_result)
             return True, submit_result
         else:
-            # XXX get lsf error message
             LOG.debug('failed to submit lsf job, return value = (%s)',
                     submit_result)
             return False, submit_result
