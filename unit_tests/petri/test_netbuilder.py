@@ -3,10 +3,22 @@ import flow.petri.netbuilder as nb
 import unittest
 from itertools import combinations
 
-class TestNetBuilder(unittest.TestCase):
+class BuilderTest(unittest.TestCase):
     def setUp(self):
         self.builder = nb.NetBuilder("test")
 
+class TestNodes(unittest.TestCase):
+    def test_place(self):
+        place = nb.Place(index=0, name="x")
+        rep = str(place)
+        self.assertTrue(rep.startswith("Place(index=0"))
+
+    def test_transition(self):
+        trans = nb.Transition(index=0, name="x", action_class="x", action_args="y")
+        rep = str(trans)
+        self.assertTrue(rep.startswith("Transition(index=0"))
+
+class TestNetBuilder(BuilderTest):
     def test_graph(self):
         net = self.builder.add_subnet(nb.EmptyNet, "hi")
         start = net.add_place("start")
@@ -48,30 +60,71 @@ class TestNetBuilder(unittest.TestCase):
             self.assertEqual(["Place", "Transition"], node_types)
 
     def test_graph_with_subgraphs(self):
-        net1 = self.builder.add_subnet(nb.EmptyNet, "net1")
+        net0 = self.builder.add_subnet(nb.EmptyNet, "net0")
+        p0 = net0.add_place("p0")
+
+        # net1 is a subnet of net0
+        net1 = net0.add_subnet(nb.EmptyNet, "net1")
         p1 = net1.add_place("p1")
 
-        net2 = self.builder.add_subnet(nb.EmptyNet, "net2")
+        # net2 is a subnet of net1
+        net2 = net1.add_subnet(nb.EmptyNet, "net2")
         p2 = net2.add_place("p2")
 
-        self.builder.bridge_places(p1, p2)
+        # net3 is a subnet of net0
+        net3 = net0.add_subnet(nb.EmptyNet, "net3")
+        p3 = net3.add_place("p3")
+
+        net0.bridge_places(p0, p1, "t0")
+        net1.bridge_places(p1, p2, "t1")
+        net2.bridge_places(p2, p3, "t2")
+
         graph = self.builder.graph(subnets=True)
+        graph.draw("x.ps", prog="dot")
 
         nodes = graph.nodes()
         edges = graph.edges()
-        subgraphs = graph.subgraphs()
 
-        self.assertEqual(3, len(nodes))
-        self.assertEqual(2, len(edges))
-        self.assertEqual(2, len(subgraphs))
+        self.assertEqual(7, len(nodes))
+        self.assertEqual(6, len(edges))
 
-        nodes1 = subgraphs[0].nodes()
-        nodes2 = subgraphs[1].nodes()
+        subgraphs = [None]*4
 
-        self.assertEqual(1, len(nodes1))
-        self.assertEqual(1, len(nodes2))
-        both = sorted([nodes1[0].attr["label"], nodes2[0].attr["label"]])
-        self.assertEqual(["p1", "p2"], both)
+        # the outer subgraph (net0)
+        (subgraphs[0],) = graph.subgraphs()
+
+        # net0 has 2 subgraphs: net1 and net3
+        # note that the order we get them back in is arbitrary
+        tmp = {x.name: x for x in subgraphs[0].subgraphs()}
+        self.assertEqual(set(["cluster_1", "cluster_3"]), set(tmp.keys()))
+        subgraphs[1] = tmp["cluster_1"]
+        subgraphs[3] = tmp["cluster_3"]
+
+        # net1 has 1 subgraph: net2
+        (subgraphs[2],) = subgraphs[1].subgraphs()
+
+        nodes = []
+        node_labels = []
+
+        for i in xrange(4):
+            self.assertEqual("cluster_%d" % i , subgraphs[i].name)
+            self.assertEqual("net%d" % i , subgraphs[i].graph_attr["label"])
+            nodes.append(subgraphs[i].nodes())
+            node_labels.append(sorted(x.attr["label"] for x in nodes[i]))
+
+        self.assertEqual(7, len(nodes[0]))
+        self.assertEqual(4, len(nodes[1]))
+        self.assertEqual(2, len(nodes[2]))
+        self.assertEqual(1, len(nodes[3]))
+
+        expected_node_labels = [
+            ["p0", "p1", "p2", "p3", "t0", "t1", "t2"], # net 0 has all nodes
+            ["p1", "p2", "t1", "t2"], # net 1 has p1/2, t1/2
+            ["p2", "t2"], # net 2 has p2, t2
+            ["p3"], # net 3 has p3
+        ]
+
+        self.assertEqual(expected_node_labels, node_labels)
 
     def test_success_failure_net(self):
         net = self.builder.add_subnet(nb.SuccessFailureNet, "sfnet")
@@ -125,10 +178,9 @@ class TestNetBuilder(unittest.TestCase):
         self.assertEqual(set([tmp]), t1.arcs_out)
         self.assertEqual(set([t2]), tmp.arcs_out)
 
-class TestEmptyNet(unittest.TestCase):
+class TestEmptyNet(BuilderTest):
     def test_names_auto_increment(self):
-        builder = nb.NetBuilder("test")
-        net = builder.add_subnet(nb.EmptyNet, "test")
+        net = self.builder.add_subnet(nb.EmptyNet, "test")
 
         transitions = [net.add_transition() for x in range(3)]
         names = [t.name for t in transitions]
@@ -137,6 +189,54 @@ class TestEmptyNet(unittest.TestCase):
         places = [net.add_place() for x in range(3)]
         names = [p.name for p in places]
         self.assertEqual(["p0", "p1", "p2"], names)
+
+    def test_bridge(self):
+        net1 = self.builder.add_subnet(nb.EmptyNet, "test")
+        p1 = net1.add_place("p1")
+        p2 = net1.add_place("p2")
+        place_bridge = net1.bridge_places(p1, p2, "pb")
+
+        net2 = self.builder.add_subnet(nb.EmptyNet, "test")
+        t1 = net2.add_transition("t1")
+        t2 = net2.add_transition("t2")
+        trans_bridge = net2.bridge_transitions(t1, t2, "tb")
+
+        # Build a bridge from p2 in net1 to a new place p3 in net2
+        # Since we're asking net1 to do it, the resulting transition will live
+        # in net1.
+        p3 = net2.add_place("p3")
+        cross_net_bridge = net1.bridge_places(p2, p3, "cross net")
+
+        self.assertEqual("pb", place_bridge.name)
+        self.assertEqual("tb", trans_bridge.name)
+        self.assertEqual("cross net", cross_net_bridge.name)
+
+        # Builder should see all bridges
+        self.assertIn(place_bridge, self.builder._trans_map)
+        self.assertIn(trans_bridge, self.builder._place_map)
+        self.assertIn(cross_net_bridge, self.builder._trans_map)
+
+        # make sure bridge nodes are owned by the net that created them
+        self.assertIn(place_bridge, net1._trans_set)
+        self.assertNotIn(place_bridge, net2._trans_set)
+        self.assertIn(cross_net_bridge, net1._trans_set)
+        self.assertNotIn(cross_net_bridge, net2._trans_set)
+
+        self.assertIn(trans_bridge, net2._place_set)
+        self.assertNotIn(trans_bridge, net1._place_set)
+
+        self.assertIsInstance(trans_bridge, nb.Place)
+        self.assertIsInstance(place_bridge, nb.Transition)
+        self.assertIsInstance(cross_net_bridge, nb.Transition)
+
+        self.assertEqual(set([place_bridge]), p1.arcs_out)
+        self.assertEqual(set([p2]), place_bridge.arcs_out)
+        self.assertEqual(set([cross_net_bridge]), p2.arcs_out)
+        self.assertEqual(set([p3]), cross_net_bridge.arcs_out)
+
+        self.assertEqual(set([trans_bridge]), t1.arcs_out)
+        self.assertEqual(set([t2]), trans_bridge.arcs_out)
+
 
 
 if __name__ == "__main__":

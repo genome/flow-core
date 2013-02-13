@@ -34,6 +34,13 @@ class Place(Node):
         graph.add_node(self.id, label=label)
         graph.get_node(self.id).attr["_type"] = "Place"
 
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return "%s(index=%r, name=%r)" % (
+                self.__class__.__name__, self.index, self.name)
+
 
 class Transition(Node):
     def __init__(self, index, name="", action_class=None, action_args=None,
@@ -51,6 +58,24 @@ class Transition(Node):
         node = graph.add_node(self.id, label=label, shape="box",
             fillcolor="black", style="filled", fontcolor="white")
         graph.get_node(self.id).attr["_type"] = "Transition"
+
+    def __str__(self):
+        return repr(self)
+
+    def __repr__(self):
+        return "%s(index=%r, name=%r, action_class=%r, action_args=%r)" % (
+                self.__class__.__name__, self.index, self.name,
+                self.action_class, self.action_args)
+
+
+class _ClusterCounter(object):
+    def __init__(self):
+        self.value = 0
+
+    def next_id(self):
+        rv = "cluster_%d" % self.value
+        self.value += 1
+        return rv
 
 
 class NetBuilder(object):
@@ -84,7 +109,7 @@ class NetBuilder(object):
         self._trans_map[transition] = index
         return transition
 
-    def bridge_places(self, p1, p2):
+    def bridge_places(self, p1, p2, name=None):
         if not (isinstance(p1, Place) and isinstance(p2, Place)):
             raise TypeError(
                     "bridge_places called with something other than two places")
@@ -92,12 +117,15 @@ class NetBuilder(object):
         if p1 not in self._place_map or p2 not in self._place_map:
             raise RuntimeError("bridge_places called with an unknown place")
 
-        transition = self.add_transition("bridge %s -> %s" % (p1.name, p2.name))
+        if name is None:
+            name = "bridge %s -> %s" % (p1.name, p2.name)
+
+        transition = self.add_transition(name)
         p1.arcs_out.add(transition)
         transition.arcs_out.add(p2)
         return transition
 
-    def bridge_transitions(self, t1, t2):
+    def bridge_transitions(self, t1, t2, name=None):
         if not (isinstance(t1, Transition) and isinstance(t2, Transition)):
             raise TypeError(
                     "bridge_place called with something other than two places")
@@ -106,7 +134,10 @@ class NetBuilder(object):
             raise RuntimeError(
                     "bridge_transitions called with an unknown transition")
 
-        place = self.add_place("bridge %s -> %s" % (t1.name, t2.name))
+        if name is None:
+            name = "bridge %s -> %s" % (t1.name, t2.name)
+
+        place = self.add_place(name)
         t1.arcs_out.add(place)
         place.arcs_out.add(t2)
         return place
@@ -122,21 +153,29 @@ class NetBuilder(object):
             self._graph(graph, x, seen)
             graph.add_edge(node.id, x.id)
 
-    def _graph_subnet(self, graph, subnet, seen, cluster_id):
-        name = name="cluster_%d" % cluster_id
-        cluster = graph.add_subgraph(name=name, label=subnet.name,
+    def _graph_subnet(self, graph, subnet, seen, cluster_counter):
+        cluster_id = cluster_counter.next_id()
+        cluster = graph.add_subgraph(name=cluster_id, label=subnet.name,
                 color="blue")
 
         for node in itertools.chain(subnet.places, subnet.transitions):
             node.graph(cluster)
+
+        seen.add(subnet)
+
+        for child in subnet.subnets:
+            if child not in seen:
+                self._graph_subnet(cluster, child, seen, cluster_counter)
 
     def graph(self, subnets=False):
         graph = pygraphviz.AGraph(directed=True)
         seen = set()
 
         if subnets:
+            cluster_counter = _ClusterCounter()
             for i, subnet in enumerate(self.subnets):
-                self._graph_subnet(graph, subnet, seen, i)
+                if subnet not in seen:
+                    self._graph_subnet(graph, subnet, seen, cluster_counter)
 
         for node in itertools.chain(self.places, self.transitions):
             self._graph(graph, node, seen)
@@ -182,11 +221,24 @@ class EmptyNet(object):
         self.places = []
         self.transitions = []
 
+        self.subnets = []
+
+        self._place_set = set()
+        self._trans_set = set()
+
+    def _add_place(self, place):
+        self.places.append(place)
+        self._place_set.add(place)
+
+    def _add_transition(self, transition):
+        self.transitions.append(transition)
+        self._trans_set.add(transition)
+
     def add_place(self, name=""):
         if not name:
             name = "p%d" % len(self.places)
         place = self.builder.add_place(name)
-        self.places.append(place)
+        self._add_place(place)
         return place
 
     def add_transition(self, name="", **kwargs):
@@ -194,8 +246,23 @@ class EmptyNet(object):
             name = "t%d" % len(self.transitions)
 
         transition = self.builder.add_transition(name, **kwargs)
-        self.transitions.append(transition)
+        self._add_transition(transition)
         return transition
+
+    def bridge_places(self, p1, p2, name=None):
+        transition = self.builder.bridge_places(p1, p2, name)
+        self._add_transition(transition)
+        return transition
+
+    def bridge_transitions(self, t1, t2, name=None):
+        place = self.builder.bridge_transitions(t1, t2, name)
+        self._add_place(place)
+        return place
+
+    def add_subnet(self, cls, *args, **kwargs):
+        subnet = self.builder.add_subnet(cls, *args, **kwargs)
+        self.subnets.append(subnet)
+        return subnet
 
 
 class SuccessFailureNet(EmptyNet):

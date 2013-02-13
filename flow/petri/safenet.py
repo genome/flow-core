@@ -388,7 +388,7 @@ class TransitionAction(rom.Object):
     place_refs = rom.Property(rom.List)
 
     def input_data(self, active_tokens_key, net):
-        return None
+        pass
 
     def execute(self, active_tokens_key, net, services):
         raise NotImplementedError("In class %s: execute not implemented" %
