@@ -1,4 +1,3 @@
-from copy import deepcopy
 from flow.petri import safenet
 
 import itertools

@@ -19,7 +19,8 @@ class PetriSetTokenHandler(object):
             net.set_token(message.place_idx, message.token_key,
                     services=self.services)
         except Exception as e:
-            LOG.exception('Handler (%s) failed to add tokens to net %s place %d: %s'
+            LOG.exception(
+                    'Handler (%s) failed to add tokens to net %s place %d: %s'
                     % (self, message.net_key, message.place_idx, str(e)))
             raise e
 

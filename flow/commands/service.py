@@ -1,8 +1,5 @@
-import argparse
 from flow.commands.base import CommandBase
 import logging
-import time
-import uuid
 
 LOG = logging.getLogger()
 

@@ -1,5 +1,4 @@
 import copy
-import json
 from flow.protocol import exceptions
 
 

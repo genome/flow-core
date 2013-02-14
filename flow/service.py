@@ -7,7 +7,7 @@ class Service(object):
         self.service_interfaces = service_interfaces
 
     def run(self, *args):
-        for service_name, client in self.service_interfaces.iteritems():
+        for client in self.service_interfaces.values():
             client.broker = self.broker
 
         for handler in self.handlers:

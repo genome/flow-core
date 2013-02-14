@@ -1,4 +1,4 @@
-from abc import *
+from abc import ABCMeta, abstractmethod
 import flow.configuration
 from flow.factories import dictionary_factory
 import traceback
