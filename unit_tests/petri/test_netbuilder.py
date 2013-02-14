@@ -5,7 +5,7 @@ from itertools import combinations
 
 class BuilderTest(unittest.TestCase):
     def setUp(self):
-        self.builder = nb.NetBuilder("test")
+        self.builder = nb.NetBuilder()
 
 class TestNodes(unittest.TestCase):
     def test_place(self):

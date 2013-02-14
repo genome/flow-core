@@ -11,7 +11,7 @@ import test_helpers
 
 class TestNetBuilder(test_helpers.RedisTest):
     def test_store(self):
-        builder = nb.NetBuilder("net")
+        builder = nb.NetBuilder()
 
         net = builder.add_subnet(nb.EmptyNet, "hi")
         start = net.add_place("start")

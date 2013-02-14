@@ -10,7 +10,7 @@ class TestBase(test_helpers.RedisTest):
         test_helpers.RedisTest.setUp(self)
 
         self.cmdline = ["ls", "-al"]
-        self.builder = nb.NetBuilder("test")
+        self.builder = nb.NetBuilder()
         self.net = self.net_class(self.builder, name="test",
                 action_class=self.action_class,
                 action_args={"command_line": self.cmdline})

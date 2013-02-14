@@ -82,9 +82,7 @@ class _ClusterCounter(object):
 
 
 class NetBuilder(object):
-    def __init__(self, name):
-        self.name = name
-
+    def __init__(self):
         self.places = []
         self.transitions = []
         self.subnets = []
@@ -186,7 +184,7 @@ class NetBuilder(object):
 
         return graph
 
-    def store(self, connection):
+    def store(self, connection, name="net"):
         place_names = []
         place_arcs_out = {}
         for p in self.places:
@@ -205,7 +203,7 @@ class NetBuilder(object):
 
         net = safenet.SafeNet.create(
                 connection=connection,
-                name=self.name,
+                name=name,
                 place_names=place_names,
                 trans_actions=transition_actions,
                 place_arcs_out=place_arcs_out,

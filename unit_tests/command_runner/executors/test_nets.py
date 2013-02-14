@@ -6,7 +6,7 @@ import unittest
 
 class TestLSFCommandNet(unittest.TestCase):
     def test_construct(self):
-        builder = nb.NetBuilder("test")
+        builder = nb.NetBuilder()
         cmdline = ["ls", "-al"]
 
         net = enets.LSFCommandNet(builder, "test lsf",
@@ -46,7 +46,7 @@ class TestLSFCommandNet(unittest.TestCase):
 
 class TestLocalCommandNet(unittest.TestCase):
     def test_construct(self):
-        builder = nb.NetBuilder("test")
+        builder = nb.NetBuilder()
         cmdline = ["ls", "-al"]
 
         net = enets.LocalCommandNet(builder, "test lsf",
