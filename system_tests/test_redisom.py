@@ -26,7 +26,7 @@ class ScriptObj(rom.Object):
 class TestRedisOm(redistest.RedisTest):
     def setUp(self):
         redistest.RedisTest.setUp(self)
-        self.obj = ScriptObj(self.conn, key="x")
+        self.obj = ScriptObj.create(self.conn, key="x")
 
     def test_good(self):
         self.assertEqual([1, 2, '3'], self.obj.good())

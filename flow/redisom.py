@@ -42,7 +42,7 @@ class Script(object):
         try:
             return connection.evalsha(self.script_hash,
                     num_keys, *keys_and_args)
-        except redis.exceptions.NoScriptError:
+        except redis.exceptions.ResponseError:
             return connection.eval(self.script_body, num_keys, *keys_and_args)
 
 
