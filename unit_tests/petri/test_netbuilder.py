@@ -80,7 +80,7 @@ class TestNetBuilder(BuilderTest):
         net2.bridge_places(p2, p3, "t2")
 
         graph = self.builder.graph(subnets=True)
-        graph.draw("x.ps", prog="dot")
+        graph.draw("/dev/null", prog="dot")
 
         nodes = graph.nodes()
         edges = graph.edges()
