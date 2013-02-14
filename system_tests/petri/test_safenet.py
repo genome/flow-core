@@ -61,6 +61,43 @@ class TestSafeNet(TestBase):
         self.assertRaises(TypeError, net.set_constant, "user_id", 10)
         self.assertEqual(1234, net.constant("user_id"))
 
+    def test_copy_constants(self):
+        net1 = sn.SafeNet.create(connection=self.conn)
+
+        nested = {"one": [2, "three"]}
+
+        net1.set_constant("string", "hello")
+        net1.set_constant("number", 32)
+        net1.set_constant("complex", nested)
+
+        self.assertEqual("hello", net1.constant("string"))
+        self.assertEqual(32, net1.constant("number"))
+        self.assertEqual(nested, net1.constant("complex"))
+
+        net2 = sn.SafeNet.create(connection=self.conn)
+
+        self.assertIsNone(net2.constant("string"))
+        self.assertIsNone(net2.constant("number"))
+        self.assertIsNone(net2.constant("complex"))
+
+        net2.copy_constants_from(net1)
+
+        self.assertEqual("hello", net2.constant("string"))
+        self.assertEqual(32, net2.constant("number"))
+        self.assertEqual(nested, net2.constant("complex"))
+
+        self.assertEqual("hello", net1.constant("string"))
+        self.assertEqual(32, net1.constant("number"))
+        self.assertEqual(nested, net1.constant("complex"))
+
+    def test_capture_environment(self):
+        net = sn.SafeNet.create(connection=self.conn)
+        net.capture_environment()
+        self.assertEqual(os.environ.data, net.constant("environment"))
+        self.assertEqual(os.geteuid(), net.constant("user_id"))
+        self.assertEqual(os.path.realpath(os.path.curdir),
+                net.constant("working_directory"))
+
     def test_variables(self):
         net = sn.SafeNet.create(connection=self.conn)
 

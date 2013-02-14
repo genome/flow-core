@@ -4,11 +4,26 @@ import base64
 import flow.redisom as rom
 import json
 import logging
+import os
 import pygraphviz
 import subprocess
 
 
 LOG = logging.getLogger(__name__)
+
+_COPY_HASH_SCRIPT = """
+local src_hash_key = KEYS[1]
+local dst_hash_key = KEYS[2]
+
+
+local data = redis.call('HGETALL', src_hash_key)
+if #data == 0 then
+    return 0
+end
+
+redis.call('DEL', dst_hash_key)
+return redis.call('HMSET', dst_hash_key, unpack(data))
+"""
 
 _SET_TOKEN_SCRIPT = """
 local marking_hash = KEYS[1]
@@ -182,6 +197,9 @@ class _SafeTransition(_SafeNode):
 
 
 class SafeNet(object):
+    required_constants = ["environment", "user_id", "working_directory"]
+
+    _copy_hash = rom.Script(_COPY_HASH_SCRIPT)
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
     _push_tokens = rom.Script(_PUSH_TOKENS_SCRIPT)
     _set_token = rom.Script(_SET_TOKEN_SCRIPT)
@@ -196,6 +214,7 @@ class SafeNet(object):
 
         key = base64.b64encode(uuid4().bytes)
         self = cls(connection, key)
+        self.constants_key = self.subkey("constants")
 
         trans_arcs_in = {}
         for p, trans_set in place_arcs_out.iteritems():
@@ -225,12 +244,23 @@ class SafeNet(object):
 
     def set_constant(self, key, value):
         value = json.dumps(value)
-        ret = self.conn.hsetnx(self.subkey("attributes"), key, value)
+        ret = self.conn.hsetnx(self.constants_key, key, value)
         if ret == 0:
             raise TypeError("Attempted to reassign constant property %s" % key)
 
+    def capture_environment(self):
+        self.set_constant("environment", os.environ.data)
+        self.set_constant("user_id", os.geteuid())
+        cwd = os.path.realpath(os.path.curdir)
+        self.set_constant("working_directory", cwd)
+
+    def copy_constants_from(self, other_net):
+        keys = [other_net.constants_key, self.constants_key]
+        rv = self._copy_hash(connection=self.conn, keys=keys)
+        print "COPY HASH", rv
+
     def constant(self, key):
-        value = self.conn.hget(self.subkey("attributes"), key)
+        value = self.conn.hget(self.constants_key, key)
         if value is not None:
             return json.loads(value)
 
