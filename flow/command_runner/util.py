@@ -27,13 +27,19 @@ def environment(environment_dicts):
 def seteuid(user_id):
     if user_id is not None:
         saved_user_id = os.geteuid()
-        LOG.debug('Setting uid to 0, then to %d', user_id)
-        os.seteuid(0)
-        os.seteuid(user_id)
+        if user_id != saved_user_id:
+            LOG.debug('Setting uid to 0, then to %d', user_id)
+            os.seteuid(0)
+            os.seteuid(user_id)
+        else:
+            LOG.debug('Uid is already %d, not changing', user_id)
 
     yield
 
     if user_id is not None:
-        os.seteuid(0)
-        os.seteuid(saved_user_id)
-        LOG.debug('uid reset to %d', saved_user_id)
+        if saved_user_id != os.geteuid():
+            os.seteuid(0)
+            os.seteuid(saved_user_id)
+            LOG.debug('uid reset to %d', saved_user_id)
+        else:
+            LOG.debug('Uid is already %d, not changing', user_id)

@@ -12,10 +12,11 @@ LOG = logging.getLogger()
 class WrapperCommand(CommandBase):
     default_logging_mode = 'debug'
 
-    def __init__(self, broker=None, storage=None, routing_key=None):
+    def __init__(self, broker=None, storage=None, routing_key=None, exchange=None):
         self.broker = broker
         self.storage = storage
         self.routing_key = routing_key
+        self.exchange = exchange
 
 
     @staticmethod
@@ -74,5 +75,6 @@ class WrapperCommand(CommandBase):
 
         message = SetTokenMessage(net_key=net_key, place_idx=place_idx,
                 token_key=token.key)
-        self.broker.publish(routing_key=self.routing_key, message=message)
+        self.broker.publish(exchange_name=self.exchange, routing_key=self.routing_key,
+                message=message)
         self.broker.disconnect()
