@@ -169,14 +169,12 @@ class List(Value):
         except:
             raise TypeError("list indices must be integers, not str")
 
-        pipe = self.connection.pipeline()
-        pipe.llen(self.key)
-        pipe.lindex(self.key, idx)
-        size, value = pipe.execute()
-        if idx >= size:
-            raise RomIndexError ("list index out of range "
-                    "(key=%s, size=%d, index=%d)" % (self.key, size, idx))
-        return value
+        result = self.connection.lindex(self.key, idx)
+        # NOTE We accept the constraint that list values cannot be None here
+        if result is None:
+            raise RomIndexError("list index out of range "
+                    "(key=%s, index=%d)" % (self.key, idx))
+        return result
 
     def __setitem__(self, idx, val):
         try:
@@ -312,19 +310,16 @@ class Hash(Value):
         return self.connection.hset(self.key, hkey, self._encode_value(val))
 
     def __getitem__(self, hkey):
-        pipe = self.connection.pipeline()
-        pipe.hexists(self.key, hkey)
-        pipe.hget(self.key, hkey)
-        exists, value = pipe.execute()
-        if not exists:
+        result = self.get(hkey)
+        if result is None:
             raise KeyError("Hash (%s) has no key '%s'" % (self.key, hkey))
-        return self._decode_value(value)
+        return self._decode_value(result)
 
-    def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
+    def get(self, hkey, default=None):
+        result = self.connection.hget(self.key, hkey)
+        if result is None:
             return default
+        return result
 
     def __delitem__(self, hkey):
         pipe = self.connection.pipeline()
