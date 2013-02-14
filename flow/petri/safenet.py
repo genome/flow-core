@@ -214,7 +214,6 @@ class SafeNet(object):
 
         key = base64.b64encode(uuid4().bytes)
         self = cls(connection, key)
-        self.constants_key = self.subkey("constants")
 
         trans_arcs_in = {}
         for p, trans_set in place_arcs_out.iteritems():
@@ -244,7 +243,7 @@ class SafeNet(object):
 
     def set_constant(self, key, value):
         value = json.dumps(value)
-        ret = self.conn.hsetnx(self.constants_key, key, value)
+        ret = self.conn.hsetnx(self.subkey("constants"), key, value)
         if ret == 0:
             raise TypeError("Attempted to reassign constant property %s" % key)
 
@@ -255,12 +254,12 @@ class SafeNet(object):
         self.set_constant("working_directory", cwd)
 
     def copy_constants_from(self, other_net):
-        keys = [other_net.constants_key, self.constants_key]
+        keys = [other_net.subkey("constants"), self.subkey("constants")]
         rv = self._copy_hash(connection=self.conn, keys=keys)
         print "COPY HASH", rv
 
     def constant(self, key):
-        value = self.conn.hget(self.constants_key, key)
+        value = self.conn.hget(self.subkey("constants"), key)
         if value is not None:
             return json.loads(value)
 
