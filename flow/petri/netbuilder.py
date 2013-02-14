@@ -1,7 +1,8 @@
 from copy import deepcopy
+from flow.petri import safenet
+
 import itertools
 import pygraphviz
-import safenet as sn
 
 def _make_transition_action(conn, transition):
     if transition.action_class is None:
@@ -16,7 +17,7 @@ def _make_transition_action(conn, transition):
 
 class Node(object):
     @property
-    def id(self):
+    def node_id(self):
         return id(self)
 
     def __init__(self, index, name):
@@ -31,8 +32,8 @@ class Place(Node):
 
     def graph(self, graph):
         label = self.name or " "
-        graph.add_node(self.id, label=label)
-        graph.get_node(self.id).attr["_type"] = "Place"
+        graph.add_node(self.node_id, label=label)
+        graph.get_node(self.node_id).attr["_type"] = "Place"
 
     def __str__(self):
         return repr(self)
@@ -55,9 +56,9 @@ class Transition(Node):
 
     def graph(self, graph):
         label = self.name or " "
-        node = graph.add_node(self.id, label=label, shape="box",
+        graph.add_node(self.node_id, label=label, shape="box",
             fillcolor="black", style="filled", fontcolor="white")
-        graph.get_node(self.id).attr["_type"] = "Transition"
+        graph.get_node(self.node_id).attr["_type"] = "Transition"
 
     def __str__(self):
         return repr(self)
@@ -109,20 +110,20 @@ class NetBuilder(object):
         self._trans_map[transition] = index
         return transition
 
-    def bridge_places(self, p1, p2, name=None):
-        if not (isinstance(p1, Place) and isinstance(p2, Place)):
+    def bridge_places(self, src_place, dst_place, name=None):
+        if not (isinstance(src_place, Place) and isinstance(dst_place, Place)):
             raise TypeError(
                     "bridge_places called with something other than two places")
 
-        if p1 not in self._place_map or p2 not in self._place_map:
+        if src_place not in self._place_map or dst_place not in self._place_map:
             raise RuntimeError("bridge_places called with an unknown place")
 
         if name is None:
-            name = "bridge %s -> %s" % (p1.name, p2.name)
+            name = "bridge %s -> %s" % (src_place.name, dst_place.name)
 
         transition = self.add_transition(name)
-        p1.arcs_out.add(transition)
-        transition.arcs_out.add(p2)
+        src_place.arcs_out.add(transition)
+        transition.arcs_out.add(dst_place)
         return transition
 
     def bridge_transitions(self, t1, t2, name=None):
@@ -142,16 +143,16 @@ class NetBuilder(object):
         place.arcs_out.add(t2)
         return place
 
-    def _graph(self, graph, node, seen):
-        if node in seen:
+    def _graph(self, graph, src_node, seen):
+        if src_node in seen:
             return
 
-        node.graph(graph)
-        seen.add(node)
+        src_node.graph(graph)
+        seen.add(src_node)
 
-        for x in node.arcs_out:
-            self._graph(graph, x, seen)
-            graph.add_edge(node.id, x.id)
+        for dst_node in src_node.arcs_out:
+            self._graph(graph, dst_node, seen)
+            graph.add_edge(src_node.node_id, dst_node.node_id)
 
     def _graph_subnet(self, graph, subnet, seen, cluster_counter):
         cluster_id = cluster_counter.next_id()
@@ -173,7 +174,7 @@ class NetBuilder(object):
 
         if subnets:
             cluster_counter = _ClusterCounter()
-            for i, subnet in enumerate(self.subnets):
+            for subnet in self.subnets:
                 if subnet not in seen:
                     self._graph_subnet(graph, subnet, seen, cluster_counter)
 
@@ -199,7 +200,7 @@ class NetBuilder(object):
             dst_ids = [self._place_map[x] for x in t.arcs_out]
             trans_arcs_out.setdefault(src_id, set()).update(dst_ids)
 
-        net = sn.SafeNet.create(
+        net = safenet.SafeNet.create(
                 connection=connection,
                 name=self.name,
                 place_names=place_names,
@@ -249,8 +250,8 @@ class EmptyNet(object):
         self._add_transition(transition)
         return transition
 
-    def bridge_places(self, p1, p2, name=None):
-        transition = self.builder.bridge_places(p1, p2, name)
+    def bridge_places(self, src_place, dst_place, name=None):
+        transition = self.builder.bridge_places(src_place, dst_place, name)
         self._add_transition(transition)
         return transition
 
@@ -286,7 +287,7 @@ class ShellCommandNet(SuccessFailureNet):
 
         self.execute = self.add_transition(
                 name="execute",
-                action_class=sn.ShellCommandAction,
+                action_class=safenet.ShellCommandAction,
                 action_args = {"command_line": cmdline},
                 place_refs=[self.on_success_place, self.on_failure_place],
                 )
