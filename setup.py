@@ -48,6 +48,7 @@ setup(
         entry_points = entry_points,
         install_requires = [
             'blist',
+            'hiredis',
             'pika',
             'platform-python-lsf-api',
             'pygraphviz',
