@@ -363,6 +363,23 @@ class TestList(TestBase):
         seen = [x for x in l]
         self.assertEqual(["a", "b", "c"], l.value)
 
+    def test_value_encode_decode(self):
+        l = rom.List(connection=self.conn, key='l',
+                value_encoder=rom.json_enc, value_decoder=rom.json_dec)
+
+        e0 = {'arbitrary': 3}
+        e1 = ['data', 7.2]
+
+        l.extend([e0, e1])
+
+        r0 = l[0]
+        print type(r0), r0
+        self.assertEqual(e0, r0)
+
+        r1 = l[1]
+        print type(r1), r1
+        self.assertEqual(e1, r1)
+
 
 class TestSet(TestBase):
     def test_value(self):

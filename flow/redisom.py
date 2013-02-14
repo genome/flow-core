@@ -163,6 +163,37 @@ class String(Value):
         return str(value)
 
 class List(Value):
+    def __init__(self, value_encoder=None, value_decoder=None, **kwargs):
+        Value.__init__(self, **kwargs)
+        self._value_encoder = value_encoder
+        self._value_decoder = value_decoder
+
+    def _encode_value(self, v):
+        if self._value_encoder is None:
+            return v
+        else:
+            return self._value_encoder(v)
+
+    def _encode_values(self, values):
+        if self._value_encoder is None:
+            return values
+        else:
+            encoder = self._value_encoder
+            return [encoder(v) for v in values]
+
+    def _decode_value(self, v):
+        if self._value_decoder is None:
+            return v
+        else:
+            return self._value_decoder(v)
+
+    def _decode_values(self, values):
+        if self._value_decoder is None:
+            return values
+        else:
+            decoder = self._value_decoder
+            return [decoder(v) for v in values]
+
     def __getitem__(self, idx):
         try:
             idx = int(idx)
@@ -174,11 +205,11 @@ class List(Value):
         if result is None:
             raise RomIndexError("list index out of range "
                     "(key=%s, index=%d)" % (self.key, idx))
-        return result
+        return self._decode_value(result)
 
     def __setitem__(self, idx, val):
         try:
-            return self.connection.lset(self.key, idx, val)
+            return self.connection.lset(self.key, idx, self._encode_value(val))
         except redis.ResponseError:
             raise RomIndexError ("list index out of range "
                     "(key=%s, size=%d, index=%d)" % (self.key, len(self), idx))
@@ -187,12 +218,12 @@ class List(Value):
         return self.connection.llen(self.key)
 
     def _value_getter(self):
-        return self.connection.lrange(self.key, 0, -1)
+        return self._decode_values(self.connection.lrange(self.key, 0, -1))
 
     def _value_setter(self, val):
         self.connection.delete(self.key)
         if val:
-            return self.connection.rpush(self.key, *val)
+            return self.connection.rpush(self.key, *self._encode_values(val))
 
     value = property(_value_getter, _value_setter)
 
@@ -202,10 +233,9 @@ class List(Value):
     def extend(self, vals):
         # Something in the redis module doesn't work well with
         # generators, so we need an actual list
-        vals = list(vals)
-        if vals:
-            ret = self.connection.rpush(self.key, *vals)
-            return ret
+        encoded_vals = self._encode_values(vals)
+        if encoded_vals:
+            return self.connection.rpush(self.key, *encoded_vals)
 
 
 class Set(Value):
