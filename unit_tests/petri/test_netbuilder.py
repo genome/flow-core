@@ -14,9 +14,11 @@ class TestNodes(unittest.TestCase):
         self.assertTrue(rep.startswith("Place(index=0"))
 
     def test_transition(self):
-        trans = nb.Transition(index=0, name="x", action_class="x", action_args="y")
+        action = nb.ActionSpec(cls=None, args=None)
+        trans = nb.Transition(index=0, name="x", action=action)
         rep = str(trans)
         self.assertTrue(rep.startswith("Transition(index=0"))
+        self.assertTrue("ActionSpec" in rep)
 
 class TestNetBuilder(BuilderTest):
     def test_graph(self):

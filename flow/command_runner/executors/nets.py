@@ -108,18 +108,19 @@ class LSFCommandNet(nb.SuccessFailureNet):
         self.execute_success_place = self.add_place("msg: execute_success")
         self.execute_failure_place = self.add_place("msg: execute_failure")
 
-        self.dispatch = self.add_transition(
-                name="dispatch",
-                action_class=action_class,
-                action_args=action_args,
+        dispatch_action = nb.ActionSpec(
+                cls=action_class,
+                args=action_args,
                 place_refs=[
                     self.dispatch_success_place.index,
                     self.dispatch_failure_place.index,
                     self.begin_execute_place.index,
                     self.execute_success_place.index,
                     self.execute_failure_place.index,
-                    ]
-                )
+                    ])
+
+        self.dispatch = self.add_transition(name="dispatch",
+                action=dispatch_action)
 
         self.dispatch_success = self.add_transition("dispatch_success")
         self.dispatch_failure = self.add_transition("dispatch_failure")
@@ -161,16 +162,16 @@ class LocalCommandNet(nb.SuccessFailureNet):
         self.on_execute_success = self.add_place("msg: execute_success")
         self.on_execute_failure = self.add_place("msg: execute_failure")
 
-        self.dispatch = self.add_transition(
-                name="dispatch",
-                action_class=action_class,
-                action_args=action_args,
+        dispatch_action = nb.ActionSpec(
+                cls=action_class,
+                args=action_args,
                 place_refs=[
                     self.on_begin_execute.index,
                     self.on_execute_success.index,
                     self.on_execute_failure.index
-                ],
-            )
+                ])
+        self.dispatch = self.add_transition(name="dispatch",
+                action=dispatch_action)
 
         self.t_begin_execute = self.add_transition("begin execute")
         self.execute_success = self.add_transition("execute_success")

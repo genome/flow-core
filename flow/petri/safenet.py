@@ -256,7 +256,6 @@ class SafeNet(object):
     def copy_constants_from(self, other_net):
         keys = [other_net.subkey("constants"), self.subkey("constants")]
         rv = self._copy_hash(connection=self.conn, keys=keys)
-        print "COPY HASH", rv
 
     def constant(self, key):
         value = self.conn.hget(self.subkey("constants"), key)
@@ -361,7 +360,6 @@ class SafeNet(object):
                     "Failed to add token %s to place %s: "
                     "a token already exists" %
                     (token_key, place.key))
-
 
         if self.conn.hexists(marking_key, place_idx):
             orchestrator = services['orchestrator']

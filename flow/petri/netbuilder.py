@@ -3,16 +3,6 @@ from flow.petri import safenet
 import itertools
 import pygraphviz
 
-def _make_transition_action(conn, transition):
-    if transition.action_class is None:
-        return None
-
-    return transition.action_class.create(
-            conn,
-            name=transition.name,
-            args=transition.action_args,
-            place_refs=transition.place_refs)
-
 
 class Node(object):
     @property
@@ -34,24 +24,41 @@ class Place(Node):
         graph.add_node(self.node_id, label=label)
         graph.get_node(self.node_id).attr["_type"] = "Place"
 
-    def __str__(self):
-        return repr(self)
-
     def __repr__(self):
         return "%s(index=%r, name=%r)" % (
                 self.__class__.__name__, self.index, self.name)
 
 
+class ActionSpec(object):
+    def __init__(self, cls, args=None, place_refs=None):
+        self.cls = cls
+        self.args = args
+        self.place_refs = place_refs
+
+    def create(self, conn, name=""):
+        return self.cls.create(
+                conn,
+                name=name,
+                args=self.args,
+                place_refs=self.place_refs)
+
+    def __repr__(self):
+        return "%s(cls=%r, args=%r, place_refs=%r)" % (
+                self.__class__.__name__, self.cls, self.args,
+                self.place_refs)
+
+
 class Transition(Node):
-    def __init__(self, index, name="", action_class=None, action_args=None,
-                place_refs=None):
+    def __init__(self, index, name="", action=None):
         Node.__init__(self, index, name)
 
-        self.action_class = action_class
-        self.action_args = action_args
-        self.place_refs = place_refs
+        self.action = action
         self.arcs_in = set([])
         self.arcs_out = set([])
+
+    def create_action(self, connection):
+        if self.action:
+            return self.action.create(connection, self.name)
 
     def graph(self, graph):
         label = self.name or " "
@@ -59,13 +66,9 @@ class Transition(Node):
             fillcolor="black", style="filled", fontcolor="white")
         graph.get_node(self.node_id).attr["_type"] = "Transition"
 
-    def __str__(self):
-        return repr(self)
-
     def __repr__(self):
-        return "%s(index=%r, name=%r, action_class=%r, action_args=%r)" % (
-                self.__class__.__name__, self.index, self.name,
-                self.action_class, self.action_args)
+        return "%s(index=%r, name=%r, action=%r)" % (
+                self.__class__.__name__, self.index, self.name, self.action)
 
 
 class _ClusterCounter(object):
@@ -195,7 +198,7 @@ class NetBuilder(object):
         transition_actions = []
         trans_arcs_out = {}
         for t in self.transitions:
-            transition_actions.append(_make_transition_action(connection, t))
+            transition_actions.append(t.create_action(connection))
             src_id = self._trans_map[t]
             dst_ids = [self._place_map[x] for x in t.arcs_out]
             trans_arcs_out.setdefault(src_id, set()).update(dst_ids)
@@ -285,12 +288,13 @@ class ShellCommandNet(SuccessFailureNet):
         self.on_success_place = self.add_place("on_success")
         self.on_failure_place = self.add_place("on_failure")
 
-        self.execute = self.add_transition(
-                name="execute",
-                action_class=safenet.ShellCommandAction,
-                action_args = {"command_line": cmdline},
+        action = ActionSpec(
+                cls=safenet.ShellCommandAction,
+                args = {"command_line": cmdline},
                 place_refs=[self.on_success_place, self.on_failure_place],
                 )
+
+        self.execute = self.add_transition(name="execute", action=action)
 
         self.on_success = self.add_transition()
         self.on_failure = self.add_transition()

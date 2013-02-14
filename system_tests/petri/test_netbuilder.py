@@ -19,7 +19,8 @@ class TestNetBuilder(test_helpers.RedisTest):
         p2 = net.add_place("p2")
         end = net.add_place("end")
 
-        t1 = net.add_transition("t1", action_class=sn.CounterAction)
+        action = nb.ActionSpec(sn.CounterAction)
+        t1 = net.add_transition("t1", action=action)
         t2 = net.add_transition("t2")
 
         builder.variables["x"] = "y"

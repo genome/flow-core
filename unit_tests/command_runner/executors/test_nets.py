@@ -8,9 +8,11 @@ class TestLSFCommandNet(unittest.TestCase):
     def test_construct(self):
         builder = nb.NetBuilder("test")
         cmdline = ["ls", "-al"]
+
         net = enets.LSFCommandNet(builder, "test lsf",
                 action_class=enets.LSFDispatchAction,
                 action_args={"command_line": cmdline})
+
         expected_places = ["start", "success", "failure", "dispatching",
             "dispatch_success_place", "dispatch_failure_place",
             "pending", "begin_execute_place", "running",
@@ -24,27 +26,33 @@ class TestLSFCommandNet(unittest.TestCase):
         self.assertEqual(len(expected_places), len(net.places))
 
         self.assertTrue(isinstance(net.dispatch, nb.Transition))
-        self.assertEqual(enets.LSFDispatchAction, net.dispatch.action_class)
-        expected_args = {"command_line": cmdline}
-        self.assertEqual(expected_args, net.dispatch.action_args)
 
+        action = net.dispatch.action
+
+        expected_args = {"command_line": cmdline}
         expected_place_refs = [
                 net.dispatch_success_place.index,
                 net.dispatch_failure_place.index,
                 net.begin_execute_place.index,
                 net.execute_success_place.index,
                 net.execute_failure_place.index,
-        ]
-        self.assertEqual(expected_place_refs, net.dispatch.place_refs)
+                ]
+
+        self.assertIsInstance(action, nb.ActionSpec)
+        self.assertEqual(enets.LSFDispatchAction, action.cls)
+        self.assertEqual(expected_args, action.args)
+        self.assertEqual(expected_place_refs, action.place_refs)
 
 
 class TestLocalCommandNet(unittest.TestCase):
     def test_construct(self):
         builder = nb.NetBuilder("test")
         cmdline = ["ls", "-al"]
+
         net = enets.LocalCommandNet(builder, "test lsf",
                 action_class=enets.LocalDispatchAction,
                 action_args={"command_line": cmdline})
+
         expected_places = ["start", "success", "failure", "dispatched",
                 "running", "on_begin_execute", "on_execute_success",
                 "on_execute_failure"]
@@ -78,16 +86,19 @@ class TestLocalCommandNet(unittest.TestCase):
         self.assertEqual(set([net.execute_failure]),
                 net.on_execute_failure.arcs_out)
 
-        self.assertEqual(enets.LocalDispatchAction, net.dispatch.action_class)
-        expected_args = {"command_line": cmdline}
-        self.assertEqual(expected_args, net.dispatch.action_args)
+        action = net.dispatch.action
 
+        expected_args = {"command_line": cmdline}
         expected_place_refs = [
                 net.on_begin_execute.index,
                 net.on_execute_success.index,
                 net.on_execute_failure.index,
-        ]
-        self.assertEqual(expected_place_refs, net.dispatch.place_refs)
+                ]
+
+        self.assertIsInstance(action, nb.ActionSpec)
+        self.assertEqual(enets.LocalDispatchAction, action.cls)
+        self.assertEqual(expected_args, action.args)
+        self.assertEqual(expected_place_refs, action.place_refs)
 
 
 if __name__ == "__main__":
