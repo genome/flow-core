@@ -126,21 +126,22 @@ class NetBuilder(object):
         transition.arcs_out.add(dst_place)
         return transition
 
-    def bridge_transitions(self, t1, t2, name=None):
-        if not (isinstance(t1, Transition) and isinstance(t2, Transition)):
+    def bridge_transitions(self, src_trans, dst_trans, name=None):
+        if not (isinstance(src_trans, Transition) and
+                isinstance(dst_trans, Transition)):
             raise TypeError(
                     "bridge_place called with something other than two places")
 
-        if t1 not in self._trans_map or t2 not in self._trans_map:
+        if src_trans not in self._trans_map or dst_trans not in self._trans_map:
             raise RuntimeError(
                     "bridge_transitions called with an unknown transition")
 
         if name is None:
-            name = "bridge %s -> %s" % (t1.name, t2.name)
+            name = "bridge %s -> %s" % (src_trans.name, dst_trans.name)
 
         place = self.add_place(name)
-        t1.arcs_out.add(place)
-        place.arcs_out.add(t2)
+        src_trans.arcs_out.add(place)
+        place.arcs_out.add(dst_trans)
         return place
 
     def _graph(self, graph, src_node, seen):
@@ -255,8 +256,8 @@ class EmptyNet(object):
         self._add_transition(transition)
         return transition
 
-    def bridge_transitions(self, t1, t2, name=None):
-        place = self.builder.bridge_transitions(t1, t2, name)
+    def bridge_transitions(self, src_trans, dst_trans, name=None):
+        place = self.builder.bridge_transitions(src_trans, dst_trans, name)
         self._add_place(place)
         return place
 
