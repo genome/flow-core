@@ -44,6 +44,8 @@ class TestSafeNet(TestBase):
 
     def test_abstract_transition_action(self):
         act = sn.TransitionAction.create(self.conn, name="boom")
+        self.assertIsNone(act.input_data(active_tokens_key="x", net=None))
+
         self.assertRaises(NotImplementedError, act.execute, net=None,
                 services=None, active_tokens_key=None)
 
@@ -64,7 +66,7 @@ class TestSafeNet(TestBase):
     def test_copy_constants(self):
         net1 = sn.SafeNet.create(connection=self.conn)
 
-        nested = {"one": [2, "three"]}
+        nested = {"one": [2, "three", {"four": 5}]}
 
         net1.set_constant("string", "hello")
         net1.set_constant("number", 32)
