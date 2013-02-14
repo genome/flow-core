@@ -45,6 +45,9 @@ setup(
             'system_tests',
             'test_helpers'
         ]),
+        install_scripts = [
+            'bin/flow',
+        ],
         entry_points = entry_points,
         install_requires = [
             'blist',
