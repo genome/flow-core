@@ -448,6 +448,11 @@ class TestHash(TestBase):
         TestBase.setUp(self)
         self.h = rom.Hash(connection=self.conn, key="h")
 
+    def test_contains(self):
+        self.h["x"] = "y"
+        self.assertIn("x", self.h)
+        self.assertNotIn("y", self.h)
+
     def test_value(self):
         native_hash = {"hello": "world"}
         self.h.value = native_hash
