@@ -264,11 +264,11 @@ class TestTransitionActions(TestBase):
         fail_cmdline = [sys.executable, "-c", "import sys; sys.exit(1)"]
 
         action = sn.ShellCommandAction.create(
-            connection=self.conn,
-            name="TestAction",
-            args={"command_line": good_cmdline},
-            place_refs=[success_place_id, failure_place_id],
-            )
+                connection=self.conn,
+                name="TestAction",
+                args={"command_line": good_cmdline},
+                place_refs=[success_place_id, failure_place_id],
+                )
 
         self.assertEqual(good_cmdline, action.args["command_line"])
 
@@ -288,6 +288,48 @@ class TestTransitionActions(TestBase):
         action.execute(active_tokens_key, net, services)
         orchestrator.set_token.assert_called_with(
                     net.key, failure_place_id, token_key=mock.ANY)
+
+    def test_required_arguments(self):
+        self.assertRaises(TypeError, sn.SetRemoteTokenAction.create,
+                connection=self.conn,
+                name="TestAction",
+                )
+
+        self.assertRaises(TypeError, sn.SetRemoteTokenAction.create,
+                connection=self.conn,
+                name="TestAction",
+                args={"remote_place_id": 1}
+                )
+
+        self.assertRaises(TypeError, sn.SetRemoteTokenAction.create,
+                connection=self.conn,
+                name="TestAction",
+                args={"remote_net_key": "x"},
+                )
+
+    def test_set_remote_token_action(self):
+        args = {"remote_place_id": 1, "remote_net_key": "netkey!",
+                "data_type": "output"}
+
+        action = sn.SetRemoteTokenAction.create(
+                connection=self.conn,
+                name="TestAction",
+                args=args,
+                )
+
+        inputs = {"x": "y", "a": "b"}
+        action.input_data = mock.Mock(return_value=inputs)
+
+        orchestrator = mock.Mock()
+        services = {"orchestrator": orchestrator}
+        net = mock.MagicMock()
+        action.execute(active_tokens_key="x", net=net, services=services)
+        orchestrator.set_token.assert_called_once_with("netkey!", 1, mock.ANY)
+
+        token_key = orchestrator.set_token.call_args[0][2]
+        token = sn.Token(connection=self.conn, key=token_key)
+        self.assertEqual("output", token.data_type.value)
+        self.assertEqual(inputs, token.data.value)
 
 
 if __name__ == "__main__":

@@ -363,6 +363,9 @@ class Hash(Value):
     def __len__(self):
         return self.connection.hlen(self.key)
 
+    def __contains__(self, key):
+        return self.connection.hexists(self.key, key)
+
     def keys(self):
         return self.connection.hkeys(self.key)
 

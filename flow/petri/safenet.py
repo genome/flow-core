@@ -407,12 +407,19 @@ class SafeNet(object):
 
 
 class TransitionAction(rom.Object):
+    required_arguments = []
     output_token_type = ""
 
     name = rom.Property(rom.String)
     args = rom.Property(rom.Hash, value_encoder=rom.json_enc,
             value_decoder=rom.json_dec)
     place_refs = rom.Property(rom.List)
+
+    def _on_create(self):
+        for argname in self.required_arguments:
+            if not argname in self.args:
+                raise TypeError("In class %s: required argument %s missing" %
+                        (self.__class__.__name__, argname))
 
     def input_data(self, active_tokens_key, net):
         pass
@@ -433,6 +440,8 @@ class CounterAction(TransitionAction):
 
 
 class ShellCommandAction(TransitionAction):
+    required_arguments = ["command_line"]
+
     def execute(self, active_tokens_key, net, services):
         cmdline = self.args["command_line"]
         rv = subprocess.call(cmdline)
@@ -444,3 +453,19 @@ class ShellCommandAction(TransitionAction):
             return_place = self.place_refs[1]
 
         orchestrator.set_token(net.key, int(return_place), token_key=token.key)
+
+
+class SetRemoteTokenAction(TransitionAction):
+    required_arguments = ["remote_net_key", "remote_place_id", "data_type"]
+
+    def execute(self, active_tokens_key, net, services):
+        remote_net_key = self.args["remote_net_key"]
+        remote_place_id = self.args["remote_place_id"]
+        data_type = self.args["data_type"]
+
+        input_data = self.input_data(active_tokens_key, net)
+        token = Token.create(self.connection, data=input_data,
+                data_type=data_type)
+
+        orchestrator = services['orchestrator']
+        orchestrator.set_token(remote_net_key, remote_place_id, token.key)
