@@ -18,10 +18,13 @@ class BlockingAmqpBroker(object):
         self.connection.close()
 
     def create_bound_temporary_queue(self, exchange_name, topic, queue_name):
-        self.channel.queue_declare(queue_name,
-                durable=False, auto_delete=True, exclusive=True)
+        self.create_temporary_queue(queue_name)
 
         self.channel.queue_bind(queue_name, exchange_name, topic)
+
+    def create_temporary_queue(self, queue_name):
+        self.channel.queue_declare(queue_name,
+                durable=False, auto_delete=True, exclusive=True)
 
     def publish(self, exchange_name, routing_key, message):
         encoded_message = codec.encode(message)
