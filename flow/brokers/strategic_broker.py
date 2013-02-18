@@ -84,7 +84,6 @@ class StrategicAmqpBroker(object):
     def connect_and_listen(self):
         self.connect()
 
-
     def connect(self):
         LOG.info('Connecting to AMQP server at: %s', self.amqp_url)
         set_termination_signal_handler(raise_handler)
