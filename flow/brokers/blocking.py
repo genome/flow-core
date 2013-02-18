@@ -25,12 +25,18 @@ class BlockingAmqpBroker(object):
 
     def publish(self, exchange_name, routing_key, message):
         encoded_message = codec.encode(message)
+        self.raw_publish(exchange_name, routing_key, encoded_message)
+
+    def publish(self, exchange_name, routing_key, encoded_message):
         self.channel.basic_publish(exchange_name,
                 routing_key, encoded_message)
 
     def get(self, queue_name):
+        return self.raw_get(queue_name, decoder=codec.decode)
+
+    def raw_get(self, queue_name, decoder=lambda x: x):
         for frame, header, body in self.channel.consume(queue_name):
-            message = codec.decode(body)
+            message = decoder(body)
             self.channel.basic_ack(frame.delivery_tag)
             break
 
