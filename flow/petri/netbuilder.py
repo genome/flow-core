@@ -130,7 +130,8 @@ class NetBuilder(object):
         if not (isinstance(src_trans, Transition) and
                 isinstance(dst_trans, Transition)):
             raise TypeError(
-                    "bridge_place called with something other than two places")
+                    "bridge_transitions called with something other than two "
+                    "transitions")
 
         if src_trans not in self._trans_map or dst_trans not in self._trans_map:
             raise RuntimeError(

@@ -247,8 +247,7 @@ class Set(Value):
         pipe.delete(self.key)
         if val:
             pipe.sadd(self.key, *val)
-        size, value = pipe.execute()
-        return value
+        pipe.execute()
 
     value = property(_value_getter, _value_setter)
 
