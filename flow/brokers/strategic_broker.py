@@ -2,6 +2,8 @@ from flow.protocol import codec
 from flow.protocol.exceptions import InvalidMessageException
 from pika.spec import Basic
 
+from flow.brokers.base import BrokerBase
+
 import blist
 import collections
 import logging
@@ -15,7 +17,7 @@ LOG = logging.getLogger(__name__)
 TERMINATION_SIGNALS = [signal.SIGINT, signal.SIGTERM]
 
 
-class StrategicAmqpBroker(object):
+class StrategicAmqpBroker(BrokerBase):
     def __init__(self, amqp_url=None, prefetch_count=None,
             acking_strategy=None):
         self.amqp_url = amqp_url
@@ -60,10 +62,6 @@ class StrategicAmqpBroker(object):
         listener = AmqpListener(delivery_callback=handler, broker=self)
         self._listeners[queue_name] = listener
 
-
-    def publish(self, exchange_name, routing_key, message):
-        encoded_message = codec.encode(message)
-        self.raw_publish(exchange_name, routing_key, encoded_message)
 
     def raw_publish(self, exchange_name, routing_key, encoded_message):
         receive_tag = self._last_receive_tag

@@ -2,10 +2,12 @@ from flow.protocol import codec
 import logging
 import pika
 
+from flow.brokers.base import BrokerBase
+
 LOG = logging.getLogger()
 
 
-class BlockingAmqpBroker(object):
+class BlockingAmqpBroker(BrokerBase):
     def __init__(self, amqp_url=None):
         self.amqp_url = amqp_url
 
@@ -26,9 +28,6 @@ class BlockingAmqpBroker(object):
         self.channel.queue_declare(queue_name,
                 durable=False, auto_delete=True, exclusive=True)
 
-    def publish(self, exchange_name, routing_key, message):
-        encoded_message = codec.encode(message)
-        self.raw_publish(exchange_name, routing_key, encoded_message)
 
     def raw_publish(self, exchange_name, routing_key, encoded_message):
         self.channel.basic_publish(exchange_name,

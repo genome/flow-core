@@ -22,6 +22,7 @@ redis_storage_singleton = flow.storage:redis_storage_singleton
 
 asynchronous_amqp_broker = flow.brokers.strategic_broker:StrategicAmqpBroker
 blocking_broker = flow.brokers.blocking:BlockingAmqpBroker
+local_broker = flow.brokers.local:LocalBroker
 publisher_confirm_acking = flow.brokers.acking_strategies:PublisherConfirmation
 immediate_acking = flow.broker.acking_strategies:Immediate
 
