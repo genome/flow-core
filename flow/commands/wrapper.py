@@ -1,6 +1,7 @@
 from flow.commands.base import CommandBase
 from flow.petri.safenet import Token, SetTokenMessage
 from tempfile import NamedTemporaryFile
+import flow.redisom as rom
 import json
 import subprocess
 
@@ -41,7 +42,13 @@ class WrapperCommand(CommandBase):
         with NamedTemporaryFile() as inputs_file:
             with NamedTemporaryFile() as outputs_file:
                 if parsed_arguments.with_inputs:
-                    inputs = self.storage.hgetall(parsed_arguments.with_inputs)
+                    inputs_hash = rom.Hash(
+                            connection=self.storage,
+                            key=parsed_arguments.with_inputs,
+                            value_decoder=rom.json_dec,
+                            value_encoder=rom.json_enc)
+
+                    inputs = inputs_hash.value
 
                     LOG.debug("Fetched inputs from key %s" % parsed_arguments.with_inputs)
                     LOG.debug("Input values: %r" % inputs)
