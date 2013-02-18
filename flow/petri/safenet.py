@@ -468,7 +468,7 @@ class SetRemoteTokenAction(TransitionAction):
 
     def execute(self, active_tokens_key, net, services):
         remote_net_key = self.args["remote_net_key"]
-        remote_place_id = self.args["remote_place_id"]
+        remote_place_id = int(self.args["remote_place_id"])
         data_type = self.args["data_type"]
 
         input_data = self.input_data(active_tokens_key, net)
@@ -477,3 +477,15 @@ class SetRemoteTokenAction(TransitionAction):
 
         orchestrator = services['orchestrator']
         orchestrator.set_token(remote_net_key, remote_place_id, token.key)
+
+
+class MergeTokensAction(TransitionAction):
+    required_arguments = ["input_type", "output_type"]
+
+    def execute(self, active_tokens_key, net, services):
+        token_keys = self.connection.lrange(active_tokens_key, 0, -1)
+        tokens = [Token(self.connection, k) for k in token_keys]
+        input_type = self.args["input_type"]
+        output_type = self.args["output_type"]
+        data = merge_token_data(tokens, data_type=input_type)
+        return Token.create(self.connection, data_type=output_type, data=data)
