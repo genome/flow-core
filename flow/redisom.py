@@ -342,13 +342,14 @@ class Hash(Value):
         result = self.get(hkey)
         if result is None:
             raise KeyError("Hash (%s) has no key '%s'" % (self.key, hkey))
-        return self._decode_value(result)
+        return result
 
     def get(self, hkey, default=None):
         result = self.connection.hget(self.key, hkey)
         if result is None:
             return default
-        return result
+        else:
+            return self._decode_value(result)
 
     def __delitem__(self, hkey):
         pipe = self.connection.pipeline()
