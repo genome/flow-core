@@ -9,5 +9,5 @@ LOG = logging.getLogger()
 if __name__ == '__main__':
     argv = sys.argv
     argv.pop(0)   # remove the command name
-    rv = flow.commands.base.run(argv, LOG)
+    rv = flow.commands.base.run(argv)
     sys.exit(rv)

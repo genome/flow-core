@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 
 import unittest
-import flow.configuration
 import tempfile
-import flow.commands.configurerabbitmq as crq
 import flow.commands.base
-from flow.factories import dictionary_factory
-import logging
 import json
 
-import pprint
 
 class TestConfigureRabbitMQ(unittest.TestCase):
     # FIXME - this is really ugly
@@ -24,14 +19,12 @@ class TestConfigureRabbitMQ(unittest.TestCase):
 
         self.temp_config_file = temp_config_file
 
-        self.log = logging.getLogger()
 
     def test_create_configuration(self):
         temp_output_file = tempfile.NamedTemporaryFile()
 
         rv = flow.commands.base.run(['--config', self.temp_config_file.name,
-                                        'configure_rabbitmq', '--output_file', temp_output_file.name],
-                                    self.log)
+            'configure_rabbitmq', '--output_file', temp_output_file.name])
         self.assertEqual(rv, 0, 'running command returned 0 exit code')
 
         read_output_file = open(temp_output_file.name, 'r')

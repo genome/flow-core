@@ -3,6 +3,10 @@ import flow.configuration
 from flow.factories import dictionary_factory
 import traceback
 
+import logging
+
+LOG = logging.getLogger()
+
 class CommandBase(object):
     __metaclass__ = ABCMeta
 
@@ -16,7 +20,7 @@ class CommandBase(object):
     def __call__(self, parsed_arguments):
         raise NotImplementedError
 
-def run(argv, LOG):
+def run(argv):
     exit_code = 1
     try:
         commands = flow.configuration.load_commands()
