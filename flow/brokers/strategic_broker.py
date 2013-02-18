@@ -63,7 +63,7 @@ class StrategicAmqpBroker(object):
 
     def publish(self, exchange_name, routing_key, message):
         encoded_message = codec.encode(message)
-        self.raw_publish(self, exchange_name, routing_key, encoded_message)
+        self.raw_publish(exchange_name, routing_key, encoded_message)
 
     def raw_publish(self, exchange_name, routing_key, encoded_message):
         receive_tag = self._last_receive_tag

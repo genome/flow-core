@@ -30,7 +30,7 @@ class BlockingAmqpBroker(object):
         encoded_message = codec.encode(message)
         self.raw_publish(exchange_name, routing_key, encoded_message)
 
-    def publish(self, exchange_name, routing_key, encoded_message):
+    def raw_publish(self, exchange_name, routing_key, encoded_message):
         self.channel.basic_publish(exchange_name,
                 routing_key, encoded_message)
 
