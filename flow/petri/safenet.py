@@ -177,6 +177,15 @@ class _SafeNode(rom.Object):
 
 class _SafePlace(_SafeNode):
     first_token_timestamp = rom.Property(rom.Timestamp)
+    entry_observers = rom.Property(rom.List,
+            value_encoder=rom.json_enc, value_decoder=rom.json_dec)
+
+    def add_observer(self, exchange, routing_key, body):
+        packet = {'exchange': exchange,
+                  'routing_key': routing_key,
+                  'body': body
+                 }
+        self.entry_observers.append(packet)
 
 
 class _SafeTransition(_SafeNode):
@@ -358,6 +367,10 @@ class SafeNet(rom.Object):
         if self.connection.hexists(marking_key, place_idx):
             orchestrator = services['orchestrator']
             arcs_out = place.arcs_out.value
+
+            for packet in place.entry_observers.value:
+                orchestrator.place_entry_observed(packet)
+
             for trans_idx in arcs_out:
                 orchestrator.notify_transition(self.key, int(trans_idx),
                         int(place_idx))

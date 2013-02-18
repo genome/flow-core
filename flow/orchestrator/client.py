@@ -31,3 +31,10 @@ class OrchestratorClient(object):
                 place_idx=place_idx)
         self.broker.publish(self.notify_transition_exchange,
                 self.notify_transition_routing_key, message)
+
+    def place_entry_observed(self, packet):
+        exchange    = packet['exchange']
+        routing_key = packet['routing_key']
+        body        = packet['body']
+
+        self.broker.raw_publish(exchange, routing_key, body)

@@ -133,6 +133,31 @@ class TestSafeNet(TestBase):
         self.assertEqual("b", str(net.place(1).name))
         self.assertEqual("c", str(net.place(2).name))
 
+    def test_place_observers(self):
+        net = sn.SafeNet.create(
+                connection=self.conn,
+                place_names=["a"],
+                trans_actions = [],
+                place_arcs_out={},
+                trans_arcs_out={},
+                )
+
+        p = net.place(0)
+        p.add_observer('exchange 1', 'routing key 1', 'body 1')
+        p.add_observer('exchange 2', 'routing key 2', 'body 2')
+
+        token = sn.Token.create(self.conn)
+        net.set_token(0, token.key, self.services)
+
+        orch = self.services['orchestrator']
+        self.assertEqual(orch.place_entry_observed.call_args_list,
+                [mock.call({u'exchange': u'exchange 1',
+                            u'routing_key': u'routing key 1',
+                            u'body': u'body 1'}),
+                 mock.call({u'exchange': u'exchange 2',
+                            u'routing_key': u'routing key 2',
+                            u'body': u'body 2'})])
+
     def test_no_transition_action(self):
         trans = sn._SafeTransition.create(self.conn, name="t")
         self.assertTrue(trans.action is None)

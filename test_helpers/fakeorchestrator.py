@@ -1,9 +1,12 @@
 import flow.petri.safenet as sn
+import mock
 
 class FakeOrchestrator(object):
     def __init__(self, conn):
         self.conn = conn
         self.services = {"orchestrator": self}
+
+        self.place_entry_observed = mock.Mock()
 
     def set_token(self, net_key, place_idx, token_key=''):
         net = sn.SafeNet(self.conn, net_key)
