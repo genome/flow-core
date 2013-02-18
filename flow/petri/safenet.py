@@ -196,7 +196,7 @@ class _SafeTransition(_SafeNode):
         return rom.get_object(self.connection, key)
 
 
-class SafeNet(object):
+class SafeNet(rom.Object):
     required_constants = ["environment", "user_id", "working_directory"]
 
     _copy_hash = rom.Script(_COPY_HASH_SCRIPT)
@@ -220,19 +220,19 @@ class SafeNet(object):
             for t in trans_set:
                 trans_arcs_in.setdefault(t, set()).add(p)
 
-        self.conn.set(self.subkey("num_places"), len(place_names))
-        self.conn.set(self.subkey("num_transitions"), len(trans_actions))
+        self.connection.set(self.subkey("num_places"), len(place_names))
+        self.connection.set(self.subkey("num_transitions"), len(trans_actions))
 
         for i, pname in enumerate(place_names):
             key = self.subkey("place/%d" % i)
-            _SafePlace.create(connection=self.conn, key=key, name=pname,
+            _SafePlace.create(connection=self.connection, key=key, name=pname,
                     arcs_out=place_arcs_out.get(i, {}))
 
         for i, t in enumerate(trans_actions):
             key = self.subkey("trans/%d" % i)
             name = "" if t is None else t.name
             action_key = None if t is None else t.key
-            trans = _SafeTransition.create(self.conn, key, name=name,
+            trans = _SafeTransition.create(self.connection, key, name=name,
                     arcs_out=trans_arcs_out.get(i, {}),
                     arcs_in=trans_arcs_in.get(i, {}),
                     state=trans_arcs_in.get(i, {}))
@@ -243,7 +243,7 @@ class SafeNet(object):
 
     def set_constant(self, key, value):
         value = json.dumps(value)
-        ret = self.conn.hsetnx(self.subkey("constants"), key, value)
+        ret = self.connection.hsetnx(self.subkey("constants"), key, value)
         if ret == 0:
             raise TypeError("Attempted to reassign constant property %s" % key)
 
@@ -255,41 +255,35 @@ class SafeNet(object):
 
     def copy_constants_from(self, other_net):
         keys = [other_net.subkey("constants"), self.subkey("constants")]
-        rv = self._copy_hash(connection=self.conn, keys=keys)
+        rv = self._copy_hash(keys=keys)
 
     def constant(self, key):
-        value = self.conn.hget(self.subkey("constants"), key)
+        value = self.connection.hget(self.subkey("constants"), key)
         if value is not None:
             return json.loads(value)
 
     def set_variable(self, key, value):
         value = json.dumps(value)
-        return self.conn.hset(self.subkey("variables"), key, value)
+        return self.connection.hset(self.subkey("variables"), key, value)
 
     def variable(self, key):
-        value = self.conn.hget(self.subkey("variables"), key)
+        value = self.connection.hget(self.subkey("variables"), key)
         if value is not None:
             return json.loads(value)
 
-    def __init__(self, conn, key):
-        if conn is None:
-            raise TypeError("You must supply a valid connection")
-        self.conn = conn
-        self.key = key
-
     @property
     def num_places(self):
-        return int(self.conn.get(self.subkey("num_places")) or 0)
+        return int(self.connection.get(self.subkey("num_places")) or 0)
 
     @property
     def num_transitions(self):
-        return int(self.conn.get(self.subkey("num_transitions")) or 0)
+        return int(self.connection.get(self.subkey("num_transitions")) or 0)
 
     def place(self, idx):
-        return _SafePlace(self.conn, self.subkey("place/%d" % int(idx)))
+        return _SafePlace(self.connection, self.subkey("place/%d" % int(idx)))
 
     def transition(self, idx):
-        return _SafeTransition(self.conn, self.subkey("trans/%d" % int(idx)))
+        return _SafeTransition(self.connection, self.subkey("trans/%d" % int(idx)))
 
     def notify_transition(self, trans_idx=None, place_idx=None, services=None):
         LOG.debug("notify transition #%d", trans_idx)
@@ -312,7 +306,7 @@ class SafeNet(object):
         keys = [state_key, active_tokens_key, arcs_in_key, marking_key,
                 enabler_key]
         args = [place_idx]
-        rv = self._consume_tokens(connection=self.conn, keys=keys, args=args)
+        rv = self._consume_tokens(keys=keys, args=args)
         LOG.debug("Consume tokens rv=%r", rv)
 
         if rv[0] != 0:
@@ -325,25 +319,25 @@ class SafeNet(object):
                     services=services)
 
         if new_token is None:
-            new_token = Token.create(self.conn)
+            new_token = Token.create(self.connection)
 
         keys = [active_tokens_key, arcs_in_key, arcs_out_key, marking_key,
                 new_token.key, state_key, tokens_pushed_key]
-        rv = self._push_tokens(connection=self.conn, keys=keys)
+        rv = self._push_tokens(keys=keys)
         tokens_pushed, places_to_notify = rv
         if tokens_pushed == 1:
             orchestrator = services['orchestrator']
             for place_idx in places_to_notify:
                 orchestrator.set_token(self.key, int(place_idx), token_key='')
-            self.conn.delete(tokens_pushed_key)
+            self.connection.delete(tokens_pushed_key)
 
     def marking(self, place_idx=None):
         marking_key = self.subkey("marking")
 
         if place_idx is None:
-            return self.conn.hgetall(marking_key)
+            return self.connection.hgetall(marking_key)
         else:
-            return self.conn.hget(self.subkey("marking"), place_idx)
+            return self.connection.hget(self.subkey("marking"), place_idx)
 
     def set_token(self, place_idx, token_key='', services=None):
         place = self.place(place_idx)
@@ -353,7 +347,7 @@ class SafeNet(object):
         marking_key = self.subkey("marking")
 
         if token_key:
-            rv = self._set_token(self.conn, keys=[marking_key],
+            rv = self._set_token(keys=[marking_key],
                     args=[place_idx, token_key])
             if rv != 0:
                 raise PlaceCapacityError(
@@ -361,12 +355,13 @@ class SafeNet(object):
                     "a token already exists" %
                     (token_key, place.key))
 
-        if self.conn.hexists(marking_key, place_idx):
+        if self.connection.hexists(marking_key, place_idx):
             orchestrator = services['orchestrator']
             arcs_out = place.arcs_out.value
             for trans_idx in arcs_out:
                 orchestrator.notify_transition(self.key, int(trans_idx),
                         int(place_idx))
+
 
     def graph(self):
         graph = pygraphviz.AGraph(directed=True)

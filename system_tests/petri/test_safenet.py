@@ -226,7 +226,7 @@ class TestSafeNet(TestBase):
 
         # Test that marked places show up in red
         token = sn.Token.create(self.conn)
-        rv = net._set_token(self.conn, keys=[net.subkey("marking")],
+        rv = net._set_token(keys=[net.subkey("marking")],
                 args=[0, token.key])
 
         marked_graph = net.graph()
