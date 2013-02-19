@@ -28,6 +28,15 @@ class CommandLineDispatchAction(sn.TransitionAction):
         # Collect job-specific variables
         with_outputs = self.args.get("with_outputs")
 
+        # Set logfiles
+        stdout = self.args.get('stdout')
+        if stdout:
+            executor_options['stdout'] = stdout
+        stderr = self.args.get('stderr')
+        if stderr:
+            executor_options['stderr'] = stderr
+
+
         if input_data_key:
             executor_options["with_inputs"] = input_data_key
 
