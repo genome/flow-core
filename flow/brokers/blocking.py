@@ -29,6 +29,9 @@ class BlockingAmqpBroker(BrokerBase):
                 durable=False, auto_delete=True, exclusive=True)
 
 
+    def register_handler(self, handler):
+        raise NotImplementedError('...')
+
     def raw_publish(self, exchange_name, routing_key, encoded_message):
         self.channel.basic_publish(exchange_name,
                 routing_key, encoded_message)
