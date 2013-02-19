@@ -392,8 +392,16 @@ class SafeNet(rom.Object):
             p = self.place(i)
             ident = "p%i" % i
 
+            ftt = False
+            try:
+                ftt = p.first_token_timestamp.value
+            except rom.NotInRedisError:
+                pass
+
             if str(i) in marking:
                 color = "red"
+            elif ftt:
+                color = "green"
             else:
                 color = "white"
 
