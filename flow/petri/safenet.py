@@ -352,7 +352,6 @@ class SafeNet(rom.Object):
         place = self.place(place_idx)
         LOG.debug("setting token %s for place %s", token_key, place.name)
 
-        place.first_token_timestamp.setnx()
         marking_key = self.subkey("marking")
 
         if token_key:
@@ -365,6 +364,8 @@ class SafeNet(rom.Object):
                     (token_key, place.key))
 
         if self.connection.hexists(marking_key, place_idx):
+            place.first_token_timestamp.setnx()
+
             orchestrator = services['orchestrator']
             arcs_out = place.arcs_out.value
 
