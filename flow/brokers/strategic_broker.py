@@ -173,6 +173,8 @@ class AmqpListener(object):
 
         delivery_tag = basic_deliver.delivery_tag
         broker.set_last_receive_tag(delivery_tag)
+        LOG.debug('Received message (%d), properties = %s',
+                delivery_tag, properties)
 
         try:
             message = codec.decode(encoded_message)
