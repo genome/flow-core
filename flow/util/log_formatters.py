@@ -1,5 +1,7 @@
 import copy
+import json
 import logging
+import traceback
 
 from flow.util import colors
 
@@ -38,3 +40,25 @@ class ColorFormatter(logging.Formatter):
                 **self.function_color)
 
         return logging.Formatter.format(self, mutable_record)
+
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        d = {
+             'pid':     record.process,
+             'module':  record.name,
+             'func':    record.funcName,
+             'lineno':  record.lineno,
+             'level':   record.levelname,
+             'time':    self.formatTime(record, datefmt=self.datefmt),
+             'message': record.getMessage(),
+        }
+
+        if record.exc_info:
+            etype, evalue, etraceback = record.exc_info
+            d['exception'] = {
+                    'type':      etype.__name__,
+                    'value':     '%s' % evalue,
+                    'traceback': traceback.format_tb(etraceback),
+            }
+
+        return json.dumps(d)
