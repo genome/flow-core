@@ -4,7 +4,7 @@ import sys
 import json
 import itertools
 
-LOG = logging.getLogger()
+LOG = logging.getLogger(__name__)
 
 
 class ConfigureRabbitMQCommand(CommandBase):

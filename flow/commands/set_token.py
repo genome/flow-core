@@ -2,7 +2,7 @@ from flow.commands.base import CommandBase
 import flow.petri.safenet as sn
 import logging
 
-LOG = logging.getLogger()
+LOG = logging.getLogger(__name__)
 
 
 class SetTokenCommand(CommandBase):

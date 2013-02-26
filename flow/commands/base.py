@@ -6,7 +6,7 @@ import traceback
 
 import logging
 
-LOG = logging.getLogger()
+LOG = logging.getLogger(__name__)
 
 class CommandBase(object):
     __metaclass__ = ABCMeta

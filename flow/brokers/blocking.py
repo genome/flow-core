@@ -4,7 +4,7 @@ import pika
 
 from flow.brokers.base import BrokerBase
 
-LOG = logging.getLogger()
+LOG = logging.getLogger(__name__)
 
 
 class BlockingAmqpBroker(BrokerBase):

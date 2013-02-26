@@ -2,7 +2,7 @@ import pkg_resources
 
 import logging
 
-LOG = logging.getLogger()
+LOG = logging.getLogger(__name__)
 
 
 __all__ = [

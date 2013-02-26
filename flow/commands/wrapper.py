@@ -7,7 +7,7 @@ import subprocess
 
 import logging
 
-LOG = logging.getLogger()
+LOG = logging.getLogger(__name__)
 
 
 class WrapperCommand(CommandBase):
