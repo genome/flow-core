@@ -221,7 +221,8 @@ class SafeNet(rom.Object):
                trans_actions=[], place_arcs_out={},
                trans_arcs_out={}):
 
-        key = base64.b64encode(uuid4().bytes)
+        # Remove the two trailing '=' characters to save space
+        key = base64.b64encode(uuid4().bytes)[:-2]
         self = cls(connection, key)
 
         trans_arcs_in = {}
