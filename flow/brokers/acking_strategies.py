@@ -215,7 +215,7 @@ class PublisherConfirmation(object):
         return self._tag_relationships.remove_publish_tag(*args, **kwargs)
 
     def remove_receive_tag(self, *args, **kwargs):
-        return self._tag_relationships(*args, **kwargs)
+        return self._tag_relationships.remove_receive_tag(*args, **kwargs)
 
     def pop_ackable_receive_tags(self):
         return self._tag_relationships.pop_ackable_receive_tags()
