@@ -21,14 +21,18 @@ class Immediate(object):
     def on_channel_open(self, channel):
         pass
 
-    def add_receive_tag(self, receive_tag):
-        self._largest_receive_tag = receive_tag
-
     def add_publish_tag(self, receive_tag=None, publish_tag=None):
         pass
 
+    def add_receive_tag(self, receive_tag):
+        self._largest_receive_tag = receive_tag
+
     def remove_publish_tag(self, publish_tag, multiple=False):
         pass
+
+    def remove_receieve_tag(self, publish_tag, multiple=False):
+        pass
+
 
     def pop_ackable_receive_tags(self):
         return [self._largest_receive_tag], True
@@ -55,9 +59,6 @@ class TagRelationships(object):
         self._publish_to_receive_map = {}
         self._receive_to_publish_set_map = collections.defaultdict(set)
 
-    def add_receive_tag(self, receive_tag):
-        self._ackable_receive_tags.add(receive_tag)
-
     def add_publish_tag(self, receive_tag=None, publish_tag=None):
         if receive_tag in self._ackable_receive_tags:
             self._ackable_receive_tags.remove(receive_tag)
@@ -66,6 +67,9 @@ class TagRelationships(object):
         self._receive_to_publish_set_map[receive_tag].add(publish_tag)
         self._publish_to_receive_map[publish_tag] = receive_tag
         self._unconfirmed_publish_tags.add(publish_tag)
+
+    def add_receive_tag(self, receive_tag):
+        self._ackable_receive_tags.add(receive_tag)
 
     def remove_publish_tag(self, publish_tag, multiple=False):
         if multiple:
@@ -83,11 +87,24 @@ class TagRelationships(object):
             self._unconfirmed_publish_tags.remove(publish_tag)
             self.remove_single_publish_tag(publish_tag)
 
+    def remove_receive_tag(self, receive_tag):
+        LOG.debug('Removing receive tag (%d)', receive_tag)
+        self._ackable_receive_tags.discard(receive_tag)
+        self._non_ackable_receive_tags.discard(receive_tag)
+        # Just throw away these mappings
+        self._receive_to_publish_set_map.pop(receive_tag, None)
 
     def remove_single_publish_tag(self, publish_tag):
-        receive_tag = self._publish_to_receive_map.pop(publish_tag)
-        LOG.debug('Publish tag (%d) maps to receive tag (%d)',
-                publish_tag, receive_tag)
+        receive_tag = self._publish_to_receive_map.pop(publish_tag, None)
+        if receive_tag in self._receive_to_publish_set_map:
+            LOG.debug('Publish tag (%d) maps to receive tag (%d)',
+                    publish_tag, receive_tag)
+            self._normal_confirm(publish_tag, receive_tag)
+        else:
+            LOG.debug('Publish tag (%d) maps to removed receive tag (%d)',
+                    publish_tag, receive_tag)
+
+    def _normal_confirm(self, publish_tag, receive_tag):
         publish_tag_set = self._receive_to_publish_set_map[receive_tag]
         publish_tag_set.remove(publish_tag)
 
@@ -188,14 +205,17 @@ class PublisherConfirmation(object):
         self.broker.disconnect()
 
 
-    def add_receive_tag(self, *args, **kwargs):
-        return self._tag_relationships.add_receive_tag(*args, **kwargs)
-
     def add_publish_tag(self, *args, **kwargs):
         return self._tag_relationships.add_publish_tag(*args, **kwargs)
 
+    def add_receive_tag(self, *args, **kwargs):
+        return self._tag_relationships.add_receive_tag(*args, **kwargs)
+
     def remove_publish_tag(self, *args, **kwargs):
         return self._tag_relationships.remove_publish_tag(*args, **kwargs)
+
+    def remove_receive_tag(self, *args, **kwargs):
+        return self._tag_relationships(*args, **kwargs)
 
     def pop_ackable_receive_tags(self):
         return self._tag_relationships.pop_ackable_receive_tags()

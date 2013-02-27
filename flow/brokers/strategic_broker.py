@@ -52,6 +52,7 @@ class StrategicAmqpBroker(BrokerBase):
 
     def reject(self, receive_tag):
         LOG.debug('Rejecting message (%d)', receive_tag)
+        self.acking_strategy.remove_receive_tag(receive_tag)
         self._channel.basic_reject(receive_tag, requeue=False)
 
 
