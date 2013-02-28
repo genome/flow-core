@@ -48,6 +48,18 @@ class EnvironmentContextManagerTest(unittest.TestCase):
 
         self.assertEqual(os.environ.get(name), None)
 
+    def test_exception(self):
+        old_env = dict(os.environ.data)
+
+        try:
+            with util.environment([{}]):
+                raise RuntimeError()
+        except:
+            pass
+
+        self.assertEqual(old_env, os.environ.data)
+        print os.environ.data
+
 
 if '__main__' == __name__:
     unittest.main()

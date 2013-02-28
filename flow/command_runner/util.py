@@ -14,14 +14,15 @@ def environment(environment_dicts):
         if v is None:
             temporary_environment[k] = ''
 
-    saved_environment = dict(os.environ)
+    saved_environment = dict(os.environ.data)
     os.environ.clear()
     os.environ.update(temporary_environment)
 
-    yield
-
-    os.environ.clear()
-    os.environ.update(saved_environment)
+    try:
+        yield
+    finally:
+        os.environ.clear()
+        os.environ.update(saved_environment)
 
 @contextmanager
 def seteuid(user_id):
@@ -34,12 +35,13 @@ def seteuid(user_id):
         else:
             LOG.debug('Uid is already %d, not changing', user_id)
 
-    yield
-
-    if user_id is not None:
-        if saved_user_id != os.geteuid():
-            os.seteuid(0)
-            os.seteuid(saved_user_id)
-            LOG.debug('uid reset to %d', saved_user_id)
-        else:
-            LOG.debug('Uid is already %d, not changing', user_id)
+    try:
+        yield
+    finally:
+        if user_id is not None:
+            if saved_user_id != os.geteuid():
+                os.seteuid(0)
+                os.seteuid(saved_user_id)
+                LOG.debug('uid reset to %d', saved_user_id)
+            else:
+                LOG.debug('Uid is already %d, not changing', user_id)
