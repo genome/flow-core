@@ -29,19 +29,18 @@ class TestLSFCommandNet(unittest.TestCase):
 
         action = net.dispatch.action
 
-        expected_args = {"command_line": cmdline}
-        expected_place_refs = [
-                net.dispatch_success_place.index,
-                net.dispatch_failure_place.index,
-                net.begin_execute_place.index,
-                net.execute_success_place.index,
-                net.execute_failure_place.index,
-                ]
+        expected_args = {
+                "command_line": cmdline,
+                "post_dispatch_success": net.dispatch_success_place.index,
+                "post_dispatch_failure": net.dispatch_failure_place.index,
+                "begin_execute": net.begin_execute_place.index,
+                "execute_success": net.execute_success_place.index,
+                "execute_failure": net.execute_failure_place.index,
+                }
 
         self.assertIsInstance(action, nb.ActionSpec)
         self.assertEqual(enets.LSFDispatchAction, action.cls)
         self.assertEqual(expected_args, action.args)
-        self.assertEqual(expected_place_refs, action.place_refs)
 
 
 class TestLocalCommandNet(unittest.TestCase):
@@ -88,17 +87,16 @@ class TestLocalCommandNet(unittest.TestCase):
 
         action = net.dispatch.action
 
-        expected_args = {"command_line": cmdline}
-        expected_place_refs = [
-                net.on_begin_execute.index,
-                net.on_execute_success.index,
-                net.on_execute_failure.index,
-                ]
+        expected_args = {
+                "command_line": cmdline,
+                "begin_execute": net.on_begin_execute.index,
+                "execute_success": net.on_execute_success.index,
+                "execute_failure": net.on_execute_failure.index,
+                }
 
         self.assertIsInstance(action, nb.ActionSpec)
         self.assertEqual(enets.LocalDispatchAction, action.cls)
         self.assertEqual(expected_args, action.args)
-        self.assertEqual(expected_place_refs, action.place_refs)
 
 
 if __name__ == "__main__":

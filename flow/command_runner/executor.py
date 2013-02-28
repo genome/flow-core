@@ -23,7 +23,7 @@ class ExecutorBase(object):
             cmdline.append("--with-outputs")
 
         cmdline.append('--')
-        cmdline += [str(x) for x in command_line]
+        cmdline += command_line
 
-        return cmdline
+        return [str(x) for x in cmdline]
 

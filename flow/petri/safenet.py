@@ -431,7 +431,6 @@ class TransitionAction(rom.Object):
     name = rom.Property(rom.String)
     args = rom.Property(rom.Hash, value_encoder=rom.json_enc,
             value_decoder=rom.json_dec)
-    place_refs = rom.Property(rom.List)
 
     def _on_create(self):
         for argname in self.required_arguments:
@@ -458,7 +457,8 @@ class CounterAction(TransitionAction):
 
 
 class ShellCommandAction(TransitionAction):
-    required_arguments = ["command_line"]
+    required_arguments = ["command_line", "success_place_id",
+            "failure_place_id"]
 
     def execute(self, active_tokens_key, net, services):
         cmdline = self.args["command_line"]
@@ -466,9 +466,9 @@ class ShellCommandAction(TransitionAction):
         orchestrator = services['orchestrator']
         token = Token.create(self.connection, data={"return_code": rv})
         if rv == 0:
-            return_place = self.place_refs[0]
+            return_place = self.args["success_place_id"]
         else:
-            return_place = self.place_refs[1]
+            return_place = self.args["failure_place_id"]
 
         orchestrator.set_token(net.key, int(return_place), token_key=token.key)
 

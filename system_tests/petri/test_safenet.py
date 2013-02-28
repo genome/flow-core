@@ -291,8 +291,10 @@ class TestTransitionActions(TestBase):
         action = sn.ShellCommandAction.create(
                 connection=self.conn,
                 name="TestAction",
-                args={"command_line": good_cmdline},
-                place_refs=[success_place_id, failure_place_id],
+                args={"command_line": good_cmdline,
+                        "success_place_id": success_place_id,
+                        "failure_place_id": failure_place_id,
+                        }
                 )
 
         self.assertEqual(good_cmdline, action.args["command_line"])

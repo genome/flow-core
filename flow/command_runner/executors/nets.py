@@ -8,11 +8,10 @@ LOG = logging.getLogger(__name__)
 
 class CommandLineDispatchAction(sn.TransitionAction):
     net_variables = ["environment", "user_id", "working_directory", "mail_user"]
+    place_refs = []
 
     def _response_places(self):
-        raise NotImplementedError(
-            "In class %s: _response_place not implemented" %
-            self.__class__.__name__)
+        return {x: self.args[x] for x in self.place_refs}
 
     def _command_line(self, net, input_data_key):
         return self.args["command_line"]
@@ -72,36 +71,18 @@ class CommandLineDispatchAction(sn.TransitionAction):
 
 class LSFDispatchAction(CommandLineDispatchAction):
     service_name = "lsf"
-
-    dispatch_success = 0
-    dispatch_failure = 1
-    begin_execute = 2
-    execute_success = 3
-    execute_failure = 4
-
-    def _response_places(self):
-        return {
-            'post_dispatch_success': self.place_refs[self.dispatch_success],
-            'post_dispatch_failure': self.place_refs[self.dispatch_failure],
-            'begin_execute': self.place_refs[self.begin_execute],
-            'execute_success': self.place_refs[self.execute_success],
-            'execute_failure': self.place_refs[self.execute_failure],
-        }
+    place_refs = ["post_dispatch_success",
+            "post_dispatch_failure", "begin_execute",
+            "execute_success", "execute_failure"]
+    required_arguments = place_refs
 
 
 class LocalDispatchAction(CommandLineDispatchAction):
     service_name = "fork"
+    place_refs = ["begin_execute", "execute_success",
+            "execute_failure"]
 
-    begin_execute = 0
-    execute_success = 1
-    execute_failure = 2
-
-    def _response_places(self):
-        return {
-            'begin_execute': self.place_refs[self.begin_execute],
-            'execute_success': self.place_refs[self.execute_success],
-            'execute_failure': self.place_refs[self.execute_failure],
-        }
+    required_arguments = place_refs
 
 
 class LSFCommandNet(nb.SuccessFailureNet):
@@ -117,16 +98,16 @@ class LSFCommandNet(nb.SuccessFailureNet):
         self.execute_success_place = self.add_place("msg: execute_success")
         self.execute_failure_place = self.add_place("msg: execute_failure")
 
-        dispatch_action = nb.ActionSpec(
-                cls=action_class,
-                args=action_args,
-                place_refs=[
-                    self.dispatch_success_place.index,
-                    self.dispatch_failure_place.index,
-                    self.begin_execute_place.index,
-                    self.execute_success_place.index,
-                    self.execute_failure_place.index,
-                    ])
+        args = dict(action_args)
+        args.update({
+            "post_dispatch_success": self.dispatch_success_place.index,
+            "post_dispatch_failure": self.dispatch_failure_place.index,
+            "begin_execute": self.begin_execute_place.index,
+            "execute_success": self.execute_success_place.index,
+            "execute_failure": self.execute_failure_place.index,
+            })
+
+        dispatch_action = nb.ActionSpec(cls=action_class, args=args)
 
         self.dispatch = self.add_transition(name="dispatch",
                 action=dispatch_action)
@@ -171,14 +152,15 @@ class LocalCommandNet(nb.SuccessFailureNet):
         self.on_execute_success = self.add_place("msg: execute_success")
         self.on_execute_failure = self.add_place("msg: execute_failure")
 
-        dispatch_action = nb.ActionSpec(
-                cls=action_class,
-                args=action_args,
-                place_refs=[
-                    self.on_begin_execute.index,
-                    self.on_execute_success.index,
-                    self.on_execute_failure.index
-                ])
+        args = dict(action_args)
+        args.update({
+                "begin_execute": self.on_begin_execute.index,
+                "execute_success": self.on_execute_success.index,
+                "execute_failure": self.on_execute_failure.index
+                })
+
+        dispatch_action = nb.ActionSpec(cls=action_class, args=args)
+
         self.dispatch = self.add_transition(name="dispatch",
                 action=dispatch_action)
 

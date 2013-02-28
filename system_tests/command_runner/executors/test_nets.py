@@ -64,11 +64,11 @@ class TestLsfDispatchAction(TestBase, _TestDispatchActionMixIn):
         self.assertIsInstance(self.action, self.action_class)
 
         expected = {
-            'post_dispatch_success': str(self.net.dispatch_success_place.index),
-            'post_dispatch_failure': str(self.net.dispatch_failure_place.index),
-            'begin_execute': str(self.net.begin_execute_place.index),
-            'execute_success': str(self.net.execute_success_place.index),
-            'execute_failure': str(self.net.execute_failure_place.index),
+            'post_dispatch_success': self.net.dispatch_success_place.index,
+            'post_dispatch_failure': self.net.dispatch_failure_place.index,
+            'begin_execute': self.net.begin_execute_place.index,
+            'execute_success': self.net.execute_success_place.index,
+            'execute_failure': self.net.execute_failure_place.index,
         }
 
         response_places = self.action._response_places()
@@ -81,9 +81,9 @@ class TestLocalDispatchAction(TestBase, _TestDispatchActionMixIn):
 
     def test_response_places(self):
         expected = {
-            'begin_execute': str(self.net.on_begin_execute.index),
-            'execute_success': str(self.net.on_execute_success.index),
-            'execute_failure': str(self.net.on_execute_failure.index),
+            'begin_execute': self.net.on_begin_execute.index,
+            'execute_success': self.net.on_execute_success.index,
+            'execute_failure': self.net.on_execute_failure.index,
         }
 
         self.assertEqual("dispatch", str(self.dispatch_transition.name))

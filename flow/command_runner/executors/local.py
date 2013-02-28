@@ -19,20 +19,18 @@ class SubprocessExecutor(ExecutorBase):
 
         with util.environment([self.default_environment, environment,
                                self.mandatory_environment]):
+            stdout_fh = None
+            stderr_fh = None
             try:
                 if stdout:
                     stdout_fh = open(stdout, 'a')
-                else:
-                    stdout_fh = None
                 if stderr:
                     stderr_fh = open(stderr, 'a')
-                else:
-                    stderr_fh = None
 
                 LOG.debug('working_directory = %s', working_directory)
                 LOG.debug('PATH = %s', os.getenv('PATH'))
 
-                LOG.debug('executing command %r', full_command_line)
+                LOG.debug('executing command %s', " ".join(full_command_line))
                 with util.seteuid(user_id):
                     exit_code = subprocess.call(full_command_line,
                             stdout=stdout_fh, stderr=stderr_fh,

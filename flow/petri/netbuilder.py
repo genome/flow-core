@@ -30,22 +30,19 @@ class Place(Node):
 
 
 class ActionSpec(object):
-    def __init__(self, cls, args=None, place_refs=None):
+    def __init__(self, cls, args=None):
         self.cls = cls
         self.args = args
-        self.place_refs = place_refs
 
     def create(self, conn, name=""):
         return self.cls.create(
                 conn,
                 name=name,
-                args=self.args,
-                place_refs=self.place_refs)
+                args=self.args)
 
     def __repr__(self):
-        return "%s(cls=%r, args=%r, place_refs=%r)" % (
-                self.__class__.__name__, self.cls, self.args,
-                self.place_refs)
+        return "%s(cls=%r, args=%r)" % (
+                self.__class__.__name__, self.cls, self.args)
 
 
 class Transition(Node):
@@ -289,9 +286,9 @@ class ShellCommandNet(SuccessFailureNet):
 
         action = ActionSpec(
                 cls=safenet.ShellCommandAction,
-                args = {"command_line": cmdline},
-                place_refs=[self.on_success_place, self.on_failure_place],
-                )
+                args = {"command_line": cmdline,
+                        "success_place_id": self.on_success_place,
+                        "faiure_place_id": self.on_failure_place})
 
         self.execute = self.add_transition(name="execute", action=action)
 
