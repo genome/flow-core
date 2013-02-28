@@ -16,7 +16,15 @@ def environment(environment_dicts):
 
     saved_environment = dict(os.environ.data)
     os.environ.clear()
-    os.environ.update(temporary_environment)
+
+    for key, value in temporary_environment.iteritems():
+        LOG.debug('Updating environment variable %s=%s', key, value)
+        try:
+            os.environ[key] = value
+        except UnicodeEncodeError:
+            LOG.debug('Failed to update environment variable %s=%s... skipping',
+                    key, value)
+            pass
 
     try:
         yield
