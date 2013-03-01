@@ -21,13 +21,13 @@ class CommandBase(object):
     def __call__(self, parsed_arguments):
         raise NotImplementedError
 
-def run(argv):
+def main():
     exit_code = 1
     try:
         commands = flow.configuration.load_commands()
 
         parser = flow.configuration.create_parser(commands)
-        arguments = parser.parse_args(argv)
+        arguments = parser.parse_args(sys.argv[1:])
 
         logging_mode = arguments.logging_mode
         if logging_mode is None:
@@ -53,4 +53,3 @@ def run(argv):
         traceback.print_exc()
     finally:
         return exit_code
-

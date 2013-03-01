@@ -1,6 +1,9 @@
 from setuptools import setup, find_packages
 
 entry_points = '''
+[console_scripts]
+flow = flow.commands.base:main
+
 [flow.protocol.message_classes]
 set_tokens = flow.petri.safenet:SetTokenMessage
 notify_transition = flow.petri.safenet:NotifyTransitionMessage
@@ -47,9 +50,6 @@ setup(
             'system_tests',
             'test_helpers'
         ]),
-        install_scripts = [
-            'bin/flow',
-        ],
         entry_points = entry_points,
         install_requires = [
             'blist',
