@@ -54,6 +54,7 @@ setup(
         install_requires = [
             'blist',
             'hiredis',
+            'ipython',
             'pika',
             'platform-python-lsf-api',
             'pygraphviz',
