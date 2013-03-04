@@ -35,12 +35,16 @@ class CommandLineDispatchAction(sn.TransitionAction):
         if stderr:
             executor_options['stderr'] = stderr
 
-
         if input_data_key:
             executor_options["with_inputs"] = input_data_key
 
         if with_outputs:
             executor_options["with_outputs"] = with_outputs
+
+        # Handle resources
+        resources = self.args.get("resources", {})
+        LOG.info("RESOURCES: %r", resources)
+        executor_options.update(resources)
 
         return executor_options
 
@@ -57,10 +61,13 @@ class CommandLineDispatchAction(sn.TransitionAction):
             input_data_key = token.data.key
 
         executor_options = self._executor_options(input_data_key, net)
+        cmdline = self._command_line(net, input_data_key)
+
+        LOG.info("Executor options: %r", executor_options)
 
         response_places = self._response_places()
         services[self.service_name].submit(
-                command_line=self._command_line(net, input_data_key),
+                command_line=cmdline,
                 net_key=net.key,
                 response_places=response_places,
                 **executor_options
