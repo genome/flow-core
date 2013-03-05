@@ -48,7 +48,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
 
         return executor_options
 
-    def execute(self, active_tokens_key, net, services=None):
+    def execute(self, active_tokens_key, net, service_interfaces=None):
         token = None
         input_data_key = None
 
@@ -66,7 +66,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
         LOG.info("Executor options: %r", executor_options)
 
         response_places = self._response_places()
-        services[self.service_name].submit(
+        service_interfaces[self.service_name].submit(
                 command_line=cmdline,
                 net_key=net.key,
                 response_places=response_places,

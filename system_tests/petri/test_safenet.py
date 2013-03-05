@@ -12,7 +12,7 @@ class TestBase(RedisTest):
     def setUp(self):
         RedisTest.setUp(self)
         orch = FakeOrchestrator(self.conn)
-        self.services = orch.services
+        self.service_interfaces = orch.service_interfaces
 
 
 class TestTransition(TestBase):
@@ -47,7 +47,7 @@ class TestSafeNet(TestBase):
         self.assertIsNone(act.input_data(active_tokens_key="x", net=None))
 
         self.assertRaises(NotImplementedError, act.execute, net=None,
-                services=None, active_tokens_key=None)
+                service_interfaces=None, active_tokens_key=None)
 
     def test_constants(self):
         net = sn.SafeNet.create(connection=self.conn)
@@ -147,9 +147,9 @@ class TestSafeNet(TestBase):
         p.add_observer('exchange 2', 'routing key 2', 'body 2')
 
         token = sn.Token.create(self.conn)
-        net.set_token(0, token.key, self.services)
+        net.set_token(0, token.key, self.service_interfaces)
 
-        orch = self.services['orchestrator']
+        orch = self.service_interfaces['orchestrator']
         self.assertEqual(orch.place_entry_observed.call_args_list,
                 [mock.call({u'exchange': u'exchange 1',
                             u'routing_key': u'routing key 1',
@@ -201,17 +201,17 @@ class TestSafeNet(TestBase):
         self.assertEqual(action.key, str(net.transition(0).action_key))
 
         token = sn.Token.create(self.conn)
-        net.set_token(0, token.key, self.services)
+        net.set_token(0, token.key, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.set_token(1, token.key, self.services)
+        net.set_token(1, token.key, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.set_token(2, token.key, self.services)
+        net.set_token(2, token.key, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.set_token(3, token.key, self.services)
+        net.set_token(3, token.key, self.service_interfaces)
         self.assertEqual(1, int(action.call_count))
 
         for i in xrange(0, 3):
-            net.notify_transition(0, i, self.services)
+            net.notify_transition(0, i, self.service_interfaces)
             self.assertEqual(1, int(action.call_count))
 
     def test_place_capacity(self):
@@ -226,9 +226,9 @@ class TestSafeNet(TestBase):
         self.assertTrue(net.marking(place_idx) is None)
         self.assertEqual({}, net.marking())
 
-        net.set_token(place_idx, token1.key, self.services)
+        net.set_token(place_idx, token1.key, self.service_interfaces)
         self.assertEqual(token1.key, net.marking(place_idx))
-        net.set_token(place_idx, token1.key, self.services)
+        net.set_token(place_idx, token1.key, self.service_interfaces)
         self.assertEqual({"0": str(token1.key)}, net.marking())
 
         # setting the same token twice is not an error
@@ -236,7 +236,7 @@ class TestSafeNet(TestBase):
         self.assertEqual({"0": str(token1.key)}, net.marking())
 
         self.assertRaises(sn.PlaceCapacityError, net.set_token,
-            place_idx, token2.key, self.services)
+            place_idx, token2.key, self.service_interfaces)
 
     def test_graph(self):
         net = sn.SafeNet.create(self.conn, place_names=["p1", "p2"],
@@ -300,19 +300,19 @@ class TestTransitionActions(TestBase):
         self.assertEqual(good_cmdline, action.args["command_line"])
 
         orchestrator = mock.MagicMock()
-        services = {"orchestrator": orchestrator}
+        service_interfaces = {"orchestrator": orchestrator}
         net = mock.MagicMock()
         net.key = "netkey!"
 
         active_tokens_key = "x"
-        action.execute(active_tokens_key, net, services)
+        action.execute(active_tokens_key, net, service_interfaces)
         orchestrator.set_token.assert_called_with(
                 net.key, success_place_id, token_key=mock.ANY)
 
         action.args["command_line"] = fail_cmdline
         orchestrator.reset_mock()
 
-        action.execute(active_tokens_key, net, services)
+        action.execute(active_tokens_key, net, service_interfaces)
         orchestrator.set_token.assert_called_with(
                     net.key, failure_place_id, token_key=mock.ANY)
 
@@ -348,9 +348,9 @@ class TestTransitionActions(TestBase):
         action.input_data = mock.Mock(return_value=inputs)
 
         orchestrator = mock.Mock()
-        services = {"orchestrator": orchestrator}
+        service_interfaces = {"orchestrator": orchestrator}
         net = mock.MagicMock()
-        action.execute(active_tokens_key="x", net=net, services=services)
+        action.execute(active_tokens_key="x", net=net, service_interfaces=service_interfaces)
         orchestrator.set_token.assert_called_once_with("netkey!", 1, mock.ANY)
 
         token_key = orchestrator.set_token.call_args[0][2]

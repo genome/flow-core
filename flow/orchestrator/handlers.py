@@ -8,16 +8,16 @@ from flow.redisom import get_object, invoke_instance_method
 LOG = logging.getLogger(__name__)
 
 class PetriSetTokenHandler(object):
-    def __init__(self, redis=None, services=None, queue_name=None):
+    def __init__(self, redis=None, service_interfaces=None, queue_name=None):
         self.redis = redis
-        self.services = services
+        self.service_interfaces = service_interfaces
         self.queue_name = queue_name
 
     def __call__(self, message):
         try:
             net = SafeNet(self.redis, message.net_key)
             net.set_token(message.place_idx, message.token_key,
-                    services=self.services)
+                    service_interfaces=self.service_interfaces)
         except Exception as e:
             LOG.exception(
                     'Handler (%s) failed to add tokens to net %s place %d: %s'
@@ -26,16 +26,16 @@ class PetriSetTokenHandler(object):
 
 
 class PetriNotifyTransitionHandler(object):
-    def __init__(self, redis=None, services=None, queue_name=None):
+    def __init__(self, redis=None, service_interfaces=None, queue_name=None):
         self.redis = redis
-        self.services = services
+        self.service_interfaces = service_interfaces
         self.queue_name = queue_name
 
     def __call__(self, message):
         try:
             net = SafeNet(self.redis, message.net_key)
             net.notify_transition(message.transition_idx, message.place_idx,
-                    services=self.services)
+                    service_interfaces=self.service_interfaces)
         except Exception as e:
             LOG.exception('Handler (%s) failed to execute transition %s'
                           ' on net %s: %s' % (self, message.transition_idx,

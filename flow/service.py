@@ -11,7 +11,7 @@ class Service(object):
             client.broker = self.broker
 
         for handler in self.handlers:
-            handler.services = self.service_interfaces
+            handler.service_interfaces = self.service_interfaces
             handler.storage = self.storage
 
             self.broker.register_handler(handler)

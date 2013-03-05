@@ -4,7 +4,7 @@ from flow.petri.safenet import NotifyTransitionMessage, SetTokenMessage
 
 LOG = logging.getLogger(__name__)
 
-class OrchestratorClient(object):
+class OrchestratorServiceInterface(object):
     def __init__(self, broker=None,
             set_token_exchange=None,
             set_token_routing_key=None,

@@ -4,7 +4,7 @@ import flow.command_runner.executors.nets
 
 LOG = logging.getLogger(__name__)
 
-class CommandLineClient(object):
+class CommandLineServiceInterface(object):
     def __init__(self, broker=None, exchange=None, submit_routing_key=None):
         self.broker = broker
         self.exchange = exchange

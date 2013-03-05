@@ -296,12 +296,12 @@ class SafeNet(rom.Object):
     def transition(self, idx):
         return _SafeTransition(self.connection, self.subkey("trans/%d" % int(idx)))
 
-    def notify_transition(self, trans_idx=None, place_idx=None, services=None):
+    def notify_transition(self, trans_idx=None, place_idx=None, service_interfaces=None):
         LOG.debug("notify transition #%d", trans_idx)
 
-        if trans_idx is None or place_idx is None or services is None:
+        if trans_idx is None or place_idx is None or service_interfaces is None:
             raise TypeError(
-                    "You must specify trans_idx, place_idx, and services")
+                    "You must specify trans_idx, place_idx, and service_interfaces")
 
         marking_key = self.subkey("marking")
 
@@ -327,7 +327,7 @@ class SafeNet(rom.Object):
         new_token = None
         if action is not None:
             new_token = action.execute(active_tokens_key, net=self,
-                    services=services)
+                    service_interfaces=service_interfaces)
 
         if new_token is None:
             new_token = Token.create(self.connection)
@@ -337,7 +337,7 @@ class SafeNet(rom.Object):
         rv = self._push_tokens(keys=keys)
         tokens_pushed, places_to_notify = rv
         if tokens_pushed == 1:
-            orchestrator = services['orchestrator']
+            orchestrator = service_interfaces['orchestrator']
             for place_idx in places_to_notify:
                 orchestrator.set_token(self.key, int(place_idx), token_key='')
             self.connection.delete(tokens_pushed_key)
@@ -350,7 +350,7 @@ class SafeNet(rom.Object):
         else:
             return self.connection.hget(self.subkey("marking"), place_idx)
 
-    def set_token(self, place_idx, token_key='', services=None):
+    def set_token(self, place_idx, token_key='', service_interfaces=None):
         place = self.place(place_idx)
         LOG.debug("setting token %s for place %s", token_key, place.name)
 
@@ -368,7 +368,7 @@ class SafeNet(rom.Object):
         if self.connection.hexists(marking_key, place_idx):
             place.first_token_timestamp.setnx()
 
-            orchestrator = services['orchestrator']
+            orchestrator = service_interfaces['orchestrator']
             arcs_out = place.arcs_out.value
 
             for packet in place.entry_observers.value:
@@ -442,7 +442,7 @@ class TransitionAction(rom.Object):
     def input_data(self, active_tokens_key, net):
         pass
 
-    def execute(self, active_tokens_key, net, services):
+    def execute(self, active_tokens_key, net, service_interfaces):
         raise NotImplementedError("In class %s: execute not implemented" %
                 self.__class__.__name__)
 
@@ -453,7 +453,7 @@ class CounterAction(TransitionAction):
     def _on_create(self):
         self.call_count.value = 0
 
-    def execute(self, active_tokens_key, net, services):
+    def execute(self, active_tokens_key, net, service_interfaces):
         self.call_count.incr(1)
 
 
@@ -461,10 +461,10 @@ class ShellCommandAction(TransitionAction):
     required_arguments = ["command_line", "success_place_id",
             "failure_place_id"]
 
-    def execute(self, active_tokens_key, net, services):
+    def execute(self, active_tokens_key, net, service_interfaces):
         cmdline = self.args["command_line"]
         rv = subprocess.call(cmdline)
-        orchestrator = services['orchestrator']
+        orchestrator = service_interfaces['orchestrator']
         token = Token.create(self.connection, data={"return_code": rv})
         if rv == 0:
             return_place = self.args["success_place_id"]
@@ -477,7 +477,7 @@ class ShellCommandAction(TransitionAction):
 class SetRemoteTokenAction(TransitionAction):
     required_arguments = ["remote_net_key", "remote_place_id", "data_type"]
 
-    def execute(self, active_tokens_key, net, services):
+    def execute(self, active_tokens_key, net, service_interfaces):
         remote_net_key = self.args["remote_net_key"]
         remote_place_id = int(self.args["remote_place_id"])
         data_type = self.args["data_type"]
@@ -486,14 +486,14 @@ class SetRemoteTokenAction(TransitionAction):
         token = Token.create(self.connection, data=input_data,
                 data_type=data_type)
 
-        orchestrator = services['orchestrator']
+        orchestrator = service_interfaces['orchestrator']
         orchestrator.set_token(remote_net_key, remote_place_id, token.key)
 
 
 class MergeTokensAction(TransitionAction):
     required_arguments = ["input_type", "output_type"]
 
-    def execute(self, active_tokens_key, net, services):
+    def execute(self, active_tokens_key, net, service_interfaces):
         token_keys = self.connection.lrange(active_tokens_key, 0, -1)
         tokens = [Token(self.connection, k) for k in token_keys]
         input_type = self.args["input_type"]

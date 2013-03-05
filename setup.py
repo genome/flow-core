@@ -30,8 +30,8 @@ local_broker = flow.brokers.local:LocalBroker
 publisher_confirm_acking = flow.brokers.acking_strategies:PublisherConfirmation
 immediate_acking = flow.broker.acking_strategies:Immediate
 
-orchestrator_service_interface = flow.orchestrator.client:OrchestratorClient
-shell_command_service_interface = flow.command_runner.client:CommandLineClient
+orchestrator_service_interface = flow.orchestrator.service_interface:OrchestratorServiceInterface
+shell_command_service_interface = flow.command_runner.service_interface:CommandLineServiceInterface
 
 petri_set_token_handler = flow.orchestrator.handlers:PetriSetTokenHandler
 petri_notify_transition_handler = flow.orchestrator.handlers:PetriNotifyTransitionHandler

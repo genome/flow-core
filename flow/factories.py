@@ -50,7 +50,11 @@ def get_concrete_factory(factory_name, category='flow.factories'):
     for ep in pkg_resources.iter_entry_points(category, name=factory_name):
         LOG.debug('Found entry point %s for factory_name %s',
                 ep, factory_name)
-        return ep.load()
+        try:
+            return ep.load()
+        except ImportError:
+            raise ImportError("Couldn't import factory '%s' from entry point '%s'" %
+                    (factory_name, ep))
 
     raise RuntimeError('Found no entry point for factory_name %s' %
             factory_name)
