@@ -107,7 +107,7 @@ class NetBuilder(object):
         self._trans_map[transition] = index
         return transition
 
-    def bridge_places(self, src_place, dst_place, name=None):
+    def bridge_places(self, src_place, dst_place, name=None, action=None):
         if not (isinstance(src_place, Place) and isinstance(dst_place, Place)):
             raise TypeError(
                     "bridge_places called with something other than two places")
@@ -118,7 +118,7 @@ class NetBuilder(object):
         if name is None:
             name = "bridge %s -> %s" % (src_place.name, dst_place.name)
 
-        transition = self.add_transition(name)
+        transition = self.add_transition(name, action=action)
         src_place.arcs_out.add(transition)
         transition.arcs_out.add(dst_place)
         return transition
@@ -249,8 +249,8 @@ class EmptyNet(object):
         self._add_transition(transition)
         return transition
 
-    def bridge_places(self, src_place, dst_place, name=None):
-        transition = self.builder.bridge_places(src_place, dst_place, name)
+    def bridge_places(self, src_place, dst_place, name=None, action=None):
+        transition = self.builder.bridge_places(src_place, dst_place, name, action)
         self._add_transition(transition)
         return transition
 

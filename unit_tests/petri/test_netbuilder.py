@@ -1,5 +1,6 @@
 import flow.petri.netbuilder as nb
 
+import mock
 import unittest
 from itertools import combinations
 
@@ -127,6 +128,14 @@ class TestNetBuilder(BuilderTest):
         ]
 
         self.assertEqual(expected_node_labels, node_labels)
+
+    def test_bridge_places_with_action(self):
+        net = self.builder.add_subnet(nb.EmptyNet, "test")
+        p1 = net.add_place("p1")
+        p2 = net.add_place("p2")
+        action = mock.Mock()
+        t = net.bridge_places(p1, p2, action=action)
+        self.assertEqual(action, t.action)
 
     def test_success_failure_net(self):
         net = self.builder.add_subnet(nb.SuccessFailureNet, "sfnet")
