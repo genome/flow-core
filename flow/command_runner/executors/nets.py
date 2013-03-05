@@ -93,7 +93,13 @@ class LocalDispatchAction(CommandLineDispatchAction):
 
 
 class LSFCommandNet(nb.SuccessFailureNet):
-    def __init__(self, builder, name, action_class, action_args={}):
+    def __init__(self, builder, name, action_class, action_args={},
+            dispatch_success_action=None,
+            dispatch_failure_action=None,
+            begin_execute_action=None,
+            success_action=None,
+            failure_action=None):
+
         nb.SuccessFailureNet.__init__(self, builder, name)
 
         self.dispatching = self.add_place("dispatching")
@@ -107,23 +113,28 @@ class LSFCommandNet(nb.SuccessFailureNet):
 
         args = dict(action_args)
         args.update({
-            "post_dispatch_success": self.dispatch_success_place.index,
-            "post_dispatch_failure": self.dispatch_failure_place.index,
-            "begin_execute": self.begin_execute_place.index,
-            "execute_success": self.execute_success_place.index,
-            "execute_failure": self.execute_failure_place.index,
-            })
+                "post_dispatch_success": self.dispatch_success_place.index,
+                "post_dispatch_failure": self.dispatch_failure_place.index,
+                "begin_execute": self.begin_execute_place.index,
+                "execute_success": self.execute_success_place.index,
+                "execute_failure": self.execute_failure_place.index,
+                })
 
         dispatch_action = nb.ActionSpec(cls=action_class, args=args)
 
         self.dispatch = self.add_transition(name="dispatch",
                 action=dispatch_action)
 
-        self.dispatch_success = self.add_transition("dispatch_success")
-        self.dispatch_failure = self.add_transition("dispatch_failure")
-        self.begin_execute = self.add_transition("begin_execute")
-        self.execute_success = self.add_transition("execute_success")
-        self.execute_failure = self.add_transition("execute_failure")
+        self.dispatch_success = self.add_transition("dispatch_success",
+                action=dispatch_success_action)
+        self.dispatch_failure = self.add_transition("dispatch_failure",
+                action=dispatch_failure_action)
+        self.begin_execute = self.add_transition("begin_execute",
+                action=begin_execute_action)
+        self.execute_success = self.add_transition("execute_success",
+                action=success_action)
+        self.execute_failure = self.add_transition("execute_failure",
+                action=failure_action)
 
         self.start.arcs_out.add(self.dispatch)
         self.dispatch.arcs_out.add(self.dispatching)
@@ -149,7 +160,11 @@ class LSFCommandNet(nb.SuccessFailureNet):
 
 
 class LocalCommandNet(nb.SuccessFailureNet):
-    def __init__(self, builder, name, action_class, action_args={}):
+    def __init__(self, builder, name, action_class, action_args={},
+            begin_execute_action=None,
+            success_action=None,
+            failure_action=None):
+
         nb.SuccessFailureNet.__init__(self, builder, name)
 
         self.dispatched = self.add_place("dispatched")
@@ -171,9 +186,12 @@ class LocalCommandNet(nb.SuccessFailureNet):
         self.dispatch = self.add_transition(name="dispatch",
                 action=dispatch_action)
 
-        self.t_begin_execute = self.add_transition("begin execute")
-        self.execute_success = self.add_transition("execute_success")
-        self.execute_failure = self.add_transition("execute_failure")
+        self.t_begin_execute = self.add_transition("begin execute",
+                action=begin_execute_action)
+        self.execute_success = self.add_transition("execute_success",
+                action=success_action)
+        self.execute_failure = self.add_transition("execute_failure",
+                action=failure_action)
 
         self.start.arcs_out.add(self.dispatch)
         self.dispatch.arcs_out.add(self.dispatched)
