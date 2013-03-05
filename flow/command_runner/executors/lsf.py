@@ -58,7 +58,7 @@ class LSFExecutor(ExecutorBase):
 
         if name:
             request.jobName = str(name)
-            request.options += lsf.SUB_JOB_NAME
+            request.options |= lsf.SUB_JOB_NAME
 
         if mail_user:
             request.mailUser = str(mail_user)
@@ -69,21 +69,21 @@ class LSFExecutor(ExecutorBase):
             request.queue = str(queue)
         else:
             request.queue = self.default_queue
-        request.options += lsf.SUB_QUEUE
+        request.options |= lsf.SUB_QUEUE
         LOG.debug("request.queue = %s", request.queue)
 
         if stdout:
             request.outFile = str(stdout)
-            request.options += lsf.SUB_OUT_FILE
+            request.options |= lsf.SUB_OUT_FILE
             LOG.debug('setting job stdout = %s', stdout)
         if stderr:
             request.errFile = str(stderr)
-            request.options += lsf.SUB_ERR_FILE
+            request.options |= lsf.SUB_ERR_FILE
             LOG.debug('setting job stderr = %s', stderr)
 
         if working_directory:
             request.cwd = str(working_directory)
-            request.options3 += lsf.SUB3_CWD
+            request.options3 |= lsf.SUB3_CWD
             LOG.debug('setting cwd = %s', working_directory)
 
         request.beginTime = int(beginTime)
