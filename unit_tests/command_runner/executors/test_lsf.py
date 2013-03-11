@@ -10,7 +10,7 @@ from pythonlsf import lsf as lsf_driver
 
 class GetRlimitsTest(unittest.TestCase):
     AVAILABLE_RLIMITS = [
-            ('max_resident_memory', lsf_driver.LSF_RLIMIT_RSS),
+            #('max_resident_memory', lsf_driver.LSF_RLIMIT_RSS),
             ('max_virtual_memory', lsf_driver.LSF_RLIMIT_VMEM),
             ('max_processes', lsf_driver.LSF_RLIMIT_PROCESS),
             ('max_threads', lsf_driver.LSF_RLIMIT_THREAD),
@@ -45,8 +45,7 @@ class GetRlimitsTest(unittest.TestCase):
             self.simple_rlim_failure(name)
 
 def create_expected_limits():
-    return [lsf_driver.DEFAULT_RLIMIT
-            for i in xrange(lsf_driver.LSF_RLIM_NLIMITS)]
+    return [lsf_driver.DEFAULT_RLIMIT] * lsf_driver.LSF_RLIM_NLIMITS
 
 
 class CreateRequestTest(unittest.TestCase):
@@ -120,9 +119,10 @@ class CreateRequestTest(unittest.TestCase):
 
     def test_rlimits(self):
         value = 4000
-        request = self.dispatcher.create_request(max_resident_memory=value)
+        resources = {"limit": {"max_virtual_memory": value}}
+        request = self.dispatcher.create_request(resources=resources)
         expected_limits = create_expected_limits()
-        expected_limits[lsf_driver.LSF_RLIMIT_RSS] = value
+        expected_limits[lsf_driver.LSF_RLIMIT_VMEM] = value
         self.assertEqual(request.queue, self.default_queue)
 
         for i, x in enumerate(expected_limits):

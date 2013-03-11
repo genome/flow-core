@@ -6,6 +6,27 @@ from flow.command_runner import util
 
 LOG = logging.getLogger(__name__)
 
+_RUSAGE_NAME_MAP = {"memory": "mem", "temp_space": "gtmp"}
+
+def _translate_resources(reserve):
+    rv = {}
+    for k, v in reserve.iteritems():
+        if k not in _RUSAGE_NAME_MAP:
+            raise KeyError("Unknown resource in reserve section: %s" % k)
+        rv[_RUSAGE_NAME_MAP[k]] = v
+    return rv
+
+def _make_rusage_string(reserve):
+    if not reserve:
+        return
+
+    reserve = _translate_resources(reserve)
+
+    items = ["%s=%s" % (k, v) for k, v in reserve.iteritems()]
+    # we do not want this to be unicode (LSF will crash)
+    return str("rusage[%s]" % ":".join(items))
+
+
 class LSFExecutor(ExecutorBase):
     def __init__(self, default_queue='long', **kwargs):
         ExecutorBase.__init__(self, **kwargs)
@@ -22,6 +43,7 @@ class LSFExecutor(ExecutorBase):
 
         command_string = ' '.join(map(str, full_command_line))
         LOG.debug("lsf command_string = '%s'", command_string)
+        LOG.info("lsf kwargs: %r", kwargs)
 
         request = self.create_request(working_directory=working_directory,
                 **kwargs)
@@ -44,13 +66,15 @@ class LSFExecutor(ExecutorBase):
             LOG.debug('successfully submitted lsf job: %s', submit_result)
             return True, submit_result
         else:
-            LOG.debug('failed to submit lsf job, return value = (%s)',
-                    submit_result)
+            lsf.lsb_perror("lsb_submit")
+            LOG.error('failed to submit lsf job, return value = (%s), err = %s',
+                    submit_result, lsf.lsb_sperror("lsb_submit"))
             return False, submit_result
 
     def create_request(self, name=None, queue=None, stdout=None, stderr=None,
-            beginTime=0, termTime=0, numProcessors=1, maxNumProcessors=1,
-            mail_user=None, working_directory=None, **kwargs):
+            beginTime=0, mail_user=None, working_directory=None,
+            resources={}, **kwargs):
+
         request = lsf.submit()
         request.options = 0
         request.options2 = 0
@@ -62,7 +86,7 @@ class LSFExecutor(ExecutorBase):
 
         if mail_user:
             request.mailUser = str(mail_user)
-            request.options += lsf.SUB_MAIL_USER
+            request.options |= lsf.SUB_MAIL_USER
             LOG.debug('setting mail_user = %s', mail_user)
 
         if queue:
@@ -86,50 +110,67 @@ class LSFExecutor(ExecutorBase):
             request.options3 |= lsf.SUB3_CWD
             LOG.debug('setting cwd = %s', working_directory)
 
-        request.beginTime = int(beginTime)
-        request.termTime = int(termTime)
+        reserve = resources.get("reserve")
+        if reserve:
+            rusage = _make_rusage_string(reserve)
+            LOG.debug('setting resource request string = %r', rusage)
+            request.options |= lsf.SUB_RES_REQ
+            request.resReq = rusage
+
+        require = resources.get("require", {})
+        limit = resources.get("limit", {})
+
+        numProcessors = require.get("min_proc", 1)
+        maxNumProcessors = require.get("max_proc", 1)
+        termTime = limit.get("cpu_time", 0)
 
         request.numProcessors = int(numProcessors)
         request.maxNumProcessors = int(maxNumProcessors)
 
-        request.rLimits = get_rlimits(**kwargs)
+        request.beginTime = int(beginTime)
+        request.termTime = int(termTime)
+
+        rlimits = resources.get("limit", {})
+        LOG.info("Setting rlimits: %r", rlimits)
+        request.rLimits = get_rlimits(**rlimits)
 
         return request
 
 
-
 def get_rlimits(max_resident_memory=None, max_virtual_memory=None,
         max_processes=None, max_threads=None, max_open_files=None,
-        max_stack_size=None, **kwargs):
+        max_stack_size=None):
     # Initialize unused limits
-    limits = [lsf.DEFAULT_RLIMIT
-            for i in xrange(lsf.LSF_RLIM_NLIMITS)]
+    limits = [lsf.DEFAULT_RLIMIT] * lsf.LSF_RLIM_NLIMITS
 
-    if max_resident_memory:
-        limits[lsf.LSF_RLIMIT_RSS] = int(max_resident_memory)
-        LOG.debug('setting rLimit for max_resident_memory to %d',
-                max_resident_memory)
+    # RLIMIT_RSS is apparently unsupported on Linux 2.6.
+    # Setting lsf.LSF_RLIMIT_RSS it will cause lsb_submit to fail.
+    #if max_resident_memory:
+        #max_resident_memory = int(max_resident_memory)
+        #limits[lsf.LSF_RLIMIT_RSS] = max_resident_memory
+        #LOG.debug('setting rLimit for max_resident_memory to %r',
+                #max_resident_memory)
 
     if max_virtual_memory:
         limits[lsf.LSF_RLIMIT_VMEM] = int(max_virtual_memory)
-        LOG.debug('setting rLimit for max_virtual_memory to %d',
+        LOG.debug('setting rLimit for max_virtual_memory to %r',
                 max_virtual_memory)
 
     if max_processes:
         limits[lsf.LSF_RLIMIT_PROCESS] = int(max_processes)
-        LOG.debug('setting rLimit for max_processes to %d', max_processes)
+        LOG.debug('setting rLimit for max_processes to %r', max_processes)
 
     if max_threads:
         limits[lsf.LSF_RLIMIT_THREAD] = int(max_threads)
-        LOG.debug('setting rLimit for max_threads to %d', max_threads)
+        LOG.debug('setting rLimit for max_threads to %r', max_threads)
 
     if max_open_files:
         limits[lsf.LSF_RLIMIT_NOFILE] = int(max_open_files)
-        LOG.debug('setting rLimit for max_open_files to %d', max_open_files)
+        LOG.debug('setting rLimit for max_open_files to %r', max_open_files)
 
     if max_stack_size:
         limits[lsf.LSF_RLIMIT_STACK] = int(max_stack_size)
-        LOG.debug('setting rLimit for max_stack_size to %d', max_stack_size)
+        LOG.debug('setting rLimit for max_stack_size to %r', max_stack_size)
 
     return limits
 

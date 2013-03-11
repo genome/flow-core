@@ -7,7 +7,8 @@ import logging
 LOG = logging.getLogger(__name__)
 
 class CommandLineDispatchAction(sn.TransitionAction):
-    net_variables = ["environment", "user_id", "working_directory", "mail_user"]
+    net_variables = ["environment", "user_id", "working_directory",
+            "mail_user"]
     place_refs = []
 
     def _response_places(self):
@@ -36,15 +37,15 @@ class CommandLineDispatchAction(sn.TransitionAction):
             executor_options['stderr'] = stderr
 
         if input_data_key:
-            executor_options["with_inputs"] = input_data_key
+            executor_options['with_inputs'] = input_data_key
 
         if with_outputs:
-            executor_options["with_outputs"] = with_outputs
+            executor_options['with_outputs'] = with_outputs
 
         # Handle resources
-        resources = self.args.get("resources", {})
-        LOG.info("RESOURCES: %r", resources)
-        executor_options.update(resources)
+        resources = self.args.get('resources', {})
+        if resources:
+            executor_options['resources'] = resources
 
         return executor_options
 
