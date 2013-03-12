@@ -60,9 +60,9 @@ class WrapperCommand(CommandBase):
                 if parsed_arguments.with_outputs:
                     cmdline += ["--outputs-file", outputs_file.name]
 
-                rv = subprocess.call(cmdline)
+                try:
+                    subprocess.check_call(cmdline)
 
-                if rv == 0:
                     outputs = None
                     if parsed_arguments.with_outputs:
                         outputs = json.load(outputs_file)
@@ -70,7 +70,11 @@ class WrapperCommand(CommandBase):
                     self.send_token(net_key=parsed_arguments.net_key,
                             place_idx=parsed_arguments.success_place_id,
                             data=outputs)
-                else:
+
+                    rv = 0
+                except Exception as e:
+                    LOG.error("Failed to execute command '%s': %s",
+                            " ".join(cmdline), str(e))
                     self.send_token(net_key=parsed_arguments.net_key,
                             place_idx=parsed_arguments.failure_place_id)
 
