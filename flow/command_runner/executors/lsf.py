@@ -3,28 +3,52 @@ from pythonlsf import lsf
 from flow.command_runner.executor import ExecutorBase
 
 from flow.command_runner import util
+from flow.command_runner.resource import Resource, ResourceException
 
 LOG = logging.getLogger(__name__)
 
-_RUSAGE_NAME_MAP = {"memory": "mem", "temp_space": "gtmp"}
+_RESOURCE_MAP = {
+        "min_proc": Resource(name="ncpus", type="int", units=None,
+                operator=">=", reservable=False),
 
-def _translate_resources(reserve):
-    rv = {}
+        "memory": Resource(name="mem", type="memory", units="MiB",
+                operator=">=", reservable=True),
+
+        "temp_space": Resource(name="gtmp", type="memory", units="GiB",
+                operator=">=", reservable=True),
+        }
+
+def _select_item(name, value):
+    r = _RESOURCE_MAP[name]
+    return "%s%s%s" % (r.name, r.operator, value)
+
+def _rusage_item(name, value):
+    r = _RESOURCE_MAP[name]
+    if not r.reservable:
+        raise ResourceException(
+                "Attempted to reserve non-reservable resource %s" % r.name)
+    return "%s=%s" % (r.name, value)
+
+def _make_rusage_string(require, reserve):
+    select = []
+    for k, v in require.iteritems():
+        select.append(_select_item(k, v))
+
+    rusage = []
     for k, v in reserve.iteritems():
-        if k not in _RUSAGE_NAME_MAP:
-            raise KeyError("Unknown resource in reserve section: %s" % k)
-        rv[_RUSAGE_NAME_MAP[k]] = v
-    return rv
+        if k not in require:
+            select.append(_select_item(k, v))
+        rusage.append(_rusage_item(k, v))
 
-def _make_rusage_string(reserve):
-    if not reserve:
-        return
+    rv = []
+    if select:
+        rv.append("select[%s]" % " && ".join(select))
 
-    reserve = _translate_resources(reserve)
+    if rusage:
+        rv.append("rusage[%s]" % ":".join(rusage))
 
-    items = ["%s=%s" % (k, v) for k, v in reserve.iteritems()]
     # we do not want this to be unicode (LSF will crash)
-    return str("rusage[%s]" % ":".join(items))
+    return str(" ".join(rv))
 
 
 class LSFExecutor(ExecutorBase):
@@ -110,13 +134,7 @@ class LSFExecutor(ExecutorBase):
             request.options3 |= lsf.SUB3_CWD
             LOG.debug('setting cwd = %s', working_directory)
 
-        reserve = resources.get("reserve")
-        if reserve:
-            rusage = _make_rusage_string(reserve)
-            LOG.debug('setting resource request string = %r', rusage)
-            request.options |= lsf.SUB_RES_REQ
-            request.resReq = rusage
-
+        reserve = resources.get("reserve", {})
         require = resources.get("require", {})
         limit = resources.get("limit", {})
 
@@ -129,6 +147,12 @@ class LSFExecutor(ExecutorBase):
 
         request.beginTime = int(beginTime)
         request.termTime = int(termTime)
+
+        if require or reserve:
+            rusage = _make_rusage_string(require=require, reserve=reserve)
+            LOG.debug('setting resource request string = %r', rusage)
+            request.options |= lsf.SUB_RES_REQ
+            request.resReq = rusage
 
         rlimits = resources.get("limit", {})
         LOG.info("Setting rlimits: %r", rlimits)

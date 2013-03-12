@@ -47,6 +47,10 @@ class CommandLineDispatchAction(sn.TransitionAction):
         if resources:
             executor_options['resources'] = resources
 
+        queue = self.args.get('queue')
+        if queue:
+            executor_options['queue'] = queue
+
         return executor_options
 
     def execute(self, active_tokens_key, net, service_interfaces=None):

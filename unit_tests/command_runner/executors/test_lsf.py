@@ -1,11 +1,52 @@
 import unittest
+import re
 try:
     from unittest import mock
 except:
     import mock
 
 from flow.command_runner.executors import lsf
+from flow.command_runner.resource import ResourceException
 from pythonlsf import lsf as lsf_driver
+
+def _create_expected_limits():
+    return [lsf_driver.DEFAULT_RLIMIT] * lsf_driver.LSF_RLIM_NLIMITS
+
+
+class MakeRusageTest(unittest.TestCase):
+    def test_empty(self):
+        self.assertEqual("", lsf._make_rusage_string(require={}, reserve={}))
+
+    def test_select(self):
+        require = {"memory": 150, "temp_space": 3, "min_proc": 4}
+        reserve = {}
+
+        rsrc = lsf._make_rusage_string(require=require, reserve=reserve)
+        select = re.match("^select\[([^]]*)\]$", rsrc)
+        self.assertTrue(select)
+        items = sorted(select.group(1).split(" && "))
+        self.assertEqual(["gtmp>=3", "mem>=150", "ncpus>=4"], items)
+
+    def test_implied_select(self):
+        require = {}
+        reserve = {"memory": 150, "temp_space": 3}
+
+        rsrc = lsf._make_rusage_string(require=require, reserve=reserve)
+        select = re.search("select\[([^]]*)\]", rsrc)
+        self.assertTrue(select)
+        items = sorted(select.group(1).split(" && "))
+        self.assertEqual(["gtmp>=3", "mem>=150"], items)
+
+        rusage = re.search("rusage\[([^]]*)\]", rsrc)
+        self.assertTrue(rusage)
+        items = sorted(rusage.group(1).split(":"))
+        self.assertEqual(["gtmp=3", "mem=150"], items)
+
+    def test_reserve_non_reservable(self):
+        require = {}
+        reserve = {"min_proc": 4}
+        self.assertRaises(ResourceException, lsf._make_rusage_string,
+                require=require, reserve=reserve)
 
 
 class GetRlimitsTest(unittest.TestCase):
@@ -20,7 +61,7 @@ class GetRlimitsTest(unittest.TestCase):
 
     def simple_rlim_success(self, name, index, value=42):
         kwargs = {name: value}
-        expected_limits = create_expected_limits()
+        expected_limits = _create_expected_limits()
         expected_limits[index] = value
         limits = lsf.get_rlimits(**kwargs)
         self.assertEqual(limits, expected_limits)
@@ -31,7 +72,7 @@ class GetRlimitsTest(unittest.TestCase):
 
 
     def test_defaults(self):
-        expected_limits = create_expected_limits()
+        expected_limits = _create_expected_limits()
         limits = lsf.get_rlimits()
         self.assertEqual(limits, expected_limits)
 
@@ -43,9 +84,6 @@ class GetRlimitsTest(unittest.TestCase):
     def test_all_failure(self):
         for name, index in self.AVAILABLE_RLIMITS:
             self.simple_rlim_failure(name)
-
-def create_expected_limits():
-    return [lsf_driver.DEFAULT_RLIMIT] * lsf_driver.LSF_RLIM_NLIMITS
 
 
 class CreateRequestTest(unittest.TestCase):
@@ -116,17 +154,32 @@ class CreateRequestTest(unittest.TestCase):
         self.assertRaises(TypeError,
                 self.dispatcher.create_request, stderr=self.bad_type)
 
-
-    def test_rlimits(self):
+    def test_resources(self):
         value = 4000
-        resources = {"limit": {"max_virtual_memory": value}}
+        limit = {"max_virtual_memory": value}
+        reserve = {"memory": 4096, "temp_space": 10}
+        require = {"min_proc": 8}
+
+        resources = {"limit": limit, "reserve": reserve, "require": require}
         request = self.dispatcher.create_request(resources=resources)
-        expected_limits = create_expected_limits()
+        expected_limits = _create_expected_limits()
         expected_limits[lsf_driver.LSF_RLIMIT_VMEM] = value
         self.assertEqual(request.queue, self.default_queue)
 
         for i, x in enumerate(expected_limits):
             self.assertEqual(request.rLimits[i], x)
+
+        self.assertTrue(request.options | lsf_driver.SUB_RES_REQ)
+        select = re.search("select\[([^]]*)]", request.resReq)
+        rusage = re.search("rusage\[([^]]*)]", request.resReq)
+        self.assertTrue(select)
+        self.assertTrue(rusage)
+
+        sitems = sorted(select.group(1).split(" && "))
+        ritems = sorted(rusage.group(1).split(":"))
+
+        self.assertEqual(["gtmp>=10", "mem>=4096", "ncpus>=8"], sitems)
+        self.assertEqual(["gtmp=10", "mem=4096"], ritems)
 
 
 
