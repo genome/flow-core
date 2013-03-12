@@ -68,7 +68,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
         executor_options = self._executor_options(input_data_key, net)
         cmdline = self._command_line(net, input_data_key)
 
-        LOG.info("Executor options: %r", executor_options)
+        LOG.debug("Executor options: %r", executor_options)
 
         response_places = self._response_places()
         service_interfaces[self.service_name].submit(
