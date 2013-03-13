@@ -69,6 +69,10 @@ class CommandLineDispatchAction(sn.TransitionAction):
         cmdline = self._command_line(net, input_data_key)
 
         LOG.debug("Executor options: %r", executor_options)
+        env = executor_options.get("environment", {})
+        for k, v in env.iteritems():
+            if k.startswith("FLOW"):
+                LOG.debug("Flow environment variable set: %s=%s", k, v)
 
         response_places = self._response_places()
         service_interfaces[self.service_name].submit(
