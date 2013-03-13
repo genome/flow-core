@@ -56,6 +56,8 @@ class WrapperCommand(CommandBase):
                     json.dump(inputs, inputs_file)
                     inputs_file.flush()
                     cmdline += ["--inputs-file", inputs_file.name]
+                else:
+                    LOG.debug("No inputs for command")
 
                 if parsed_arguments.with_outputs:
                     cmdline += ["--outputs-file", outputs_file.name]
