@@ -7,26 +7,40 @@ import logging
 LOG = logging.getLogger(__name__)
 
 class CommandLineDispatchAction(sn.TransitionAction):
-    net_variables = ["environment", "user_id", "working_directory",
-            "mail_user"]
+    net_constants = ['user_id', 'working_directory', 'mail_user']
     place_refs = []
+
+    def _environment(self, net):
+        return net.constant('environment')
 
     def _response_places(self):
         return {x: self.args[x] for x in self.place_refs}
 
     def _command_line(self, net, input_data_key):
-        return self.args["command_line"]
+        return self.args['command_line']
 
     def _executor_options(self, input_data_key, net):
-        # Collect net-wide variables
         executor_options = {}
-        for opt in self.net_variables:
+
+        # Collect environment variables for this command
+        environment = self._environment(net)
+        if environment:
+            executor_options['environment'] = environment
+
+        # Collect other net-wide constants
+        for opt in self.net_constants:
             value = net.constant(opt)
             if value:
                 executor_options[opt] = value
 
         # Collect job-specific variables
-        with_outputs = self.args.get("with_outputs")
+        with_outputs = self.args.get('with_outputs')
+
+        if input_data_key:
+            executor_options['with_inputs'] = input_data_key
+
+        if with_outputs:
+            executor_options['with_outputs'] = with_outputs
 
         # Set logfiles
         stdout = self.args.get('stdout')
@@ -36,13 +50,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
         if stderr:
             executor_options['stderr'] = stderr
 
-        if input_data_key:
-            executor_options['with_inputs'] = input_data_key
-
-        if with_outputs:
-            executor_options['with_outputs'] = with_outputs
-
-        # Handle resources
+        # Collect resource requirements
         resources = self.args.get('resources', {})
         if resources:
             executor_options['resources'] = resources
@@ -57,9 +65,10 @@ class CommandLineDispatchAction(sn.TransitionAction):
         token = None
         input_data_key = None
 
-        LOG.info("Collecting input data for %s", self.name)
         input_data = self.input_data(active_tokens_key, net)
-        LOG.info("Inputs are %r", input_data)
+
+        LOG.debug('Inputs for %s: %r', self.name, input_data)
+
         if input_data:
             token = sn.Token.create(self.connection, data=input_data,
                     data_type=self.output_token_type)
@@ -69,6 +78,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
         cmdline = self._command_line(net, input_data_key)
 
         LOG.debug("Executor options: %r", executor_options)
+
         env = executor_options.get("environment", {})
         for k, v in env.iteritems():
             if k.startswith("FLOW"):
