@@ -28,13 +28,14 @@ class CommandLineSubmitMessageHandler(object):
                 **executor_options)
 
         if success:
-            self.set_token(net_key, response_places.get('post_dispatch_success'))
+            self.set_token(net_key, response_places.get('post_dispatch_success'),
+                    data={"pid": str(executor_result)})
         else:
             self.set_token(net_key, response_places.get('post_dispatch_failure'))
 
-    def set_token(self, net_key, place_idx):
+    def set_token(self, net_key, place_idx, data=None):
         if place_idx is not None:
-            token = Token.create(self.storage)
+            token = Token.create(self.storage, data=data)
             response_message = SetTokenMessage(token_key=token.key,
                     net_key=net_key, place_idx=int(place_idx))
             self.broker.publish(self.exchange,

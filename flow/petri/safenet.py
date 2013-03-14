@@ -128,6 +128,13 @@ redis.call('SET', tokens_pushed_key, 1)
 return {1, arcs_out}
 """
 
+def merge_token_data(tokens, data_type=None):
+    data = {}
+    for token in tokens:
+        if not data_type or token.data_type.value == data_type:
+            data.update(token.data.value)
+    return data
+
 
 class SetTokenMessage(Message):
     required_fields = {
@@ -159,14 +166,6 @@ class Token(rom.Object):
             self.data_type.value
         except rom.NotInRedisError:
             self.data_type = ""
-
-
-def merge_token_data(tokens, data_type=None):
-    data = {}
-    for token in tokens:
-        if not data_type or token.data_type.value == data_type:
-            data.update(token.data.value)
-    return data
 
 
 class _SafeNode(rom.Object):
@@ -441,6 +440,10 @@ class TransitionAction(rom.Object):
 
     def input_data(self, active_tokens_key, net):
         pass
+
+    def tokens(self, active_tokens_key):
+        keys = self.connection.lrange(active_tokens_key, 0, -1)
+        return [rom.get_object(self.connection, x) for x in keys]
 
     def execute(self, active_tokens_key, net, service_interfaces):
         raise NotImplementedError("In class %s: execute not implemented" %

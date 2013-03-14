@@ -52,7 +52,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
 
             self.handler.set_token(self.net_key, place_idx)
 
-            T.create.assert_called_once_with(self.storage)
+            T.create.assert_called_once_with(self.storage, data=None)
 
             response_message = SetTokenMessage(token_key=token.key,
                     net_key=self.net_key,
@@ -74,9 +74,14 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
                 net_key=self.net_key, response_places=self.response_places,
                 passthru=True)
 
-        self.assertEqual([mock.call(self.net_key, self.pre_dispatch_place_idx),
-                          mock.call(self.net_key, self.dispatch_success_place_idx)],
-                         set_token.mock_calls)
+        expected = [
+                mock.call(self.net_key, self.pre_dispatch_place_idx),
+                mock.call(self.net_key, self.dispatch_success_place_idx,
+                        data={'pid': executor_result})
+                ]
+
+        self.assertEqual(expected,
+                set_token.mock_calls)
 
     def test_message_handler_executor_failure(self):
         executor_result = mock.Mock()

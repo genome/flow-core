@@ -4,6 +4,7 @@ from tempfile import NamedTemporaryFile
 import flow.redisom as rom
 import json
 import subprocess
+import os
 
 import logging
 
@@ -34,7 +35,8 @@ class WrapperCommand(CommandBase):
 
     def __call__(self, parsed_arguments):
         self.send_token(net_key=parsed_arguments.net_key,
-                place_idx=parsed_arguments.running_place_id)
+                place_idx=parsed_arguments.running_place_id,
+                data={"pid": str(os.getpid())})
 
         rv = 1
         cmdline = parsed_arguments.command_line
@@ -50,7 +52,8 @@ class WrapperCommand(CommandBase):
 
                     inputs = inputs_hash.value
 
-                    LOG.debug("Fetched inputs from key %s" % parsed_arguments.with_inputs)
+                    LOG.debug("Fetched inputs from key %s" %
+                            parsed_arguments.with_inputs)
                     LOG.debug("Input values: %r" % inputs)
 
                     json.dump(inputs, inputs_file)
