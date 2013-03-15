@@ -95,9 +95,9 @@ class LSFExecutor(ExecutorBase):
                     submit_result, lsf.lsb_sperror("lsb_submit"))
             return False, submit_result
 
-    def create_request(self, name=None, queue=None, stdout=None, stderr=None,
-            beginTime=0, mail_user=None, working_directory=None,
-            resources={}, **kwargs):
+    def create_request(self, name=None, queue=None, group=None, project=None,
+            stdout=None, stderr=None, beginTime=0, mail_user=None,
+            working_directory=None, resources={}, **kwargs):
 
         request = lsf.submit()
         request.options = 0
@@ -119,6 +119,14 @@ class LSFExecutor(ExecutorBase):
             request.queue = self.default_queue
         request.options |= lsf.SUB_QUEUE
         LOG.debug("request.queue = %s", request.queue)
+
+        #if group:
+            #request.jobGroup = str(group)
+            #request.options2 |= lsf.SUB_JOB_GROUP
+
+        #if project:
+            #request.projectName = str(project)
+            #request.options |= lsf.SUB_PROJECT_NAME
 
         if stdout:
             request.outFile = str(stdout)

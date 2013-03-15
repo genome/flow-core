@@ -22,6 +22,10 @@ class CommandLineDispatchAction(sn.TransitionAction):
     def _executor_options(self, input_data_key, net):
         executor_options = {}
 
+        name = self.args.get('name', None)
+        if name:
+            executor_options['name'] = str(name)
+
         # Collect environment variables for this command
         environment = self._environment(net)
         if environment:
