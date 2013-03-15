@@ -18,6 +18,7 @@ lsf_command_line_service = flow.commands.service:ServiceCommand
 command_line_wrapper = flow.commands.wrapper:WrapperCommand
 configure_rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 console = flow.commands.console:ConsoleCommand
+graph = flow.commands.graph:GraphCommand
 
 [flow.factories]
 dictionary_factory = flow.factories:dictionary_factory
