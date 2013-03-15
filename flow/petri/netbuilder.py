@@ -46,9 +46,24 @@ class ActionSpec(object):
 
 
 class Transition(Node):
+    @property
+    def action(self):
+        return self._action
+
+    @action.setter
+    def action(self, value):
+        if self._action is not None:
+            raise RuntimeError(
+                    "In transition %s: attempted to overwrite "
+                    "action %r with %r" %
+                    (self.name, self._action, value))
+
+        self._action = value
+
     def __init__(self, index, name="", action=None):
         Node.__init__(self, index, name)
 
+        self._action = None
         self.action = action
         self.arcs_in = set([])
         self.arcs_out = set([])

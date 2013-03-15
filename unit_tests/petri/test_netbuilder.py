@@ -129,6 +129,17 @@ class TestNetBuilder(BuilderTest):
 
         self.assertEqual(expected_node_labels, node_labels)
 
+    def test_overwrite_transition_action_is_error(self):
+        net = self.builder.add_subnet(nb.EmptyNet, "test")
+
+        action1 = nb.ActionSpec(cls=None, args=None)
+        action2 = nb.ActionSpec(cls=None, args=None)
+
+        # Trying to reset an action is bad!
+        trans = net.add_transition("t1", action=action1)
+        with self.assertRaises(RuntimeError):
+            trans.action = action2
+
     def test_bridge_places_with_action(self):
         net = self.builder.add_subnet(nb.EmptyNet, "test")
         p1 = net.add_place("p1")
