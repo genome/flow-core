@@ -386,7 +386,8 @@ class SafeNet(rom.Object):
         for i in xrange(self.num_transitions):
             t = self.transition(i)
             ident = "t%i" % i
-            graph.add_node(ident, label=str(t.name), shape="box",
+            name = "%s (#%d)" % (str(t.name), i)
+            graph.add_node(ident, label=name, shape="box",
                     style="filled", fillcolor="black", fontcolor="white")
 
         for i in xrange(self.num_places):
