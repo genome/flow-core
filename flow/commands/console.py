@@ -19,17 +19,31 @@ class ConsoleCommand(CommandBase):
                 help='Load the net associated with this key '
                      'into the "net" variable.')
 
+        parser.add_argument('--object', '-o', default=None, nargs=2,
+                metavar=('NAME', 'KEY'),
+                help='Load the object associated with KEY '
+                     'into the NAME variable.')
+
     def __call__(self, parsed_arguments):
         namespace = {
                 'storage': self.storage,
-                'broker': self.broker
+                'broker': self.broker,
+                'rom': rom,
                 }
 
         if parsed_arguments.net_key:
-            try:
-                namespace['net'] = rom.get_object(
-                        self.storage, parsed_arguments.net_key)
-            except KeyError:
-                LOG.error('Net key (%s) not found.', parsed_arguments.net_key)
+            namespace['net'] = self.get_key(parsed_arguments.net_key)
+
+        if parsed_arguments.object:
+            namespace[parsed_arguments.object[0]] = self.get_key(
+                    parsed_arguments.object[1])
 
         embed(user_ns=namespace, display_banner=False)
+
+
+    def get_key(self, key):
+        try:
+            return rom.get_object(self.storage, key)
+        except KeyError:
+            LOG.error('Key (%s) not found.', key)
+        return None
