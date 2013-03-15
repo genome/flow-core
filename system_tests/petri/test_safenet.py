@@ -3,6 +3,7 @@ import flow.petri.safenet as sn
 from test_helpers import RedisTest, FakeOrchestrator
 import mock
 import os
+import pwd
 import redis
 import sys
 import unittest
@@ -93,10 +94,13 @@ class TestSafeNet(TestBase):
         self.assertEqual(nested, net1.constant("complex"))
 
     def test_capture_environment(self):
+        euid = os.geteuid()
+        user_name = pwd.getpwuid(euid).pw_name
         net = sn.SafeNet.create(connection=self.conn)
         net.capture_environment()
         self.assertEqual(os.environ.data, net.constant("environment"))
-        self.assertEqual(os.geteuid(), net.constant("user_id"))
+        self.assertEqual(euid, net.constant("user_id"))
+        self.assertEqual(user_name, net.constant("user_name"))
         self.assertEqual(os.path.realpath(os.path.curdir),
                 net.constant("working_directory"))
 

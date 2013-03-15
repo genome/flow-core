@@ -74,14 +74,15 @@ class WrapperCommand(CommandBase):
 
                     self.send_token(net_key=parsed_arguments.net_key,
                             place_idx=parsed_arguments.success_place_id,
-                            data=outputs)
+                            data={"exit_code": 0, "outputs": outputs})
 
                     rv = 0
                 except Exception as e:
                     LOG.error("Failed to execute command '%s': %s",
                             " ".join(cmdline), str(e))
                     self.send_token(net_key=parsed_arguments.net_key,
-                            place_idx=parsed_arguments.failure_place_id)
+                            place_idx=parsed_arguments.failure_place_id,
+                            data={"exit_code": e.returncode})
 
         return rv
 

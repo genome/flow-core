@@ -5,6 +5,7 @@ import flow.redisom as rom
 import json
 import logging
 import os
+import pwd
 import pygraphviz
 import subprocess
 
@@ -258,8 +259,11 @@ class SafeNet(rom.Object):
             raise TypeError("Attempted to reassign constant property %s" % key)
 
     def capture_environment(self):
+        euid = os.geteuid()
+        user_name = pwd.getpwuid(euid).pw_name
         self.set_constant("environment", os.environ.data)
-        self.set_constant("user_id", os.geteuid())
+        self.set_constant("user_id", euid)
+        self.set_constant("user_name", user_name)
         cwd = os.path.realpath(os.path.curdir)
         self.set_constant("working_directory", cwd)
 
