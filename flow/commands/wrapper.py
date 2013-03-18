@@ -77,12 +77,14 @@ class WrapperCommand(CommandBase):
                             data={"exit_code": 0, "outputs": outputs})
 
                     rv = 0
-                except Exception as e:
+                except CalledProcessError as e:
                     LOG.error("Failed to execute command '%s': %s",
                             " ".join(cmdline), str(e))
                     self.send_token(net_key=parsed_arguments.net_key,
                             place_idx=parsed_arguments.failure_place_id,
                             data={"exit_code": e.returncode})
+
+                    rv = e.returncode
 
         return rv
 
@@ -90,6 +92,8 @@ class WrapperCommand(CommandBase):
         self.broker.connect()
         token = Token.create(self.storage, data=data, data_type="output")
 
+        LOG.info("Sending command response token %s to net %s, place %r",
+                token.key, net_key, place_idx)
         message = SetTokenMessage(net_key=net_key, place_idx=place_idx,
                 token_key=token.key)
         self.broker.publish(exchange_name=self.exchange, routing_key=self.routing_key,
