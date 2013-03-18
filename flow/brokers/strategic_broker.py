@@ -141,10 +141,6 @@ class StrategicAmqpBroker(BrokerBase):
             except IOError:
                 LOG.warning('IO interrupted, continuing')
 
-    def reconnect(self):
-        self.disconnect()
-        self.connect()
-
 
     def _on_connection_open(self, connection):
         LOG.debug("Adding connection close callback")
@@ -172,10 +168,6 @@ class StrategicAmqpBroker(BrokerBase):
         for queue_name, listener in self._listeners.iteritems():
             LOG.debug('Beginning consumption on queue (%s)', queue_name)
             self._channel.basic_consume(listener, queue_name)
-
-    def _on_channel_closed(self, method_frame):
-        LOG.error('Channel unexpectedly closed.  Attempting to reconnect')
-        self.reconnect()
 
 
     def set_last_receive_tag(self, receive_tag):
