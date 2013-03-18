@@ -77,7 +77,7 @@ class WrapperCommand(CommandBase):
                             data={"exit_code": 0, "outputs": outputs})
 
                     rv = 0
-                except CalledProcessError as e:
+                except subprocess.CalledProcessError as e:
                     LOG.error("Failed to execute command '%s': %s",
                             " ".join(cmdline), str(e))
                     self.send_token(net_key=parsed_arguments.net_key,
