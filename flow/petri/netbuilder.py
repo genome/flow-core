@@ -99,6 +99,7 @@ class NetBuilder(object):
         self.transitions = []
         self.subnets = []
         self.variables = {}
+        self.constants = {}
 
         self._place_map = {}
         self._trans_map = {}
@@ -224,6 +225,9 @@ class NetBuilder(object):
 
         for key, value in self.variables.iteritems():
             net.set_variable(key, value)
+
+        for key, value in self.constants.iteritems():
+            net.set_constant(key, value)
 
         return net
 
