@@ -18,11 +18,14 @@ TERMINATION_SIGNALS = [signal.SIGINT, signal.SIGTERM]
 
 
 class StrategicAmqpBroker(BrokerBase):
-    def __init__(self, amqp_url=None, prefetch_count=None,
-            acking_strategy=None):
+    def __init__(self, amqp_url=None, prefetch_count=None, acking_strategy=None,
+            max_connect_attempts=3, reconnect_delay=10):
         self.amqp_url = amqp_url
         self.prefetch_count = prefetch_count
         self.acking_strategy = acking_strategy
+
+        self.max_connect_attempts = max_connect_attempts
+        self.reconnect_delay = reconnect_delay
 
         self._publish_properties = pika.BasicProperties(delivery_mode=2)
 
@@ -84,15 +87,45 @@ class StrategicAmqpBroker(BrokerBase):
         self.connect()
 
     def connect(self):
-        LOG.info('Connecting to AMQP server at: %s', self.amqp_url)
+        reconnect = True
+        retries = 0
+
+        params = pika.URLParameters(self.amqp_url)
+
         set_termination_signal_handler(raise_handler)
 
+        while reconnect and retries < self.max_connect_attempts:
+            LOG.info('Attempting to connect to AMQP server at: %s', params)
+
+            reconnect = self._connect(params)
+            if reconnect:
+                retries += 1
+                LOG.info('Waiting for reconnect attempt %d of %d',
+                        retries, self.max_connect_attempts)
+                time.sleep(self.reconnect_delay)
+
+    def _connect(self, params):
+        '''
+        Return value is whether reconnecting might be a good idea.
+        '''
         try:
             self._connection = pika.SelectConnection(
-                    pika.URLParameters(self.amqp_url), self._on_connection_open)
+                    params, self._on_connection_open)
+        except pika.exceptions.AMQPConnectionError:
+            LOG.exception('Failed to connect to AMQP server.')
+            return True
+
+        try:
             self._begin_ioloop()
         except KeyboardInterrupt:
             self.disconnect()
+        except pika.exceptions.ConnectionClosed:
+            LOG.exception('Disconnected from AMQP server: %s')
+        except pika.exceptions.AMQPConnectionError:
+            LOG.exception('Error with AMQP connection.')
+            return True
+
+        return False
 
     def disconnect(self):
         LOG.info("Closing AMQP connection.")
