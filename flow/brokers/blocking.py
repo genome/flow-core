@@ -8,13 +8,15 @@ LOG = logging.getLogger(__name__)
 
 
 class BlockingAmqpBroker(BrokerBase):
-    def __init__(self, amqp_url=None):
-        self.amqp_url = amqp_url
+    def __init__(self, **connection_params):
+        self.connection_params = connection_params
 
     def connect(self):
-        self.connection = pika.BlockingConnection(
-                pika.URLParameters(self.amqp_url))
+        params = pika.ConnectionParameters(**self.connection_params)
+        self.connection = pika.BlockingConnection(params)
+
         self.channel = self.connection.channel()
+        self.channel.confirm_delivery()
 
     def disconnect(self):
         self.connection.close()

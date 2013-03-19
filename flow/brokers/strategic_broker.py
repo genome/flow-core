@@ -18,14 +18,11 @@ TERMINATION_SIGNALS = [signal.SIGINT, signal.SIGTERM]
 
 
 class StrategicAmqpBroker(BrokerBase):
-    def __init__(self, amqp_url=None, prefetch_count=None, acking_strategy=None,
-            max_connect_attempts=3, reconnect_delay=10):
-        self.amqp_url = amqp_url
+    def __init__(self, prefetch_count=None, acking_strategy=None,
+            **connection_params):
         self.prefetch_count = prefetch_count
         self.acking_strategy = acking_strategy
-
-        self.max_connect_attempts = max_connect_attempts
-        self.reconnect_delay = reconnect_delay
+        self.connection_params = connection_params
 
         self._publish_properties = pika.BasicProperties(delivery_mode=2)
 
