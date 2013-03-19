@@ -1,9 +1,11 @@
 import logging
 from flow.petri.safenet import Token, SetTokenMessage
+from flow.command_runner.messages import CommandLineSubmitMessage
 
 LOG = logging.getLogger(__name__)
 
 class CommandLineSubmitMessageHandler(object):
+    message_class = CommandLineSubmitMessage
     def __init__(self, executor=None, broker=None, storage=None,
             queue_name=None, exchange=None, routing_key=None):
         self.executor = executor

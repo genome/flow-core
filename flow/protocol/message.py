@@ -1,4 +1,5 @@
 import copy
+import json
 from flow.protocol import exceptions
 
 
@@ -40,13 +41,26 @@ class Message(object):
                     'Message (%s) requires %s have type (%s)' %
                     (self.__class__.__name__, name, type_))
 
+    def encode(self):
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def decode(cls, encoded_message):
+        try:
+            d = json.loads(encoded_message)
+        except:
+            raise exceptions.InvalidMessageException(
+                    'Could not deserialized message: %s.' % encoded_message)
+
+        return cls(**d)
+
     def to_dict(self):
         data = copy.copy(self.__dict__)
-        data['message_class'] = self.__class__.__name__
         return data
 
     def __eq__(self, other):
-        return self.to_dict() == other.to_dict()
+        return (self.__class__ == other.__class__) and (
+                self.__dict__  == other.__dict__)
 
     def __repr__(self):
-        return repr(self.to_dict())
+        return '%s(**%s)' % (self.__class__.__name__, self.__dict__)

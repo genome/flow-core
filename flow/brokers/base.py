@@ -1,15 +1,13 @@
 from abc import ABCMeta, abstractmethod
 import logging
 
-from flow.protocol import codec
-
 LOG = logging.getLogger(__name__)
 
 class BrokerBase(object):
     __metaclass__ = ABCMeta
 
     def publish(self, exchange_name, routing_key, message):
-        encoded_message = codec.encode(message)
+        encoded_message = message.encode()
         self.raw_publish(exchange_name, routing_key, encoded_message)
 
     @abstractmethod

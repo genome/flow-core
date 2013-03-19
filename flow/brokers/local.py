@@ -1,6 +1,5 @@
 import logging
 from collections import deque, defaultdict
-from flow.protocol import codec
 
 from flow.brokers.base import BrokerBase
 
@@ -28,13 +27,14 @@ class LocalBroker(BrokerBase):
     def listen(self):
         while self.queue:
             exchange, routing_key, encoded_message = self.queue.popleft()
-            message = codec.decode(encoded_message)
             LOG.debug('got message on exchange %s via routing_key %s: %s',
-                    exchange, routing_key, message)
+                    exchange, routing_key, encoded_message)
             queues = self.bindings[exchange][routing_key]
             for q in queues:
                 try:
                     h = self.handlers[q]
+                    message_class = h.message_class
+                    message = message_class.decode(encoded_message)
                     h(message)
                 except KeyError:
                     pass

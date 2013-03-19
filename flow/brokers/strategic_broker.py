@@ -1,4 +1,3 @@
-from flow.protocol import codec
 from flow.protocol.exceptions import InvalidMessageException
 from pika.spec import Basic
 
@@ -54,9 +53,13 @@ class StrategicAmqpBroker(BrokerBase):
 
     def register_handler(self, handler):
         queue_name = handler.queue_name
-        LOG.debug('Registering handler (%s) on queue (%s)',
-                handler, queue_name)
-        listener = AmqpListener(delivery_callback=handler, broker=self)
+        message_class = handler.message_class
+
+        LOG.debug('Registering handler (%s) listening for (%s) on queue (%s)',
+                handler, message_class.__name__, queue_name)
+
+        listener = AmqpListener(delivery_callback=handler,
+                message_class=message_class, broker=self)
         self._listeners[queue_name] = listener
 
 
@@ -146,8 +149,9 @@ def null_handler(*args):
 
 
 class AmqpListener(object):
-    def __init__(self, broker=None, delivery_callback=None):
+    def __init__(self, broker=None, message_class=None, delivery_callback=None):
         self.broker = broker
+        self.message_class = message_class
         self.delivery_callback = delivery_callback
 
     def __call__(self, channel, basic_deliver, properties, encoded_message):
@@ -159,7 +163,7 @@ class AmqpListener(object):
                 delivery_tag, properties)
 
         try:
-            message = codec.decode(encoded_message)
+            message = message_class.decode(encoded_message)
             self.delivery_callback(message)
 
             LOG.debug('Checking for ack after handler (%d)', delivery_tag)
