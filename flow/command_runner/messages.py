@@ -31,13 +31,3 @@ class CommandLineSubmitMessage(Message):
             if not isinstance(k, basestring):
                 raise exceptions.InvalidMessageException(
                         'Invalid type for executor_options key: %s', k)
-
-class CommandLineResponseMessage(Message):
-    required_fields = {
-            'return_identifier': object,
-    }
-    optional_fields = {
-            'exit_code': int,
-            'job_id': basestring,
-            'error_message': basestring,
-    }
