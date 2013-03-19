@@ -4,13 +4,9 @@ from pika.spec import Basic
 
 from flow.brokers.base import BrokerBase
 
-import blist
-import collections
 import logging
-import os
 import pika
 import signal
-import time
 
 LOG = logging.getLogger(__name__)
 
