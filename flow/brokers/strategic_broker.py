@@ -163,7 +163,7 @@ class AmqpListener(object):
                 delivery_tag, properties)
 
         try:
-            message = message_class.decode(encoded_message)
+            message = self.message_class.decode(encoded_message)
             self.delivery_callback(message)
 
             LOG.debug('Checking for ack after handler (%d)', delivery_tag)
