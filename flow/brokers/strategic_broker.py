@@ -84,33 +84,11 @@ class StrategicAmqpBroker(BrokerBase):
         self.connect()
 
     def connect(self):
-        reconnect = True
-        retries = 0
-
-        params = pika.URLParameters(self.amqp_url)
-
+        params = pika.ConnectionParameters(**self.connection_params)
         set_termination_signal_handler(raise_handler)
 
-        while reconnect and retries < self.max_connect_attempts:
-            LOG.info('Attempting to connect to AMQP server at: %s', params)
-
-            reconnect = self._connect(params)
-            if reconnect:
-                retries += 1
-                LOG.info('Waiting for reconnect attempt %d of %d',
-                        retries, self.max_connect_attempts)
-                time.sleep(self.reconnect_delay)
-
-    def _connect(self, params):
-        '''
-        Return value is whether reconnecting might be a good idea.
-        '''
-        try:
-            self._connection = pika.SelectConnection(
-                    params, self._on_connection_open)
-        except pika.exceptions.AMQPConnectionError:
-            LOG.exception('Failed to connect to AMQP server.')
-            return True
+        self._connection = pika.SelectConnection(
+                params, self._on_connection_open)
 
         try:
             self._begin_ioloop()
@@ -118,11 +96,6 @@ class StrategicAmqpBroker(BrokerBase):
             self.disconnect()
         except pika.exceptions.ConnectionClosed:
             LOG.exception('Disconnected from AMQP server: %s')
-        except pika.exceptions.AMQPConnectionError:
-            LOG.exception('Error with AMQP connection.')
-            return True
-
-        return False
 
     def disconnect(self):
         LOG.info("Closing AMQP connection.")
@@ -140,17 +113,7 @@ class StrategicAmqpBroker(BrokerBase):
 
 
     def _on_connection_open(self, connection):
-        LOG.debug("Adding connection close callback")
-        connection.add_on_close_callback(self._on_connection_closed)
-
         connection.channel(self._on_channel_open)
-
-    def _on_connection_closed(self, method_frame):
-        LOG.error("Disconnected.  Retrying in %f seconds.",
-                self.reconnect_delay)
-        time.sleep(self.reconnect_delay)
-        self.connect()
-
 
     def _on_channel_open(self, channel):
         self._channel = channel
