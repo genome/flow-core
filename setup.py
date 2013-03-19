@@ -19,27 +19,6 @@ command_line_wrapper = flow.commands.wrapper:WrapperCommand
 configure_rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 console = flow.commands.console:ConsoleCommand
 graph = flow.commands.graph:GraphCommand
-
-[flow.factories]
-dictionary_factory = flow.factories:dictionary_factory
-
-redis_storage_singleton = flow.storage:redis_storage_singleton
-
-asynchronous_amqp_broker = flow.brokers.strategic_broker:StrategicAmqpBroker
-blocking_broker = flow.brokers.blocking:BlockingAmqpBroker
-local_broker = flow.brokers.local:LocalBroker
-publisher_confirm_acking = flow.brokers.acking_strategies:PublisherConfirmation
-immediate_acking = flow.broker.acking_strategies:Immediate
-
-orchestrator_service_interface = flow.orchestrator.service_interface:OrchestratorServiceInterface
-shell_command_service_interface = flow.command_runner.service_interface:CommandLineServiceInterface
-
-petri_set_token_handler = flow.orchestrator.handlers:PetriSetTokenHandler
-petri_notify_transition_handler = flow.orchestrator.handlers:PetriNotifyTransitionHandler
-
-command_line_submit_handler = flow.command_runner.handler:CommandLineSubmitMessageHandler
-command_line_local_executor = flow.command_runner.executors.local:SubprocessExecutor
-command_line_lsf_executor = flow.command_runner.executors.lsf:LSFExecutor
 '''
 
 setup(

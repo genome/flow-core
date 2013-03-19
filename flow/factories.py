@@ -1,4 +1,4 @@
-import pkg_resources
+import importlib
 
 import logging
 
@@ -46,15 +46,8 @@ def general_factory(factory_name=None, **kwargs):
 
     return concrete_factory(**kwargs)
 
-def get_concrete_factory(factory_name, category='flow.factories'):
-    for ep in pkg_resources.iter_entry_points(category, name=factory_name):
-        LOG.debug('Found entry point %s for factory_name %s',
-                ep, factory_name)
-        try:
-            return ep.load()
-        except ImportError:
-            raise ImportError("Couldn't import factory '%s' from entry point '%s'" %
-                    (factory_name, ep))
+def get_concrete_factory(factory_name):
+    module_name, object_name = factory_name.split(':')
+    module = importlib.import_module(module_name)
 
-    raise RuntimeError('Found no entry point for factory_name %s' %
-            factory_name)
+    return getattr(module, object_name)
