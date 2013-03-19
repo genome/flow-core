@@ -1,4 +1,4 @@
-import importlib
+from flow.util import imp
 
 import logging
 
@@ -27,7 +27,7 @@ def general_factory(factory_name=None, **kwargs):
         return kwargs
     LOG.debug('Constructing factory_name: %s', factory_name)
 
-    concrete_factory = get_concrete_factory(factory_name)
+    concrete_factory = imp.load_object(factory_name)
 
     for name, value in kwargs.iteritems():
         if isinstance(value, dict):
@@ -45,9 +45,3 @@ def general_factory(factory_name=None, **kwargs):
             kwargs[name] = obj_list
 
     return concrete_factory(**kwargs)
-
-def get_concrete_factory(factory_name):
-    module_name, object_name = factory_name.split(':')
-    module = importlib.import_module(module_name)
-
-    return getattr(module, object_name)
