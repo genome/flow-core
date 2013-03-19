@@ -21,6 +21,7 @@ class StrategicAmqpBroker(BrokerBase):
 
         self._publish_properties = pika.BasicProperties(delivery_mode=2)
 
+        self._consumer_tags = []
         self._listeners = {}
         self.acking_strategy.register_broker(self)
 
@@ -29,6 +30,7 @@ class StrategicAmqpBroker(BrokerBase):
         LOG.debug("Resetting broker state.")
         self._last_publish_tag = 0
         self._last_receive_tag = 0
+        self._notified_to_disconnect = False
 
         self.acking_strategy.reset()
 
@@ -40,6 +42,14 @@ class StrategicAmqpBroker(BrokerBase):
             self.ack(ackable_tags[0], multiple=multiple)
             for tag in ackable_tags[1:]:
                 self.ack(tag)
+
+        if self._notified_to_disconnect and self.acking_strategy.empty():
+            self.disconnect()
+
+    def stop_consuming(self):
+        self._notified_to_disconnect = True
+        for ct in self._consumer_tags:
+            self._channel.basic_cancel(ct)
 
     def ack(self, receive_tag, multiple=False):
         LOG.debug('Acking message (%d), multiple = %s', receive_tag, multiple)
@@ -126,7 +136,8 @@ class StrategicAmqpBroker(BrokerBase):
 
         for queue_name, listener in self._listeners.iteritems():
             LOG.debug('Beginning consumption on queue (%s)', queue_name)
-            self._channel.basic_consume(listener, queue_name)
+            self._consumer_tags.append(
+                    self._channel.basic_consume(listener, queue_name))
 
 
     def set_last_receive_tag(self, receive_tag):
