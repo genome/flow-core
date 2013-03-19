@@ -1,4 +1,3 @@
-from flow.protocol import codec
 import logging
 import pika
 
@@ -38,12 +37,8 @@ class BlockingAmqpBroker(BrokerBase):
         self.channel.basic_publish(exchange_name,
                 routing_key, encoded_message)
 
-    def get(self, queue_name):
-        return self.raw_get(queue_name, decoder=codec.decode)
-
-    def raw_get(self, queue_name, decoder=lambda x: x):
+    def raw_get(self, queue_name):
         for frame, header, body in self.channel.consume(queue_name):
-            message = decoder(body)
             self.channel.basic_ack(frame.delivery_tag)
             break
 
@@ -53,4 +48,4 @@ class BlockingAmqpBroker(BrokerBase):
         if self.channel._generator_messages:
             self.channel.cancel()
 
-        return message
+        return body
