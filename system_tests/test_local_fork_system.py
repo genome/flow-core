@@ -3,7 +3,8 @@ from test_helpers import redistest
 
 from flow.brokers.local import LocalBroker
 from flow.orchestrator.service_interface import OrchestratorServiceInterface
-from flow.orchestrator.handlers import PetriSetTokenHandler, PetriNotifyTransitionHandler
+from flow.orchestrator.handlers import PetriSetTokenHandler
+from flow.orchestrator.handlers import PetriNotifyTransitionHandler
 
 from flow.command_runner.service_interface import CommandLineServiceInterface
 from flow.command_runner.handler import CommandLineSubmitMessageHandler
@@ -35,10 +36,12 @@ class TestSystemFork(redistest.RedisTest):
                     submit_routing_key='fork_submit_rk')}
 
         self.broker.register_handler(
-                PetriSetTokenHandler(redis=self.conn, service_interfaces=self.service_interfaces,
+                PetriSetTokenHandler(redis=self.conn,
+                    service_interfaces=self.service_interfaces,
                     queue_name='set_token_q'))
         self.broker.register_handler(
-                PetriNotifyTransitionHandler(redis=self.conn, service_interfaces=self.service_interfaces,
+                PetriNotifyTransitionHandler(redis=self.conn,
+                    service_interfaces=self.service_interfaces,
                     queue_name='notify_transition_q'))
 
         fork_executor = SubprocessExecutor(wrapper=['bash', '-c', ':'])
@@ -60,7 +63,8 @@ class TestSystemFork(redistest.RedisTest):
         net = builder.store(self.conn)
 
         token = safenet.Token.create(self.conn)
-        self.service_interfaces['orchestrator'].set_token(net.key, 0, token_key=token.key)
+        self.service_interfaces['orchestrator'].set_token(net.key,
+                0, token_key=token.key)
         self.broker.listen()
 
         # XXX This is the marking for dispatched, not success/failure
