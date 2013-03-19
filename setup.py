@@ -4,12 +4,6 @@ entry_points = '''
 [console_scripts]
 flow = flow.commands.base:main
 
-[flow.protocol.message_classes]
-set_tokens = flow.petri.safenet:SetTokenMessage
-notify_transition = flow.petri.safenet:NotifyTransitionMessage
-submit_command = flow.command_runner.messages:CommandLineSubmitMessage
-command_result = flow.command_runner.messages:CommandLineResponseMessage
-
 [flow.commands]
 set-token = flow.commands.set_token:SetTokenCommand
 orchestrator = flow.commands.service:ServiceCommand
