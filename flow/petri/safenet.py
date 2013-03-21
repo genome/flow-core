@@ -355,7 +355,7 @@ class SafeNet(rom.Object):
 
     def set_token(self, place_idx, token_key='', service_interfaces=None):
         place = self.place(place_idx)
-        LOG.debug("setting token %s for place %s", token_key, place.name)
+        LOG.debug("setting token %s for place %s (#%d)", token_key, place.name, place_idx)
 
         marking_key = self.subkey("marking")
 
