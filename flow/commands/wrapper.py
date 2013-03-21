@@ -5,6 +5,7 @@ import flow.redisom as rom
 import json
 import subprocess
 import os
+import platform
 
 import logging
 
@@ -64,6 +65,9 @@ class WrapperCommand(CommandBase):
 
                 if parsed_arguments.with_outputs:
                     cmdline += ["--outputs-file", outputs_file.name]
+
+                LOG.info("On host %s: executing %s", platform.node(),
+                        " ".join(cmdline))
 
                 try:
                     subprocess.check_call(cmdline)
