@@ -488,6 +488,12 @@ class TestHash(TestBase):
         self.assertEqual("Y", self.h["X"])
         self.assertRaises(KeyError, self.h.__getitem__, "z")
 
+    def test_getitem_encoded_null(self):
+        he = rom.Hash(connection=self.conn, key="he", value_encoder=rom.json_enc,
+                value_decoder=rom.json_dec)
+        he.value = {"x": None}
+        self.assertEqual(None, he["x"])
+
     def test_delitem(self):
         self.h.value = {"x": "y", "X": "Y"}
         self.assertRaises(KeyError, self.h.__delitem__, "z")

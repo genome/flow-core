@@ -339,13 +339,16 @@ class Hash(Value):
         return self.connection.hset(self.key, hkey, self._encode_value(val))
 
     def __getitem__(self, hkey):
-        result = self.get(hkey)
+        result = self._get_raw(hkey)
         if result is None:
             raise KeyError("Hash (%s) has no key '%s'" % (self.key, hkey))
-        return result
+        return self._decode_value(result)
+
+    def _get_raw(self, hkey):
+        return self.connection.hget(self.key, hkey)
 
     def get(self, hkey, default=None):
-        result = self.connection.hget(self.key, hkey)
+        result = self._get_raw(hkey)
         if result is None:
             return default
         else:
