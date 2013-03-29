@@ -18,11 +18,10 @@ def environment(environment_dicts):
     os.environ.clear()
 
     for key, value in temporary_environment.iteritems():
-        LOG.debug('Updating environment variable %s=%s', key, value)
         try:
             os.environ[key] = value
         except UnicodeEncodeError:
-            LOG.debug('Failed to update environment variable %s=%s... skipping',
+            LOG.warn('Failed to update environment variable %s=%s... skipping',
                     key, value)
             pass
 
