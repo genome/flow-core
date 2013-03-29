@@ -130,7 +130,7 @@ class CreateRequestTest(unittest.TestCase):
 
 
     def test_stdout_success(self):
-        stdout = 'stdout path'
+        stdout = '/tmp/stdout/path'
         request = self.dispatcher.create_request(stdout=stdout)
         self.assertEqual(request.queue, self.default_queue)
         self.assertEqual(request.outFile, stdout)
@@ -143,7 +143,7 @@ class CreateRequestTest(unittest.TestCase):
 
 
     def test_stderr_success(self):
-        stderr = 'stderr path'
+        stderr = '/tmp/stderr/path'
         request = self.dispatcher.create_request(stderr=stderr)
         self.assertEqual(request.queue, self.default_queue)
         self.assertEqual(request.errFile, stderr)

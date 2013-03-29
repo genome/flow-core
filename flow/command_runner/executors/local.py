@@ -23,9 +23,11 @@ class SubprocessExecutor(ExecutorBase):
             stderr_fh = None
             try:
                 if stdout:
-                    stdout_fh = open(stdout, 'a')
+                    stdout_fh = open(util.join_path_if_rel(
+                        working_directory, stdout), 'a')
                 if stderr:
-                    stderr_fh = open(stderr, 'a')
+                    stderr_fh = open(util.join_path_if_rel(
+                        working_directory, stderr), 'a')
 
                 LOG.debug('working_directory = %s', working_directory)
                 LOG.debug('PATH = %s', os.getenv('PATH'))

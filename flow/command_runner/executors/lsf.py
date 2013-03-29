@@ -129,11 +129,13 @@ class LSFExecutor(ExecutorBase):
             #request.options |= lsf.SUB_PROJECT_NAME
 
         if stdout:
-            request.outFile = str(stdout)
+            request.outFile = str(util.join_path_if_rel(
+                working_directory, stdout))
             request.options |= lsf.SUB_OUT_FILE
             LOG.debug('setting job stdout = %s', stdout)
         if stderr:
-            request.errFile = str(stderr)
+            request.errFile = str(util.join_path_if_rel(
+                working_directory, stderr))
             request.options |= lsf.SUB_ERR_FILE
             LOG.debug('setting job stderr = %s', stderr)
 
