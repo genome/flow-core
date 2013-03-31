@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 import flow.configuration
 from flow.factories import dictionary_factory
+from flow.util import stats
 import sys
 import traceback
 
@@ -35,8 +36,10 @@ def main():
 
         config = flow.configuration.load_config(arguments.config)
 
-        logging_config = config['logging_configurations'][logging_mode]
-        flow.configuration.setup_logging(logging_config)
+        flow.configuration.initialize_logging(config, logging_mode)
+        flow.configuration.initialize_statsd(config)
+
+        stats.increment_as_user('command', arguments.command_name)
 
         try:
             command_config = config['commands'][arguments.command_name]

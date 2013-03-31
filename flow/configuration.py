@@ -1,12 +1,15 @@
 import argparse
 import os
 import pkg_resources
+import statsd
 import sys
 import yaml
 
 import flow.commands.base
 
-from logging.config import dictConfig
+import logging.config
+
+LOG = logging.getLogger(__name__)
 
 _DEFAULT_CONFIG_FILE = '/etc/flow.yaml'
 
@@ -25,10 +28,6 @@ def load_config(configuration_filename):
                 % _DEFAULT_CONFIG_FILE)
 
     return configuration_dict
-
-
-def setup_logging(logging_dict):
-    dictConfig(logging_dict)
 
 
 def load_commands(command_category='flow.commands'):
@@ -57,3 +56,17 @@ def create_parser(commands):
         command.annotate_parser(command_parser)
 
     return parser
+
+
+def initialize_logging(config, logging_mode):
+    logging_config = config['logging_configurations'][logging_mode]
+    logging.config.dictConfig(logging_config)
+
+
+def initialize_statsd(config):
+    try:
+        statsd_settings = config['statsd_configuration']
+    except KeyError:
+        statsd_settings = {}
+        LOG.warn('No statsd settings found in configuration.')
+    statsd.init_statsd(statsd_settings)
