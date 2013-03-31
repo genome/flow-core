@@ -149,7 +149,8 @@ class LSFExecutor(ExecutorBase):
         limit = resources.get("limit", {})
 
         numProcessors = require.get("min_proc", 1)
-        maxNumProcessors = require.get("max_proc", 1)
+        maxNumProcessors = require.get("max_proc", numProcessors)
+
         termTime = limit.get("cpu_time", 0)
 
         request.numProcessors = int(numProcessors)
