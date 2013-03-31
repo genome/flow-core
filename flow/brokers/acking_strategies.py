@@ -1,5 +1,7 @@
 from pika.spec import Basic
 
+from flow.util import stats
+
 import collections
 import blist
 import logging
@@ -60,6 +62,8 @@ class TagRelationships(object):
         self._receive_to_publish_set_map = collections.defaultdict(set)
 
     def add_publish_tag(self, receive_tag=None, publish_tag=None):
+        timer = stats.create_timer('pub_confirm.add_publish_tag')
+        timer.start()
         if receive_tag in self._ackable_receive_tags:
             self._ackable_receive_tags.remove(receive_tag)
             self._non_ackable_receive_tags.add(receive_tag)
@@ -67,25 +71,33 @@ class TagRelationships(object):
         self._receive_to_publish_set_map[receive_tag].add(publish_tag)
         self._publish_to_receive_map[publish_tag] = receive_tag
         self._unconfirmed_publish_tags.add(publish_tag)
+        timer.stop()
 
     def add_receive_tag(self, receive_tag):
         self._ackable_receive_tags.add(receive_tag)
 
     def remove_publish_tag(self, publish_tag, multiple=False):
+        timer = stats.create_timer('pub_confirm.remove_publish_tag')
+        timer.start()
         if multiple:
             max_index = self._unconfirmed_publish_tags.bisect(publish_tag)
+            timer.split('multiple_max_index_bisect')
+
             ready_tags = self._unconfirmed_publish_tags[:max_index]
             del self._unconfirmed_publish_tags[:max_index]
+            timer.split('multiple_delete_tags')
 
             LOG.debug('Multiple confirm for (%d) includes: %s',
                     publish_tag, ready_tags)
 
             for tag in ready_tags:
                 self.remove_single_publish_tag(tag)
+            timer.split('multiple_remove_tags')
         else:
             LOG.debug('Single confirm for (%d)', publish_tag)
             self._unconfirmed_publish_tags.remove(publish_tag)
             self.remove_single_publish_tag(publish_tag)
+        timer.stop()
 
     def remove_receive_tag(self, receive_tag):
         LOG.debug('Removing receive tag (%d)', receive_tag)
@@ -151,6 +163,9 @@ class TagRelationships(object):
         if not ackable_tags:
             return [], False
 
+        timer = stats.create_timer('pub_confirm.pop_ackable_receive_tags')
+        timer.start()
+
         unackable_tags = self._non_ackable_receive_tags
         if (not unackable_tags) or (unackable_tags[0] > ackable_tags[-1]):
             LOG.debug('Ackable tags are smaller than smallest unackable tag')
@@ -170,6 +185,8 @@ class TagRelationships(object):
             ready_tags.extend(ackable_tags[index:])
 
         self._ackable_receive_tags = blist.sortedlist()
+
+        timer.stop()
         return ready_tags, multiple
 
 class PublisherConfirmation(object):
