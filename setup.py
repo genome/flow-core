@@ -34,6 +34,7 @@ setup(
             'pygraphviz',
             'pyyaml',
             'redis',
+            'statsd-client',
         ],
         setup_requires = [
             'nose',
