@@ -2,6 +2,7 @@ from flow.protocol.exceptions import InvalidMessageException
 from pika.spec import Basic
 
 from flow.brokers.base import BrokerBase
+from flow.util import stats
 
 import logging
 import pika
@@ -165,7 +166,11 @@ class AmqpListener(object):
         self.message_class = message_class
         self.delivery_callback = delivery_callback
 
+        self.message_stats_tag = 'messages.receive.%s' % message_class.__name__
+
     def __call__(self, channel, basic_deliver, properties, encoded_message):
+        timer = stats.create_timer(self.message_stats_tag)
+        timer.start()
         broker = self.broker
 
         delivery_tag = basic_deliver.delivery_tag
@@ -173,12 +178,16 @@ class AmqpListener(object):
         LOG.debug('Received message (%d), properties = %s',
                 delivery_tag, properties)
 
+        timer.split('setup')
         try:
             message = self.message_class.decode(encoded_message)
+            timer.split('decode')
             self.delivery_callback(message)
+            timer.split('handle')
 
             LOG.debug('Checking for ack after handler (%d)', delivery_tag)
             broker.ack_if_able()
+            timer.split('ack')
 
         # KeyboardInterrupt must be passed up the stack so we can terminate
         except KeyboardInterrupt:
@@ -188,6 +197,10 @@ class AmqpListener(object):
             LOG.exception('Invalid message.  Properties = %s, message = %s',
                     properties, encoded_message)
             broker.reject(delivery_tag)
+            timer.split('reject')
         except:
             LOG.exception('Unexpected error handling message.')
             broker.reject(delivery_tag)
+            timer.split('reject')
+        finally:
+            timer.stop()
