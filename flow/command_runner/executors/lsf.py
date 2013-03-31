@@ -178,13 +178,11 @@ def get_rlimits(max_resident_memory=None, max_virtual_memory=None,
     # Initialize unused limits
     limits = [lsf.DEFAULT_RLIMIT] * lsf.LSF_RLIM_NLIMITS
 
-    # RLIMIT_RSS is apparently unsupported on Linux 2.6.
-    # Setting lsf.LSF_RLIMIT_RSS it will cause lsb_submit to fail.
-    #if max_resident_memory:
-        #max_resident_memory = int(max_resident_memory)
-        #limits[lsf.LSF_RLIMIT_RSS] = max_resident_memory
-        #LOG.debug('setting rLimit for max_resident_memory to %r',
-                #max_resident_memory)
+    if max_resident_memory:
+        max_resident_memory = int(max_resident_memory)
+        limits[lsf.LSF_RLIMIT_RSS] = max_resident_memory
+        LOG.debug('setting rLimit for max_resident_memory to %r',
+                max_resident_memory)
 
     if max_virtual_memory:
         limits[lsf.LSF_RLIMIT_VMEM] = int(max_virtual_memory)
