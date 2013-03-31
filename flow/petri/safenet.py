@@ -1,4 +1,6 @@
 from flow.protocol.message import Message
+from flow.util import stats
+
 from uuid import uuid4
 import base64
 import flow.redisom as rom
@@ -301,6 +303,8 @@ class SafeNet(rom.Object):
 
     def notify_transition(self, trans_idx=None, place_idx=None, service_interfaces=None):
         LOG.debug("notify transition #%d", trans_idx)
+        timer = stats.create_timer('petri.SafeNet.notify_transition')
+        timer.start()
 
         if trans_idx is None or place_idx is None or service_interfaces is None:
             raise TypeError(
@@ -320,10 +324,13 @@ class SafeNet(rom.Object):
         keys = [state_key, active_tokens_key, arcs_in_key, marking_key,
                 enabler_key]
         args = [place_idx]
+        timer.split('setup')
         rv = self._consume_tokens(keys=keys, args=args)
+        timer.split('consume_tokens')
         LOG.debug("Consume tokens rv=%r", rv)
 
         if rv[0] != 0:
+            timer.stop()
             return
 
         action = trans.action
@@ -331,19 +338,25 @@ class SafeNet(rom.Object):
         if action is not None:
             new_token = action.execute(active_tokens_key, net=self,
                     service_interfaces=service_interfaces)
+            timer.split('execute_action.%s' % action.__class__.__name__)
 
         if new_token is None:
             new_token = Token.create(self.connection)
+            timer.split('create_token')
 
         keys = [active_tokens_key, arcs_in_key, arcs_out_key, marking_key,
                 new_token.key, state_key, tokens_pushed_key]
         rv = self._push_tokens(keys=keys)
+        timer.split('push_tokens')
         tokens_pushed, places_to_notify = rv
         if tokens_pushed == 1:
             orchestrator = service_interfaces['orchestrator']
             for place_idx in places_to_notify:
                 orchestrator.set_token(self.key, int(place_idx), token_key='')
+            timer.split('set_tokens')
             self.connection.delete(tokens_pushed_key)
+            timer.split('delete_pushed_tokens')
+        timer.stop()
 
     def marking(self, place_idx=None):
         marking_key = self.subkey("marking")
@@ -354,6 +367,8 @@ class SafeNet(rom.Object):
             return self.connection.hget(self.subkey("marking"), place_idx)
 
     def set_token(self, place_idx, token_key='', service_interfaces=None):
+        timer = stats.create_timer('petri.SafeNet.set_token')
+        timer.start()
         place = self.place(place_idx)
         LOG.debug("Net %s setting token %s for place %s (#%d)", self.key,
                 token_key, place.name, place_idx)
@@ -381,6 +396,7 @@ class SafeNet(rom.Object):
             for trans_idx in arcs_out:
                 orchestrator.notify_transition(self.key, int(trans_idx),
                         int(place_idx))
+        timer.stop()
 
 
     def graph(self):
