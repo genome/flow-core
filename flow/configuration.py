@@ -8,15 +8,21 @@ import flow.commands.base
 
 from logging.config import dictConfig
 
+_DEFAULT_CONFIG_FILE = '/etc/flow.yaml'
 
 def load_config(configuration_filename):
     if configuration_filename is None:
         configuration_filename = os.getenv('FLOW_CONFIG')
     if configuration_filename is None:
-        raise ValueError("No configuration filename provided, and FLOW_CONFIG environment variable not set")
+        configuration_filename = _DEFAULT_CONFIG_FILE
 
-    with open(configuration_filename) as f:
-        configuration_dict = yaml.load(f)
+    try:
+        with open(configuration_filename) as f:
+            configuration_dict = yaml.load(f)
+    except IOError:
+        raise ValueError("No configuration file provided "
+                "(searched FLOW_CONFIG and '%s' for default)"
+                % _DEFAULT_CONFIG_FILE)
 
     return configuration_dict
 
