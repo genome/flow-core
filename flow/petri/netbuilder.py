@@ -1,4 +1,5 @@
 from flow.petri import safenet
+from flow.util import stats
 
 import itertools
 import pygraphviz
@@ -199,6 +200,9 @@ class NetBuilder(object):
         return graph
 
     def store(self, connection, name="net"):
+        timer = stats.create_timer('petri.NetBuilder.store')
+        timer.start()
+
         place_names = []
         place_arcs_out = {}
         for p in self.places:
@@ -206,6 +210,7 @@ class NetBuilder(object):
             src_id = self._place_map[p]
             dst_ids = [self._trans_map[x] for x in p.arcs_out]
             place_arcs_out.setdefault(src_id, set()).update(dst_ids)
+        timer.split('places')
 
         transition_actions = []
         trans_arcs_out = {}
@@ -214,6 +219,7 @@ class NetBuilder(object):
             src_id = self._trans_map[t]
             dst_ids = [self._place_map[x] for x in t.arcs_out]
             trans_arcs_out.setdefault(src_id, set()).update(dst_ids)
+        timer.split('transitions')
 
         net = safenet.SafeNet.create(
                 connection=connection,
@@ -222,13 +228,16 @@ class NetBuilder(object):
                 trans_actions=transition_actions,
                 place_arcs_out=place_arcs_out,
                 trans_arcs_out=trans_arcs_out)
+        timer.split('net')
 
         for key, value in self.variables.iteritems():
             net.set_variable(key, value)
 
         for key, value in self.constants.iteritems():
             net.set_constant(key, value)
+        timer.split('var_and_const')
 
+        timer.stop()
         return net
 
 
