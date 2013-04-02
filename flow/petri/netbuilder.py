@@ -315,8 +315,8 @@ class ShellCommandNet(SuccessFailureNet):
         action = ActionSpec(
                 cls=safenet.ShellCommandAction,
                 args = {"command_line": cmdline,
-                        "success_place_id": self.on_success_place,
-                        "faiure_place_id": self.on_failure_place})
+                        "success_place_id": self.on_success_place.index,
+                        "failure_place_id": self.on_failure_place.index})
 
         self.execute = self.add_transition(name="execute", action=action)
 

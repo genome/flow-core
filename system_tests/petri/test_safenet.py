@@ -1,5 +1,8 @@
 import flow.petri.safenet as sn
 
+# netbuilder makes the "copy net" test easier
+import flow.petri.netbuilder as nb
+
 from test_helpers import RedisTest, FakeOrchestrator
 import mock
 import os
@@ -42,13 +45,6 @@ class TestTransition(TestBase):
 class TestSafeNet(TestBase):
     def test_no_connection(self):
         self.assertRaises(TypeError, sn.SafeNet.create, None)
-
-    def test_abstract_transition_action(self):
-        act = sn.TransitionAction.create(self.conn, name="boom")
-        self.assertIsNone(act.input_data(active_tokens_key="x", net=None))
-
-        self.assertRaises(NotImplementedError, act.execute, net=None,
-                service_interfaces=None, active_tokens_key=None)
 
     def test_constants(self):
         net = sn.SafeNet.create(connection=self.conn)
@@ -242,6 +238,56 @@ class TestSafeNet(TestBase):
         self.assertRaises(sn.PlaceCapacityError, net.set_token,
             place_idx, token2.key, self.service_interfaces)
 
+    def test_copy(self):
+        builder = nb.NetBuilder()
+        builder.add_subnet(nb.ShellCommandNet, "shellcmd", ["ls", "-al"])
+        builder.variables["hi"] = "there"
+        builder.variables["number"] = "47"
+        net1 = builder.store(self.conn)
+        net1.capture_environment()
+
+        net1.input_places = {"start": 0}
+
+        pre_copy_keys = self.conn.keys()
+        new_key = sn.make_net_key()
+        net2 = net1.copy(new_key)
+        post_copy_keys = self.conn.keys()
+
+        key_len = len(net1.key)
+        self.assertEqual(len(net2.key), key_len)
+
+        net1_keys_pre = []
+        net1_keys_post = []
+        net2_keys = []
+        other_keys_pre =  []
+        other_keys_post =  []
+
+        for key in pre_copy_keys:
+            if key.startswith(net1.key):
+                net1_keys_pre.append(key[key_len:])
+            else:
+                other_keys_pre.append(key)
+
+        for key in post_copy_keys:
+            if key.startswith(net1.key):
+                net1_keys_post.append(key[key_len:])
+            elif key.startswith(net2.key):
+                net2_keys.append(key[key_len:])
+            else:
+                other_keys_post.append(key)
+
+        self.assertItemsEqual(net1_keys_pre, net1_keys_post)
+        self.assertItemsEqual(net1_keys_post, net2_keys)
+
+        eq_attrs = ["num_places", "num_transitions", "marking", "variables",
+                "_constants", "input_places", "output_places"]
+
+        for attr in eq_attrs:
+            value1 = getattr(net1, attr).value
+            value2 = getattr(net2, attr).value
+            self.assertEqual(value1, value2,
+                    "Attribute %s not copied correctly" % attr)
+
     def test_graph(self):
         net = sn.SafeNet.create(self.conn, place_names=["p1", "p2"],
                 trans_actions=[None], place_arcs_out={0: set([0])},
@@ -273,6 +319,13 @@ class TestSafeNet(TestBase):
 
 
 class TestTransitionActions(TestBase):
+    def test_abstract_transition_action(self):
+        act = sn.TransitionAction.create(self.conn, name="boom")
+        self.assertIsNone(act.input_data(active_tokens_key="x", net=None))
+
+        self.assertRaises(NotImplementedError, act.execute, net=None,
+                service_interfaces=None, active_tokens_key=None)
+
     def test_argument_encoding(self):
         arguments = {
             "integer": 7,

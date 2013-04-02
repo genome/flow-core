@@ -117,6 +117,9 @@ redis.call('SET', tokens_pushed_key, 1)
 return {1, arcs_out}
 """
 
+def make_net_key():
+    return base64.b64encode(uuid4().bytes)[:-2]
+
 def merge_token_data(tokens, data_type=None):
     data = {}
     for token in tokens:
@@ -196,6 +199,9 @@ class _SafeTransition(_SafeNode):
 class SafeNet(rom.Object):
     required_constants = ["environment", "user_id", "working_directory"]
 
+    input_places = rom.Property(rom.Hash)
+    output_places = rom.Property(rom.Hash)
+
     num_places = rom.Property(rom.Int)
     num_transitions = rom.Property(rom.Int)
     marking = rom.Property(rom.Hash)
@@ -214,10 +220,11 @@ class SafeNet(rom.Object):
     @classmethod
     def create(cls, connection=None, name=None, place_names=[],
                trans_actions=[], place_arcs_out={},
-               trans_arcs_out={}):
+               trans_arcs_out={}, key=None):
 
         # Remove the two trailing '=' characters to save space
-        key = base64.b64encode(uuid4().bytes)[:-2]
+        if key is None:
+            key = make_net_key()
         self = rom.create_object(cls, connection=connection, key=key)
         self._class_info.value = cls._info
 
@@ -262,7 +269,6 @@ class SafeNet(rom.Object):
         self.set_constant("working_directory", cwd)
 
     def copy_constants_from(self, other_net):
-        self.connection.delete(self._constants.key)
         other_net._constants.copy(self._constants.key)
 
     def constant(self, key):
@@ -279,6 +285,18 @@ class SafeNet(rom.Object):
 
     def transition(self, idx):
         return _SafeTransition(self.connection, self.subkey("trans/%d" % int(idx)))
+
+    def copy(self, dst_key):
+        copied = rom.Object.copy(self, dst_key)
+        for i in xrange(self.num_places.value):
+            place_key = copied.subkey("place/%d" % i)
+            self.place(i).copy(place_key)
+
+        for i in xrange(self.num_transitions.value):
+            trans_key = copied.subkey("trans/%d" % i)
+            self.transition(i).copy(trans_key)
+
+        return copied
 
     def notify_transition(self, trans_idx=None, place_idx=None, service_interfaces=None):
         LOG.debug("notify transition #%d", trans_idx)
