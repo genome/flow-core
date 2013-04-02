@@ -44,9 +44,9 @@ def main():
 
         try:
             command_config = config['commands'][arguments.command_name]
-            kwargs = dictionary_factory(**command_config)
-            env = kwargs.pop('environment', {})
+            env = command_config.pop('environment', {})
             with environment([env]):
+                kwargs = dictionary_factory(**command_config)
                 command = arguments.command(**kwargs)
                 exit_code = command(arguments)
         except:
