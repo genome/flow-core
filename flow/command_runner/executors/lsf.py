@@ -1,10 +1,12 @@
 import logging
+
 from pythonlsf import lsf
-from flow.command_runner.executor import ExecutorBase
+from twisted.python.procutils import which
 
 from flow.util import environment as env_util
 from flow.command_runner import util
 from flow.command_runner.resource import Resource, ResourceException
+from flow.command_runner.executor import ExecutorBase
 
 LOG = logging.getLogger(__name__)
 
@@ -53,26 +55,14 @@ def _make_rusage_string(require, reserve):
 
 
 class LSFExecutor(ExecutorBase):
-    def __init__(self, default_queue='long', **kwargs):
+    def __init__(self, post_exec=None, default_queue='long', **kwargs):
         ExecutorBase.__init__(self, **kwargs)
 
+        self.post_exec = post_exec
         self.default_queue = default_queue
 
-    def __call__(self, command_line, net_key=None, response_places=None,
-            environment={}, working_directory=None, with_inputs=None,
-            with_outputs=False, user_id=None, **kwargs):
-
-        full_command_line = self._make_command_line(command_line,
-                net_key=net_key, response_places=response_places,
-                with_inputs=with_inputs, with_outputs=with_outputs)
-
-        command_string = ' '.join(map(str, full_command_line))
-        LOG.debug("lsf command_string = '%s'", command_string)
-        LOG.info("lsf kwargs: %r", kwargs)
-
-        request = self.create_request(working_directory=working_directory,
-                **kwargs)
-        request.command = command_string
+    def __call__(self, command_line, environment={}, user_id=None, **kwargs):
+        request = self.construct_request(command_line, **kwargs)
 
         reply = _create_reply()
 
@@ -96,85 +86,118 @@ class LSFExecutor(ExecutorBase):
                     submit_result, lsf.lsb_sperror("lsb_submit"))
             return False, submit_result
 
-    def create_request(self, name=None, queue=None, group=None, project=None,
-            stdout=None, stderr=None, beginTime=0, mail_user=None,
-            working_directory=None, resources={}, post_exec_cmd=None, **kwargs):
+    def construct_request(self, command_line,
+            net_key=None, response_places=None, with_inputs=None,
+            with_outputs=None, **lsf_kwargs):
+        LOG.info("lsf kwargs: %r", lsf_kwargs)
 
-        request = lsf.submit()
-        request.options = 0
-        request.options2 = 0
-        request.options3 = 0
+        if self.post_exec is not None:
+            executable_name = self.post_exec[0]
+            args = " ".join(self.post_exec[1:])
 
-        if name:
-            request.jobName = str(name)
-            request.options |= lsf.SUB_JOB_NAME
+            executable = _find_executable(executable_name)
+            failure_place = response_places.pop('execute_failure')
 
-        if mail_user:
-            request.mailUser = str(mail_user)
-            request.options |= lsf.SUB_MAIL_USER
-            LOG.debug('setting mail_user = %s', mail_user)
-
-        if queue:
-            request.queue = str(queue)
+            post_exec_cmd = create_post_exec_cmd(executable=executable,
+                    args=args, net_key=net_key, failure_place=failure_place,
+                    **lsf_kwargs)
+            LOG.debug("lsf post_exec_cmd = '%s'", post_exec_cmd)
         else:
-            request.queue = self.default_queue
-        request.options |= lsf.SUB_QUEUE
-        LOG.debug("request.queue = %s", request.queue)
+            post_exec_cmd = None
 
-        #if group:
-            #request.jobGroup = str(group)
-            #request.options2 |= lsf.SUB_JOB_GROUP
+        request = create_request(post_exec_cmd=post_exec_cmd,
+                default_queue=self.default_queue, **lsf_kwargs)
 
-        #if project:
-            #request.projectName = str(project)
-            #request.options |= lsf.SUB_PROJECT_NAME
-
-        if stdout:
-            request.outFile = str(util.join_path_if_rel(
-                working_directory, stdout))
-            request.options |= lsf.SUB_OUT_FILE
-            LOG.debug('setting job stdout = %s', stdout)
-        if stderr:
-            request.errFile = str(util.join_path_if_rel(
-                working_directory, stderr))
-            request.options |= lsf.SUB_ERR_FILE
-            LOG.debug('setting job stderr = %s', stderr)
-
-        if working_directory:
-            request.cwd = str(working_directory)
-            request.options3 |= lsf.SUB3_CWD
-            LOG.debug('setting cwd = %s', working_directory)
-
-        reserve = resources.get("reserve", {})
-        require = resources.get("require", {})
-        limit = resources.get("limit", {})
-
-        if post_exec_cmd:
-            request.postExecCmd = post_exec_cmd
-            request.options3 |= lsf.SUB3_POST_EXEC
-
-        numProcessors = require.get("min_proc", 1)
-        maxNumProcessors = require.get("max_proc", numProcessors)
-
-        termTime = limit.get("cpu_time", 0)
-
-        request.numProcessors = int(numProcessors)
-        request.maxNumProcessors = int(maxNumProcessors)
-
-        request.beginTime = int(beginTime)
-        request.termTime = int(termTime)
-
-        if require or reserve:
-            rusage = _make_rusage_string(require=require, reserve=reserve)
-            LOG.debug('setting resource request string = %r', rusage)
-            request.options |= lsf.SUB_RES_REQ
-            request.resReq = rusage
-
-        rlimits = resources.get("limit", {})
-        LOG.info("Setting rlimits: %r", rlimits)
-        request.rLimits = get_rlimits(**rlimits)
+        full_command_line = self._make_command_line(command_line,
+                net_key=net_key, response_places=response_places,
+                with_inputs=with_inputs, with_outputs=with_outputs)
+        command_string = ' '.join(map(str, full_command_line))
+        LOG.debug("lsf command_string = '%s'", command_string)
+        request.command = command_string
 
         return request
+
+
+def create_request(post_exec_cmd, default_queue,
+        name=None, queue=None, group=None, stdout=None, stderr=None,
+        beginTime=0, mail_user=None, working_directory=None, project=None,
+        resources={}, **other_lsf_kwargs):
+
+    request = lsf.submit()
+    request.options = 0
+    request.options2 = 0
+    request.options3 = 0
+
+    if name:
+        request.jobName = str(name)
+        request.options |= lsf.SUB_JOB_NAME
+
+    if mail_user:
+        request.mailUser = str(mail_user)
+        request.options |= lsf.SUB_MAIL_USER
+        LOG.debug('setting mail_user = %s', mail_user)
+
+    if queue:
+        request.queue = str(queue)
+    else:
+        request.queue = default_queue
+    request.options |= lsf.SUB_QUEUE
+    LOG.debug("request.queue = %s", request.queue)
+
+    #if group:
+        #request.jobGroup = str(group)
+        #request.options2 |= lsf.SUB_JOB_GROUP
+
+    if project:
+        request.projectName = str(project)
+        request.options |= lsf.SUB_PROJECT_NAME
+
+    if stdout:
+        request.outFile = str(util.join_path_if_rel(
+            working_directory, stdout))
+        request.options |= lsf.SUB_OUT_FILE
+        LOG.debug('setting job stdout = %s', stdout)
+    if stderr:
+        request.errFile = str(util.join_path_if_rel(
+            working_directory, stderr))
+        request.options |= lsf.SUB_ERR_FILE
+        LOG.debug('setting job stderr = %s', stderr)
+
+    if working_directory:
+        request.cwd = str(working_directory)
+        request.options3 |= lsf.SUB3_CWD
+        LOG.debug('setting cwd = %s', working_directory)
+
+    reserve = resources.get("reserve", {})
+    require = resources.get("require", {})
+    limit = resources.get("limit", {})
+
+    if post_exec_cmd:
+        request.postExecCmd = str(post_exec_cmd)
+        request.options3 |= lsf.SUB3_POST_EXEC
+
+    numProcessors = require.get("min_proc", 1)
+    maxNumProcessors = require.get("max_proc", numProcessors)
+
+    termTime = limit.get("cpu_time", 0)
+
+    request.numProcessors = int(numProcessors)
+    request.maxNumProcessors = int(maxNumProcessors)
+
+    request.beginTime = int(beginTime)
+    request.termTime = int(termTime)
+
+    if require or reserve:
+        rusage = _make_rusage_string(require=require, reserve=reserve)
+        LOG.debug('setting resource request string = %r', rusage)
+        request.options |= lsf.SUB_RES_REQ
+        request.resReq = rusage
+
+    rlimits = resources.get("limit", {})
+    LOG.info("Setting rlimits: %r", rlimits)
+    request.rLimits = get_rlimits(**rlimits)
+
+    return request
 
 
 def get_rlimits(max_resident_memory=None, max_virtual_memory=None,
@@ -221,3 +244,22 @@ def _create_reply():
         raise RuntimeError("Failed lsb_init, errno = %d" % lsf.lsb_errno())
 
     return reply
+
+def create_post_exec_cmd(executable, args, net_key, failure_place,
+        stderr=None, stdout=None, **other_lsf_kwargs):
+
+    cmd_string = "'%s' %s -n '%s' -f %s" % (
+            executable, args, net_key, failure_place)
+    result = "bash -c \"%s\" 1>> '%s' 2>> '%s'" % (cmd_string, stdout, stderr)
+    return result
+
+def _find_executable(name):
+    executables = which(name)
+    if executables:
+        return executables[0]
+    else:
+        msg = "Couldn't find the executable by name when" +\
+                " looking in PATH=%s for %s" % (os.environ.get('PATH', None),
+                post_exec[0])
+        LOG.warning(msg)
+        raise RuntimeError(msg)

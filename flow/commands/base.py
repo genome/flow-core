@@ -3,6 +3,7 @@ import flow.configuration
 from flow.factories import dictionary_factory
 from flow.util import stats
 import sys
+import os
 import traceback
 
 import logging
@@ -48,6 +49,7 @@ def main():
             exit_code = command(arguments)
         except:
             LOG.exception('Command execution failed')
+            os._exit(1)
 
     except SystemExit as e:
         exit_code = e.exit_code

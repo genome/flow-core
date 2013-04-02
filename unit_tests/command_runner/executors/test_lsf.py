@@ -8,9 +8,18 @@ except:
 from flow.command_runner.executors import lsf
 from flow.command_runner.resource import ResourceException
 from pythonlsf import lsf as lsf_driver
+from twisted.python.procutils import which
 
 def _create_expected_limits():
     return [lsf_driver.DEFAULT_RLIMIT] * lsf_driver.LSF_RLIM_NLIMITS
+
+class CreatePostExecCmdTest(unittest.TestCase):
+    def test_basic(self):
+        result = lsf.create_post_exec_cmd(executable='e', args='args',
+                net_key='nk', failure_place=1, stdout='a', stderr='b')
+
+        self.assertEqual(result,
+                'bash -c "\'e\' args -n \'nk\' -f 1" 1>> \'a\' 2>> \'b\'')
 
 
 class MakeRusageTest(unittest.TestCase):
@@ -89,7 +98,11 @@ class GetRlimitsTest(unittest.TestCase):
 class CreateRequestTest(unittest.TestCase):
     def setUp(self):
         self.default_queue = 'serious queue'
-        self.dispatcher = lsf.LSFExecutor(default_queue=self.default_queue)
+        self.post_exec_cmd = None
+        def test_fn(**kwargs):
+            return lsf.create_request(self.post_exec_cmd, self.default_queue,
+                    **kwargs)
+        self.test_fn = test_fn
 
         self.bad_type = mock.Mock()
         self.bad_type.__str__ = lambda x: None
@@ -97,41 +110,41 @@ class CreateRequestTest(unittest.TestCase):
 
     def test_name_success(self):
         name = 'different name'
-        request = self.dispatcher.create_request(name=name)
+        request = self.test_fn(name=name)
         self.assertEqual(request.jobName, name)
         self.assertEqual(request.options,
                 lsf_driver.SUB_JOB_NAME + lsf_driver.SUB_QUEUE)
 
     def test_name_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, name=self.bad_type)
+                self.test_fn, name=self.bad_type)
 
     def test_mail_user_success(self):
         mail_user = 'someone@some.whe.re'
-        request = self.dispatcher.create_request(mail_user=mail_user)
+        request = self.test_fn(mail_user=mail_user)
         self.assertEqual(request.mailUser, mail_user)
         self.assertEqual(request.options,
                 lsf_driver.SUB_MAIL_USER + lsf_driver.SUB_QUEUE)
 
     def test_mail_user_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, mail_user=self.bad_type)
+                self.test_fn, mail_user=self.bad_type)
 
 
     def test_queue_success(self):
         queue = 'different queue'
-        request = self.dispatcher.create_request(queue=queue)
+        request = self.test_fn(queue=queue)
         self.assertEqual(request.queue, queue)
         self.assertEqual(request.options, lsf_driver.SUB_QUEUE)
 
     def test_queue_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, queue=self.bad_type)
+                self.test_fn, queue=self.bad_type)
 
 
     def test_stdout_success(self):
         stdout = '/tmp/stdout/path'
-        request = self.dispatcher.create_request(stdout=stdout)
+        request = self.test_fn(stdout=stdout)
         self.assertEqual(request.queue, self.default_queue)
         self.assertEqual(request.outFile, stdout)
         self.assertEqual(request.options,
@@ -139,12 +152,12 @@ class CreateRequestTest(unittest.TestCase):
 
     def test_stdout_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, stdout=self.bad_type)
+                self.test_fn, stdout=self.bad_type)
 
 
     def test_stderr_success(self):
         stderr = '/tmp/stderr/path'
-        request = self.dispatcher.create_request(stderr=stderr)
+        request = self.test_fn(stderr=stderr)
         self.assertEqual(request.queue, self.default_queue)
         self.assertEqual(request.errFile, stderr)
         self.assertEqual(request.options,
@@ -152,7 +165,7 @@ class CreateRequestTest(unittest.TestCase):
 
     def test_stderr_failure(self):
         self.assertRaises(TypeError,
-                self.dispatcher.create_request, stderr=self.bad_type)
+                self.test_fn, stderr=self.bad_type)
 
     def test_resources(self):
         value = 4000
@@ -161,7 +174,7 @@ class CreateRequestTest(unittest.TestCase):
         require = {"min_proc": 8}
 
         resources = {"limit": limit, "reserve": reserve, "require": require}
-        request = self.dispatcher.create_request(resources=resources)
+        request = self.test_fn(resources=resources)
         expected_limits = _create_expected_limits()
         expected_limits[lsf_driver.LSF_RLIMIT_VMEM] = value
         self.assertEqual(request.queue, self.default_queue)
@@ -182,14 +195,15 @@ class CreateRequestTest(unittest.TestCase):
         self.assertEqual(["gtmp=10", "mem=4096"], ritems)
 
     def test_post_exec_cmd(self):
-        post_exec_cmd = None
-        request = self.dispatcher.create_request(post_exec_cmd=post_exec_cmd)
+        request = lsf.create_request(post_exec_cmd=None,
+                default_queue=self.default_queue)
 
         self.assertEqual(request.options3, 0)
         self.assertEqual(request.postExecCmd, None)
 
         post_exec_cmd = 'echo "something"'
-        request = self.dispatcher.create_request(post_exec_cmd=post_exec_cmd)
+        request = lsf.create_request(post_exec_cmd=post_exec_cmd,
+                default_queue=self.default_queue)
 
         self.assertEqual(request.options3, lsf_driver.SUB3_POST_EXEC)
         self.assertEqual(request.postExecCmd, post_exec_cmd)

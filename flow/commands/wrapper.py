@@ -1,33 +1,25 @@
-from flow.commands.base import CommandBase
-from flow.petri import Token, SetTokenMessage
 from tempfile import NamedTemporaryFile
 import flow.redisom as rom
 import json
 import subprocess
 import os
 import platform
-
 import logging
+
+from flow.commands.token_sender import TokenSenderCommand
 
 LOG = logging.getLogger(__name__)
 
 
-class WrapperCommand(CommandBase):
+class WrapperCommand(TokenSenderCommand):
     default_logging_mode = 'debug'
-
-    def __init__(self, broker=None, storage=None, routing_key=None, exchange=None):
-        self.broker = broker
-        self.storage = storage
-        self.routing_key = routing_key
-        self.exchange = exchange
-
 
     @staticmethod
     def annotate_parser(parser):
         parser.add_argument('--net-key', '-n')
         parser.add_argument('--running-place-id', '-r', type=int)
         parser.add_argument('--success-place-id', '-s', type=int)
-        parser.add_argument('--failure-place-id', '-f', type=int)
+        parser.add_argument('--failure-place-id', '-f', default=None, type=int)
         parser.add_argument('--with-inputs', default=None, type=str)
         parser.add_argument('--with-outputs', default=False,
                 action="store_true")
@@ -84,22 +76,11 @@ class WrapperCommand(CommandBase):
                 except subprocess.CalledProcessError as e:
                     LOG.error("Failed to execute command '%s': %s",
                             " ".join(cmdline), str(e))
-                    self.send_token(net_key=parsed_arguments.net_key,
-                            place_idx=parsed_arguments.failure_place_id,
-                            data={"exit_code": e.returncode})
+                    if parsed_arguments.failure_place_id is not None:
+                        self.send_token(net_key=parsed_arguments.net_key,
+                                place_idx=parsed_arguments.failure_place_id,
+                                data={"exit_code": e.returncode})
 
                     rv = e.returncode
 
         return rv
-
-    def send_token(self, net_key=None, place_idx=None, data=None):
-        self.broker.connect()
-        token = Token.create(self.storage, data=data, data_type="output")
-
-        LOG.info("Sending command response token %s to net %s, place %r",
-                token.key, net_key, place_idx)
-        message = SetTokenMessage(net_key=net_key, place_idx=place_idx,
-                token_key=token.key)
-        self.broker.publish(exchange_name=self.exchange, routing_key=self.routing_key,
-                message=message)
-        self.broker.disconnect()

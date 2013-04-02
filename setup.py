@@ -9,6 +9,7 @@ set-token = flow.commands.set_token:SetTokenCommand
 orchestrator = flow.commands.service:ServiceCommand
 local_command_line_service = flow.commands.service:ServiceCommand
 lsf_command_line_service = flow.commands.service:ServiceCommand
+lsf_post_exec = flow.commands.lsf_post_exec:LsfPostExecCommand
 command_line_wrapper = flow.commands.wrapper:WrapperCommand
 configure_rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 console = flow.commands.console:ConsoleCommand
@@ -35,6 +36,7 @@ setup(
             'pyyaml',
             'redis',
             'statsd-client',
+            'twisted',
         ],
         setup_requires = [
             'nose',

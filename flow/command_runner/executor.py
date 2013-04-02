@@ -13,8 +13,9 @@ class ExecutorBase(object):
             '-n', net_key,
             '-r', response_places['begin_execute'],
             '-s', response_places['execute_success'],
-            '-f', response_places['execute_failure'],
         ]
+        if 'execute_failure' in response_places.keys():
+            cmdline += ['-f', response_places['execute_failure']]
 
         if with_inputs:
             cmdline += ["--with-inputs", with_inputs]
