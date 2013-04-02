@@ -4,6 +4,7 @@ import subprocess
 
 from flow.command_runner.executor import ExecutorBase
 from flow.command_runner import util
+from flow.util import environment as env_util
 
 LOG = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class SubprocessExecutor(ExecutorBase):
                 net_key=net_key, response_places=response_places,
                 with_inputs=with_inputs, with_outputs=with_outputs)
 
-        with util.environment([self.default_environment, environment,
+        with env_util.environment([self.default_environment, environment,
                                self.mandatory_environment]):
             stdout_fh = None
             stderr_fh = None

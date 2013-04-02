@@ -2,6 +2,7 @@ import logging
 from pythonlsf import lsf
 from flow.command_runner.executor import ExecutorBase
 
+from flow.util import environment as env_util
 from flow.command_runner import util
 from flow.command_runner.resource import Resource, ResourceException
 
@@ -75,7 +76,7 @@ class LSFExecutor(ExecutorBase):
 
         reply = _create_reply()
 
-        with util.environment([self.default_environment, environment,
+        with env_util.environment([self.default_environment, environment,
                                self.mandatory_environment]):
             try:
                 with util.seteuid(user_id):
