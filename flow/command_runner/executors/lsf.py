@@ -98,7 +98,7 @@ class LSFExecutor(ExecutorBase):
 
     def create_request(self, name=None, queue=None, group=None, project=None,
             stdout=None, stderr=None, beginTime=0, mail_user=None,
-            working_directory=None, resources={}, **kwargs):
+            working_directory=None, resources={}, post_exec_cmd=None, **kwargs):
 
         request = lsf.submit()
         request.options = 0
@@ -148,6 +148,10 @@ class LSFExecutor(ExecutorBase):
         reserve = resources.get("reserve", {})
         require = resources.get("require", {})
         limit = resources.get("limit", {})
+
+        if post_exec_cmd:
+            request.postExecCmd = post_exec_cmd
+            request.options3 |= lsf.SUB3_POST_EXEC
 
         numProcessors = require.get("min_proc", 1)
         maxNumProcessors = require.get("max_proc", numProcessors)

@@ -181,6 +181,18 @@ class CreateRequestTest(unittest.TestCase):
         self.assertEqual(["gtmp>=10", "mem>=4096", "ncpus>=8"], sitems)
         self.assertEqual(["gtmp=10", "mem=4096"], ritems)
 
+    def test_post_exec_cmd(self):
+        post_exec_cmd = None
+        request = self.dispatcher.create_request(post_exec_cmd=post_exec_cmd)
+
+        self.assertEqual(request.options3, 0)
+        self.assertEqual(request.postExecCmd, None)
+
+        post_exec_cmd = 'echo "something"'
+        request = self.dispatcher.create_request(post_exec_cmd=post_exec_cmd)
+
+        self.assertEqual(request.options3, lsf_driver.SUB3_POST_EXEC)
+        self.assertEqual(request.postExecCmd, post_exec_cmd)
 
 
 if '__main__' == __name__:
