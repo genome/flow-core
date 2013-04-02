@@ -17,6 +17,7 @@ KEY_DELIM = '/'
 _COPY_KEY_SCRIPT_BODY = """
 if redis.call('EXISTS', KEYS[1]) == 1 then
     local data = redis.call('DUMP', KEYS[1]);
+    redis.call('DEL', KEYS[2])
     return redis.call('RESTORE', KEYS[2], 0, data)
 end
 return "OK"
@@ -36,6 +37,7 @@ def json_dec(text):
 
 def copy_key(connection, src, dst):
     return _COPY_KEY_SCRIPT(connection=connection, keys=[src, dst])
+
 
 class RomIndexError(IndexError):
     pass
@@ -134,14 +136,14 @@ class Value(object):
         timer.stop()
         return result
 
-    value = property(_timed_value_getter, _timed_value_setter)
+    value = property(_value_getter, _value_setter)
 
 
 class Timestamp(Value):
     def _value_setter(self, new_value):
         raise AttributeError("You cannot set the .value of a Timestamp.")
 
-    value = property(Value._timed_value_getter, _value_setter)
+    value = property(Value._value_getter, _value_setter)
 
     @property
     def now(self):
@@ -199,7 +201,7 @@ class Set(Value):
             pipe.sadd(self.key, *val)
         pipe.execute()
 
-    value = property(Value._timed_value_getter, Value._timed_value_setter)
+    value = property(_value_getter, _value_setter)
 
     def add(self, val):
         return self.connection.sadd(self.key, val)
@@ -299,7 +301,7 @@ class List(EncodableContainer):
         if val:
             return self.connection.rpush(self.key, *self._encode_values(val))
 
-    value = property(Value._timed_value_getter, Value._timed_value_setter)
+    value = property(_value_getter, _value_setter)
 
     def append(self, val):
         return self.extend([val])
@@ -448,8 +450,6 @@ class ObjectMeta(type):
         return cls
 
     def get_class(cls, class_info):
-        timer = stats.create_timer('rom.ObjectMeta.get_class')
-        timer.start()
         try:
             result = cls._class_registry[class_info]
         except KeyError:
@@ -464,7 +464,6 @@ class ObjectMeta(type):
             except KeyError:
                 raise ImportError("Expected to register class %s when loading "
                         "module %s but failed to." % (class_name, class_module))
-        timer.stop()
         return result
 
 
@@ -496,8 +495,6 @@ class Object(object):
 
     def __getattr__(self, name):
         # fallback for when lookup in __dict__ fails
-        timer = stats.create_timer('rom.Object.__getattr_')
-        timer.start()
         try:
             result = self._cache[name]
         except KeyError:
@@ -514,45 +511,32 @@ class Object(object):
 
             result = prop
 
-        timer.stop()
         return result
 
     def __setattr__(self, name, value):
-        timer = stats.create_timer('rom.Object.__setattr__')
-        timer.start()
         # is always called on attribute setting
         if name in self._rom_properties:
             getattr(self, name).value = value
         else:
             object.__setattr__(self, name, value)
-        timer.stop()
 
     def __delattr__(self, name):
-        timer = stats.create_timer('rom.Object.__delattr__')
-        timer.start()
         if name in self._rom_properties:
             getattr(self, name).delete()
 
         if name in self._cache:
             del self._cache[name]
 
-        timer.stop()
-
     def exists(self):
-        timer = stats.create_timer('rom.Object.exists')
-        timer.start()
-
         try:
             class_info = self._class_info.value
         except NotInRedisError:
-            timer.stop()
             return False
 
         if class_info != self._info:
             raise TypeError("Classinfo for %s isn't correct, found '%s' "
                     "expected '%s'" % (self.key, class_info, self._info))
 
-        timer.stop()
         return True
 
     def _on_create(self):
@@ -564,14 +548,11 @@ class Object(object):
 
     @classmethod
     def get(cls, connection=None, key=None):
-        timer = stats.create_timer('rom.Object.get')
-        timer.start()
         if connection is None or key is None:
             raise TypeError('get requires connection and key to be specified.')
         obj = cls(connection=connection, key=key)
         if not obj.exists():
             raise KeyError("Object not found: class=%s key=%s" % (cls, key))
-        timer.stop()
         return obj
 
     def method_descriptor(self, method_name):
@@ -585,21 +566,13 @@ class Object(object):
         return _make_key(self.key, *args)
 
     def delete(self):
-        timer = stats.create_timer('rom.Object.delete')
-        timer.start()
-
         for name in self._rom_properties.iterkeys():
             getattr(self, name).delete()
-        timer.split('attributes')
 
         self._class_info.delete()
-        timer.split('class_info')
-        timer.stop()
 
 
 def get_object(connection=None, key=None):
-    timer = stats.create_timer('rom.get_object')
-    timer.start()
     if connection is None or key is None:
         raise TypeError("You must specify connection and key")
 
@@ -609,29 +582,23 @@ def get_object(connection=None, key=None):
 
     cls = Object.get_class(class_info)
     obj = cls(connection=connection, key=key)
-    timer.stop()
     return obj
 
 
 def create_object(cls, connection=None, key=None, **kwargs):
-    timer = stats.create_timer('rom.create_object')
-    timer.start()
     if key is None:
         key = _make_key("/" + cls.__module__, cls.__name__,
                         uuid4().hex)
 
     obj = cls(connection=connection, key=key)
     obj._class_info.value = cls._info
-    timer.split('set_class_info')
 
     for k, v in kwargs.iteritems():
         if k not in obj._rom_properties:
             raise AttributeError("Unknown attribute %s" % k)
         setattr(obj, k, v)
 
-    timer.split('set_attributes')
     obj._on_create()
-    timer.split('_on_create')
 
     return obj
 
