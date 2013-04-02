@@ -16,8 +16,6 @@ class SimpleObj(rom.Object):
     alist = rom.Property(rom.List)
     aset = rom.Property(rom.Set)
     a_method_arg = rom.Property(rom.String)
-    aref = rom.Reference('%s:SimpleObj' % __module__)
-    astrongref = rom.Reference('%s:SimpleObj' % __module__, weak=False)
 
     def a_method(self, arg=None):
         self.a_method_arg = arg
@@ -57,131 +55,6 @@ class TestProperty(TestBase):
         rom.Property(rom.List)
         rom.Property(rom.Int)
         rom.Property(rom.Set)
-
-class TestReference(TestBase):
-    def setUp(self):
-        TestBase.setUp(self)
-        self.x = SimpleObj.create(connection=self.conn, key='/x')
-        self.y = SimpleObj.create(connection=self.conn, key='/y')
-
-    def tearDown(self):
-        del self.x
-        del self.y
-
-    def test_access_reference_before_set(self):
-        self.assertRaises(RuntimeError, getattr, self.x, 'aref')
-
-    def test_chained_references(self):
-        z = SimpleObj.create(connection=self.conn, key='/z')
-        z.ascalar = 'z-scalar'
-        self.x.aref = self.y
-        self.assertEqual(self.x.aref.key, self.y.key)
-        self.y.aref = z
-        self.assertEqual(self.y.aref.key, z.key)
-
-        self.assertEqual(self.x.aref.aref.key, z.key)
-        self.assertEqual(self.x.aref.aref.ascalar.value, 'z-scalar')
-
-    def test_redis_backed_references(self):
-        self.x.aref = self.y
-        self.assertEqual(self.x.aref.key, self.y.key)
-
-        another_x = rom.get_object(self.conn, self.x.key)
-        self.assertEqual(another_x.aref.key, self.y.key)
-
-    def test_assignment(self):
-        self.x.aref = self.y
-        self.x.astrongref = self.y.key
-        self.y.ascalar = 'y-scalar'
-        self.assertEqual(self.x.aref.ascalar.value, 'y-scalar')
-        self.assertEqual(self.x.astrongref.ascalar.value, 'y-scalar')
-
-        def bad_assignment1():
-            self.x.astrongref = '/bad'
-        self.assertRaises(NotInRedisError, bad_assignment1)
-
-        def bad_assignment2():
-            self.x.astrongref = '/y/ascalar'
-        self.assertRaises(TypeError, bad_assignment2)
-
-        class Z(rom.Object):
-            pass
-        z = Z.create(self.conn, '/z')
-        def bad_assignment3():
-            self.x.astrongref = '/z'
-        self.assertRaises(TypeError, bad_assignment3)
-
-        def bad_assignment4():
-            self.x.astrongref = z
-        self.assertRaises(TypeError, bad_assignment4)
-
-    def test_self_reference(self):
-        self.x.aref = self.x
-        self.x.ascalar = 'x-scalar'
-        self.assertEqual(self.x.aref.key, self.x.key)
-        self.assertEqual(self.x.aref.aref.key, self.x.key)
-        self.assertEqual(self.x.aref.aref.aref.key, self.x.key)
-
-        self.assertEqual(self.x.aref.ascalar.value, 'x-scalar')
-        self.assertEqual(self.x.aref.aref.ascalar.value, 'x-scalar')
-        self.assertEqual(self.x.aref.aref.aref.ascalar.value, 'x-scalar')
-
-    def test_delete_reference(self):
-        self.x.aref = self.y
-        self.assertEqual(self.x.aref.key, self.y.key)
-        del self.x.aref
-        self.assertRaises(RuntimeError, getattr, self.x, 'aref')
-
-        self.x.aref = self.x
-        self.assertEqual(self.x.aref.key, self.x.key)
-        del self.x.aref
-        self.assertRaises(RuntimeError, getattr, self.x, 'aref')
-
-    def test_change_reference(self):
-        self.x.aref = self.y
-        self.x.ascalar = 'x-scalar'
-        self.y.ascalar = 'y-scalar'
-        self.assertEqual(self.x.aref.key, self.y.key)
-        self.assertEqual(self.x.aref.ascalar.value, 'y-scalar')
-
-        self.x.aref = self.x
-        self.assertEqual(self.x.aref.key, self.x.key)
-        self.assertEqual(self.x.aref.ascalar.value, 'x-scalar')
-
-    def test_delete_object_with_weak_references(self):
-        self.y.ascalar = 'y-scalar'
-        self.x.aref = self.y
-        self.assertEqual(self.x.aref.key, self.y.key)
-        self.assertEqual(self.x.aref.ascalar.value, 'y-scalar')
-
-        self.x.delete()
-        self.assertFalse(self.conn.exists(self.x.key))
-        self.assertTrue(self.conn.exists(self.y.key))
-        self.assertTrue(self.conn.exists(self.y.ascalar.key))
-
-    def test_delete_object_with_strong_references(self):
-        self.y.ascalar = 'y-scalar'
-        self.x.astrongref = self.y
-        self.assertEqual(self.x.astrongref.key, self.y.key)
-        self.assertEqual(self.x.astrongref.ascalar.value, 'y-scalar')
-
-        self.x.delete()
-        self.assertFalse(self.conn.exists(self.x.key))
-        self.assertFalse(self.conn.exists(self.y.key))
-        self.assertFalse(self.conn.exists(self.y.ascalar.key))
-
-    def test_try_to_specify_a_non_object_class(self):
-        def make_class():
-            class Bad(rom.Object):
-                bad_ref = rom.Reference(rom.Int)
-        self.assertRaises(TypeError, make_class)
-
-    def test_specifying_a_class(self):
-        class TestObj(rom.Object):
-            aref = rom.Reference(SimpleObj)
-        i = TestObj.create(connection=self.conn, key='/i')
-        i.aref = self.x
-        self.assertEqual(i.aref.key, self.x.key)
 
 
 class TestValue(TestBase):
@@ -589,7 +462,7 @@ class TestObject(TestBase):
         self.assertEqual(obj.__module__, components[1])
         self.assertEqual(obj.__class__.__name__, components[2])
 
-    def test_access_non_property_or_reference(self):
+    def test_access_non_property_or(self):
         obj = SimpleObj.create(connection=self.conn, key="x")
         def access():
             obj.not_a_member
@@ -688,22 +561,6 @@ class TestObject(TestBase):
         self.assertEqual(['5', '4', '3'], obj.alist.value)
         self.assertEqual(set(['x', 'y', 'z']), obj.aset.value)
 
-    def test_create_with_references(self):
-        x = SimpleObj.create(connection=self.conn, key="/x", ascalar='x-scalar')
-        y = SimpleObj.create(connection=self.conn, key="/y", aref='/x')
-        self.assertEqual(y.aref.ascalar.value, 'x-scalar')
-
-        z = SimpleObj.create(connection=self.conn, key="/z", aref=x)
-        self.assertEqual(y.aref.ascalar.value, 'x-scalar')
-
-    def test_non_object_as_reference(self):
-        x = SimpleObj.create(connection=self.conn, key="/x", ascalar='x-scalar')
-        y = SimpleObj.create(connection=self.conn, key="/y", aref='/x')
-
-        self.assertRaises(TypeError, setattr, x, 'aref', 5)
-        self.assertRaises(TypeError, SimpleObj.create, connection=self.conn,
-                key='/z', aref=5)
-
     def test_create_invalid_prop(self):
         self.assertRaises(AttributeError, SimpleObj.create,
                 connection=self.conn, key="x", badprop="bad")
@@ -769,20 +626,6 @@ class TestObject(TestBase):
         self.assertEqual(set([]), self.conn.smembers(key))
         # redis quirk: smembers returns list([]) when fetching an empty list
         self.assertEqual(0, self.conn.llen(key))
-
-    def test_class_not_loaded_yet(self):
-        # must be set manually, since the module hasn't been loaded yet...
-        class_info = 'unit_tests.loadable_obj:LoadableObj'
-        self.conn.set('/y', class_info)
-        self.conn.set('/y/ascalar', '1234')
-
-        class UsesLoadableObj(rom.Object):
-            aref = rom.Reference(class_info)
-        x = UsesLoadableObj.create(self.conn, '/x')
-        x.aref = '/y'
-
-        self.assertEqual(x.aref.key, '/y')
-        self.assertEqual(x.aref.ascalar.value, '1234')
 
     def test_class_not_loaded_in_specified_module(self):
         class_info = 'unit_tests:LoadableObj'

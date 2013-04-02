@@ -18,7 +18,6 @@ _COPY_HASH_SCRIPT = """
 local src_hash_key = KEYS[1]
 local dst_hash_key = KEYS[2]
 
-
 local data = redis.call('HGETALL', src_hash_key)
 if #data == 0 then
     return 0

@@ -2,8 +2,6 @@
 
 # pylint: disable=W0212
 
-from flow.util import stats
-
 from uuid import uuid4
 import functools
 import hashlib
@@ -11,10 +9,23 @@ import redis
 import json
 import re
 
+from flow.util import stats
+
 KEY_DELIM = '/'
+
+# Redis scripts (Instantiated at the bottom of the file)
+_COPY_KEY_SCRIPT_BODY = """
+if redis.call('EXISTS', KEYS[1]) == 1 then
+    local data = redis.call('DUMP', KEYS[1]);
+    return redis.call('RESTORE', KEYS[2], 0, data)
+end
+return "OK"
+"""
+
 
 def json_enc(obj):
     return json.dumps(obj)
+
 
 def json_dec(text):
     if text is None:
@@ -23,8 +34,12 @@ def json_dec(text):
         return json.loads(text)
 
 
+def copy_key(connection, src, dst):
+    return _COPY_KEY_SCRIPT(connection=connection, keys=[src, dst])
+
 class RomIndexError(IndexError):
     pass
+
 
 class NotInRedisError(KeyError):
     pass
@@ -56,20 +71,6 @@ class Property(object):
         self.cls = cls
         self.kwargs = kwargs
 
-class Reference(object):
-    def __init__(self, class_or_class_info, weak=True, **kwargs):
-        if isinstance(class_or_class_info, basestring):
-            self.class_info = class_or_class_info
-        else:
-            cls = class_or_class_info
-            if not issubclass(cls, Object):
-                raise TypeError("References must be to subclasses of Object "
-                    "and (%s) is not!" % cls.__name__)
-            self.class_info = cls._info
-
-        self.weak = weak
-        self.kwargs = kwargs
-
 
 class Value(object):
     def __init__(self, connection=None, key=None):
@@ -81,6 +82,10 @@ class Value(object):
     @classmethod
     def create(cls, *args, **kwargs):
         return cls(*args, **kwargs)
+
+    def copy(self, dst_key):
+        copy_key(self.connection, self.key, dst_key)
+        return self.__class__(connection=self.connection, key=dst_key)
 
     def setnx(self, value):
         return self.connection.setnx(self.key, self._encode(value))
@@ -155,6 +160,7 @@ class Timestamp(Value):
             return value
         return False
 
+
 class Int(Value):
     def incr(self, *args, **kwargs):
         return self.connection.incr(self.key, *args, **kwargs)
@@ -181,11 +187,58 @@ class String(Value):
     def _encode(self, value):
         return str(value)
 
-class List(Value):
+
+class Set(Value):
+    def _value_getter(self):
+        return self.connection.smembers(self.key)
+
+    def _value_setter(self, val):
+        pipe = self.connection.pipeline()
+        pipe.delete(self.key)
+        if val:
+            pipe.sadd(self.key, *val)
+        pipe.execute()
+
+    value = property(Value._timed_value_getter, Value._timed_value_setter)
+
+    def add(self, val):
+        return self.connection.sadd(self.key, val)
+
+    def remove(self, val):
+        removed, size = self.discard(val)
+        if not removed:
+            raise KeyError("Set (%s) doesn't contain value %s" %
+                    (self.key, val))
+        return removed, size
+
+    def discard(self, val):
+        pipe = self.connection.pipeline()
+        pipe.srem(self.key, val)
+        pipe.scard(self.key)
+        removed, size = pipe.execute()
+        return removed, size
+
+    def update(self, vals):
+        return self.connection.sadd(self.key, *vals)
+
+    def __iter__(self):
+        return self.value.__iter__()
+
+    def __len__(self):
+        return self.connection.scard(self.key)
+
+
+class EncodableContainer(Value):
     def __init__(self, value_encoder=None, value_decoder=None, **kwargs):
         Value.__init__(self, **kwargs)
         self._value_encoder = value_encoder
         self._value_decoder = value_decoder
+
+    def copy(self, dst_key):
+        copy_key(self.connection, self.key, dst_key)
+        return self.__class__(value_encoder=self._value_encoder,
+                value_decoder=self._value_decoder,
+                connection=self.connection, key=dst_key)
 
     def _encode_value(self, v):
         if self._value_encoder is None:
@@ -193,18 +246,20 @@ class List(Value):
         else:
             return self._value_encoder(v)
 
+    def _decode_value(self, v):
+        if self._value_decoder is None:
+            return v
+        else:
+            return self._value_decoder(v)
+
+
+class List(EncodableContainer):
     def _encode_values(self, values):
         if self._value_encoder is None:
             return values
         else:
             encoder = self._value_encoder
             return [encoder(v) for v in values]
-
-    def _decode_value(self, v):
-        if self._value_decoder is None:
-            return v
-        else:
-            return self._value_decoder(v)
 
     def _decode_values(self, values):
         if self._value_decoder is None:
@@ -257,52 +312,7 @@ class List(Value):
             return self.connection.rpush(self.key, *encoded_vals)
 
 
-class Set(Value):
-    def _value_getter(self):
-        return self.connection.smembers(self.key)
-
-    def _value_setter(self, val):
-        pipe = self.connection.pipeline()
-        pipe.delete(self.key)
-        if val:
-            pipe.sadd(self.key, *val)
-        pipe.execute()
-
-    value = property(Value._timed_value_getter, Value._timed_value_setter)
-
-    def add(self, val):
-        return self.connection.sadd(self.key, val)
-
-    def remove(self, val):
-        removed, size = self.discard(val)
-        if not removed:
-            raise KeyError("Set (%s) doesn't contain value %s" %
-                    (self.key, val))
-        return removed, size
-
-    def discard(self, val):
-        pipe = self.connection.pipeline()
-        pipe.srem(self.key, val)
-        pipe.scard(self.key)
-        removed, size = pipe.execute()
-        return removed, size
-
-    def update(self, vals):
-        return self.connection.sadd(self.key, *vals)
-
-    def __iter__(self):
-        return self.value.__iter__()
-
-    def __len__(self):
-        return self.connection.scard(self.key)
-
-
-class Hash(Value):
-    def __init__(self, value_encoder=None, value_decoder=None, **kwargs):
-        Value.__init__(self, **kwargs)
-        self._value_encoder = value_encoder
-        self._value_decoder = value_decoder
-
+class Hash(EncodableContainer):
     def _encode_dict(self, d):
         if self._value_encoder is None:
             return d
@@ -316,18 +326,6 @@ class Hash(Value):
         else:
             decoder = self._value_decoder
             return dict((k, decoder(v)) for k, v in d.iteritems())
-
-    def _encode_value(self, v):
-        if self._value_encoder is None:
-            return v
-        else:
-            return self._value_encoder(v)
-
-    def _decode_value(self, v):
-        if self._value_decoder is None:
-            return v
-        else:
-            return self._value_decoder(v)
 
     def _decode_values(self, values):
         if self._value_decoder is None:
@@ -352,7 +350,7 @@ class Hash(Value):
         else:
             return self.connection.delete(self.key)
 
-    value = property(Value._timed_value_getter, Value._timed_value_setter)
+    value = property(_value_getter, _value_setter)
 
     def __setitem__(self, hkey, val):
         return self.connection.hset(self.key, hkey, self._encode_value(val))
@@ -425,7 +423,6 @@ class ObjectMeta(type):
         rom_dict = {
                 "_rom_scripts":Script,
                 "_rom_properties":Property,
-                "_rom_references":Reference,
                 }
 
         for hidden_variable, hidden_class in rom_dict.items():
@@ -482,10 +479,19 @@ class Object(object):
         for name, script in self._rom_scripts.iteritems():
             self.__dict__[name] = functools.partial(script, self.connection)
 
+    def copy(self, dst_key):
+        target = self.__class__.create(connection=self.connection, key=dst_key)
+
+        for prop_name in self._rom_properties:
+            src_prop = getattr(self, prop_name)
+            tgt_prop = getattr(target, prop_name)
+            src_prop.copy(tgt_prop.key)
+
+        return target
 
     def __getattr__(self, name):
         # fallback for when lookup in __dict__ fails
-        timer = stats.create_timer('rom.Object.__getattr__')
+        timer = stats.create_timer('rom.Object.__getattr_')
         timer.start()
         try:
             result = self._cache[name]
@@ -493,19 +499,8 @@ class Object(object):
             try:
                 propdef = self._rom_properties[name]
             except KeyError:
-                try:
-                    propdef = self._rom_references[name]
-                except:
-                    raise AttributeError("No such property or relation '%s'"
-                            " on class %s" % (name, self.__class__.__name__))
-                else:
-                    key = self.connection.get(self.subkey(name))
-                    if key is None:
-                        raise RuntimeError("Reference has not been set yet.")
-                    cls = Object.get_class(propdef.class_info)
-                    prop = cls(connection=self.connection, key=key,
-                            **propdef.kwargs)
-                    self._cache[name] = prop
+                raise AttributeError("No such property or relation '%s'"
+                        " on class %s" % (name, self.__class__.__name__))
             else:
                 cls = propdef.cls
                 prop = cls.create(connection=self.connection,
@@ -513,6 +508,7 @@ class Object(object):
                 self._cache[name] = prop
 
             result = prop
+
         timer.stop()
         return result
 
@@ -522,36 +518,6 @@ class Object(object):
         # is always called on attribute setting
         if name in self._rom_properties:
             getattr(self, name).value = value
-        elif name in self._rom_references:
-            if isinstance(value, basestring):
-                key = value
-                class_info = self.connection.get(key)
-                if class_info is None:
-                    raise NotInRedisError("Redis has no data for key (%s)." %
-                            key)
-                cls = Object.get_class(class_info)
-
-                expected_class_info = self._rom_references[name].class_info
-                if cls._info != expected_class_info:
-                    raise TypeError("Attempted to assign to %s but %s "
-                            "doesn't match the expected class info (%s)" %
-                            (name, cls._info, expected_class_info))
-                obj = cls(self.connection, key)
-            else:
-                expected_class_info = self._rom_references[name].class_info
-                if not isinstance(value, Object):
-                    raise TypeError("Attempted to assign to %s but %s isn't an"
-                            "instance of Object")
-                else:
-                    if value._info != expected_class_info:
-                        raise TypeError("Attempted to assign to %s but %s "
-                                "doesn't match the expected class info (%s)" %
-                                (name, value._info, expected_class_info))
-                key = value.key
-                obj = value
-
-            self.connection.set(self.subkey(name), key)
-            self._cache[name] = obj
         else:
             object.__setattr__(self, name, value)
         timer.stop()
@@ -561,10 +527,6 @@ class Object(object):
         timer.start()
         if name in self._rom_properties:
             getattr(self, name).delete()
-        elif name in self._rom_references:
-            self.connection.delete(self.subkey(name))
-            # Is it a bug that this is unused?
-#            ref = self._rom_references[name]
 
         if name in self._cache:
             del self._cache[name]
@@ -584,6 +546,7 @@ class Object(object):
         if class_info != self._info:
             raise TypeError("Classinfo for %s isn't correct, found '%s' "
                     "expected '%s'" % (self.key, class_info, self._info))
+
         timer.stop()
         return True
 
@@ -603,7 +566,7 @@ class Object(object):
         timer.split('set_class_info')
 
         for k, v in kwargs.iteritems():
-            if k not in obj._rom_properties and k not in obj._rom_references:
+            if k not in obj._rom_properties:
                 raise AttributeError("Unknown attribute %s" % k)
             setattr(obj, k, v)
 
@@ -611,7 +574,6 @@ class Object(object):
         obj._on_create()
         timer.split('_on_create')
 
-        timer.stop()
         return obj
 
     @classmethod
@@ -644,16 +606,6 @@ class Object(object):
             getattr(self, name).delete()
         timer.split('attributes')
 
-        for name, ref in self._rom_references.iteritems():
-            if not ref.weak:
-                try:
-                    r = getattr(self, name)
-                except RuntimeError:
-                    pass
-                else:
-                    r.delete()
-        timer.split('references')
-
         self._class_info.delete()
         timer.split('class_info')
         timer.stop()
@@ -683,3 +635,6 @@ def invoke_instance_method(connection, method_descriptor, **kwargs):
                              % (obj.__class__.__name__,
                              method_descriptor["method_name"]))
     return method(**kwargs)
+
+
+_COPY_KEY_SCRIPT = Script(_COPY_KEY_SCRIPT_BODY)
