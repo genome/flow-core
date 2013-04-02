@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 import flow.configuration
 from flow.factories import dictionary_factory
 from flow.util import stats
+from flow.util.environment import environment
 import sys
 import traceback
 
@@ -44,8 +45,10 @@ def main():
         try:
             command_config = config['commands'][arguments.command_name]
             kwargs = dictionary_factory(**command_config)
-            command = arguments.command(**kwargs)
-            exit_code = command(arguments)
+            env = kwargs.pop('environment', {})
+            with environment([env]):
+                command = arguments.command(**kwargs)
+                exit_code = command(arguments)
         except:
             LOG.exception('Command execution failed')
 
