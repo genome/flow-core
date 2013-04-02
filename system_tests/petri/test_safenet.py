@@ -132,7 +132,7 @@ class TestSafeNet(TestBase):
                 trans_arcs_out={0: [1, 2]}, # t1 -> b, c
                 )
 
-        self.assertEqual(3, net.num_places)
+        self.assertEqual(3, net.num_places.value)
         self.assertEqual("a", str(net.place(0).name))
         self.assertEqual("b", str(net.place(1).name))
         self.assertEqual("c", str(net.place(2).name))
@@ -227,17 +227,17 @@ class TestSafeNet(TestBase):
         token1 = sn.Token.create(self.conn)
         token2 = sn.Token.create(self.conn)
 
-        self.assertTrue(net.marking(place_idx) is None)
-        self.assertEqual({}, net.marking())
+        self.assertTrue(net.marking.get(place_idx) is None)
+        self.assertEqual({}, net.marking.value)
 
         net.set_token(place_idx, token1.key, self.service_interfaces)
-        self.assertEqual(token1.key, net.marking(place_idx))
+        self.assertEqual(token1.key, net.marking.get(place_idx))
         net.set_token(place_idx, token1.key, self.service_interfaces)
-        self.assertEqual({"0": str(token1.key)}, net.marking())
+        self.assertEqual({"0": str(token1.key)}, net.marking.value)
 
         # setting the same token twice is not an error
-        self.assertEqual(token1.key, net.marking(place_idx))
-        self.assertEqual({"0": str(token1.key)}, net.marking())
+        self.assertEqual(token1.key, net.marking.get(place_idx))
+        self.assertEqual({"0": str(token1.key)}, net.marking.value)
 
         self.assertRaises(sn.PlaceCapacityError, net.set_token,
             place_idx, token2.key, self.service_interfaces)

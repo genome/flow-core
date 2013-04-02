@@ -35,8 +35,8 @@ class TestNetBuilder(test_helpers.RedisTest):
 
         stored_net = builder.store(self.conn)
 
-        self.assertEqual(4, stored_net.num_places)
-        self.assertEqual(2, stored_net.num_transitions)
+        self.assertEqual(4, stored_net.num_places.value)
+        self.assertEqual(2, stored_net.num_transitions.value)
 
         expected_names = ["start", "p1", "p2", "end"]
         place_names = [str(stored_net.place(x).name) for x in xrange(4)]

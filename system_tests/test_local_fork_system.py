@@ -68,7 +68,7 @@ class TestSystemFork(redistest.RedisTest):
         self.broker.listen()
 
         # XXX This is the marking for dispatched, not success/failure
-        self.assertEqual(['3'], net.marking().keys())
+        self.assertEqual(['3'], net.marking.keys())
 
 if __name__ == "__main__":
     unittest.main()

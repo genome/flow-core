@@ -355,6 +355,9 @@ class Hash(EncodableContainer):
     def __setitem__(self, hkey, val):
         return self.connection.hset(self.key, hkey, self._encode_value(val))
 
+    def setnx(self, hkey, val):
+        return self.connection.hsetnx(self.key, hkey, self._encode_value(val))
+
     def __getitem__(self, hkey):
         result = self._get_raw(hkey)
         if result is None:
@@ -421,8 +424,8 @@ class ObjectMeta(type):
         members.update(class_dict)
 
         rom_dict = {
-                "_rom_scripts":Script,
-                "_rom_properties":Property,
+                "_rom_scripts": Script,
+                "_rom_properties": Property,
                 }
 
         for hidden_variable, hidden_class in rom_dict.items():
@@ -440,6 +443,8 @@ class ObjectMeta(type):
         class_info = "%s:%s" % (cls.__module__, cls.__name__)
         mcs._class_registry[class_info] = cls
         cls._info = class_info
+
+
         return cls
 
     def get_class(cls, class_info):
@@ -555,26 +560,7 @@ class Object(object):
 
     @classmethod
     def create(cls, connection=None, key=None, **kwargs):
-        timer = stats.create_timer('rom.Object.create')
-        timer.start()
-        if key is None:
-            key = _make_key("/" + cls.__module__, cls.__name__,
-                            uuid4().hex)
-
-        obj = cls(connection=connection, key=key)
-        obj._class_info.value = cls._info
-        timer.split('set_class_info')
-
-        for k, v in kwargs.iteritems():
-            if k not in obj._rom_properties:
-                raise AttributeError("Unknown attribute %s" % k)
-            setattr(obj, k, v)
-
-        timer.split('set_attributes')
-        obj._on_create()
-        timer.split('_on_create')
-
-        return obj
+        return create_object(cls, connection, key, **kwargs)
 
     @classmethod
     def get(cls, connection=None, key=None):
@@ -624,6 +610,29 @@ def get_object(connection=None, key=None):
     cls = Object.get_class(class_info)
     obj = cls(connection=connection, key=key)
     timer.stop()
+    return obj
+
+
+def create_object(cls, connection=None, key=None, **kwargs):
+    timer = stats.create_timer('rom.create_object')
+    timer.start()
+    if key is None:
+        key = _make_key("/" + cls.__module__, cls.__name__,
+                        uuid4().hex)
+
+    obj = cls(connection=connection, key=key)
+    obj._class_info.value = cls._info
+    timer.split('set_class_info')
+
+    for k, v in kwargs.iteritems():
+        if k not in obj._rom_properties:
+            raise AttributeError("Unknown attribute %s" % k)
+        setattr(obj, k, v)
+
+    timer.split('set_attributes')
+    obj._on_create()
+    timer.split('_on_create')
+
     return obj
 
 

@@ -14,19 +14,6 @@ import subprocess
 
 LOG = logging.getLogger(__name__)
 
-_COPY_HASH_SCRIPT = """
-local src_hash_key = KEYS[1]
-local dst_hash_key = KEYS[2]
-
-local data = redis.call('HGETALL', src_hash_key)
-if #data == 0 then
-    return 0
-end
-
-redis.call('DEL', dst_hash_key)
-return redis.call('HMSET', dst_hash_key, unpack(data))
-"""
-
 _SET_TOKEN_SCRIPT = """
 local marking_hash = KEYS[1]
 local place_key = ARGV[1]
@@ -209,7 +196,14 @@ class _SafeTransition(_SafeNode):
 class SafeNet(rom.Object):
     required_constants = ["environment", "user_id", "working_directory"]
 
-    _copy_hash = rom.Script(_COPY_HASH_SCRIPT)
+    num_places = rom.Property(rom.Int)
+    num_transitions = rom.Property(rom.Int)
+    marking = rom.Property(rom.Hash)
+    variables = rom.Property(rom.Hash, value_encoder=rom.json_enc,
+            value_decoder=rom.json_dec)
+    _constants = rom.Property(rom.Hash, value_encoder=rom.json_enc,
+            value_decoder=rom.json_dec)
+
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
     _push_tokens = rom.Script(_PUSH_TOKENS_SCRIPT)
     _set_token = rom.Script(_SET_TOKEN_SCRIPT)
@@ -224,7 +218,7 @@ class SafeNet(rom.Object):
 
         # Remove the two trailing '=' characters to save space
         key = base64.b64encode(uuid4().bytes)[:-2]
-        self = cls(connection, key)
+        self = rom.create_object(cls, connection=connection, key=key)
         self._class_info.value = cls._info
 
         trans_arcs_in = {}
@@ -232,8 +226,8 @@ class SafeNet(rom.Object):
             for t in trans_set:
                 trans_arcs_in.setdefault(t, set()).add(p)
 
-        self.connection.set(self.subkey("num_places"), len(place_names))
-        self.connection.set(self.subkey("num_transitions"), len(trans_actions))
+        self.num_places.value = len(place_names)
+        self.num_transitions.value = len(trans_actions)
 
         for i, pname in enumerate(place_names):
             key = self.subkey("place/%d" % i)
@@ -254,10 +248,9 @@ class SafeNet(rom.Object):
         return self
 
     def set_constant(self, key, value):
-        value = json.dumps(value)
-        ret = self.connection.hsetnx(self.subkey("constants"), key, value)
-        if ret == 0:
-            raise TypeError("Attempted to reassign constant property %s" % key)
+        if self._constants.setnx(key, value) == 0:
+            raise TypeError("Tried to overwrite constant %s in net %s" %
+                    (key, self.key))
 
     def capture_environment(self):
         euid = os.geteuid()
@@ -269,30 +262,17 @@ class SafeNet(rom.Object):
         self.set_constant("working_directory", cwd)
 
     def copy_constants_from(self, other_net):
-        keys = [other_net.subkey("constants"), self.subkey("constants")]
-        rv = self._copy_hash(keys=keys)
+        self.connection.delete(self._constants.key)
+        other_net._constants.copy(self._constants.key)
 
     def constant(self, key):
-        value = self.connection.hget(self.subkey("constants"), key)
-        if value is not None:
-            return json.loads(value)
+        return self._constants.get(key)
 
     def set_variable(self, key, value):
-        value = json.dumps(value)
-        return self.connection.hset(self.subkey("variables"), key, value)
+        self.variables[key] = value
 
     def variable(self, key):
-        value = self.connection.hget(self.subkey("variables"), key)
-        if value is not None:
-            return json.loads(value)
-
-    @property
-    def num_places(self):
-        return int(self.connection.get(self.subkey("num_places")) or 0)
-
-    @property
-    def num_transitions(self):
-        return int(self.connection.get(self.subkey("num_transitions")) or 0)
+        return self.variables.get(key)
 
     def place(self, idx):
         return _SafePlace(self.connection, self.subkey("place/%d" % int(idx)))
@@ -309,7 +289,7 @@ class SafeNet(rom.Object):
             raise TypeError(
                     "You must specify trans_idx, place_idx, and service_interfaces")
 
-        marking_key = self.subkey("marking")
+        marking_key = self.marking.key
 
         trans = self.transition(trans_idx)
 
@@ -357,14 +337,6 @@ class SafeNet(rom.Object):
             timer.split('delete_pushed_tokens')
         timer.stop()
 
-    def marking(self, place_idx=None):
-        marking_key = self.subkey("marking")
-
-        if place_idx is None:
-            return self.connection.hgetall(marking_key)
-        else:
-            return self.connection.hget(self.subkey("marking"), place_idx)
-
     def set_token(self, place_idx, token_key='', service_interfaces=None):
         timer = stats.create_timer('petri.SafeNet.set_token')
         timer.start()
@@ -372,7 +344,7 @@ class SafeNet(rom.Object):
         LOG.debug("Net %s setting token %s for place %s (#%d)", self.key,
                 token_key, place.name, place_idx)
 
-        marking_key = self.subkey("marking")
+        marking_key = self.marking.key
 
         if token_key:
             rv = self._set_token(keys=[marking_key],
@@ -401,7 +373,7 @@ class SafeNet(rom.Object):
     def graph(self):
         graph = pygraphviz.AGraph(directed=True)
 
-        marking = self.marking()
+        marking = self.marking.value
 
         for i in xrange(self.num_transitions):
             t = self.transition(i)
