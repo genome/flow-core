@@ -1,3 +1,7 @@
+# FIXME: global import should go away. lots of things moved to netbase
+# but things still import them from here.
+from netbase import *
+
 from flow.protocol.message import Message
 from flow.util import stats
 
@@ -117,37 +121,6 @@ redis.call('SET', tokens_pushed_key, 1)
 return {1, arcs_out}
 """
 
-def make_net_key():
-    return base64.b64encode(uuid4().bytes)[:-2]
-
-def merge_token_data(tokens, data_type=None):
-    data = {}
-    for token in tokens:
-        if not data_type or token.data_type.value == data_type:
-            data.update(token.data.value)
-    return data
-
-
-class SetTokenMessage(Message):
-    required_fields = {
-            "net_key": basestring,
-            "place_idx": int,
-            "token_key": basestring,
-    }
-
-
-class NotifyTransitionMessage(Message):
-    required_fields = {
-            "net_key": basestring,
-            "place_idx": int,
-            "transition_idx": int,
-    }
-
-
-class PlaceCapacityError(Exception):
-    pass
-
-
 class Token(rom.Object):
     data_type = rom.Property(rom.String)
     data = rom.Property(rom.Hash, value_encoder=rom.json_enc,
@@ -196,107 +169,20 @@ class _SafeTransition(_SafeNode):
         return rom.get_object(self.connection, key)
 
 
-class SafeNet(rom.Object):
-    required_constants = ["environment", "user_id", "working_directory"]
+class SafeNet(NetBase):
+    place_class = _SafePlace
+    transition_class = _SafeTransition
 
-    input_places = rom.Property(rom.Hash)
-    output_places = rom.Property(rom.Hash)
-
-    num_places = rom.Property(rom.Int)
-    num_transitions = rom.Property(rom.Int)
     marking = rom.Property(rom.Hash)
-    variables = rom.Property(rom.Hash, value_encoder=rom.json_enc,
-            value_decoder=rom.json_dec)
-    _constants = rom.Property(rom.Hash, value_encoder=rom.json_enc,
-            value_decoder=rom.json_dec)
 
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
     _push_tokens = rom.Script(_PUSH_TOKENS_SCRIPT)
     _set_token = rom.Script(_SET_TOKEN_SCRIPT)
 
-    def subkey(self, *args):
-        return "/".join([self.key] + [str(x) for x in args])
-
-    @classmethod
-    def create(cls, connection=None, name=None, place_names=[],
-               trans_actions=[], place_arcs_out={},
-               trans_arcs_out={}, key=None):
-
-        # Remove the two trailing '=' characters to save space
-        if key is None:
-            key = make_net_key()
-        self = rom.create_object(cls, connection=connection, key=key)
-        self._class_info.value = cls._info
-
-        trans_arcs_in = {}
-        for p, trans_set in place_arcs_out.iteritems():
-            for t in trans_set:
-                trans_arcs_in.setdefault(t, set()).add(p)
-
-        self.num_places.value = len(place_names)
-        self.num_transitions.value = len(trans_actions)
-
-        for i, pname in enumerate(place_names):
-            key = self.subkey("place/%d" % i)
-            _SafePlace.create(connection=self.connection, key=key, name=pname,
-                    arcs_out=place_arcs_out.get(i, {}))
-
-        for i, t in enumerate(trans_actions):
-            key = self.subkey("trans/%d" % i)
-            name = "" if t is None else t.name
-            action_key = None if t is None else t.key
-            trans = _SafeTransition.create(self.connection, key, name=name,
-                    arcs_out=trans_arcs_out.get(i, {}),
-                    arcs_in=trans_arcs_in.get(i, {}),
-                    state=trans_arcs_in.get(i, {}))
-            if action_key is not None:
-                trans.action_key = action_key
-
-        return self
-
-    def set_constant(self, key, value):
-        if self._constants.setnx(key, value) == 0:
-            raise TypeError("Tried to overwrite constant %s in net %s" %
-                    (key, self.key))
-
-    def capture_environment(self):
-        euid = os.geteuid()
-        user_name = pwd.getpwuid(euid).pw_name
-        self.set_constant("environment", os.environ.data)
-        self.set_constant("user_id", euid)
-        self.set_constant("user_name", user_name)
-        cwd = os.path.realpath(os.path.curdir)
-        self.set_constant("working_directory", cwd)
-
-    def copy_constants_from(self, other_net):
-        other_net._constants.copy(self._constants.key)
-
-    def constant(self, key):
-        return self._constants.get(key)
-
-    def set_variable(self, key, value):
-        self.variables[key] = value
-
-    def variable(self, key):
-        return self.variables.get(key)
-
-    def place(self, idx):
-        return _SafePlace(self.connection, self.subkey("place/%d" % int(idx)))
-
-    def transition(self, idx):
-        return _SafeTransition(self.connection, self.subkey("trans/%d" % int(idx)))
-
-    def copy(self, dst_key):
-        copied = rom.Object.copy(self, dst_key)
-        for i in xrange(self.num_places.value):
-            place_key = copied.subkey("place/%d" % i)
-            self.place(i).copy(place_key)
-
+    def _set_initial_transition_state(self):
         for i in xrange(self.num_transitions.value):
-            trans_key = copied.subkey("trans/%d" % i)
-            self.transition(i).copy(trans_key)
-
-        return copied
+            trans = self.transition(i)
+            trans.state = trans.arcs_in.value
 
     def notify_transition(self, trans_idx=None, place_idx=None, service_interfaces=None):
         LOG.debug("notify transition #%d", trans_idx)
@@ -387,130 +273,16 @@ class SafeNet(rom.Object):
                         int(place_idx))
         timer.stop()
 
+    def _place_plot_color(self, place, idx):
+        ftt = False
+        try:
+            ftt = place.first_token_timestamp.value
+        except rom.NotInRedisError:
+            pass
 
-    def graph(self):
-        graph = pygraphviz.AGraph(directed=True)
-
-        marking = self.marking.value
-
-        for i in xrange(self.num_transitions):
-            t = self.transition(i)
-            ident = "t%i" % i
-            name = "%s (#%d)" % (str(t.name), i)
-            graph.add_node(ident, label=name, shape="box",
-                    style="filled", fillcolor="black", fontcolor="white")
-
-        for i in xrange(self.num_places):
-            p = self.place(i)
-            ident = "p%i" % i
-
-            ftt = False
-            try:
-                ftt = p.first_token_timestamp.value
-            except rom.NotInRedisError:
-                pass
-
-            if str(i) in marking:
-                color = "red"
-            elif ftt:
-                color = "green"
-            else:
-                color = "white"
-
-            graph.add_node(ident, label=str(p.name), style="filled",
-                    fillcolor=color)
-
-        for i in xrange(self.num_transitions):
-            t = self.transition(i)
-            ident = "t%i" % i
-            for dst in t.arcs_out.value:
-                graph.add_edge(ident, "p%d" % int(dst))
-
-        for i in xrange(self.num_places):
-            p = self.place(i)
-            ident = "p%i" % i
-            for dst in p.arcs_out.value:
-                graph.add_edge(ident, "t%d" % int(dst))
-
-        return graph
-
-
-class TransitionAction(rom.Object):
-    required_arguments = []
-    output_token_type = ""
-
-    name = rom.Property(rom.String)
-    args = rom.Property(rom.Hash, value_encoder=rom.json_enc,
-            value_decoder=rom.json_dec)
-
-    def _on_create(self):
-        for argname in self.required_arguments:
-            if not argname in self.args:
-                raise TypeError("In class %s: required argument %s missing" %
-                        (self.__class__.__name__, argname))
-
-    def input_data(self, active_tokens_key, net):
-        pass
-
-    def tokens(self, active_tokens_key):
-        keys = self.connection.lrange(active_tokens_key, 0, -1)
-        return [rom.get_object(self.connection, x) for x in keys]
-
-    def execute(self, active_tokens_key, net, service_interfaces):
-        raise NotImplementedError("In class %s: execute not implemented" %
-                self.__class__.__name__)
-
-
-class CounterAction(TransitionAction):
-    call_count = rom.Property(rom.Int)
-
-    def _on_create(self):
-        self.call_count.value = 0
-
-    def execute(self, active_tokens_key, net, service_interfaces):
-        self.call_count.incr(1)
-
-
-class ShellCommandAction(TransitionAction):
-    required_arguments = ["command_line", "success_place_id",
-            "failure_place_id"]
-
-    def execute(self, active_tokens_key, net, service_interfaces):
-        cmdline = self.args["command_line"]
-        rv = subprocess.call(cmdline)
-        orchestrator = service_interfaces['orchestrator']
-        token = Token.create(self.connection, data={"return_code": rv})
-        if rv == 0:
-            return_place = self.args["success_place_id"]
+        if idx in self.marking:
+            return "red"
+        elif ftt:
+            return "green"
         else:
-            return_place = self.args["failure_place_id"]
-
-        orchestrator.set_token(net.key, int(return_place), token_key=token.key)
-
-
-class SetRemoteTokenAction(TransitionAction):
-    required_arguments = ["remote_net_key", "remote_place_id", "data_type"]
-
-    def execute(self, active_tokens_key, net, service_interfaces):
-        remote_net_key = self.args["remote_net_key"]
-        remote_place_id = int(self.args["remote_place_id"])
-        data_type = self.args["data_type"]
-
-        input_data = self.input_data(active_tokens_key, net)
-        token = Token.create(self.connection, data=input_data,
-                data_type=data_type)
-
-        orchestrator = service_interfaces['orchestrator']
-        orchestrator.set_token(remote_net_key, remote_place_id, token.key)
-
-
-class MergeTokensAction(TransitionAction):
-    required_arguments = ["input_type", "output_type"]
-
-    def execute(self, active_tokens_key, net, service_interfaces):
-        token_keys = self.connection.lrange(active_tokens_key, 0, -1)
-        tokens = [Token(self.connection, k) for k in token_keys]
-        input_type = self.args["input_type"]
-        output_type = self.args["output_type"]
-        data = merge_token_data(tokens, data_type=input_type)
-        return Token.create(self.connection, data_type=output_type, data=data)
+            return "white"
