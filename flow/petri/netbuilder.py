@@ -1,4 +1,4 @@
-from flow.petri import safenet
+from flow import petri
 from flow.util import stats
 
 import itertools
@@ -95,7 +95,9 @@ class _ClusterCounter(object):
 
 
 class NetBuilder(object):
-    def __init__(self):
+    def __init__(self, net_type=petri.SafeNet):
+        self.net_type = net_type
+
         self.places = []
         self.transitions = []
         self.subnets = []
@@ -221,7 +223,7 @@ class NetBuilder(object):
             trans_arcs_out.setdefault(src_id, set()).update(dst_ids)
         timer.split('transitions')
 
-        net = safenet.SafeNet.create(
+        net = self.net_type.create(
                 connection=connection,
                 name=name,
                 place_names=place_names,
@@ -313,7 +315,7 @@ class ShellCommandNet(SuccessFailureNet):
         self.on_failure_place = self.add_place("on_failure")
 
         action = ActionSpec(
-                cls=safenet.ShellCommandAction,
+                cls=petri.ShellCommandAction,
                 args = {"command_line": cmdline,
                         "success_place_id": self.on_success_place.index,
                         "failure_place_id": self.on_failure_place.index})

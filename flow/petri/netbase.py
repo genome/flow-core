@@ -173,6 +173,12 @@ class NetBase(rom.Object):
     def set_token(self, place_idx, token_key='', service_interfaces=None):
         raise NotImplementedError()
 
+    def _trans_plot_color(self, trans):
+        if len(trans.active_tokens) > 0:
+            return "blue"
+
+        return "black"
+
     def _place_plot_color(self, place, idx):
         return "white"
 
@@ -186,8 +192,9 @@ class NetBase(rom.Object):
             t = self.transition(i)
             ident = "t%i" % i
             name = "%s (#%d)" % (str(t.name), i)
+            color = self._trans_plot_color(t)
             graph.add_node(ident, label=name, shape="box",
-                    style="filled", fillcolor="black", fontcolor="white")
+                    style="filled", fillcolor=color, fontcolor="white")
 
         for i in xrange(self.num_places):
             p = self.place(i)

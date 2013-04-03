@@ -220,7 +220,9 @@ class Net(NetBase):
         if new_token is None:
             new_token = Token.create(self.connection)
 
+
         tokens_pushed, tokens_remaining = self.push_tokens(trans, new_token.key)
+
         if tokens_pushed is True:
             orchestrator = service_interfaces['orchestrator']
             arcs_out = trans.arcs_out.value

@@ -6,12 +6,20 @@ import os
 import redis
 import sys
 import unittest
-import test_helpers
+from test_helpers import RedisTest, FakeOrchestrator
+
+class TestBase(RedisTest):
+    def setUp(self):
+        RedisTest.setUp(self)
+        orch = FakeOrchestrator(self.conn)
+        self.service_interfaces = orch.service_interfaces
 
 
-class TestNetBuilder(test_helpers.RedisTest):
+class _TestBody(object):
+    net_type = None
+
     def test_store(self):
-        builder = nb.NetBuilder()
+        builder = nb.NetBuilder(net_type=self.net_type)
 
         net = builder.add_subnet(nb.EmptyNet, "hi")
         start = net.add_place("start")
@@ -51,3 +59,47 @@ class TestNetBuilder(test_helpers.RedisTest):
         self.assertEqual("y", stored_net.variable("x"))
         self.assertEqual("456", stored_net.variable("123"))
         self.assertIsNone(stored_net.variable("nothing"))
+
+
+class TestNetBuilder(_TestBody, TestBase):
+    net_type = petri.Net
+
+    def test_execute_net(self):
+        builder = nb.NetBuilder(net_type=petri.Net)
+        in1 = builder.add_place("in1")
+        in2 = builder.add_place("in2")
+        p11 = builder.add_place("p11")
+        p12 = builder.add_place("p12")
+        p21 = builder.add_place("p21")
+        p22 = builder.add_place("p22")
+
+        action = nb.ActionSpec(petri.CounterAction)
+        tstart = builder.add_transition("tstart", action=action)
+        tend = builder.add_transition("tend", action=action)
+
+        in1.arcs_out.add(tstart)
+        in2.arcs_out.add(tstart)
+        tstart.arcs_out.add(p11)
+        tstart.arcs_out.add(p21)
+
+        builder.bridge_places(p11, p12, action=action)
+        builder.bridge_places(p21, p22, action=action)
+
+        p12.arcs_out.add(tend)
+        p22.arcs_out.add(tend)
+
+        stored_net = builder.store(self.conn)
+
+        token = petri.Token.create(self.conn)
+        for x in xrange(3):
+            stored_net.set_token(0, token.key, self.service_interfaces)
+
+        for x in xrange(3):
+            stored_net.set_token(1, token.key, self.service_interfaces)
+
+        for x in xrange(stored_net.num_transitions):
+            self.assertEqual(3, stored_net.transition(x).action.call_count.value)
+
+
+class TestSafeNetBuilder(_TestBody, TestBase):
+    net_type = petri.SafeNet
