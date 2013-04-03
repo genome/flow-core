@@ -1,5 +1,5 @@
+from flow import petri
 import flow.petri.netbuilder as nb
-import flow.petri.safenet as sn
 
 import mock
 import os
@@ -19,7 +19,7 @@ class TestNetBuilder(test_helpers.RedisTest):
         p2 = net.add_place("p2")
         end = net.add_place("end")
 
-        action = nb.ActionSpec(sn.CounterAction)
+        action = nb.ActionSpec(petri.CounterAction)
         t1 = net.add_transition("t1", action=action)
         t2 = net.add_transition("t2")
 
@@ -43,7 +43,7 @@ class TestNetBuilder(test_helpers.RedisTest):
         self.assertEqual(expected_names, place_names)
 
         action = stored_net.transition(0).action
-        self.assertTrue(isinstance(action, sn.CounterAction))
+        self.assertTrue(isinstance(action, petri.CounterAction))
         self.assertEqual("t1", str(action.name))
 
         self.assertTrue(stored_net.transition(1).action is None)

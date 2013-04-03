@@ -10,7 +10,7 @@ from flow.command_runner.service_interface import CommandLineServiceInterface
 from flow.command_runner.handler import CommandLineSubmitMessageHandler
 from flow.command_runner.executors.local import SubprocessExecutor
 
-from flow.petri import safenet
+from flow import petri
 from flow.petri.netbuilder import NetBuilder
 from flow.command_runner.executors import nets
 
@@ -62,7 +62,7 @@ class TestSystemFork(redistest.RedisTest):
 
         net = builder.store(self.conn)
 
-        token = safenet.Token.create(self.conn)
+        token = petri.Token.create(self.conn)
         self.service_interfaces['orchestrator'].set_token(net.key,
                 0, token_key=token.key)
         self.broker.listen()

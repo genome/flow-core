@@ -1,6 +1,6 @@
 import logging
 
-from flow.petri.safenet import NotifyTransitionMessage, SetTokenMessage
+from flow.petri import NotifyTransitionMessage, SetTokenMessage
 
 LOG = logging.getLogger(__name__)
 

@@ -1,5 +1,5 @@
 from flow.commands.base import CommandBase
-from flow.petri.safenet import Token, SetTokenMessage
+from flow.petri import Token, SetTokenMessage
 from tempfile import NamedTemporaryFile
 import flow.redisom as rom
 import json

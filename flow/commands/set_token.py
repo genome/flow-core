@@ -1,5 +1,5 @@
 from flow.commands.base import CommandBase
-import flow.petri.safenet as sn
+from flow.petri import Token, SetTokenMessage
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -26,11 +26,11 @@ class SetTokenCommand(CommandBase):
 
     def __call__(self, parsed_arguments):
         if not parsed_arguments.token_key:
-            parsed_arguments.token_key = str(sn.Token.create(self.storage).key)
+            parsed_arguments.token_key = str(Token.create(self.storage).key)
 
         self.broker.connect()
 
-        message = sn.SetTokenMessage(net_key=parsed_arguments.net_key,
+        message = SetTokenMessage(net_key=parsed_arguments.net_key,
                 place_idx=parsed_arguments.place_idx,
                 token_key=parsed_arguments.token_key)
         self.broker.publish(self.routing_key, message)

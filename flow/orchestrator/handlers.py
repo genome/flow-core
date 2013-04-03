@@ -2,8 +2,8 @@ import logging
 import time
 import uuid
 
-from flow.petri.safenet import SafeNet, SetTokenMessage, NotifyTransitionMessage
-from flow.redisom import get_object, invoke_instance_method
+from flow.petri import SetTokenMessage, NotifyTransitionMessage
+from flow.redisom import get_object
 
 LOG = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ class PetriSetTokenHandler(object):
 
     def __call__(self, message):
         try:
-            net = SafeNet(self.redis, message.net_key)
+            net = get_object(self.redis, message.net_key)
             net.set_token(message.place_idx, message.token_key,
                     service_interfaces=self.service_interfaces)
         except Exception as e:
@@ -35,7 +35,7 @@ class PetriNotifyTransitionHandler(object):
 
     def __call__(self, message):
         try:
-            net = SafeNet(self.redis, message.net_key)
+            net = get_object(self.redis, message.net_key)
             net.notify_transition(message.transition_idx, message.place_idx,
                     service_interfaces=self.service_interfaces)
         except Exception as e:

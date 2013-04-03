@@ -30,7 +30,6 @@ if remaining > 0 then
     return {remaining, "Incoming tokens remaining"}
 end
 
-
 local enabler_value = redis.call('GET', enabler_key)
 if enabler_value == false then
     redis.call('SET', enabler_key, place_key)

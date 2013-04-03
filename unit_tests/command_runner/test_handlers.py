@@ -4,7 +4,7 @@ try:
 except:
     import mock
 
-from flow.petri.safenet import SetTokenMessage
+from flow.petri import SetTokenMessage
 
 import flow.command_runner.handler
 from flow.command_runner.handler import CommandLineSubmitMessageHandler

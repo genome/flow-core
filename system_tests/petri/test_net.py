@@ -1,5 +1,4 @@
-import flow.petri.net as pn
-import flow.petri.safenet as sn
+from flow import petri
 
 # netbuilder makes the "copy net" test easier
 import flow.petri.netbuilder as nb
@@ -26,11 +25,11 @@ class TestNet(TestBase):
 
         input_place_names = ["input %d" % i for i in xrange(4)]
         output_place_names = ["output %d" % i for i in xrange(3)]
-        action = pn.CounterAction.create(connection=self.conn, name="counter")
+        action = petri.CounterAction.create(connection=self.conn, name="counter")
         place_arcs_out = {i: [0] for i in xrange(4)}
         trans_arcs_out = {0: range(4, 7)}
 
-        self.net = pn.Net.create(
+        self.net = petri.Net.create(
                 connection=self.conn,
                 place_names=input_place_names + output_place_names,
                 trans_actions=[action],
@@ -43,12 +42,12 @@ class TestNet(TestBase):
         self.expected_state = set([p.tokens.key for p in self.input_places])
 
     def test_no_connection(self):
-        self.assertRaises(TypeError, pn.Net.create, None)
+        self.assertRaises(TypeError, petri.Net.create, None)
 
     def test_consume_tokens(self):
         self.assertItemsEqual(self.expected_state, self.transition.state.value)
 
-        token = pn.Token.create(self.conn)
+        token = petri.Token.create(self.conn)
 
         for p in self.input_places:
             p.tokens.append(token.key)
@@ -66,10 +65,10 @@ class TestNet(TestBase):
         self.assertItemsEqual(self.expected_state, self.transition.state.value)
 
         # Create three input and output tokens
-        input_tokens = [pn.Token.create(self.conn) for x in xrange(3)]
+        input_tokens = [petri.Token.create(self.conn) for x in xrange(3)]
         input_token_keys = [x.key for x in input_tokens]
 
-        output_tokens = [pn.Token.create(self.conn) for x in xrange(3)]
+        output_tokens = [petri.Token.create(self.conn) for x in xrange(3)]
         output_token_keys = [x.key for x in output_tokens]
 
 
@@ -131,7 +130,7 @@ class TestNet(TestBase):
 
         # Let's push out a new token to the output places. They should now have
         # the first two tokens.
-        token_out = pn.Token.create(self.conn)
+        token_out = petri.Token.create(self.conn)
         status, remaining = self.net.push_tokens(self.transition,
                 output_token_keys[1])
         self.assertTrue(status)
@@ -160,7 +159,7 @@ class TestNet(TestBase):
 
 
     def test_push_tokens(self):
-        token = pn.Token.create(self.conn)
+        token = petri.Token.create(self.conn)
 
         for p in self.input_places:
             p.tokens.append(token.key)
@@ -180,7 +179,7 @@ class TestNet(TestBase):
             self.assertEqual(1, len(outp.tokens))
 
     def test_fire_transition(self):
-        tokens = [pn.Token.create(self.conn) for x in xrange(5)]
+        tokens = [petri.Token.create(self.conn) for x in xrange(5)]
         for i in xrange(len(self.input_places)):
             for t in tokens:
                 self.net.set_token(i, t.key, self.service_interfaces)

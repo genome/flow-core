@@ -1,4 +1,4 @@
-import flow.petri.safenet as sn
+from flow import petri
 
 # netbuilder makes the "copy net" test easier
 import flow.petri.netbuilder as nb
@@ -27,7 +27,7 @@ class TestTransition(TestBase):
 
         for i in xrange(10):
             expected_all[str(i)] = i
-            token = sn.Token.create(self.conn, data={i: i})
+            token = petri.Token.create(self.conn, data={i: i})
             token.data_type = "output"
             tokens.append(token)
 
@@ -35,19 +35,19 @@ class TestTransition(TestBase):
         del expected_outputs['4']
         tokens[4].data_type = "input"
 
-        merged = sn.merge_token_data(tokens)
+        merged = petri.merge_token_data(tokens)
         self.assertEqual(expected_all, merged)
 
-        merged = sn.merge_token_data(tokens, "output")
+        merged = petri.merge_token_data(tokens, "output")
         self.assertEqual(expected_outputs, merged)
 
 
 class TestSafeNet(TestBase):
     def test_no_connection(self):
-        self.assertRaises(TypeError, sn.SafeNet.create, None)
+        self.assertRaises(TypeError, petri.SafeNet.create, None)
 
     def test_constants(self):
-        net = sn.SafeNet.create(connection=self.conn)
+        net = petri.SafeNet.create(connection=self.conn)
         env = {"PATH": "/bin:/usr/bin", "USER": "flow"}
         net.set_constant("environment", env)
         self.assertEqual(env, net.constant("environment"))
@@ -61,7 +61,7 @@ class TestSafeNet(TestBase):
         self.assertEqual(1234, net.constant("user_id"))
 
     def test_copy_constants(self):
-        net1 = sn.SafeNet.create(connection=self.conn)
+        net1 = petri.SafeNet.create(connection=self.conn)
 
         nested = {"one": [2, "three", {"four": 5}]}
 
@@ -73,7 +73,7 @@ class TestSafeNet(TestBase):
         self.assertEqual(32, net1.constant("number"))
         self.assertEqual(nested, net1.constant("complex"))
 
-        net2 = sn.SafeNet.create(connection=self.conn)
+        net2 = petri.SafeNet.create(connection=self.conn)
 
         self.assertIsNone(net2.constant("string"))
         self.assertIsNone(net2.constant("number"))
@@ -92,7 +92,7 @@ class TestSafeNet(TestBase):
     def test_capture_environment(self):
         euid = os.geteuid()
         user_name = pwd.getpwuid(euid).pw_name
-        net = sn.SafeNet.create(connection=self.conn)
+        net = petri.SafeNet.create(connection=self.conn)
         net.capture_environment()
         self.assertEqual(os.environ.data, net.constant("environment"))
         self.assertEqual(euid, net.constant("user_id"))
@@ -101,7 +101,7 @@ class TestSafeNet(TestBase):
                 net.constant("working_directory"))
 
     def test_variables(self):
-        net = sn.SafeNet.create(connection=self.conn)
+        net = petri.SafeNet.create(connection=self.conn)
 
         foo = net.variable("foo")
         self.assertIsNone(foo)
@@ -119,8 +119,8 @@ class TestSafeNet(TestBase):
         self.assertEqual([1, 2, 3], net.variable("bar"))
 
     def test_places(self):
-        action = sn.CounterAction.create(connection=self.conn, name="counter")
-        net = sn.SafeNet.create(
+        action = petri.CounterAction.create(connection=self.conn, name="counter")
+        net = petri.SafeNet.create(
                 connection=self.conn,
                 place_names=["a", "b", "c"],
                 trans_actions = [action],
@@ -134,7 +134,7 @@ class TestSafeNet(TestBase):
         self.assertEqual("c", str(net.place(2).name))
 
     def test_place_observers(self):
-        net = sn.SafeNet.create(
+        net = petri.SafeNet.create(
                 connection=self.conn,
                 place_names=["a"],
                 trans_actions = [],
@@ -146,7 +146,7 @@ class TestSafeNet(TestBase):
         p.add_observer('exchange 1', 'routing key 1', 'body 1')
         p.add_observer('exchange 2', 'routing key 2', 'body 2')
 
-        token = sn.Token.create(self.conn)
+        token = petri.Token.create(self.conn)
         net.set_token(0, token.key, self.service_interfaces)
 
         orch = self.service_interfaces['orchestrator']
@@ -159,11 +159,11 @@ class TestSafeNet(TestBase):
                             u'body': u'body 2'})])
 
     def test_no_transition_action(self):
-        trans = sn._SafeTransition.create(self.conn, name="t")
+        trans = petri.SafeNet.transition_class.create(self.conn, name="t")
         self.assertTrue(trans.action is None)
 
     def test_notify_transition_args(self):
-        net = sn.SafeNet.create(self.conn, place_names=[], trans_actions=[],
+        net = petri.SafeNet.create(self.conn, place_names=[], trans_actions=[],
                 place_arcs_out={}, trans_arcs_out={})
         self.assertRaises(TypeError, net.notify_transition)
         self.assertRaises(TypeError, net.notify_transition, trans_idx=0)
@@ -172,11 +172,11 @@ class TestSafeNet(TestBase):
 
     def test_fire_transition(self):
         places = ["place %d" % i for i in xrange(5)]
-        action = sn.CounterAction.create(connection=self.conn, name="counter")
+        action = petri.CounterAction.create(connection=self.conn, name="counter")
         place_arcs_out = dict((i, [0]) for i in xrange(4))
         trans_arcs_out = {0: [4]}
 
-        net = sn.SafeNet.create(
+        net = petri.SafeNet.create(
                 connection=self.conn,
                 place_names=places,
                 trans_actions=[action],
@@ -200,7 +200,7 @@ class TestSafeNet(TestBase):
         self.assertEqual(['4'], net.transition(0).arcs_out.value)
         self.assertEqual(action.key, str(net.transition(0).action_key))
 
-        token = sn.Token.create(self.conn)
+        token = petri.Token.create(self.conn)
         net.set_token(0, token.key, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
         net.set_token(1, token.key, self.service_interfaces)
@@ -215,13 +215,13 @@ class TestSafeNet(TestBase):
             self.assertEqual(1, int(action.call_count))
 
     def test_place_capacity(self):
-        net = sn.SafeNet.create(self.conn, place_names=["place_1"],
+        net = petri.SafeNet.create(self.conn, place_names=["place_1"],
                 trans_actions=[], place_arcs_out={}, trans_arcs_out={})
 
         place_idx = 0
 
-        token1 = sn.Token.create(self.conn)
-        token2 = sn.Token.create(self.conn)
+        token1 = petri.Token.create(self.conn)
+        token2 = petri.Token.create(self.conn)
 
         self.assertTrue(net.marking.get(place_idx) is None)
         self.assertEqual({}, net.marking.value)
@@ -235,7 +235,7 @@ class TestSafeNet(TestBase):
         self.assertEqual(token1.key, net.marking.get(place_idx))
         self.assertEqual({"0": str(token1.key)}, net.marking.value)
 
-        self.assertRaises(sn.PlaceCapacityError, net.set_token,
+        self.assertRaises(petri.PlaceCapacityError, net.set_token,
             place_idx, token2.key, self.service_interfaces)
 
     def test_copy(self):
@@ -249,7 +249,7 @@ class TestSafeNet(TestBase):
         net1.input_places = {"start": 0}
 
         pre_copy_keys = self.conn.keys()
-        new_key = sn.make_net_key()
+        new_key = petri.make_net_key()
         net2 = net1.copy(new_key)
         post_copy_keys = self.conn.keys()
 
@@ -289,7 +289,7 @@ class TestSafeNet(TestBase):
                     "Attribute %s not copied correctly" % attr)
 
     def test_graph(self):
-        net = sn.SafeNet.create(self.conn, place_names=["p1", "p2"],
+        net = petri.SafeNet.create(self.conn, place_names=["p1", "p2"],
                 trans_actions=[None], place_arcs_out={0: set([0])},
                 trans_arcs_out={0: set([1])})
 
@@ -300,7 +300,7 @@ class TestSafeNet(TestBase):
         self.assertEqual(2, len(edges))
 
         # Test that marked places show up in red
-        token = sn.Token.create(self.conn)
+        token = petri.Token.create(self.conn)
         rv = net._set_token(keys=[net.subkey("marking")],
                 args=[0, token.key])
 
@@ -320,7 +320,7 @@ class TestSafeNet(TestBase):
 
 class TestTransitionActions(TestBase):
     def test_abstract_transition_action(self):
-        act = sn.TransitionAction.create(self.conn, name="boom")
+        act = petri.TransitionAction.create(self.conn, name="boom")
         self.assertIsNone(act.input_data(active_tokens_key="x", net=None))
 
         self.assertRaises(NotImplementedError, act.execute, net=None,
@@ -334,7 +334,7 @@ class TestTransitionActions(TestBase):
             "list": [1, 2, "three"],
             "hash": {"x": "y"},
         }
-        action = sn.CounterAction.create(connection=self.conn, args=arguments)
+        action = petri.CounterAction.create(connection=self.conn, args=arguments)
 
         self.assertEqual(action.args.value, arguments)
 
@@ -345,7 +345,7 @@ class TestTransitionActions(TestBase):
         good_cmdline = [sys.executable, "-c", "import sys; sys.exit(0)"]
         fail_cmdline = [sys.executable, "-c", "import sys; sys.exit(1)"]
 
-        action = sn.ShellCommandAction.create(
+        action = petri.ShellCommandAction.create(
                 connection=self.conn,
                 name="TestAction",
                 args={"command_line": good_cmdline,
@@ -374,18 +374,18 @@ class TestTransitionActions(TestBase):
                     net.key, failure_place_id, token_key=mock.ANY)
 
     def test_required_arguments(self):
-        self.assertRaises(TypeError, sn.SetRemoteTokenAction.create,
+        self.assertRaises(TypeError, petri.SetRemoteTokenAction.create,
                 connection=self.conn,
                 name="TestAction",
                 )
 
-        self.assertRaises(TypeError, sn.SetRemoteTokenAction.create,
+        self.assertRaises(TypeError, petri.SetRemoteTokenAction.create,
                 connection=self.conn,
                 name="TestAction",
                 args={"remote_place_id": 1}
                 )
 
-        self.assertRaises(TypeError, sn.SetRemoteTokenAction.create,
+        self.assertRaises(TypeError, petri.SetRemoteTokenAction.create,
                 connection=self.conn,
                 name="TestAction",
                 args={"remote_net_key": "x"},
@@ -395,7 +395,7 @@ class TestTransitionActions(TestBase):
         args = {"remote_place_id": 1, "remote_net_key": "netkey!",
                 "data_type": "output"}
 
-        action = sn.SetRemoteTokenAction.create(
+        action = petri.SetRemoteTokenAction.create(
                 connection=self.conn,
                 name="TestAction",
                 args=args,
@@ -411,7 +411,7 @@ class TestTransitionActions(TestBase):
         orchestrator.set_token.assert_called_once_with("netkey!", 1, mock.ANY)
 
         token_key = orchestrator.set_token.call_args[0][2]
-        token = sn.Token(connection=self.conn, key=token_key)
+        token = petri.Token(connection=self.conn, key=token_key)
         self.assertEqual("output", token.data_type.value)
         self.assertEqual(inputs, token.data.value)
 

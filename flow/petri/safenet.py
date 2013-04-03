@@ -121,18 +121,6 @@ redis.call('SET', tokens_pushed_key, 1)
 return {1, arcs_out}
 """
 
-class Token(rom.Object):
-    data_type = rom.Property(rom.String)
-    data = rom.Property(rom.Hash, value_encoder=rom.json_enc,
-            value_decoder=rom.json_dec)
-
-    def _on_create(self):
-        try:
-            self.data_type.value
-        except rom.NotInRedisError:
-            self.data_type = ""
-
-
 class _SafeNode(rom.Object):
     name = rom.Property(rom.String)
     arcs_out = rom.Property(rom.List)

@@ -1,5 +1,5 @@
 import logging
-from flow.petri.safenet import Token, SetTokenMessage
+from flow.petri import Token, SetTokenMessage
 from flow.command_runner.messages import CommandLineSubmitMessage
 
 LOG = logging.getLogger(__name__)

@@ -1,12 +1,12 @@
+from flow import petri
 import flow.petri.netbuilder as nb
-import flow.petri.safenet as sn
 
 import os
 import logging
 
 LOG = logging.getLogger(__name__)
 
-class CommandLineDispatchAction(sn.TransitionAction):
+class CommandLineDispatchAction(petri.TransitionAction):
     net_constants = ['user_id', 'working_directory', 'mail_user']
     place_refs = []
 
@@ -74,7 +74,7 @@ class CommandLineDispatchAction(sn.TransitionAction):
         LOG.debug('Inputs for %s: %r', self.name, input_data)
 
         if input_data:
-            token = sn.Token.create(self.connection, data=input_data,
+            token = petri.Token.create(self.connection, data=input_data,
                     data_type=self.output_token_type)
             input_data_key = token.data.key
 
