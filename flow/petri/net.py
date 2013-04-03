@@ -244,10 +244,10 @@ class Net(NetBase):
             # FIXME use a set of strings of the form "place_id token_key" to
             # enforce uniqueness of tokens in places
             # we can't use sets on places because SPOP won't work in a script
-            if place.tokens.append(token_key):
-                place.first_token_timestamp.setnx()
+            place.tokens.append(token_key)
 
         if len(place.tokens) > 0:
+            place.first_token_timestamp.setnx()
             orchestrator = service_interfaces['orchestrator']
             arcs_out = place.arcs_out.value
 
