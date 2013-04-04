@@ -16,11 +16,33 @@ import subprocess
 
 LOG = logging.getLogger(__name__)
 
+_SET_TOKEN_SCRIPT = """
+local marking_key = KEYS[1]
+local global_marking_key = KEYS[2]
+local place_key = ARGV[1]
+local token_key = ARGV[2]
+
+local set = redis.call('HSETNX', marking_key, place_key, token_key)
+if set == 0 then
+    local existing_key = redis.call('HGET', marking_key, place_key)
+    if existing_key ~= token_key then
+        return -1
+    else
+        return 0
+    end
+end
+
+redis.call('HINCRBY', global_marking_key, place_key, 1)
+return 0
+"""
+
 _CONSUME_TOKENS_SCRIPT = """
 local state_set_key = KEYS[1]
 local active_tokens_key = KEYS[2]
-local enabler_key = KEYS[3]
-local FIRST_PLACE_KEY = 4;
+local arcs_in_key = KEYS[3]
+local marking_key = KEYS[4]
+local global_marking_key = KEYS[5]
+local enabler_key = KEYS[6]
 
 local place_key = ARGV[1]
 
@@ -39,61 +61,72 @@ end
 
 local n_active_tok = redis.call('LLEN', active_tokens_key)
 if n_active_tok > 0 then
-    return {-1, "Transition already has tokens"}
+    return {0, "Transition already has tokens"}
 end
 
-local remaining = 0
-for i = FIRST_PLACE_KEY, #KEYS, 1 do
-    local num_tokens = redis.call('LLEN', KEYS[i])
-    if num_tokens == 0 then
-        redis.call('SADD', state_set_key, KEYS[i])
-        remaining = remaining + 1
+local arcs_in = redis.call('LRANGE', arcs_in_key, 0, -1)
+
+local token_keys = {}
+for i, place_id in pairs(arcs_in) do
+    token_keys[i] = redis.call('HGET', marking_key, place_id)
+    if token_keys[i] == false then
+        redis.call('SADD', state_set_key, place_id)
     end
 end
 
+remaining = redis.call('SCARD', state_set_key)
 if remaining > 0 then
     return {remaining, "Incoming tokens remaining"}
 end
 
-for i = FIRST_PLACE_KEY, #KEYS, 1 do
-    local x = redis.call('LPOP', KEYS[i])
-    redis.call('RPUSH', active_tokens_key, x)
+for i, k in ipairs(token_keys) do
+    redis.call('LPUSH', active_tokens_key, k)
+    redis.call('HDEL', marking_key, arcs_in[i])
+    redis.call('HINCRBY', global_marking_key, arcs_in[i], -1)
 end
-
 return {0, "Transition enabled"}
 """
 
 _PUSH_TOKENS_SCRIPT = """
 local active_tokens_key = KEYS[1]
-local token_key = KEYS[2]
-local state_set_key = KEYS[3]
-local tokens_pushed_key = KEYS[4]
-local FIRST_ARC_IN = 5
-
-local num_arcs_in = ARGV[1]
-local FIRST_ARC_OUT = FIRST_ARC_IN + num_arcs_in
+local arcs_in_key = KEYS[2]
+local arcs_out_key = KEYS[3]
+local marking_key = KEYS[4]
+local global_marking_key = KEYS[5]
+local token_key = KEYS[6]
+local state_set_key = KEYS[7]
+local tokens_pushed_key = KEYS[8]
 
 local n_active_tok = redis.call('LLEN', active_tokens_key)
 if n_active_tok == 0 then
     return {-1, "No active tokens"}
 end
 
-for i = FIRST_ARC_OUT, #KEYS, 1 do
-    redis.call("RPUSH", KEYS[i], token_key)
+local arcs_out = redis.call('LRANGE', arcs_out_key, 0, -1)
+
+for i, place_id in pairs(arcs_out) do
+    local result = redis.call('HSETNX', marking_key, place_id, token_key)
+    if result == false then
+        return {-1, "Place " .. place_id .. "is full"}
+    end
+    redis.call('HINCRBY', global_marking_key, place_id, 1)
 end
 
 redis.call('DEL', active_tokens_key)
 redis.call('DEL', state_set_key)
 
-for i = FIRST_ARC_IN, FIRST_ARC_OUT-1, 1 do
-    if redis.call('LLEN', KEYS[i]) == 0 then
-        redis.call('SADD', state_set_key, KEYS[i])
+local arcs_in = redis.call('LRANGE', arcs_in_key, 0, -1)
+for i, place_key in pairs(arcs_in) do
+    if redis.call('HEXISTS', marking_key, place_key) == 0 then
+        redis.call('SADD', state_set_key, place_key)
     end
 end
 
 redis.call('SET', tokens_pushed_key, 1)
-return {0, redis.call('SCARD', state_set_key)}
+return {0, arcs_out}
 """
+
+
 
 class _Node(rom.Object):
     name = rom.Property(rom.String)
@@ -103,7 +136,6 @@ class _Node(rom.Object):
 
 class _Place(_Node):
     first_token_timestamp = rom.Property(rom.Timestamp)
-    tokens = rom.Property(rom.List)
     entry_observers = rom.Property(rom.List,
             value_encoder=rom.json_enc, value_decoder=rom.json_dec)
 
@@ -131,66 +163,151 @@ class _Transition(_Node):
 
         return rom.get_object(self.connection, key)
 
+    def active_tokens(self, color_idx):
+        return rom.List(connection=self.connection,
+                key=self.subkey("%d/active_tokens" % color_idx))
+
+    def state(self, color_idx):
+        return rom.Set(connection=self.connection,
+                key=self.subkey("%d/state" % color_idx))
+
+    def tokens_pushed(self, color_idx):
+        return rom.Int(connection=self.connection,
+                key=self.subkey("%d/tokens_pushed" % color_idx))
+
+    def enabler(self, color_idx):
+        return rom.String(connection=self.connection,
+                key=self.subkey("%d/enabler" % color_idx))
+
 
 class Net(NetBase):
     place_class = _Place
     transition_class = _Transition
 
-    _marking_strings = rom.Property(rom.Set)
+    global_marking = rom.Property(rom.Hash)
+    num_token_colors = rom.Property(rom.Int)
 
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
     _push_tokens = rom.Script(_PUSH_TOKENS_SCRIPT)
+    _set_token = rom.Script(_SET_TOKEN_SCRIPT)
 
     def _set_initial_transition_state(self):
-        for i in xrange(self.num_transitions.value):
-            state = set()
-            trans = self.transition(i)
+        pass
+
+    def set_num_token_colors(self, value):
+        if self.num_token_colors.setnx(value) == 0:
+            raise RuntimeError("Attempted to reset max token color index")
+
+        for tidx in xrange(self.num_transitions.value):
+            trans = self.transition(tidx)
             place_indices = trans.arcs_in.value
-            for place_idx in place_indices:
-                place = self.place(place_idx)
-                state.add(place.tokens.key)
-            trans.state = state
+            for cidx in xrange(value+1):
+                trans.state(cidx).value = place_indices
 
-    def _marking_string(self, place_idx, token_key):
-        return str(place_idx) + token_key
+    def marking(self, color_idx):
+        return rom.Hash(connection=self.connection,
+                key=self.subkey("%d/marking" % int(color_idx)))
 
-    def consume_tokens(self, transition, notifying_place_idx):
-        state_key = transition.state.key
-        active_tokens_key = transition.active_tokens.key
-        enabler_key = transition.enabler.key
+    def _validate_token_color(self, token):
+        try:
+            num_token_colors = self.num_token_colors.value
+        except KeyError:
+            raise TokenColorError(
+                    "Attempted to set token in net %s before setting max token "
+                    "color." % self.key)
 
-        arcs_in = transition.arcs_in.value
-        place_token_keys = [self.subkey("place/%s/tokens" % (x))
-                for x in arcs_in]
+        valid_color = True
+        try:
+            color_idx = token.color_idx.value
+            valid_color = color_idx >= 0 and color_idx < num_token_colors
+        except KeyError:
+            valid_color = False
 
-        keys = [state_key, active_tokens_key, enabler_key] + place_token_keys
-        args = [self.subkey("place/%d/tokens" % notifying_place_idx)]
-        LOG.debug("KEYS=%r, ARGS=%r", keys, args)
-        LOG.debug("Transition state = %r", transition.state.value)
+        if not valid_color:
+            raise TokenColorError("Token %s has invalid color" %
+                    token.key)
+
+        return color_idx
+
+    def set_token(self, place_idx, token_key='', service_interfaces=None):
+        place = self.place(place_idx)
+        LOG.debug("Set token net=%s, place=%s (#%d), token_key='%s'",
+                self.key, place.name.value, place_idx, token_key)
+
+        if token_key:
+            token = rom.get_object(self.connection, token_key)
+            token_color = self._validate_token_color(token)
+            LOG.debug("Token color = %d", token_color)
+
+            marking_key = self.marking(token_color).key
+            global_marking_key = self.global_marking.key
+            keys = [marking_key, global_marking_key]
+            args = [place_idx, token_key]
+            LOG.debug("Calling lua set_token, keys=%r, args=%r",
+                    keys, args)
+            rv = self._set_token(keys=keys, args=args)
+
+            if rv != 0:
+                raise PlaceCapacityError(
+                    "Failed to add token %s (color %r) to place %s: "
+                    "a token already exists" %
+                    (token_key, token.color_idx.value, place.key))
+
+        token_count = self.global_marking.get(place_idx, 0)
+        if token_count > 0:
+            place.first_token_timestamp.setnx()
+            orchestrator = service_interfaces['orchestrator']
+            arcs_out = place.arcs_out.value
+
+            for packet in place.entry_observers.value:
+                orchestrator.place_entry_observed(packet)
+
+            for trans_idx in arcs_out:
+                orchestrator.notify_transition(self.key, int(trans_idx),
+                        int(place_idx))
+
+    def consume_tokens(self, transition, notifying_place_idx, color_idx):
+        active_tokens_key = transition.active_tokens(color_idx).key
+        arcs_in_key = transition.arcs_in.key
+        state_key = transition.state(color_idx).key
+        tokens_pushed_key = transition.tokens_pushed(color_idx).key
+        enabler_key = transition.enabler(color_idx).key
+        marking_key = self.marking(color_idx).key
+        global_marking_key = self.global_marking.key
+
+        keys = [state_key, active_tokens_key, arcs_in_key, marking_key,
+                global_marking_key, enabler_key]
+        args = [notifying_place_idx]
+
+        LOG.debug("Consume tokens: KEYS=%r, ARGS=%r", keys, args)
+        LOG.debug("Transition state (color=%d): %r", color_idx,
+                transition.state(color_idx).value)
+        LOG.debug("Net marking (color=%d): %r", color_idx,
+                self.marking(color_idx).value)
         status, message = self._consume_tokens(keys=keys, args=args)
-        LOG.debug("Consume tokens status=%r, message=%r", status, message)
+        LOG.debug("Consume tokens (%d) status=%r, message=%r", color_idx,
+                status, message)
 
-        return status
+        return status == 0
 
-    def push_tokens(self, transition, token_key):
-        active_tokens_key = transition.active_tokens.key
+    def push_tokens(self, transition, token_key, color_idx):
+        active_tokens_key = transition.active_tokens(color_idx).key
+        arcs_in_key = transition.arcs_in.key
+        arcs_out_key = transition.arcs_out.key
+        marking_key = self.marking(color_idx).key
+        global_marking_key = self.global_marking.key
+        state_key = transition.state(color_idx).key
+        tokens_pushed_key = transition.tokens_pushed(color_idx).key
 
-        arcs_in = transition.arcs_in
-        arcs_out = transition.arcs_out
-        places_in = [self.subkey("place/%s/tokens" % x) for x in arcs_in]
-        places_out = [self.subkey("place/%s/tokens" % x) for x in arcs_out]
-
-        keys = [active_tokens_key, token_key, transition.state.key,
-                transition.tokens_pushed.key] + places_in + places_out
-        args = [len(places_in)]
-        LOG.debug("calling push_tokens script with keys=%r, args=%r",
-                keys, args)
-        rv = self._push_tokens(keys=keys, args=args)
+        keys = [active_tokens_key, arcs_in_key, arcs_out_key, marking_key,
+                global_marking_key, token_key, state_key, tokens_pushed_key]
+        rv = self._push_tokens(keys=keys)
+        tokens_pushed, places_to_notify = rv
         LOG.debug("push_tokens return value: %r", rv)
-        tokens_pushed, tokens_remaining = rv
+        tokens_pushed, arcs_out = rv
         tokens_pushed = tokens_pushed == 0
 
-        return tokens_pushed, tokens_remaining
+        return tokens_pushed, arcs_out
 
     def notify_transition(self, trans_idx=None, place_idx=None,
             service_interfaces=None):
@@ -203,13 +320,20 @@ class Net(NetBase):
 
         trans = self.transition(trans_idx)
 
-        state_key = trans.state.key
-        active_tokens_key = trans.active_tokens.key
-        tokens_pushed_key = trans.tokens_pushed.key
+        # FIXME: refactor service interface to allow passing the color_idx
+        # to check rather than checking all active ones.
+        # seriously, do this before committing.
+        ready_color_idx = -1
+        for color_idx in xrange(self.num_token_colors.value):
+            if self.consume_tokens(trans, place_idx, color_idx) is True:
+                ready_color_idx = color_idx
 
-        status = self.consume_tokens(trans, place_idx)
-        if status != 0:
+        if ready_color_idx < 0:
             return
+
+        active_tokens_key = trans.active_tokens(ready_color_idx).key
+        tokens_pushed_key = trans.tokens_pushed(ready_color_idx).key
+
 
         action = trans.action
         new_token = None
@@ -221,42 +345,14 @@ class Net(NetBase):
             new_token = Token.create(self.connection)
 
 
-        tokens_pushed, tokens_remaining = self.push_tokens(trans, new_token.key)
+        tokens_pushed, arcs_out = self.push_tokens(trans, new_token.key,
+                ready_color_idx)
 
         if tokens_pushed is True:
             orchestrator = service_interfaces['orchestrator']
-            arcs_out = trans.arcs_out.value
             for place_idx in arcs_out:
                 orchestrator.set_token(self.key, int(place_idx), token_key='')
             self.connection.delete(tokens_pushed_key)
-
-
-        if tokens_remaining == 0:
-            orchestrator.notify_transition(self.key, trans_idx, place_idx)
-
-
-    def set_token(self, place_idx, token_key='', service_interfaces=None):
-        place = self.place(place_idx)
-        LOG.debug("Net %s setting token %s for place %s (#%d)", self.key,
-                token_key, place.name, place_idx)
-
-        if token_key:
-            # FIXME use a set of strings of the form "place_id token_key" to
-            # enforce uniqueness of tokens in places
-            # we can't use sets on places because SPOP won't work in a script
-            place.tokens.append(token_key)
-
-        if len(place.tokens) > 0:
-            place.first_token_timestamp.setnx()
-            orchestrator = service_interfaces['orchestrator']
-            arcs_out = place.arcs_out.value
-
-            for packet in place.entry_observers.value:
-                orchestrator.place_entry_observed(packet)
-
-            for trans_idx in arcs_out:
-                orchestrator.notify_transition(self.key, int(trans_idx),
-                        int(place_idx))
 
     def _place_plot_name(self, place, idx):
         name = str(place.name)

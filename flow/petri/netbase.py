@@ -18,6 +18,10 @@ class PlaceCapacityError(Exception):
     pass
 
 
+class TokenColorError(Exception):
+    pass
+
+
 def make_net_key():
     # Remove the two trailing '=' characters to save space
     return base64.b64encode(uuid4().bytes)[:-2]
@@ -51,6 +55,8 @@ class Token(rom.Object):
     data_type = rom.Property(rom.String)
     data = rom.Property(rom.Hash, value_encoder=rom.json_enc,
             value_decoder=rom.json_dec)
+
+    color_idx = rom.Property(rom.Int)
 
     def _on_create(self):
         try:
@@ -146,13 +152,17 @@ class NetBase(rom.Object):
     def variable(self, key):
         return self.variables.get(key)
 
+    def place_key(self, idx):
+        return self.subkey("place/%d" % int(idx))
+
     def place(self, idx):
-        return self.place_class(self.connection,
-                self.subkey("place/%d" % int(idx)))
+        return self.place_class(self.connection, self.place_key(idx))
+
+    def transition_key(self, idx):
+        return self.subkey("trans/%d" % int(idx))
 
     def transition(self, idx):
-        return self.transition_class(self.connection,
-                self.subkey("trans/%d" % int(idx)))
+        return self.transition_class(self.connection, self.transition_key(idx))
 
     def copy(self, dst_key):
         copied = rom.Object.copy(self, dst_key)

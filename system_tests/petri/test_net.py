@@ -39,156 +39,154 @@ class TestNet(TestBase):
         self.input_places = [self.net.place(x) for x in xrange(4)]
         self.output_places = [self.net.place(x) for x in xrange(4, 7)]
         self.transition = self.net.transition(0)
-        self.expected_state = set([p.tokens.key for p in self.input_places])
+
+    @property
+    def expected_state(self):
+        ncol = self.net.num_token_colors.value
+        rv = {}
+        state = [str(x) for x in xrange(len(self.input_places))]
+        for i in xrange(ncol):
+            rv[i] = set(state)
+
+        return rv
+
+    @property
+    def transition_state(self):
+        ncol = self.net.num_token_colors.value
+        return {x: self.transition.state(x).value for x in xrange(ncol)}
 
     def test_no_connection(self):
         self.assertRaises(TypeError, petri.Net.create, None)
 
+    def test_num_token_colors(self):
+        uncolored_token = petri.Token.create(self.conn)
+        too_large_token = petri.Token.create(self.conn, color_idx=99)
+        valid_token = petri.Token.create(self.conn, color_idx=9)
+
+        self.assertRaises(petri.TokenColorError, self.net.set_token,
+                0, uncolored_token.key, self.service_interfaces)
+
+        self.net.set_num_token_colors(10)
+        self.assertRaises(petri.TokenColorError, self.net.set_token,
+                0, uncolored_token.key, self.service_interfaces)
+        self.assertRaises(petri.TokenColorError, self.net.set_token,
+                0, too_large_token.key, self.service_interfaces)
+
+        self.net.set_token(0, valid_token.key, self.service_interfaces)
+
     def test_consume_tokens(self):
-        self.assertItemsEqual(self.expected_state, self.transition.state.value)
+        self.net.set_num_token_colors(1)
 
-        token = petri.Token.create(self.conn)
+        expected_state = self.expected_state
+        self.assertItemsEqual(expected_state, self.transition_state)
 
-        for p in self.input_places:
-            p.tokens.append(token.key)
+        token = petri.Token.create(self.conn, color_idx=0)
 
-        state = set(self.expected_state)
-        for i in xrange(4):
-            self.net.consume_tokens(self.transition, i)
-            state -= set([self.input_places[i].tokens.key])
-            self.assertEqual(state, self.transition.state.value,
+        for i in xrange(len(self.input_places)):
+            self.net.marking(0)[i] = token.key
+
+        expstate = expected_state[0]
+        num_places = len(self.input_places)
+        for i in xrange(num_places):
+            self.net.consume_tokens(self.transition, i, 0)
+            expstate.remove(str(i))
+            self.assertEqual(expstate, self.transition.state(0).value,
                     "Transition state error on iteration %d" % i)
 
-        self.assertEqual([token.key]*4, self.transition.active_tokens.value)
+        self.assertEqual([token.key]*4, self.transition.active_tokens(0).value)
 
     def test_consume_tokens_multi(self):
-        self.assertItemsEqual(self.expected_state, self.transition.state.value)
-
         # Create three input and output tokens
-        input_tokens = [petri.Token.create(self.conn) for x in xrange(3)]
+        num_toks = 3
+        self.net.set_num_token_colors(num_toks)
+        input_tokens = [petri.Token.create(self.conn, color_idx=x)
+                for x in xrange(num_toks)]
         input_token_keys = [x.key for x in input_tokens]
 
-        output_tokens = [petri.Token.create(self.conn) for x in xrange(3)]
+        self.assertItemsEqual(self.expected_state, self.transition_state)
+
+        output_tokens = [petri.Token.create(self.conn)
+                for x in xrange(num_toks)]
         output_token_keys = [x.key for x in output_tokens]
 
 
-        # each place gets 3 tokens, expect for place 3, who only gets 1
-        self.input_places[0].tokens.extend(input_token_keys)
-        self.input_places[1].tokens.extend(input_token_keys)
-        self.input_places[2].tokens.extend(input_token_keys)
-        self.input_places[3].tokens.append(input_token_keys[0])
+        # each place gets 3 tokens
+        for tidx, tkey in enumerate(input_token_keys):
+            for pidx, place in enumerate(self.input_places):
+                self.net.marking(tidx)[pidx] = tkey
 
         # let the transition try to grab all the tokens
-        state = set(self.expected_state)
-        for i in xrange(4):
-            self.net.consume_tokens(self.transition, i)
-            state -= set([self.input_places[i].tokens.key])
-            self.assertEqual(state, self.transition.state.value,
-                    "Transition state error on iteration %d" % i)
+        state = self.expected_state
+        for col_idx in xrange(num_toks):
+            for i in xrange(4):
+                self.net.consume_tokens(self.transition, i, col_idx)
+                state[col_idx].discard(str(i))
+                self.assertEqual(state[col_idx],
+                        self.transition.state(col_idx).value,
+                        "Transition state error on iteration color: %d, "
+                        "place: %d" % (col_idx, i))
 
-        # One token should have been taken from each place
-        self.assertEqual(2, len(self.input_places[0].tokens))
-        self.assertEqual(2, len(self.input_places[1].tokens))
-        self.assertEqual(2, len(self.input_places[2].tokens))
-        self.assertEqual(0, len(self.input_places[3].tokens))
+            # Marking for this color should be empty
+            self.assertEqual(0, len(self.net.marking(col_idx)))
 
-        # Four tokens should be held by the transition
-        self.assertEqual([input_token_keys[0]]*4,
-                self.transition.active_tokens.value)
+            # Four tokens should be held by the transition
+            self.assertEqual([input_token_keys[col_idx]]*4,
+                    self.transition.active_tokens(col_idx).value)
 
-        # Let's push out a new token to the output places.
-        status, remaining = self.net.push_tokens(self.transition,
-                output_tokens[0].key)
+            # Let's push out a new token to the output places.
+            status, arcs_out = self.net.push_tokens(self.transition,
+                    output_tokens[col_idx].key, col_idx)
 
-        self.assertTrue(status)
-        self.assertEqual(1, remaining) # Just waiting on place 3...
+            self.assertTrue(status)
 
-        # This should remove the tokens from the transition
-        self.assertEqual(0, len(self.transition.active_tokens))
+            # This should remove the tokens from the transition
+            self.assertEqual(0, len(self.transition.active_tokens(col_idx)))
 
-        # The output places should have the first output token
-        for p in self.output_places:
-            self.assertEqual(output_token_keys[:1], p.tokens.value)
-
-        # After pushing, we should only be waiting for place idx 3 to get a
-        # token (since the rest still have 2).
-        state = set([self.input_places[3].tokens.key])
-        self.assertEqual(state, self.transition.state.value)
-
-        # Dump 2 more tokens tokens into place 3 and notify the transition
-        self.input_places[3].tokens.extend(input_token_keys[1:])
-        self.net.consume_tokens(self.transition, 3)
-
-        # The transition should now be enabled and holding four tokens
-        self.assertEqual(0, len(self.transition.state))
-        self.assertEqual([input_token_keys[1]]*4,
-                self.transition.active_tokens.value)
-
-        # The input places should each have one token left
-        for p in self.input_places:
-            self.assertEqual(input_token_keys[2:], p.tokens.value)
-
-        # Let's push out a new token to the output places. They should now have
-        # the first two tokens.
-        token_out = petri.Token.create(self.conn)
-        status, remaining = self.net.push_tokens(self.transition,
-                output_token_keys[1])
-        self.assertTrue(status)
-        self.assertEqual(0, remaining)
-
-        for p in self.output_places:
-            self.assertEqual(output_token_keys[:2], p.tokens.value)
-
-        # Final token
-        self.net.consume_tokens(self.transition, 3)
-        self.assertEqual(0, len(self.transition.state))
-        self.assertEqual([input_token_keys[2]]*4,
-                self.transition.active_tokens.value)
-
-        for p in self.input_places:
-            self.assertEqual(0, len(p.tokens))
-
-        status, remaining = self.net.push_tokens(self.transition,
-                output_token_keys[2])
-        self.assertTrue(status)
-        self.assertEqual(4, remaining)
-
-        self.assertEqual(self.expected_state, self.transition.state.value)
-        for p in self.output_places:
-            self.assertEqual(output_token_keys, p.tokens.value)
-
+            # The output places should have output token
+            marks = self.net.marking(col_idx).value
+            for i in xrange(len(self.output_places)):
+                place_idx = i + len(self.input_places)
+                self.assertIn(str(place_idx), marks)
 
     def test_push_tokens(self):
-        token = petri.Token.create(self.conn)
+        self.net.set_num_token_colors(1)
+        token = petri.Token.create(self.conn, color_idx=0)
 
-        for p in self.input_places:
-            p.tokens.append(token.key)
+        for pidx in xrange(len(self.input_places)):
+            self.net.marking(0)[pidx] = token.key
 
         for i in xrange(4):
-            self.net.consume_tokens(self.transition, i)
+            self.net.consume_tokens(self.transition, i, 0)
 
-        status, remaining, = self.net.push_tokens(self.transition, token.key)
+        status, arcs_out = self.net.push_tokens(self.transition, token.key, 0)
         self.assertTrue(status)
-        self.assertEqual(4, remaining)
-        self.assertEqual(0, len(self.transition.active_tokens))
+        self.assertEqual(0, len(self.transition.active_tokens(0)))
 
-        for inp in self.input_places:
-            self.assertEqual(0, len(inp.tokens))
+        marking = self.net.marking(0)
+        for pidx in xrange(len(self.input_places)):
+            self.assertNotIn(pidx, marking)
 
-        for outp in self.output_places:
-            self.assertEqual(1, len(outp.tokens))
+        for pidx in xrange(len(self.output_places)):
+            pidx += len(self.input_places)
+            self.assertIn(pidx, marking)
 
     def test_fire_transition(self):
-        tokens = [petri.Token.create(self.conn) for x in xrange(5)]
+        num_toks = 5
+        self.net.set_num_token_colors(num_toks)
+        tokens = [petri.Token.create(self.conn, color_idx=x)
+                for x in xrange(num_toks)]
+
         for i in xrange(len(self.input_places)):
             for t in tokens:
                 self.net.set_token(i, t.key, self.service_interfaces)
 
-        for i in xrange(len(self.input_places)):
-            self.assertEqual(0, len(self.input_places[i].tokens))
+        for pidx in xrange(len(self.input_places)):
+            self.assertEqual('0', self.net.global_marking[pidx])
 
-        for i in xrange(len(self.output_places)):
-            self.assertEqual(5, len(self.output_places[i].tokens))
+        print self.net.global_marking
+        for pidx in xrange(len(self.output_places)):
+            pidx += len(self.input_places)
+            self.assertEqual('5', self.net.global_marking[pidx])
 
         self.assertEqual(5, self.transition.action.call_count.value)
 

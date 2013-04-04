@@ -89,13 +89,16 @@ class TestNetBuilder(_TestBody, TestBase):
         p22.arcs_out.add(tend)
 
         stored_net = builder.store(self.conn)
+        stored_net.set_num_token_colors(3)
 
-        token = petri.Token.create(self.conn)
-        for x in xrange(3):
-            stored_net.set_token(0, token.key, self.service_interfaces)
+        tokens = [petri.Token.create(self.conn, color_idx=x)
+                for x in xrange(3)]
 
         for x in xrange(3):
-            stored_net.set_token(1, token.key, self.service_interfaces)
+            stored_net.set_token(0, tokens[x].key, self.service_interfaces)
+
+        for x in xrange(3):
+            stored_net.set_token(1, tokens[x].key, self.service_interfaces)
 
         for x in xrange(stored_net.num_transitions):
             self.assertEqual(3, stored_net.transition(x).action.call_count.value)
