@@ -58,12 +58,36 @@ def create_parser(commands):
     return parser
 
 
+def ensure_dir(path):
+    if not os.path.isdir(path):
+        os.path.makedirs(path)
+
+
 def initialize_logging(config, logging_mode):
     try:
         logging_config = config['logging_configurations'][logging_mode]
         logging.config.dictConfig(logging_config)
     except KeyError:
         pass
+    process_name = os.environ.get('SUPERVISOR_PROCESS_NAME')
+    if process_name:
+        log_dir = '/var/log/flow'
+        ensure_dir(log_dir)
+
+        log_path = os.path.join(log_dir, '%s.log' % process_name)
+
+        add_file_logger(log_path)
+
+
+def add_file_logger(log_path):
+        handler = logging.handlers.RotatingFileHandler(log_path,
+                maxBytes=1000000000, backupCount=1)
+        handler.setFormatter(logging.Formatter(
+                '%(levelname)s %(asctime)s %(name)s '
+                '%(funcName)s %(lineno)d: %(message)s'))
+
+        root_logger = logging.getLogger()
+        root_logger.addHandler(handler)
 
 
 def initialize_statsd(config):
