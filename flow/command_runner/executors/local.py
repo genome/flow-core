@@ -20,21 +20,21 @@ class SubprocessExecutor(ExecutorBase):
 
         with env_util.environment([self.default_environment, environment,
                                self.mandatory_environment]):
+            LOG.debug('working_directory = %s', working_directory)
+            LOG.debug('PATH = %s', os.getenv('PATH'))
+
             stdout_fh = None
             stderr_fh = None
             try:
-                if stdout:
-                    stdout_fh = open(util.join_path_if_rel(
-                        working_directory, stdout), 'a')
-                if stderr:
-                    stderr_fh = open(util.join_path_if_rel(
-                        working_directory, stderr), 'a')
-
-                LOG.debug('working_directory = %s', working_directory)
-                LOG.debug('PATH = %s', os.getenv('PATH'))
-
-                LOG.debug('executing command %s', " ".join(full_command_line))
                 with util.seteuid(user_id):
+                    if stdout:
+                        stdout_fh = open(util.join_path_if_rel(
+                            working_directory, stdout), 'a')
+                    if stderr:
+                        stderr_fh = open(util.join_path_if_rel(
+                            working_directory, stderr), 'a')
+
+                    LOG.debug('executing command %s', " ".join(full_command_line))
                     exit_code = subprocess.call(full_command_line,
                             stdout=stdout_fh, stderr=stderr_fh,
                             cwd=working_directory)
