@@ -43,6 +43,7 @@ def main():
         try:
             command_config = config['commands'][arguments.command_name]
             kwargs = dictionary_factory(**command_config)
+
             command = arguments.command(**kwargs)
             exit_code = command(arguments)
         except:

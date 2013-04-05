@@ -16,7 +16,10 @@ def dictionary_factory(**kwargs):
         if isinstance(val, dict):
             kwargs[key] = general_factory(**val)
         elif isinstance(val, list):
-            kwargs[key] = [general_factory(**entry) for entry in val]
+            try:
+                kwargs[key] = [general_factory(**entry) for entry in val]
+            except TypeError:
+                kwargs[key] = val
     return kwargs
 
 
