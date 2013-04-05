@@ -77,17 +77,26 @@ def initialize_logging(config, logging_mode):
         log_path = os.path.join(log_dir, '%s.log' % process_name)
 
         add_file_logger(log_path)
+    else:
+        add_stderr_logger()
 
 
 def add_file_logger(log_path):
-        handler = logging.handlers.RotatingFileHandler(log_path,
-                maxBytes=1000000000, backupCount=1)
-        handler.setFormatter(logging.Formatter(
-                '%(levelname)s %(asctime)s %(name)s '
-                '%(funcName)s %(lineno)d: %(message)s'))
+    handler = logging.handlers.RotatingFileHandler(log_path,
+            maxBytes=1000000000, backupCount=1)
+    add_log_handler(handler)
 
-        root_logger = logging.getLogger()
-        root_logger.addHandler(handler)
+def add_stderr_logger():
+    handler = logging.StreamHandler()
+    add_log_handler(handler)
+
+def add_log_handler(handler):
+    handler.setFormatter(logging.Formatter(
+            '%(levelname)s %(asctime)s %(name)s '
+            '%(funcName)s %(lineno)d: %(message)s'))
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(handler)
 
 
 def initialize_statsd(config):
