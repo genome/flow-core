@@ -344,6 +344,7 @@ class Net(NetBase):
         if new_token is None:
             new_token = Token.create(self.connection)
 
+        new_token.color_idx.value = ready_color_idx
 
         tokens_pushed, arcs_out = self.push_tokens(trans, new_token.key,
                 ready_color_idx)
