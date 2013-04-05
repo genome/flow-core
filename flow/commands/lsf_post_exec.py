@@ -7,8 +7,6 @@ from flow.commands.token_sender import TokenSenderCommand
 LOG = logging.getLogger(__name__)
 
 class LsfPostExecCommand(TokenSenderCommand):
-    default_logging_mode = 'debug'
-
     @staticmethod
     def annotate_parser(parser):
         parser.add_argument('--net-key', '-n')

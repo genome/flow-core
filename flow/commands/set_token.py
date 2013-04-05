@@ -6,8 +6,6 @@ LOG = logging.getLogger(__name__)
 
 
 class SetTokenCommand(CommandBase):
-    default_logging_mode = 'silent'
-
     def __init__(self, broker=None, storage=None, routing_key=None):
 
         self.broker = broker

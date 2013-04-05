@@ -13,8 +13,6 @@ LOG = logging.getLogger(__name__)
 class CommandBase(object):
     __metaclass__ = ABCMeta
 
-    default_logging_mode = 'default'
-
     @staticmethod
     def annotate_parser(parser):
         raise NotImplementedError
@@ -33,7 +31,7 @@ def main():
 
         logging_mode = arguments.logging_mode
         if logging_mode is None:
-            logging_mode = arguments.command.default_logging_mode
+            logging_mode = 'default'
 
         config = flow.configuration.load_config(arguments.config)
 

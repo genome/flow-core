@@ -59,8 +59,11 @@ def create_parser(commands):
 
 
 def initialize_logging(config, logging_mode):
-    logging_config = config['logging_configurations'][logging_mode]
-    logging.config.dictConfig(logging_config)
+    try:
+        logging_config = config['logging_configurations'][logging_mode]
+        logging.config.dictConfig(logging_config)
+    except KeyError:
+        pass
 
 
 def initialize_statsd(config):
