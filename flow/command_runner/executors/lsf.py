@@ -3,7 +3,6 @@ import logging
 from pythonlsf import lsf
 from twisted.python.procutils import which
 
-from flow.util import environment as env_util
 from flow.command_runner import util
 from flow.command_runner.resource import Resource, ResourceException
 from flow.command_runner.executor import ExecutorBase
@@ -61,19 +60,17 @@ class LSFExecutor(ExecutorBase):
         self.post_exec = post_exec
         self.default_queue = default_queue
 
-    def execute(self, command_line, environment={}, **kwargs):
+    def execute(self, command_line, **kwargs):
         request = self.construct_request(command_line, **kwargs)
 
         reply = _create_reply()
 
-        with env_util.environment([self.default_environment, environment,
-                               self.mandatory_environment]):
-            try:
-                submit_result = lsf.lsb_submit(request, reply)
-            except:
-                LOG.exception("lsb_submit failed for command string: '%s'",
-                        command_string)
-                raise
+        try:
+            submit_result = lsf.lsb_submit(request, reply)
+        except:
+            LOG.exception("lsb_submit failed for command string: '%s'",
+                    command_string)
+            raise
 
         if submit_result > 0:
             LOG.debug('successfully submitted lsf job: %s', submit_result)

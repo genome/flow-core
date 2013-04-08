@@ -4,6 +4,8 @@ import os
 import signal
 import socket
 
+from flow.util import environment as env_util
+
 LOG = logging.getLogger(__name__)
 
 
@@ -21,7 +23,7 @@ class ExecutorBase(object):
         self.default_environment = default_environment
         self.mandatory_environment = mandatory_environment
 
-    def __call__(self, command_line, user_id=None, **kwargs):
+    def __call__(self, command_line, user_id=None, environment={}, **kwargs):
         parent_socket, child_socket = socketpair_or_exit()
 
         pid = fork_or_exit()
@@ -36,8 +38,8 @@ class ExecutorBase(object):
                 os.setuid(user_id)
 
             try:
-                exit_code = self._child_execute(
-                        child_socket, command_line, kwargs)
+                exit_code = self._child_execute(child_socket,
+                        command_line, environment, kwargs)
             except:
                 LOG.exception('Executor raised exception, exitting with signal.')
                 os.kill(os.getpid(), signal.SIGHUP)
@@ -56,7 +58,9 @@ class ExecutorBase(object):
         parent_socket.close()
         return job_id, exit_code, signal_number
 
-    def _child_execute(self, socket, command_line, kwargs):
+    def _child_execute(self, socket, command_line, environment, kwargs):
+        env_util.set_environment(self.default_environment,
+                environment, self.mandatory_environment)
         success, job_id = self.execute(command_line, **kwargs)
         if success:
             socket.send(str(job_id))
