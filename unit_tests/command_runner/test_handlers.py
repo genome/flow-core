@@ -62,10 +62,8 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
 
 
     def test_message_handler_executor_success(self):
-        pid = 1234
-        exit_code = 0
-        signal = 0
-        self.executor.return_value = (pid, exit_code, signal)
+        job_id = 1234
+        self.executor.return_value = (job_id, True)
 
         set_token = mock.Mock()
         self.handler.set_token = set_token
@@ -79,16 +77,14 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
         expected = [
                 mock.call(self.net_key, self.pre_dispatch_place_idx),
                 mock.call(self.net_key, self.dispatch_success_place_idx,
-                        data={'pid': str(pid)})
+                        data={'pid': str(job_id)})
                 ]
 
         self.assertEqual(expected, set_token.mock_calls)
 
     def test_message_handler_executor_failure(self):
-        pid = 1234
-        exit_code = 1
-        signal = 0
-        self.executor.return_value = (pid, exit_code, signal)
+        job_id = 1234
+        self.executor.return_value = (job_id, False)
 
         set_token = mock.Mock()
         self.handler.set_token = set_token
@@ -100,16 +96,14 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
                 passthru=True)
 
         self.assertEqual([mock.call(self.net_key, self.pre_dispatch_place_idx),
-                          mock.call(self.net_key, self.dispatch_failure_place_idx)],
+                          mock.call(self.net_key, self.dispatch_failure_place_idx,
+                              data={'pid': str(job_id)})],
                          set_token.mock_calls)
 
 
 
     def test_message_handler_executor_exception(self):
-        pid = 1234
-        exit_code = 0
-        signal = 1
-        self.executor.return_value = (pid, exit_code, signal)
+        self.executor.side_effect = RuntimeError
 
         with mock.patch("flow.command_runner.handler.Token") as T:
             T.create = mock.Mock()

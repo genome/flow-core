@@ -26,22 +26,16 @@ class CommandLineSubmitMessageHandler(object):
 
         self.set_token(net_key, response_places.get('pre_dispatch'))
 
-        pid, exit_code, signal = self.executor(message.command_line,
+        job_id, success = self.executor(message.command_line,
                 net_key=net_key, response_places=response_places,
                 **executor_options)
 
-        if signal:
-            raise RuntimeError('Executor child got signal (%d), '
-                    'rejecting message', signal)
-
-        if exit_code == exit_codes.EXECUTE_ERROR:
-            raise RuntimeError('Error in executor child process (exit code %d).  '
-                    'Rejecting message.', exit_code)
-        elif exit_code == exit_codes.EXECUTE_FAILURE:
-            self.set_token(net_key, response_places.get('post_dispatch_failure'))
+        if success:
+            response_place = response_places.get('post_dispatch_success')
         else:
-            self.set_token(net_key, response_places.get('post_dispatch_success'),
-                    data={"pid": str(pid)})
+            response_place = response_places.get('post_dispatch_failure')
+
+        self.set_token(net_key, response_place, data={"pid": str(job_id)})
 
     def set_token(self, net_key, place_idx, data=None):
         if place_idx is not None:
