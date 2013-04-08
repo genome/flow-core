@@ -1,7 +1,6 @@
 import abc
 import logging
 import os
-import signal
 import socket
 
 from flow.util import environment as env_util
@@ -31,7 +30,7 @@ class ExecutorBase(object):
         pid = fork_or_exit()
         if pid:  # Parent
             child_socket.close()
-            job_id, exit_code, signal = self._wait_for_child(parent_socket, pid)
+            job_id, exit_code = self._wait_for_child(parent_socket, pid)
 
             if exit_code == exit_codes.EXECUTE_SUCCESS:
                 return job_id, True
@@ -71,9 +70,9 @@ class ExecutorBase(object):
 
         parent_socket.close()
 
-        return job_id, exit_code, signal_number
+        return job_id, exit_code
 
-    def _child_execute(self, socket, command_line, environment, kwargs):
+    def _child_execute(self, child_socket, command_line, environment, kwargs):
         try:
             env_util.set_environment(self.default_environment,
                     environment, self.mandatory_environment)
@@ -81,8 +80,8 @@ class ExecutorBase(object):
             success, job_id = self.execute(command_line, **kwargs)
 
             if success:
-                socket.send(str(job_id))
-                socket.close()
+                child_socket.send(str(job_id))
+                child_socket.close()
                 return exit_codes.EXECUTE_SUCCESS
 
             return exit_codes.EXECUTE_FAILURE
