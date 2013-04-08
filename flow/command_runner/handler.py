@@ -1,6 +1,7 @@
 import logging
 from flow.petri import Token, SetTokenMessage
 from flow.command_runner.messages import CommandLineSubmitMessage
+from flow import exit_codes
 
 LOG = logging.getLogger(__name__)
 
@@ -30,11 +31,13 @@ class CommandLineSubmitMessageHandler(object):
                 **executor_options)
 
         if signal:
-            raise RuntimeError('Child got signal, stop the show! '
-                    '(note that SIGHUP often means an exception was '
-                    'raised inside the child)')
+            raise RuntimeError('Executor child got signal (%d), '
+                    'rejecting message', signal)
 
-        if exit_code:
+        if exit_code == exit_codes.EXECUTE_ERROR:
+            raise RuntimeError('Error in executor child process (exit code %d).  '
+                    'Rejecting message.', exit_code)
+        elif exit_code == exit_codes.EXECUTE_FAILURE:
             self.set_token(net_key, response_places.get('post_dispatch_failure'))
         else:
             self.set_token(net_key, response_places.get('post_dispatch_success'),

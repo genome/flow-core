@@ -5,6 +5,7 @@ import signal
 import socket
 
 from flow.util import environment as env_util
+from flow import exit_codes
 
 LOG = logging.getLogger(__name__)
 
@@ -35,14 +36,15 @@ class ExecutorBase(object):
             parent_socket.close()
 
             if user_id is not None:
-                os.setuid(user_id)
+                try:
+                    LOG.debug('Setting user id to %d', user_id)
+                    os.setuid(user_id)
+                except:
+                    LOG.exception('Failed to setuid')
+                    os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
-            try:
-                exit_code = self._child_execute(child_socket,
-                        command_line, environment, kwargs)
-            except:
-                LOG.exception('Executor raised exception, exitting with signal.')
-                os.kill(os.getpid(), signal.SIGHUP)
+            exit_code = self._child_execute(child_socket,
+                    command_line, environment, kwargs)
 
             os._exit(exit_code)
 
@@ -51,22 +53,34 @@ class ExecutorBase(object):
         signal_number = 255 & exit_status
         exit_code = exit_status >> 8
 
+        if exit_code == exit_codes.EXECUTE_SYSTEM_FAILURE:
+            os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+
         job_id = -1
-        if not signal_number and exit_code == 0:
+        if not signal_number and exit_code == exit_codes.EXECUTE_SUCCESS:
             job_id = int(parent_socket.recv(64))
 
         parent_socket.close()
+
         return job_id, exit_code, signal_number
 
     def _child_execute(self, socket, command_line, environment, kwargs):
-        env_util.set_environment(self.default_environment,
-                environment, self.mandatory_environment)
-        success, job_id = self.execute(command_line, **kwargs)
-        if success:
-            socket.send(str(job_id))
-            socket.close()
-            return 0
-        return 1
+        try:
+            env_util.set_environment(self.default_environment,
+                    environment, self.mandatory_environment)
+
+            success, job_id = self.execute(command_line, **kwargs)
+
+            if success:
+                socket.send(str(job_id))
+                socket.close()
+                return exit_codes.EXECUTE_SUCCESS
+
+            return exit_codes.EXECUTE_FAILURE
+
+        except:
+            LOG.exception('Executor raised exception, exitting.')
+            return exit_codes.EXECUTE_ERROR
 
     def _make_command_line(self, command_line, net_key=None,
             response_places=None, with_inputs=None, with_outputs=None):
@@ -91,21 +105,21 @@ class ExecutorBase(object):
         return [str(x) for x in cmdline]
 
 
-def socketpair_or_exit(failure_exit_code=1):
+def socketpair_or_exit():
     try:
         parent_socket, child_socket = socket.socketpair()
     except:
         LOG.exception('Failed to create socket pair, exitting')
-        os._exit(failure_exit_code)
+        os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     return parent_socket, child_socket
 
 
-def fork_or_exit(failure_exit_code=1):
+def fork_or_exit():
     try:
         pid = os.fork()
     except:
         LOG.exception('Failed to fork, exitting')
-        os._exit(failure_exit_code)
+        os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     return pid
