@@ -25,15 +25,20 @@ class CommandLineSubmitMessageHandler(object):
 
         self.set_token(net_key, response_places.get('pre_dispatch'))
 
-        success, executor_result = self.executor(message.command_line,
+        pid, exit_code, signal = self.executor(message.command_line,
                 net_key=net_key, response_places=response_places,
                 **executor_options)
 
-        if success:
-            self.set_token(net_key, response_places.get('post_dispatch_success'),
-                    data={"pid": str(executor_result)})
-        else:
+        if signal:
+            raise RuntimeError('Child got signal, stop the show! '
+                    '(note that SIGHUP often means an exception was '
+                    'raised inside the child)')
+
+        if exit_code:
             self.set_token(net_key, response_places.get('post_dispatch_failure'))
+        else:
+            self.set_token(net_key, response_places.get('post_dispatch_success'),
+                    data={"pid": str(pid)})
 
     def set_token(self, net_key, place_idx, data=None):
         if place_idx is not None:

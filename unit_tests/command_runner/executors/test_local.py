@@ -22,7 +22,7 @@ class SubprocessExecutorTest(unittest.TestCase):
     def test_succeeded_job(self):
         self.dispatcher.wrapper = [sys.executable, '-c', success_script, '--']
 
-        success, result = self.dispatcher(['/bin/true'],
+        success, result = self.dispatcher.execute(['/bin/true'],
                 net_key="x",
                 response_places=self.response_places)
         self.assertTrue(success)
@@ -31,7 +31,7 @@ class SubprocessExecutorTest(unittest.TestCase):
     def test_failed_job(self):
         self.dispatcher.wrapper = [sys.executable, '-c', failure_script, '--']
 
-        success, result = self.dispatcher(['/bin/false'],
+        success, result = self.dispatcher.execute(['/bin/false'],
                 net_key="x",
                 response_places=self.response_places)
         self.assertFalse(success)
@@ -39,7 +39,7 @@ class SubprocessExecutorTest(unittest.TestCase):
 
     def test_missing_response_places(self):
         self.assertRaises(TypeError,
-                self.dispatcher, [mock.Mock()])
+                self.dispatcher.execute, [mock.Mock()])
 
 
 if '__main__' == __name__:

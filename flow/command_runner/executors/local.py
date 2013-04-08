@@ -9,8 +9,8 @@ from flow.util import environment as env_util
 LOG = logging.getLogger(__name__)
 
 class SubprocessExecutor(ExecutorBase):
-    def __call__(self, command_line, net_key=None, response_places=None,
-            working_directory=None, environment={}, user_id=None,
+    def execute(self, command_line, net_key=None, response_places=None,
+            working_directory=None, environment={},
             stdout=None, stderr=None, with_inputs=None, with_outputs=False,
             **kwargs):
 
@@ -26,24 +26,21 @@ class SubprocessExecutor(ExecutorBase):
             stdout_fh = None
             stderr_fh = None
             try:
-                with util.seteuid(user_id):
-                    if stdout:
-                        stdout_fh = open(util.join_path_if_rel(
-                            working_directory, stdout), 'a')
-                    if stderr:
-                        stderr_fh = open(util.join_path_if_rel(
-                            working_directory, stderr), 'a')
+                if stdout:
+                    stdout_fh = open(util.join_path_if_rel(
+                        working_directory, stdout), 'a')
+                if stderr:
+                    stderr_fh = open(util.join_path_if_rel(
+                        working_directory, stderr), 'a')
 
-                    LOG.debug('executing command %s', " ".join(full_command_line))
-                    exit_code = subprocess.call(full_command_line,
-                            stdout=stdout_fh, stderr=stderr_fh,
-                            cwd=working_directory)
+                LOG.debug('executing command %s', " ".join(full_command_line))
+                exit_code = subprocess.call(full_command_line,
+                        stdout=stdout_fh, stderr=stderr_fh,
+                        cwd=working_directory)
 
-            except OSError as e:
-                error_message = 'Executor got error number (%d): %s' % (
-                        e.errno, os.strerror(e.errno))
-                LOG.error(error_message)
-                raise RuntimeError(error_message)
+            except OSError:
+                LOG.exception('Executor got OSError')
+                raise
             finally:
                 if stdout_fh:
                     stdout_fh.close()

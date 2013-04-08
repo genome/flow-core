@@ -61,7 +61,7 @@ class LSFExecutor(ExecutorBase):
         self.post_exec = post_exec
         self.default_queue = default_queue
 
-    def __call__(self, command_line, environment={}, user_id=None, **kwargs):
+    def execute(self, command_line, environment={}, **kwargs):
         request = self.construct_request(command_line, **kwargs)
 
         reply = _create_reply()
@@ -69,13 +69,11 @@ class LSFExecutor(ExecutorBase):
         with env_util.environment([self.default_environment, environment,
                                self.mandatory_environment]):
             try:
-                with util.seteuid(user_id):
-                    submit_result = lsf.lsb_submit(request, reply)
-            except Exception as e:
-                LOG.error("lsb_submit failed for command string: '%s'",
+                submit_result = lsf.lsb_submit(request, reply)
+            except:
+                LOG.exception("lsb_submit failed for command string: '%s'",
                         command_string)
-                LOG.exception(e)
-                raise RuntimeError(str(e))
+                raise
 
         if submit_result > 0:
             LOG.debug('successfully submitted lsf job: %s', submit_result)
