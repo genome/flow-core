@@ -72,7 +72,7 @@ class WrapperCommand(TokenSenderCommand):
 
                     rv = 0
                 except subprocess.CalledProcessError as e:
-                    LOG.error("Failed to execute command '%s': %s",
+                    LOG.info("Failed to execute command '%s': %s",
                             " ".join(cmdline), str(e))
                     if parsed_arguments.failure_place_id is not None:
                         self.send_token(net_key=parsed_arguments.net_key,
