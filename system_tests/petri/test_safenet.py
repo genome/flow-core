@@ -90,12 +90,15 @@ class TestSafeNet(TestBase):
         self.assertEqual(nested, net1.constant("complex"))
 
     def test_capture_environment(self):
-        euid = os.geteuid()
-        user_name = pwd.getpwuid(euid).pw_name
+        uid = os.getuid()
+        gid = os.getgid()
+        user_name = pwd.getpwuid(uid).pw_name
+
         net = petri.SafeNet.create(connection=self.conn)
         net.capture_environment()
         self.assertEqual(os.environ.data, net.constant("environment"))
-        self.assertEqual(euid, net.constant("user_id"))
+        self.assertEqual(uid, net.constant("user_id"))
+        self.assertEqual(gid, net.constant("group_id"))
         self.assertEqual(user_name, net.constant("user_name"))
         self.assertEqual(os.path.realpath(os.path.curdir),
                 net.constant("working_directory"))

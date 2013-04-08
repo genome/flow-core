@@ -132,12 +132,15 @@ class NetBase(rom.Object):
                     (key, self.key))
 
     def capture_environment(self):
-        euid = os.geteuid()
-        user_name = pwd.getpwuid(euid).pw_name
-        self.set_constant("environment", os.environ.data)
-        self.set_constant("user_id", euid)
-        self.set_constant("user_name", user_name)
+        uid = os.getuid()
+        gid = os.getgid()
+        user_name = pwd.getpwuid(uid).pw_name
         cwd = os.path.realpath(os.path.curdir)
+
+        self.set_constant("environment", os.environ.data)
+        self.set_constant("user_id", uid)
+        self.set_constant("group_id", gid)
+        self.set_constant("user_name", user_name)
         self.set_constant("working_directory", cwd)
 
     def copy_constants_from(self, other_net):
