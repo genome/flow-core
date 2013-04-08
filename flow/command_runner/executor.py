@@ -24,7 +24,8 @@ class ExecutorBase(object):
         self.default_environment = default_environment
         self.mandatory_environment = mandatory_environment
 
-    def __call__(self, command_line, user_id=None, environment={}, **kwargs):
+    def __call__(self, command_line, group_id=None, user_id=None,
+            environment={}, **kwargs):
         parent_socket, child_socket = socketpair_or_exit()
 
         pid = fork_or_exit()
@@ -35,13 +36,7 @@ class ExecutorBase(object):
         else:  # Child
             parent_socket.close()
 
-            if user_id is not None:
-                try:
-                    LOG.debug('Setting user id to %d', user_id)
-                    os.setuid(user_id)
-                except:
-                    LOG.exception('Failed to setuid')
-                    os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+            set_gid_and_uid_or_exit(group_id, user_id)
 
             exit_code = self._child_execute(child_socket,
                     command_line, environment, kwargs)
@@ -114,7 +109,6 @@ def socketpair_or_exit():
 
     return parent_socket, child_socket
 
-
 def fork_or_exit():
     try:
         pid = os.fork()
@@ -123,3 +117,22 @@ def fork_or_exit():
         os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     return pid
+
+def set_gid_and_uid_or_exit(group_id, user_id):
+    if group_id is not None:
+        try:
+            LOG.debug('Setting group id to %d', group_id)
+            os.setgid(group_id)
+        except:
+            LOG.exception('Failed to setgid from %d to %d',
+                    os.getgid(), group_id)
+            os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+
+    if user_id is not None:
+        try:
+            LOG.debug('Setting user id to %d', user_id)
+            os.setuid(user_id)
+        except:
+            LOG.exception('Failed to setuid from %d to %d',
+                    os.getuid(), user_id)
+            os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
