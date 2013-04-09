@@ -56,9 +56,6 @@ class LogAnnotator(protocol.ProcessProtocol):
             self.stdout_fd = None
             self.transport.loseConnection()
 
-    def processExited(self, reason):
-        self.exit_code = reason.value.exitCode
-
     def processEnded(self, reason):
         self.exit_code = reason.value.exitCode
         reactor.stop()
@@ -69,6 +66,10 @@ class LogAnnotator(protocol.ProcessProtocol):
                 "Starting log annotation on host: %s\n" % hostname,
                 self.stdout_newline_pending)
         reactor.spawnProcess(self, self.cmdline[0], self.cmdline,
-                env=os.environ, childFDs={0: 0, 1: "r", 2: "r"})
+                env=os.environ, childFDs={0:0, 1:'r', 2:'r'})
         reactor.run()
         return self.exit_code
+
+if __name__ == '__main__':
+    log_annotator = LogAnnotator(sys.argv[1:])
+    log_annotator.start()
