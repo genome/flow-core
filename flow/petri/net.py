@@ -374,3 +374,15 @@ class Net(NetBase):
             return "green"
         else:
             return "white"
+
+
+class CountdownAction(TransitionAction):
+    count = rom.Property(rom.Int)
+    action_key = rom.Property(rom.String)
+
+    def execute(self, active_tokens_key, net, service_interfaces):
+        if self.count.decr() == 0:
+            self.on_complete(active_tokens_key, net, service_interfaces)
+
+    def on_complete(self, active_tokens_key, net, service_interfaces):
+        pass

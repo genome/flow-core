@@ -1,7 +1,6 @@
 from flow import petri
 
-# netbuilder makes the "copy net" test easier
-import flow.petri.netbuilder as nb
+import flow.redisom as rom
 
 from test_helpers import RedisTest, FakeOrchestrator
 import mock
@@ -183,13 +182,44 @@ class TestNet(TestBase):
         for pidx in xrange(len(self.input_places)):
             self.assertEqual('0', self.net.global_marking[pidx])
 
-        print self.net.global_marking
         for pidx in xrange(len(self.output_places)):
             pidx += len(self.input_places)
             self.assertEqual('5', self.net.global_marking[pidx])
 
         self.assertEqual(5, self.transition.action.call_count.value)
 
+
+class TestableCountdownAction(petri.CountdownAction):
+    completed = rom.Property(rom.String)
+    def on_complete(self, active_tokens_key, net, service_interfaces):
+        self.completed = "hello"
+
+class TestCountdown(TestBase):
+    def test_countdown_action(self):
+        places = ["p1", "p2"]
+        action = TestableCountdownAction.create(self.conn, count=4,
+                name="countdown")
+
+        place_arcs_out = {0: {0}}
+        trans_arcs_out = {0: {1}}
+
+        net = petri.Net.create(
+                connection=self.conn,
+                place_names=places,
+                trans_actions=[action],
+                place_arcs_out=place_arcs_out,
+                trans_arcs_out=trans_arcs_out)
+
+        net.set_num_token_colors(4)
+
+        tokens = [petri.Token.create(self.conn, color_idx=x) for x in xrange(4)]
+        for i in xrange(4):
+            net.set_token(0, tokens[i].key, self.service_interfaces)
+            if i < 3:
+                self.assertRaises(rom.NotInRedisError, getattr,
+                    action.completed, "value")
+
+        self.assertEqual("hello", action.completed.value)
 
 
 if __name__ == "__main__":

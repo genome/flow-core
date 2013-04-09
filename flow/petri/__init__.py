@@ -9,6 +9,7 @@ from netbase import NotifyTransitionMessage, SetTokenMessage
 from netbase import TransitionAction
 from netbase import CounterAction, MergeTokensAction, SetRemoteTokenAction
 from netbase import ShellCommandAction, TransitionAction
+from net import CountdownAction
 
 # Nets
 
