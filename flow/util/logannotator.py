@@ -64,13 +64,17 @@ class LogAnnotator(protocol.ProcessProtocol):
 
     def start(self):
         hostname = socket.gethostname()
-        write_output(self.stdout_fd,
-                "Starting log annotation on host: %s\n" % hostname,
-                self.stdout_newline_pending)
+        self.announce_host()
         reactor.spawnProcess(self, self.cmdline[0], self.cmdline,
                 env=os.environ, childFDs={0:0, 1:'r', 2:'r'})
         reactor.run()
         return self.exit_code
+
+    def announce_host(self):
+        msg = "Starting log annotation on host: %s\n" % hostname
+        write_output(self.stdout_fd, msg, self.stdout_newline_pending)
+        if self.stdout_fd != self.stderr_fd:
+            write_output(self.stderr_fd, msg, self.stderr_newline_pending)
 
 if __name__ == '__main__':
     log_annotator = LogAnnotator(sys.argv[1:])
