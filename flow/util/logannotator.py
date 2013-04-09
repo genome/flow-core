@@ -1,6 +1,7 @@
 from twisted.internet import protocol
 from twisted.internet import reactor
 from time import strftime
+import socket
 import os
 import sys
 
@@ -63,6 +64,10 @@ class LogAnnotator(protocol.ProcessProtocol):
         reactor.stop()
 
     def start(self):
+        hostname = socket.gethostname()
+        write_output(self.stdout_fd,
+                "Starting log annotation on host: %s\n" % hostname,
+                self.stdout_newline_pending)
         reactor.spawnProcess(self, self.cmdline[0], self.cmdline,
                 env=os.environ, childFDs={0: 0, 1: "r", 2: "r"})
         reactor.run()
