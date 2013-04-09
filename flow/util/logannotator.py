@@ -44,6 +44,7 @@ class LogAnnotator(protocol.ProcessProtocol):
             self.stderr_newline_pending = write_output(self.stderr_fd, data,
                     self.stderr_newline_pending)
         except IOError as ex:
+            write_output(self.stderr_fd, ex, self.stderr_newline_pending)
             self.stderr_fd.close()
             self.stderr_fd = None
 
@@ -52,6 +53,7 @@ class LogAnnotator(protocol.ProcessProtocol):
             self.stdout_newline_pending = write_output(self.stdout_fd, data,
                     self.stdout_newline_pending)
         except IOError as ex:
+            write_output(self.stderr_fd, ex, self.stderr_newline_pending)
             self.stdout_fd.close()
             self.stdout_fd = None
             self.transport.loseConnection()
