@@ -5,7 +5,7 @@ import socket
 import os
 import sys
 
-def write_output(fd, data, newline_pending):
+def write_output(fd, data, newline_pending, prefix=''):
     if fd is None or not data:
         return
 
@@ -20,7 +20,7 @@ def write_output(fd, data, newline_pending):
         newline_pending = lines[-1][-1] != '\n'
 
         for line in lines:
-            fd.write("[%s] %s" % (now, line))
+            fd.write("%s[%s] %s" % (prefix, now, line))
 
     return newline_pending
 
