@@ -26,10 +26,12 @@ def write_output(fd, data, newline_pending, prefix=''):
 
 
 class LogAnnotator(protocol.ProcessProtocol):
-    def __init__(self, cmdline, stdout_fd=sys.stdout, stderr_fd=sys.stderr):
+    def __init__(self, cmdline, stdout_fd=sys.stdout, stderr_fd=sys.stderr,
+            log_hostname=True):
         self.cmdline = cmdline
         self.stdout_fd = stdout_fd
         self.stderr_fd = stderr_fd
+        self.log_hostname = log_hostname
 
         self.stdout_newline_pending = False
         self.stderr_newline_pending = False
@@ -63,14 +65,15 @@ class LogAnnotator(protocol.ProcessProtocol):
         reactor.stop()
 
     def start(self):
-        hostname = socket.gethostname()
-        self.announce_host()
+        if self.log_hostname:
+            self.announce_hostname()
         reactor.spawnProcess(self, self.cmdline[0], self.cmdline,
                 env=os.environ, childFDs={0:0, 1:'r', 2:'r'})
         reactor.run()
         return self.exit_code
 
-    def announce_host(self):
+    def announce_hostname(self):
+        hostname = socket.gethostname()
         msg = "Starting log annotation on host: %s\n" % hostname
         write_output(self.stdout_fd, msg, self.stdout_newline_pending)
         if self.stdout_fd != self.stderr_fd:
