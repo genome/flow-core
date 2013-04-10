@@ -1,6 +1,6 @@
 from twisted.internet import protocol
 from twisted.internet import reactor
-from time import strftime
+from datetime import datetime
 import socket
 import os
 import sys
@@ -9,7 +9,7 @@ def write_output(fd, data, newline_pending, prefix=''):
     if fd is None or not data:
         return
 
-    now = strftime("%Y/%m/%d %H:%M:%S")
+    now = datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f")
 
     lines = data.splitlines(True)
     if newline_pending is True:
