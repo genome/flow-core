@@ -10,6 +10,7 @@ class ShellCommandSubmitMessage(Message):
     }
 
     optional_fields = {
+            'token_color': int,
             'executor_options': dict,
 
             # The following options are deprecated

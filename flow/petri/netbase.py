@@ -40,12 +40,20 @@ class SetTokenMessage(Message):
             "token_key": basestring,
     }
 
+    optional_fields = {
+            "token_color": int
+    }
+
 
 class NotifyTransitionMessage(Message):
     required_fields = {
             "net_key": basestring,
             "place_idx": int,
             "transition_idx": int,
+    }
+
+    optional_fields = {
+            "token_color": int
     }
 
 
@@ -184,7 +192,7 @@ class NetBase(rom.Object):
         return copied
 
     def notify_transition(self, trans_idx=None, place_idx=None,
-            service_interfaces=None):
+            service_interfaces=None, token_color=None):
         raise NotImplementedError()
 
     def set_token(self, place_idx, token_key='', service_interfaces=None):
@@ -258,6 +266,17 @@ class TransitionAction(rom.Object):
     def tokens(self, active_tokens_key):
         keys = self.connection.lrange(active_tokens_key, 0, -1)
         return [rom.get_object(self.connection, x) for x in keys]
+
+    def active_color(self, active_tokens_key):
+        first_key = self.connection.lrange(active_tokens_key, 0, 0)
+        if not first_key:
+            return None
+
+        try:
+            token = rom.get_object(self.connection, first_key[0])
+            return token.color_idx.value
+        except rom.NotInRedisError:
+            return None
 
     def execute(self, active_tokens_key, net, service_interfaces):
         raise NotImplementedError("In class %s: execute not implemented" %

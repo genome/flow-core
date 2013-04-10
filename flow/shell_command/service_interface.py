@@ -13,11 +13,12 @@ LOG = logging.getLogger(__name__)
 @inject(broker=flow.interfaces.IBroker)
 class ShellCommandServiceInterface(flow.interfaces.IShellCommand):
     def submit(self, command_line, net_key=None, response_places=None,
-            **executor_options):
+            token_color=None, **executor_options):
         message = ShellCommandSubmitMessage(
                 command_line=command_line,
                 net_key=net_key,
                 response_places=response_places,
+                token_color=token_color,
                 executor_options=executor_options)
 
         self.broker.publish(self.exchange, self.submit_routing_key, message)

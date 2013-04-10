@@ -44,34 +44,34 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
         self.message.response_places = self.response_places
         self.message.executor_options = {'passthru': True}
 
-
     def test_message_handler_executor_success(self):
         job_id = 1234
         self.executor.return_value = (job_id, True)
 
+        self.message.token_color = None
         self.handler(self.message)
 
         self.executor.assert_called_once_with(self.message.command_line,
                 net_key=self.net_key, response_places=self.response_places,
-                passthru=True)
+                token_color=self.message.token_color, passthru=True)
 
-        self.set_token.assert_any_call(net_key=self.net_key,
+        self.set_token.assert_any_call(net_key=self.net_key, token_color=None,
                 place_idx=self.dispatch_success_place_idx, token_key=mock.ANY)
-
 
     def test_message_handler_executor_failure(self):
         job_id = 1234
         self.executor.return_value = (job_id, False)
 
+        self.message.token_color = 3
         self.handler(self.message)
 
         self.executor.assert_called_once_with(self.message.command_line,
                 net_key=self.net_key, response_places=self.response_places,
+                token_color=self.message.token_color,
                 passthru=True)
 
-        self.set_token.assert_any_call(net_key=self.net_key,
+        self.set_token.assert_any_call(net_key=self.net_key, token_color=3,
                 place_idx=self.dispatch_failure_place_idx, token_key=mock.ANY)
-
 
     def test_message_handler_executor_exception(self):
         self.executor.side_effect = RuntimeError
@@ -86,7 +86,7 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
 
             self.executor.assert_called_once_with(self.message.command_line,
                     net_key=self.net_key, response_places=self.response_places,
-                    passthru=True)
+                    token_color=self.message.token_color, passthru=True)
 
 
 if '__main__' == __name__:

@@ -8,10 +8,16 @@ class FakeOrchestrator(object):
 
         self.place_entry_observed = mock.Mock()
 
-    def set_token(self, net_key, place_idx, token_key=''):
+    def set_token(self, net_key, place_idx, token_key='', token_color=None):
         net = rom.get_object(self.conn, net_key)
-        net.set_token(place_idx, token_key, service_interfaces=self.service_interfaces)
+        net.set_token(place_idx, token_key,
+                service_interfaces=self.service_interfaces,
+                token_color=token_color)
 
-    def notify_transition(self, net_key, trans_idx, place_idx):
+    def notify_transition(self, net_key, trans_idx, place_idx,
+            token_color=None):
         net = rom.get_object(self.conn, net_key)
-        net.notify_transition(trans_idx, place_idx, service_interfaces=self.service_interfaces)
+        net.notify_transition(trans_idx, place_idx,
+                service_interfaces=self.service_interfaces,
+                token_color=token_color)
+

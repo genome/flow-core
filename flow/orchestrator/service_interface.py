@@ -15,17 +15,19 @@ LOG = logging.getLogger(__name__)
         notify_transition_exchange=setting('orchestrator.notify_transition_exchange'),
         notify_transition_routing_key=setting('orchestrator.notify_transition_routing_key'))
 class OrchestratorServiceInterface(flow.interfaces.IOrchestrator):
-    def set_token(self, net_key, place_idx, token_key=None):
+    def set_token(self, net_key, place_idx, token_key=None, token_color=None):
         message = SetTokenMessage(net_key=net_key, place_idx=int(place_idx),
-                token_key=token_key)
+                token_key=token_key, token_color=token_color)
         self.broker.publish(self.set_token_exchange,
                 self.set_token_routing_key, message)
 
-    def notify_transition(self, net_key, transition_idx, place_idx):
+    def notify_transition(self, net_key, transition_idx, place_idx,
+            token_color=None):
         message = NotifyTransitionMessage(
                 net_key=net_key,
                 transition_idx=transition_idx,
-                place_idx=place_idx)
+                place_idx=place_idx,
+                token_color=token_color)
         self.broker.publish(self.notify_transition_exchange,
                 self.notify_transition_routing_key, message)
 

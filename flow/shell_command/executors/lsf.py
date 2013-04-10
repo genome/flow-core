@@ -85,7 +85,7 @@ class LSFExecutor(ExecutorBase):
 
     def construct_request(self, command_line,
             net_key=None, response_places=None, with_inputs=None,
-            with_outputs=None, **lsf_kwargs):
+            with_outputs=None, token_color=None, **lsf_kwargs):
         LOG.info("lsf kwargs: %r", lsf_kwargs)
 
         if self.post_exec is not None:
@@ -97,7 +97,8 @@ class LSFExecutor(ExecutorBase):
 
             post_exec_cmd = create_post_exec_cmd(executable=executable,
                     args=args, net_key=net_key, failure_place=failure_place,
-                    **lsf_kwargs)
+                    token_color=token_color, **lsf_kwargs)
+
             LOG.debug("lsf post_exec_cmd = '%s'", post_exec_cmd)
         else:
             post_exec_cmd = None
@@ -107,7 +108,8 @@ class LSFExecutor(ExecutorBase):
 
         full_command_line = self._make_command_line(command_line,
                 net_key=net_key, response_places=response_places,
-                with_inputs=with_inputs, with_outputs=with_outputs)
+                with_inputs=with_inputs, with_outputs=with_outputs,
+                token_color=token_color)
         command_string = ' '.join(map(str, full_command_line))
         LOG.debug("lsf command_string = '%s'", command_string)
         request.command = command_string
@@ -243,11 +245,16 @@ def _create_reply():
     return reply
 
 def create_post_exec_cmd(executable, args, net_key, failure_place,
-        stderr=None, stdout=None, **other_lsf_kwargs):
+        stderr=None, stdout=None, token_color=None, **other_lsf_kwargs):
 
     cmd_string = "'%s' %s -n '%s' -f %s" % (
             executable, args, net_key, failure_place)
+
+    if token_color is not None:
+        cmd_string += " -c %s" % token_color
+
     result = "bash -c \"%s\" 1>> '%s' 2>> '%s'" % (cmd_string, stdout, stderr)
+
     return result
 
 def _find_executable(name):

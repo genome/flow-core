@@ -18,8 +18,10 @@ class PetriSetTokenHandler(flow.interfaces.IHandler):
     def __call__(self, message):
         try:
             net = get_object(self.redis, message.net_key)
+            color = getattr(message, "token_color", None)
             net.set_token(message.place_idx, message.token_key,
-                    service_interfaces=self.service_interfaces)
+                    service_interfaces=self.service_interfaces,
+                    token_color=color)
         except Exception as e:
             LOG.exception(
                     'Handler (%s) failed to add tokens to net %s place %d: %s'
@@ -35,8 +37,10 @@ class PetriNotifyTransitionHandler(flow.interfaces.IHandler):
     def __call__(self, message):
         try:
             net = get_object(self.redis, message.net_key)
+            color = getattr(message, "token_color", None)
             net.notify_transition(message.transition_idx, message.place_idx,
-                    service_interfaces=self.service_interfaces)
+                    service_interfaces=self.service_interfaces,
+                    token_color=color)
         except Exception as e:
             LOG.exception('Handler (%s) failed to execute transition %s'
                           ' on net %s: %s' % (self, message.transition_idx,

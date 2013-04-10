@@ -70,6 +70,7 @@ class ShellCommandDispatchAction(petri.TransitionAction):
     def execute(self, active_tokens_key, net, service_interfaces=None):
         token = None
         input_data_key = None
+        token_color = self.active_color(active_tokens_key)
 
         input_data = self.input_data(active_tokens_key, net)
 
@@ -79,6 +80,7 @@ class ShellCommandDispatchAction(petri.TransitionAction):
             token = petri.Token.create(self.connection, data=input_data,
                     data_type=self.output_token_type)
             input_data_key = token.data.key
+            LOG.debug("Created data token %s", token.key)
 
         executor_options = self._executor_options(input_data_key, net)
         cmdline = self._command_line(net, input_data_key)
@@ -95,6 +97,7 @@ class ShellCommandDispatchAction(petri.TransitionAction):
                 command_line=cmdline,
                 net_key=net.key,
                 response_places=response_places,
+                token_color=token_color,
                 **executor_options
                 )
 

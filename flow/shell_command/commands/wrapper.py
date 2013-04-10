@@ -22,13 +22,15 @@ class WrapperCommand(TokenSenderCommand):
         parser.add_argument('--with-inputs', default=None, type=str)
         parser.add_argument('--with-outputs', default=False,
                 action="store_true")
+        parser.add_argument('--token-color', default=None)
 
         parser.add_argument('command_line', nargs='+')
 
     def __call__(self, parsed_arguments):
         self.send_token(net_key=parsed_arguments.net_key,
                 place_idx=parsed_arguments.running_place_id,
-                data={"pid": str(os.getpid())})
+                data={"pid": str(os.getpid())},
+                color=parsed_arguments.token_color)
 
         rv = 1
         cmdline = parsed_arguments.command_line
@@ -69,7 +71,8 @@ class WrapperCommand(TokenSenderCommand):
 
                     self.send_token(net_key=parsed_arguments.net_key,
                             place_idx=parsed_arguments.success_place_id,
-                            data={"exit_code": 0, "outputs": outputs})
+                            data={"exit_code": 0, "outputs": outputs},
+                            color=parsed_arguments.token_color)
 
                     rv = 0
                 except subprocess.CalledProcessError as e:
@@ -78,7 +81,8 @@ class WrapperCommand(TokenSenderCommand):
                     if parsed_arguments.failure_place_id is not None:
                         self.send_token(net_key=parsed_arguments.net_key,
                                 place_idx=parsed_arguments.failure_place_id,
-                                data={"exit_code": e.returncode})
+                                data={"exit_code": e.returncode},
+                                color=parsed_arguments.token_color)
 
                     rv = e.returncode
 

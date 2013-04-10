@@ -171,7 +171,13 @@ class SafeNet(NetBase):
             trans.state = trans.arcs_in.value
 
     def notify_transition(self, trans_idx=None, place_idx=None,
-            service_interfaces=None):
+            service_interfaces=None, token_color=None):
+
+        if token_color is not None:
+            raise RuntimeError("SafeNet %s, transition %d: colored "
+                    "tokens are not supported in this net" %
+                    (self.key, trans_idx))
+
         LOG.debug("notify transition #%d", trans_idx)
         timer = stats.create_timer('petri.SafeNet.notify_transition')
         timer.start()
@@ -228,7 +234,13 @@ class SafeNet(NetBase):
             timer.split('delete_pushed_tokens')
         timer.stop()
 
-    def set_token(self, place_idx, token_key='', service_interfaces=None):
+    def set_token(self, place_idx, token_key='', service_interfaces=None,
+            token_color=None):
+
+        if token_color is not None:
+            raise RuntimeError("Safenet %s place %d got a colored token" %
+                    (self.key, place_idx))
+
         timer = stats.create_timer('petri.SafeNet.set_token')
         timer.start()
         place = self.place(place_idx)

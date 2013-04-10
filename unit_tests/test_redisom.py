@@ -276,6 +276,24 @@ class TestSet(TestBase):
         s.add("two")
         self.assertEqual(set(["one", "two"]), s.value)
 
+    def test_add_return_size(self):
+        s = rom.Set(connection=self.conn, key="s")
+        rv, size = s.add_return_size("one")
+        self.assertEqual(1, rv)
+        self.assertEqual(1, size)
+        self.assertItemsEqual(["one"], s.value)
+
+        rv, size = s.add_return_size("one")
+        self.assertEqual(0, rv)
+        self.assertEqual(1, size)
+        self.assertItemsEqual(["one"], s.value)
+
+        rv, size = s.add_return_size("two")
+        self.assertEqual(1, rv)
+        self.assertEqual(2, size)
+        self.assertItemsEqual(["one", "two"], s.value)
+
+
     def test_update(self):
         s = rom.Set(connection=self.conn, key="s")
         s.add("one")

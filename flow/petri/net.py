@@ -163,7 +163,7 @@ class _Transition(_Node):
 
         return rom.get_object(self.connection, key)
 
-    def active_tokens(self, color_idx):
+    def active_tokens_for_color(self, color_idx):
         return rom.List(connection=self.connection,
                 key=self.subkey("%d/active_tokens" % color_idx))
 
@@ -208,7 +208,7 @@ class Net(NetBase):
         return rom.Hash(connection=self.connection,
                 key=self.subkey("%d/marking" % int(color_idx)))
 
-    def _validate_token_color(self, token):
+    def _validate_token_color(self, color_idx):
         try:
             num_token_colors = self.num_token_colors.value
         except KeyError:
@@ -216,27 +216,32 @@ class Net(NetBase):
                     "Attempted to set token in net %s before setting max token "
                     "color." % self.key)
 
-        valid_color = True
-        try:
-            color_idx = token.color_idx.value
-            valid_color = color_idx >= 0 and color_idx < num_token_colors
-        except KeyError:
-            valid_color = False
+        return color_idx >= 0 and color_idx < num_token_colors
 
-        if not valid_color:
-            raise TokenColorError("Token %s has invalid color" %
-                    token.key)
+    def set_token(self, place_idx, token_key='', service_interfaces=None,
+            token_color=None):
 
-        return color_idx
+        if token_color is None and token_key == '':
+            raise RuntimeError("net %s, place %d: token_color is none!" %
+                    (self.key, place_idx))
 
-    def set_token(self, place_idx, token_key='', service_interfaces=None):
         place = self.place(place_idx)
         LOG.debug("Set token net=%s, place=%s (#%d), token_key='%s'",
                 self.key, place.name.value, place_idx, token_key)
 
         if token_key:
             token = rom.get_object(self.connection, token_key)
-            token_color = self._validate_token_color(token)
+            try:
+                color_idx = token.color_idx.value
+            except rom.NotInRedisError:
+                raise TokenColorError("Token %s has no color set!" % token_key)
+
+            if token_color is None:
+                token_color = color_idx
+            elif color_idx != token_color:
+                raise RuntimeError("Token color mismatch! %r vs %r" %
+                        (color_idx, token_color))
+
             LOG.debug("Token color = %d", token_color)
 
             marking_key = self.marking(token_color).key
@@ -253,7 +258,11 @@ class Net(NetBase):
                     "a token already exists" %
                     (token_key, token.color_idx.value, place.key))
 
-        token_count = self.global_marking.get(place_idx, 0)
+        if not self._validate_token_color(token_color):
+            raise TokenColorError("Token=%s: invalid token color %r" %
+                    (token_key, color_idx))
+
+        token_count = len(self.marking(token_color))
         if token_count > 0:
             place.first_token_timestamp.setnx()
             orchestrator = service_interfaces['orchestrator']
@@ -264,10 +273,10 @@ class Net(NetBase):
 
             for trans_idx in arcs_out:
                 orchestrator.notify_transition(self.key, int(trans_idx),
-                        int(place_idx))
+                        int(place_idx), token_color=token_color)
 
     def consume_tokens(self, transition, notifying_place_idx, color_idx):
-        active_tokens_key = transition.active_tokens(color_idx).key
+        active_tokens_key = transition.active_tokens_for_color(color_idx).key
         arcs_in_key = transition.arcs_in.key
         state_key = transition.state(color_idx).key
         enabler_key = transition.enabler(color_idx).key
@@ -290,7 +299,7 @@ class Net(NetBase):
         return status == 0
 
     def push_tokens(self, transition, token_key, color_idx):
-        active_tokens_key = transition.active_tokens(color_idx).key
+        active_tokens_key = transition.active_tokens_for_color(color_idx).key
         arcs_in_key = transition.arcs_in.key
         arcs_out_key = transition.arcs_out.key
         marking_key = self.marking(color_idx).key
@@ -309,29 +318,27 @@ class Net(NetBase):
         return tokens_pushed, arcs_out
 
     def notify_transition(self, trans_idx=None, place_idx=None,
-            service_interfaces=None):
+            service_interfaces=None, token_color=None):
 
-        LOG.debug("notify net %s, transition #%d", self.key, trans_idx)
         if any([x == None for x in trans_idx, place_idx, service_interfaces]):
             raise TypeError(
                     "You must specify trans_idx, place_idx, and "
                     "service_interfaces")
 
+        if token_color is None:
+            raise RuntimeError("Net %s, transition %d: token "
+                    "color missing" % (self.key, trans_idx))
+
+        LOG.debug("notify net %s, transition #%d color=%d", self.key, trans_idx,
+                token_color)
+
         trans = self.transition(trans_idx)
 
-        # FIXME: refactor service interface to allow passing the color_idx
-        # to check rather than checking all active ones.
-        # seriously, do this before committing.
-        ready_color_idx = -1
-        for color_idx in xrange(self.num_token_colors.value):
-            if self.consume_tokens(trans, place_idx, color_idx) is True:
-                ready_color_idx = color_idx
-
-        if ready_color_idx < 0:
+        if not self.consume_tokens(trans, place_idx, token_color):
             return
 
-        active_tokens_key = trans.active_tokens(ready_color_idx).key
-        tokens_pushed_key = trans.tokens_pushed(ready_color_idx).key
+        active_tokens_key = trans.active_tokens_for_color(token_color).key
+        tokens_pushed_key = trans.tokens_pushed(token_color).key
 
 
         action = trans.action
@@ -343,20 +350,27 @@ class Net(NetBase):
         if new_token is None:
             new_token = Token.create(self.connection)
 
-        new_token.color_idx.value = ready_color_idx
+        new_token.color_idx.value = token_color
+        LOG.debug("Setting token %s color to %d" % (
+                new_token.key, token_color))
 
         tokens_pushed, arcs_out = self.push_tokens(trans, new_token.key,
-                ready_color_idx)
+                token_color)
+
+        LOG.debug("push_tokens (#%d): pushed=%r, arcs_out=%r", trans_idx,
+                tokens_pushed, arcs_out)
 
         if tokens_pushed is True:
             orchestrator = service_interfaces['orchestrator']
             for place_idx in arcs_out:
-                orchestrator.set_token(self.key, int(place_idx), token_key='')
+                LOG.debug("Notify place %r color=%r", place_idx, token_color)
+                orchestrator.set_token(self.key, int(place_idx), token_key='',
+                        token_color=token_color)
             self.connection.delete(tokens_pushed_key)
 
     def _place_plot_name(self, place, idx):
         name = str(place.name)
-        ntok = len(place.tokens)
+        ntok = int(self.global_marking.get(idx, 0))
         name += " (%d toks)" % ntok
         return name
 
@@ -367,7 +381,8 @@ class Net(NetBase):
         except rom.NotInRedisError:
             pass
 
-        if len(place.tokens) > 0:
+        ntok = int(self.global_marking.get(idx, 0))
+        if ntok > 0:
             return "red"
         elif ftt:
             return "green"
@@ -375,12 +390,18 @@ class Net(NetBase):
             return "white"
 
 
-class CountdownAction(TransitionAction):
-    count = rom.Property(rom.Int)
-    action_key = rom.Property(rom.String)
+class ColorJoinAction(TransitionAction):
+    arrived = rom.Property(rom.Set)
 
     def execute(self, active_tokens_key, net, service_interfaces):
-        if self.count.decr() == 0:
+        tokens = self.tokens(active_tokens_key)
+        if len(tokens) != 1:
+            raise RuntimeError("ColorJoinAction should not be able to receive "
+                    "multiple tokens at once. Got %r", [x.key for x in tokens])
+
+        color = tokens[0].color_idx.value
+        added, size = self.arrived.add_return_size(color)
+        if added and size == net.num_token_colors.value:
             self.on_complete(active_tokens_key, net, service_interfaces)
 
     def on_complete(self, active_tokens_key, net, service_interfaces):

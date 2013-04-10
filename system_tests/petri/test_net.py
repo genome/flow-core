@@ -92,7 +92,8 @@ class TestNet(TestBase):
             self.assertEqual(expstate, self.transition.state(0).value,
                     "Transition state error on iteration %d" % i)
 
-        self.assertEqual([token.key]*4, self.transition.active_tokens(0).value)
+        self.assertEqual([token.key]*4,
+                self.transition.active_tokens_for_color(0).value)
 
     def test_consume_tokens_multi(self):
         # Create three input and output tokens
@@ -130,7 +131,7 @@ class TestNet(TestBase):
 
             # Four tokens should be held by the transition
             self.assertEqual([input_token_keys[col_idx]]*4,
-                    self.transition.active_tokens(col_idx).value)
+                    self.transition.active_tokens_for_color(col_idx).value)
 
             # Let's push out a new token to the output places.
             status, arcs_out = self.net.push_tokens(self.transition,
@@ -139,7 +140,8 @@ class TestNet(TestBase):
             self.assertTrue(status)
 
             # This should remove the tokens from the transition
-            self.assertEqual(0, len(self.transition.active_tokens(col_idx)))
+            self.assertEqual(0,
+                    len(self.transition.active_tokens_for_color(col_idx)))
 
             # The output places should have output token
             marks = self.net.marking(col_idx).value
@@ -159,7 +161,7 @@ class TestNet(TestBase):
 
         status, arcs_out = self.net.push_tokens(self.transition, token.key, 0)
         self.assertTrue(status)
-        self.assertEqual(0, len(self.transition.active_tokens(0)))
+        self.assertEqual(0, len(self.transition.active_tokens_for_color(0)))
 
         marking = self.net.marking(0)
         for pidx in xrange(len(self.input_places)):
@@ -189,16 +191,15 @@ class TestNet(TestBase):
         self.assertEqual(5, self.transition.action.call_count.value)
 
 
-class TestableCountdownAction(petri.CountdownAction):
+class TestableColorJoinAction(petri.ColorJoinAction):
     completed = rom.Property(rom.String)
     def on_complete(self, active_tokens_key, net, service_interfaces):
         self.completed = "hello"
 
-class TestCountdown(TestBase):
-    def test_countdown_action(self):
+class TestJoinAction(TestBase):
+    def test_join_action(self):
         places = ["p1", "p2"]
-        action = TestableCountdownAction.create(self.conn, count=4,
-                name="countdown")
+        action = TestableColorJoinAction.create(self.conn, name="countdown")
 
         place_arcs_out = {0: {0}}
         trans_arcs_out = {0: {1}}

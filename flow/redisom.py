@@ -206,6 +206,13 @@ class Set(Value):
     def add(self, val):
         return self.connection.sadd(self.key, val)
 
+    def add_return_size(self, val):
+        pipe = self.connection.pipeline()
+        pipe.sadd(self.key, val)
+        pipe.scard(self.key)
+        added, size = pipe.execute()
+        return added, size
+
     def remove(self, val):
         removed, size = self.discard(val)
         if not removed:
@@ -596,7 +603,8 @@ def create_object(cls, connection=None, key=None, **kwargs):
     for k, v in kwargs.iteritems():
         if k not in obj._rom_properties:
             raise AttributeError("Unknown attribute %s" % k)
-        setattr(obj, k, v)
+        if v is not None:
+            setattr(obj, k, v)
 
     obj._on_create()
 

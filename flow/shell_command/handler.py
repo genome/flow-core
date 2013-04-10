@@ -44,19 +44,21 @@ class LSFShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
 
         response_places = message.response_places
         net_key = message.net_key
+        token_color = getattr(message, "token_color", None)
 
         job_id, success = self.executor(message.command_line,
                 net_key=net_key, response_places=response_places,
-                **executor_options)
+                token_color=token_color, **executor_options)
 
         if success:
             response_place = response_places.get('post_dispatch_success')
         else:
             response_place = response_places.get('post_dispatch_failure')
 
-        token = Token.create(self.storage, data={"pid": str(job_id)})
+        token = Token.create(self.storage, data={"pid": str(job_id)},
+                color_idx=token_color)
 
         orchestrator = self.service_locator['orchestrator']
         orchestrator.set_token(net_key=net_key, place_idx=response_place,
-                token_key=token.key)
+                token_key=token.key, token_color=token_color)
 

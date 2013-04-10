@@ -23,11 +23,11 @@ class TokenSenderCommand(CommandBase):
             RedisConfiguration,
     ]
 
-    def send_token(self, net_key=None, place_idx=None, data=None):
+    def send_token(self, net_key=None, place_idx=None, data=None, color=None):
         orchestrator = self.service_locator['orchestrator']
         orchestrator.broker.connect()
 
-        token = Token.create(self.storage, data=data, data_type="output")
+        token = Token.create(self.storage, data=data, data_type="output", color_idx=color)
 
         LOG.info("Sending command response token %s to net %s, place %r",
                 token.key, net_key, place_idx)

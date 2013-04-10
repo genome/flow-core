@@ -84,7 +84,8 @@ class ExecutorBase(flow.interfaces.IShellCommandExecutor):
             return exit_codes.EXECUTE_ERROR
 
     def _make_command_line(self, command_line, net_key=None,
-            response_places=None, with_inputs=None, with_outputs=None):
+            response_places=None, with_inputs=None, with_outputs=None,
+            token_color=None):
 
         cmdline = self.wrapper + [
             '-n', net_key,
@@ -93,6 +94,9 @@ class ExecutorBase(flow.interfaces.IShellCommandExecutor):
         ]
         if 'execute_failure' in response_places.keys():
             cmdline += ['-f', response_places['execute_failure']]
+
+        if token_color is not None:
+            cmdline += ["--token-color", str(token_color)]
 
         if with_inputs:
             cmdline += ["--with-inputs", with_inputs]

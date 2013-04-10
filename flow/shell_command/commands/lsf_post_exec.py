@@ -11,6 +11,7 @@ class LsfPostExecCommand(TokenSenderCommand):
     def annotate_parser(parser):
         parser.add_argument('--net-key', '-n')
         parser.add_argument('--failure-place-id', '-f', type=int)
+        parser.add_argument('--token-color', '-c', default=None)
 
     def __call__(self, parsed_arguments):
         LOG.debug("Starting POST_EXEC_CMD")
@@ -31,6 +32,7 @@ class LsfPostExecCommand(TokenSenderCommand):
             LOG.debug("Found return code to be %s", return_code)
             self.send_token(net_key=parsed_arguments.net_key,
                     place_idx=parsed_arguments.failure_place_id,
-                    data={"exit_code": return_code})
+                    data={"exit_code": return_code},
+                    color=parsed_arguments.token_color)
         else:
             LOG.debug("Process exited normally")
