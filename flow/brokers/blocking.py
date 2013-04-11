@@ -29,6 +29,8 @@ class BlockingAmqpBroker(BrokerBase):
         self.channel.queue_declare(queue_name,
                 durable=False, auto_delete=True, exclusive=True)
 
+    def connect_and_listen(self):
+        raise NotImplementedError('...')
 
     def register_handler(self, handler):
         raise NotImplementedError('...')

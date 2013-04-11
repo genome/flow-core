@@ -25,3 +25,7 @@ class BrokerBase(object):
     @abstractmethod
     def register_handler(self, handler):
         pass
+
+    @abstractmethod
+    def connect_and_listen(self):
+        pass
