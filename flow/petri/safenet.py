@@ -1,6 +1,4 @@
-# FIXME: global import should go away. lots of things moved to netbase
-# but things still import them from here.
-from netbase import *
+from flow.petri.netbase import NetBase, Token, PlaceCapacityError
 
 from flow.protocol.message import Message
 from flow.util import stats
@@ -172,14 +170,15 @@ class SafeNet(NetBase):
             trans = self.transition(i)
             trans.state = trans.arcs_in.value
 
-    def notify_transition(self, trans_idx=None, place_idx=None, service_interfaces=None):
+    def notify_transition(self, trans_idx=None, place_idx=None,
+            service_interfaces=None):
         LOG.debug("notify transition #%d", trans_idx)
         timer = stats.create_timer('petri.SafeNet.notify_transition')
         timer.start()
 
         if trans_idx is None or place_idx is None or service_interfaces is None:
-            raise TypeError(
-                    "You must specify trans_idx, place_idx, and service_interfaces")
+            raise TypeError( "You must specify trans_idx, place_idx, "
+                    "and service_interfaces")
 
         marking_key = self.marking.key
 
