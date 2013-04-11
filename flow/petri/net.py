@@ -1,5 +1,4 @@
-# FIXME: remove global import
-from netbase import *
+from flow.petri.netbase import Token, NetBase, TransitionAction
 
 from flow.protocol.message import Message
 
@@ -270,7 +269,6 @@ class Net(NetBase):
         active_tokens_key = transition.active_tokens(color_idx).key
         arcs_in_key = transition.arcs_in.key
         state_key = transition.state(color_idx).key
-        tokens_pushed_key = transition.tokens_pushed(color_idx).key
         enabler_key = transition.enabler(color_idx).key
         marking_key = self.marking(color_idx).key
         global_marking_key = self.global_marking.key
