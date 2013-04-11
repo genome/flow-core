@@ -98,13 +98,19 @@ class NetBase(rom.Object):
             for t in trans_set:
                 trans_arcs_in.setdefault(t, set()).add(p)
 
+        place_arcs_in = {}
+        for t, place_set in trans_arcs_out.iteritems():
+            for p in place_set:
+                place_arcs_in.setdefault(p, set()).add(t)
+
         self.num_places.value = len(place_names)
         self.num_transitions.value = len(trans_actions)
 
         for i, pname in enumerate(place_names):
             key = self.subkey("place/%d" % i)
             self.place_class.create(connection=self.connection, key=key,
-                    name=pname, arcs_out=place_arcs_out.get(i, {}))
+                    name=pname, arcs_out=place_arcs_out.get(i, {}),
+                    arcs_in=place_arcs_in.get(i, {}))
 
         for i, t in enumerate(trans_actions):
             key = self.subkey("trans/%d" % i)
