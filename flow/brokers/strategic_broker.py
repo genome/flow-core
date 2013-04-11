@@ -1,5 +1,4 @@
 import logging
-import signal
 
 import pika
 from pika.adapters import twisted_connection
@@ -144,13 +143,15 @@ class AmqpListener(object):
 
     def listen_and_get(self, args):
         if self._queue is None:
-            raise RuntimeError("Called listen_and_get before queue was registered!" % self)
+            raise RuntimeError("Called listen_and_get before queue was"
+                    " registered!" % self)
 
         self.listen(*args)
         # ensure we start listening for next item on queue
         self._get()
 
-    def _on_connection_lost(self, reason):
+    @staticmethod
+    def _on_connection_lost(reason):
         try:
             reactor.stop()
             LOG.critical('Disconnected from AMQP server')
@@ -178,7 +179,7 @@ class AmqpListener(object):
             LOG.debug('Checking for ack after handler (%d)', delivery_tag)
             broker.ack_if_able()
             timer.split('ack')
-        except InvalidMessageException as e:
+        except InvalidMessageException:
             LOG.exception('Invalid message.  Properties = %s, message = %s',
                     properties, encoded_message)
             broker.reject(delivery_tag)
