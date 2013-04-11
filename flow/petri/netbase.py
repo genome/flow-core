@@ -1,10 +1,8 @@
 from flow.protocol.message import Message
-from flow.util import stats
 
 from uuid import uuid4
 import base64
 import flow.redisom as rom
-import json
 import logging
 import os
 import pwd
