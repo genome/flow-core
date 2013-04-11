@@ -1,4 +1,5 @@
-from flow.petri.netbase import Token, NetBase, TransitionAction
+from flow.petri.netbase import Token, NetBase, TransitionAction,\
+        TokenColorError
 
 from flow.protocol.message import Message
 
