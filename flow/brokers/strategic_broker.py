@@ -26,13 +26,8 @@ class StrategicAmqpBroker(BrokerBase):
         self._listeners = {}
         self.acking_strategy.register_broker(self)
 
-
-    def _reset_state(self):
-        LOG.debug("Resetting broker state.")
         self._last_publish_tag = 0
         self._last_receive_tag = 0
-
-        self.acking_strategy.reset()
 
     def ack_if_able(self):
         ackable_tags, multiple = self.acking_strategy.pop_ackable_receive_tags()
@@ -52,7 +47,6 @@ class StrategicAmqpBroker(BrokerBase):
         self.acking_strategy.remove_receive_tag(receive_tag)
         self._channel.basic_reject(receive_tag, requeue=False)
 
-
     def register_handler(self, handler):
         queue_name = handler.queue_name
         message_class = handler.message_class
@@ -63,7 +57,6 @@ class StrategicAmqpBroker(BrokerBase):
         listener = AmqpListener(delivery_callback=handler,
                 message_class=message_class, broker=self)
         self._listeners[queue_name] = listener
-
 
     def raw_publish(self, exchange_name, routing_key, encoded_message):
         receive_tag = self._last_receive_tag
@@ -79,7 +72,6 @@ class StrategicAmqpBroker(BrokerBase):
         self._channel.basic_publish(exchange=exchange_name,
                 routing_key=routing_key, body=encoded_message,
                 properties=self._publish_properties)
-
 
     def connect_and_listen(self):
         self.connect()
@@ -97,7 +89,6 @@ class StrategicAmqpBroker(BrokerBase):
         deferred.addCallback(self._on_connected)
 
         reactor.addSystemEventTrigger('before', 'shutdown', self.disconnect)
-
         reactor.run()
 
     def disconnect(self):
@@ -106,36 +97,25 @@ class StrategicAmqpBroker(BrokerBase):
 
     def _on_connected(self, connection):
         LOG.debug('Established connection to AMQP')
-        assert(isinstance(connection,
-            twisted_connection.TwistedProtocolConnection))
-        self._connection = connection
         connection.ready.addCallback(self._on_ready)
+        self._connection = connection
 
+    @defer.inlineCallbacks
     def _on_ready(self, connection):
-        deferred = connection.channel()
-        deferred.addCallback(self._on_channel_open)
-
-    def _on_channel_open(self, channel):
-        self._channel = channel
-        assert(isinstance(channel, twisted_connection.TwistedChannel))
+        self._channel = yield connection.channel()
         LOG.debug('Channel open')
-        self._reset_state()
 
         if self.prefetch_count:
             self._channel.basic_qos(prefetch_count=self.prefetch_count)
 
-        self.acking_strategy.on_channel_open(channel)
+        self.acking_strategy.on_channel_open(self._channel)
 
         for queue_name, listener in self._listeners.iteritems():
+            (queue, consumer_tag) = yield self._channel.basic_consume(
+                    queue=queue_name)
+            self._consumer_tags.append(consumer_tag)
+            listener.register_queue(queue)
             LOG.debug('Beginning consumption on queue (%s)', queue_name)
-            deferred = self._channel.basic_consume(queue=queue_name)
-            deferred.addCallback(
-                    lambda args: self._register_queue(
-                        args[0], args[1], listener))
-
-    def _register_queue(self, queue, consumer_tag, listener):
-        self._consumer_tags.append(consumer_tag)
-        listener.register_queue(queue)
 
     def set_last_receive_tag(self, receive_tag):
         LOG.debug('Received message (%d)', receive_tag)
@@ -158,22 +138,27 @@ class AmqpListener(object):
 
     def _get(self):
         deferred = self._queue.get()
-        deferred.addCallback(self)
+        deferred.addCallback(self.listen_and_get)
         deferred.addErrback(self._on_connection_lost)
         return deferred
+
+    def listen_and_get(self, args):
+        if self._queue is None:
+            raise RuntimeError("Called listen_and_get before queue was registered!" % self)
+
+        self.listen(*args)
+        # ensure we start listening for next item on queue
+        self._get()
 
     def _on_connection_lost(self, reason):
         try:
             reactor.stop()
             LOG.critical('Disconnected from AMQP server')
         except ReactorNotRunning:
+            # multiple AmqpListeners sometimes get disconnected at once
             pass
 
-    def __call__(self, args):
-        (channel, basic_deliver, properties, encoded_message) = args
-        if self._queue is None:
-            raise RuntimeError("Called %r before queue was registered!" % self)
-
+    def listen(self, channel, basic_deliver, properties, encoded_message):
         timer = stats.create_timer(self.message_stats_tag)
         timer.start()
         broker = self.broker
@@ -193,11 +178,6 @@ class AmqpListener(object):
             LOG.debug('Checking for ack after handler (%d)', delivery_tag)
             broker.ack_if_able()
             timer.split('ack')
-
-        # KeyboardInterrupt must be passed up the stack so we can terminate
-        except KeyboardInterrupt:
-            raise
-
         except InvalidMessageException as e:
             LOG.exception('Invalid message.  Properties = %s, message = %s',
                     properties, encoded_message)
@@ -209,6 +189,3 @@ class AmqpListener(object):
             timer.split('reject')
         finally:
             timer.stop()
-
-        # add self to listen to next guy on the queue
-        self._get()
