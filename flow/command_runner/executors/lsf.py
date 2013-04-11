@@ -1,4 +1,5 @@
 import logging
+import os
 
 from pythonlsf import lsf
 from twisted.python.procutils import which
@@ -6,6 +7,7 @@ from twisted.python.procutils import which
 from flow.command_runner import util
 from flow.command_runner.resource import Resource, ResourceException
 from flow.command_runner.executor import ExecutorBase
+
 
 LOG = logging.getLogger(__name__)
 
@@ -21,15 +23,16 @@ _RESOURCE_MAP = {
         }
 
 def _select_item(name, value):
-    r = _RESOURCE_MAP[name]
-    return "%s%s%s" % (r.name, r.operator, value)
+    resource = _RESOURCE_MAP[name]
+    return "%s%s%s" % (resource.name, resource.operator, value)
 
 def _rusage_item(name, value):
-    r = _RESOURCE_MAP[name]
-    if not r.reservable:
+    resource = _RESOURCE_MAP[name]
+    if not resource.reservable:
         raise ResourceException(
-                "Attempted to reserve non-reservable resource %s" % r.name)
-    return "%s=%s" % (r.name, value)
+                "Attempted to reserve non-reservable resource %s" %
+                resource.name)
+    return "%s=%s" % (resource.name, value)
 
 def _make_rusage_string(require, reserve):
     select = []
@@ -69,7 +72,7 @@ class LSFExecutor(ExecutorBase):
             submit_result = lsf.lsb_submit(request, reply)
         except:
             LOG.exception("lsb_submit failed for command string: '%s'",
-                    command_string)
+                    command_line)
             raise
 
         if submit_result > 0:
@@ -255,6 +258,6 @@ def _find_executable(name):
     else:
         msg = "Couldn't find the executable by name when" +\
                 " looking in PATH=%s for %s" % (os.environ.get('PATH', None),
-                post_exec[0])
+                name)
         LOG.warning(msg)
         raise RuntimeError(msg)
