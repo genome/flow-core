@@ -3,7 +3,7 @@ import signal
 
 import pika
 from pika.adapters import twisted_connection
-from twisted.internet import reactor, protocol
+from twisted.internet import reactor, protocol, defer
 from twisted.internet.error import ReactorNotRunning
 
 from flow.protocol.exceptions import InvalidMessageException
@@ -31,7 +31,6 @@ class StrategicAmqpBroker(BrokerBase):
         LOG.debug("Resetting broker state.")
         self._last_publish_tag = 0
         self._last_receive_tag = 0
-        self._notified_to_disconnect = False
 
         self.acking_strategy.reset()
 
@@ -43,14 +42,6 @@ class StrategicAmqpBroker(BrokerBase):
             self.ack(ackable_tags[0], multiple=multiple)
             for tag in ackable_tags[1:]:
                 self.ack(tag)
-
-        if self._notified_to_disconnect and self.acking_strategy.empty():
-            self.disconnect()
-
-    def stop_consuming(self):
-        self._notified_to_disconnect = True
-        for ct in self._consumer_tags:
-            self._channel.basic_cancel(ct)
 
     def ack(self, receive_tag, multiple=False):
         LOG.debug('Acking message (%d), multiple = %s', receive_tag, multiple)
