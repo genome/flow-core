@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 entry_points = '''
 [console_scripts]
-flow = flow.commands.base:main
+flow = flow.commands.main:main
 
 [flow.commands]
 set-token = flow.commands.set_token:SetTokenCommand
