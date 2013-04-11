@@ -1,7 +1,7 @@
 import logging
 
 from flow.commands.base import CommandBase
-from flow.petri.safenet import Token, SetTokenMessage
+from flow.petri.netbase import Token, SetTokenMessage
 
 LOG = logging.getLogger(__name__)
 
