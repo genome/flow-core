@@ -1,17 +1,17 @@
-from flow.protocol.exceptions import InvalidMessageException
-from pika.spec import Basic
+import logging
+import signal
 
+import pika
+from pika.adapters import twisted_connection
+from twisted.internet import reactor, protocol
+from twisted.internet.error import ReactorNotRunning
+
+from flow.protocol.exceptions import InvalidMessageException
 from flow.brokers.base import BrokerBase
 from flow.util import stats
 
-import logging
-import pika
-import signal
 
 LOG = logging.getLogger(__name__)
-
-TERMINATION_SIGNALS = [signal.SIGINT, signal.SIGTERM]
-
 
 class StrategicAmqpBroker(BrokerBase):
     def __init__(self, prefetch_count=None, acking_strategy=None,
@@ -95,38 +95,38 @@ class StrategicAmqpBroker(BrokerBase):
 
     def connect(self):
         params = pika.ConnectionParameters(**self.connection_params)
-        set_termination_signal_handler(raise_handler)
 
-        self._connection = pika.SelectConnection(
-                params, self._on_connection_open)
+        self._connection = protocol.ClientCreator(reactor,
+                twisted_connection.TwistedProtocolConnection,
+                params)
 
-        try:
-            self._begin_ioloop()
-        except KeyboardInterrupt:
-            self.disconnect()
-        except pika.exceptions.ConnectionClosed:
-            LOG.exception('Disconnected from AMQP server: %s')
+        LOG.debug('Attempting to establish connection to host: %s on port: %s',
+                params.host, params.port)
+        deferred = self._connection.connectTCP(params.host, params.port)
+        deferred.addCallback(self._on_connected)
+
+        reactor.addSystemEventTrigger('before', 'shutdown', self.disconnect)
+
+        reactor.run()
 
     def disconnect(self):
         LOG.info("Closing AMQP connection.")
-        self._connection.close()
-        self._begin_ioloop()
+        self._connection.transport.loseConnection()
 
-    def _begin_ioloop(self):
-        interrupted = True
-        while interrupted:
-            try:
-                self._connection.ioloop.start()
-                interrupted = False
-            except IOError:
-                LOG.warning('IO interrupted, continuing')
+    def _on_connected(self, connection):
+        LOG.debug('Established connection to AMQP')
+        assert(isinstance(connection,
+            twisted_connection.TwistedProtocolConnection))
+        self._connection = connection
+        connection.ready.addCallback(self._on_ready)
 
-
-    def _on_connection_open(self, connection):
-        connection.channel(self._on_channel_open)
+    def _on_ready(self, connection):
+        deferred = connection.channel()
+        deferred.addCallback(self._on_channel_open)
 
     def _on_channel_open(self, channel):
         self._channel = channel
+        assert(isinstance(channel, twisted_connection.TwistedChannel))
         LOG.debug('Channel open')
         self._reset_state()
 
@@ -137,27 +137,19 @@ class StrategicAmqpBroker(BrokerBase):
 
         for queue_name, listener in self._listeners.iteritems():
             LOG.debug('Beginning consumption on queue (%s)', queue_name)
-            self._consumer_tags.append(
-                    self._channel.basic_consume(listener, queue_name))
+            deferred = self._channel.basic_consume(queue=queue_name)
+            deferred.addCallback(
+                    lambda args: self._register_queue(
+                        args[0], args[1], listener))
 
+    def _register_queue(self, queue, consumer_tag, listener):
+        self._consumer_tags.append(consumer_tag)
+        listener.register_queue(queue)
 
     def set_last_receive_tag(self, receive_tag):
         LOG.debug('Received message (%d)', receive_tag)
         self._last_receive_tag = receive_tag
         self.acking_strategy.add_receive_tag(receive_tag)
-
-
-def set_termination_signal_handler(handler):
-    for sig in TERMINATION_SIGNALS:
-        signal.signal(sig, handler)
-
-def raise_handler(*args):
-    LOG.info("Caught signal %s, exitting.", args)
-    set_termination_signal_handler(null_handler)
-    raise KeyboardInterrupt('Caught Signal')
-
-def null_handler(*args):
-    LOG.warning("Caught signal %s while trying to exit.", args)
 
 
 class AmqpListener(object):
@@ -168,7 +160,29 @@ class AmqpListener(object):
 
         self.message_stats_tag = 'messages.receive.%s' % message_class.__name__
 
-    def __call__(self, channel, basic_deliver, properties, encoded_message):
+    def register_queue(self, queue):
+        LOG.debug('Registered %r to AmqpListener %r', queue, self)
+        self._queue = queue
+        self._get()
+
+    def _get(self):
+        deferred = self._queue.get()
+        deferred.addCallback(self)
+        deferred.addErrback(self._on_connection_lost)
+        return deferred
+
+    def _on_connection_lost(self, reason):
+        try:
+            reactor.stop()
+            LOG.critical('Disconnected from AMQP server')
+        except ReactorNotRunning:
+            pass
+
+    def __call__(self, args):
+        (channel, basic_deliver, properties, encoded_message) = args
+        if self._queue is None:
+            raise RuntimeError("Called %r before queue was registered!" % self)
+
         timer = stats.create_timer(self.message_stats_tag)
         timer.start()
         broker = self.broker
@@ -204,3 +218,6 @@ class AmqpListener(object):
             timer.split('reject')
         finally:
             timer.stop()
+
+        # add self to listen to next guy on the queue
+        self._get()
