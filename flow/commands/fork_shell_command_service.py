@@ -22,6 +22,6 @@ class ForkShellCommand(ServiceCommand):
     def __call__(self, *args, **kwargs):
         self.service_interfaces = {}
 
-        self.handlers = [self.inject.get(CommandLineSubmitMessageHandler)]
+        self.handlers = [self.injector.get(CommandLineSubmitMessageHandler)]
 
         return ServiceCommand.__call__(self, *args, **kwargs)

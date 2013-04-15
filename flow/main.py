@@ -36,7 +36,7 @@ def naked_main():
     settings = load_settings(command_class._name, parsed_args)
 
     logging.config.dictConfig(settings.get('logging',
-        defaults._DEFAULT_LOGGING_CONFIG))
+        defaults.DEFAULT_LOGGING_CONFIG))
     initialize_metrics(settings)
 
     injector = initialize_injector(settings, command_class)
