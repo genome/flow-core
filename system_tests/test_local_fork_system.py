@@ -44,7 +44,8 @@ class TestSystemFork(redistest.RedisTest):
                     service_interfaces=self.service_interfaces,
                     queue_name='notify_transition_q'))
 
-        fork_executor = SubprocessExecutor(wrapper=['bash', '-c', ':'])
+        fork_executor = SubprocessExecutor(wrapper=['bash', '-c', ':'],
+                default_environment={}, mandatory_environment={})
         self.broker.register_handler(
                 CommandLineSubmitMessageHandler(
                     broker=self.broker, storage=self.conn,

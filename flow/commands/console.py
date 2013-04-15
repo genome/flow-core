@@ -1,17 +1,22 @@
 from IPython import embed
-
-import flow.redisom as rom
-
 from flow.commands.base import CommandBase
+from flow.conf.broker import BlockingBrokerConfiguration
+from flow.conf.redis_conf import RedisConfiguration
+from injector import inject, Injector
+import flow.interfaces
+import flow.redisom
 import logging
 
 LOG = logging.getLogger(__name__)
 
 
+@inject(storage=flow.interfaces.IStorage, broker=flow.interfaces.IBroker,
+        injector=Injector)
 class ConsoleCommand(CommandBase):
-    def __init__(self, storage=None, broker=None):
-        self.storage = storage
-        self.broker = broker
+    injector_modules = [
+            BlockingBrokerConfiguration,
+            RedisConfiguration,
+    ]
 
     @staticmethod
     def annotate_parser(parser):
@@ -26,9 +31,12 @@ class ConsoleCommand(CommandBase):
 
     def __call__(self, parsed_arguments):
         namespace = {
-                'storage': self.storage,
                 'broker': self.broker,
-                'rom': rom,
+                'get_object': self.get_key,
+                'injector': self.injector,
+                'interfaces': flow.interfaces,
+                'rom': flow.redisom,
+                'storage': self.storage,
                 }
 
         if parsed_arguments.net_key:
@@ -43,7 +51,7 @@ class ConsoleCommand(CommandBase):
 
     def get_key(self, key):
         try:
-            return rom.get_object(self.storage, key)
+            return flow.redisom.get_object(self.storage, key)
         except KeyError:
             LOG.error('Key (%s) not found.', key)
         return None

@@ -1,21 +1,18 @@
-import logging
-from flow.petri import Token, SetTokenMessage
 from flow.command_runner.messages import CommandLineSubmitMessage
-from flow import exit_codes
+from flow.interfaces import IShellCommandExecutor, IBroker, IStorage
+from flow.petri import Token, SetTokenMessage
+from injector import inject, Setting
+
+import logging
 
 LOG = logging.getLogger(__name__)
 
+
+@inject(executor=IShellCommandExecutor, broker=IBroker, storage=IStorage,
+        queue_name=Setting('shell.queue'), exchange=Setting('shell.exchange'),
+        routing_key=Setting('shell.routing_key'))
 class CommandLineSubmitMessageHandler(object):
     message_class = CommandLineSubmitMessage
-    def __init__(self, executor=None, broker=None, storage=None,
-            queue_name=None, exchange=None, routing_key=None):
-        self.executor = executor
-        self.broker = broker
-        self.queue_name = queue_name
-        self.storage = storage
-
-        self.exchange = exchange
-        self.routing_key = routing_key
 
     def __call__(self, message):
         LOG.debug('CommandLineSubmitMessageHandler got message')

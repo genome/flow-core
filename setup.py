@@ -6,9 +6,9 @@ flow = flow.main:main
 
 [flow.commands]
 set-token = flow.commands.set_token:SetTokenCommand
-orchestrator = flow.commands.service:ServiceCommand
-local_command_line_service = flow.commands.service:ServiceCommand
-lsf_command_line_service = flow.commands.service:ServiceCommand
+orchestrator = flow.commands.orchestrator:OrchestratorCommand
+local_command_line_service = flow.commands.fork_shell_command_service:ForkShellCommand
+lsf_command_line_service = flow.commands.lsf_shell_command_service:LSFShellCommand
 lsf_post_exec = flow.commands.lsf_post_exec:LsfPostExecCommand
 command_line_wrapper = flow.commands.wrapper:WrapperCommand
 configure_rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand

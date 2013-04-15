@@ -21,7 +21,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
         self.storage = mock.Mock()
 
         self.handler = CommandLineSubmitMessageHandler(executor=self.executor,
-                broker=self.broker, storage=self.storage,
+                broker=self.broker, storage=self.storage, queue_name='',
                 exchange=self.exchange, routing_key=self.routing_key)
 
         self.net_key = mock.Mock(str)

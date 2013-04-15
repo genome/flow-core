@@ -1,12 +1,11 @@
-import traceback
-import sys
-import os
-import logging
-
-from flow.util import stats
 from flow.factories import dictionary_factory
+from flow.util import stats
 import flow.configuration
-
+import injector
+import logging
+import os
+import sys
+import traceback
 
 LOG = logging.getLogger(__name__)
 
@@ -28,12 +27,12 @@ def main():
         flow.configuration.initialize_statsd(config)
 
         stats.increment_as_user('command', arguments.command_name)
+        command_class = arguments.command
 
         try:
-            command_config = config['commands'][arguments.command_name]
-            kwargs = dictionary_factory(**command_config)
+            i = injector.Injector(command_class.injector_modules)
 
-            command = arguments.command(**kwargs)
+            command = i.get(command_class)
             exit_code = command(arguments)
         except:
             LOG.exception('Command execution failed')

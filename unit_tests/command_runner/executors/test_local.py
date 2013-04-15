@@ -12,7 +12,8 @@ failure_script = "import sys; sys.exit(1)"
 
 class SubprocessExecutorTest(unittest.TestCase):
     def setUp(self):
-        self.dispatcher = local.SubprocessExecutor()
+        self.dispatcher = local.SubprocessExecutor(wrapper=[],
+                default_environment={}, mandatory_environment={})
         self.response_places = {
             'begin_execute': '0',
             'execute_success': '1',

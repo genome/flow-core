@@ -1,16 +1,24 @@
+from flow.commands.base import CommandBase
+from flow.conf.broker import BlockingBrokerConfiguration
+from flow.conf.redis_conf import RedisConfiguration
+from flow.petri.netbase import Token, SetTokenMessage
+from injector import inject, Setting
+
+import flow.interfaces
 import logging
 
-from flow.commands.base import CommandBase
-from flow.petri.netbase import Token, SetTokenMessage
 
 LOG = logging.getLogger(__name__)
 
+
+@inject(broker=flow.interfaces.IBroker, storage=flow.interfaces.IStorage,
+        exchange=Setting('send_token.exchange'),
+        routing_key=Setting('send_token.routing_key'))
 class TokenSenderCommand(CommandBase):
-    def __init__(self, broker=None, storage=None, routing_key=None, exchange=None):
-        self.broker = broker
-        self.storage = storage
-        self.routing_key = routing_key
-        self.exchange = exchange
+    injector_modules = [
+            BlockingBrokerConfiguration,
+            RedisConfiguration,
+    ]
 
     def send_token(self, net_key=None, place_idx=None, data=None):
         self.broker.connect()

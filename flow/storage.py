@@ -1,8 +1,13 @@
+from injector import inject, provides, Provider, Setting
+from flow.interfaces import IStorage
 import redis
 
 _REDIS_CONNECTION = None
 
-def redis_storage_singleton(host=None, port=6379, db=0, path=None):
+@provides(IStorage)
+@inject(host=Setting('redis.host'), port=Setting('redis.port'),
+        path=Setting('redis.unix_socket_path'))
+def redis_storage_singleton(self, host=None, port=6379, db=0, path=None):
     global _REDIS_CONNECTION
 
     if _REDIS_CONNECTION is not None:

@@ -1,9 +1,7 @@
 import mock
-import sys
 import unittest
 
 from flow.command_runner.executor import ExecutorBase
-from flow import exit_codes
 
 
 class SucceedingExecutor(ExecutorBase):
@@ -21,7 +19,8 @@ class ErrorExecutor(ExecutorBase):
 
 class ExecutorBaseTest(unittest.TestCase):
     def test_success(self):
-        e = SucceedingExecutor()
+        e = SucceedingExecutor(wrapper=[],
+                default_environment={}, mandatory_environment={})
         set_job_id = 42
         result_job_id, success = e(['a', 'b', 'c'], job_id=set_job_id)
 
@@ -29,14 +28,16 @@ class ExecutorBaseTest(unittest.TestCase):
         self.assertTrue(success)
 
     def test_failure(self):
-        e = FailingExecutor()
+        e = FailingExecutor(wrapper=[],
+                default_environment={}, mandatory_environment={})
         set_job_id = 42
         result_job_id, success = e(['a', 'b', 'c'], job_id=set_job_id)
 
         self.assertFalse(success)
 
     def test_error(self):
-        e = ErrorExecutor()
+        e = ErrorExecutor(wrapper=[],
+                default_environment={}, mandatory_environment={})
         set_job_id = 42
         self.assertRaises(RuntimeError, e, ['a', 'b', 'c'], job_id=set_job_id)
 

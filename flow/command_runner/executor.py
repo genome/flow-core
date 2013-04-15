@@ -1,27 +1,24 @@
+from flow import exit_codes
+from flow.util import environment as env_util
+from injector import inject, Setting
+
 import abc
 import logging
 import os
 import socket
 
-from flow.util import environment as env_util
-from flow import exit_codes
-
 LOG = logging.getLogger(__name__)
 
 
+@inject(wrapper=Setting('shell.wrapper'),
+        default_environment=Setting('shell.default_environment'),
+        mandatory_environment=Setting('shell.mandatory_environment'))
 class ExecutorBase(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def execute(self, command_line, **kwargs):
         pass
-
-    def __init__(self, wrapper=None, default_environment={},
-            mandatory_environment={}):
-
-        self.wrapper = wrapper
-        self.default_environment = default_environment
-        self.mandatory_environment = mandatory_environment
 
     def __call__(self, command_line, group_id=None, user_id=None,
             environment={}, **kwargs):

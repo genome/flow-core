@@ -7,6 +7,7 @@ from twisted.python.procutils import which
 from flow.command_runner import util
 from flow.command_runner.resource import Resource, ResourceException
 from flow.command_runner.executor import ExecutorBase
+from injector import inject, Setting
 
 
 LOG = logging.getLogger(__name__)
@@ -56,13 +57,9 @@ def _make_rusage_string(require, reserve):
     return str(" ".join(rv))
 
 
+@inject(post_exec=Setting('shell.post_exec'),
+        default_queue=Setting('shell.lsf.default_queue'))
 class LSFExecutor(ExecutorBase):
-    def __init__(self, post_exec=None, default_queue='long', **kwargs):
-        ExecutorBase.__init__(self, **kwargs)
-
-        self.post_exec = post_exec
-        self.default_queue = default_queue
-
     def execute(self, command_line, **kwargs):
         request = self.construct_request(command_line, **kwargs)
 

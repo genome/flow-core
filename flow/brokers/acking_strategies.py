@@ -1,3 +1,5 @@
+from flow import interfaces
+import injector
 from pika.spec import Basic
 
 from flow.util import stats
@@ -189,11 +191,8 @@ class TagRelationships(object):
         timer.stop()
         return ready_tags, multiple
 
+@injector.inject(_tag_relationships=TagRelationships)
 class PublisherConfirmation(object):
-    def __init__(self):
-        self._tag_relationships = TagRelationships()
-        self.broker = None
-
     def reset(self):
         self._tag_relationships.reset()
 

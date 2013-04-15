@@ -1,17 +1,18 @@
 from flow.commands.base import CommandBase
+from flow.conf.broker import BlockingBrokerConfiguration
+from flow.conf.redis_conf import RedisConfiguration
+from injector import inject, Injector
+
+import flow.interfaces
 import logging
 
 LOG = logging.getLogger(__name__)
 
 
+@inject(storage=flow.interfaces.IStorage, broker=flow.interfaces.IBroker,
+        injector=Injector)
 class ServiceCommand(CommandBase):
-    def __init__(self, storage=None, broker=None, handlers=None,
-            service_interfaces={}):
-        self.storage = storage
-        self.broker = broker
-        self.handlers = handlers
-        self.service_interfaces = service_interfaces
-
+    # XXX This should be removed
     @staticmethod
     def annotate_parser(parser):
         pass
