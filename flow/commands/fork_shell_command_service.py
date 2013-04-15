@@ -1,8 +1,8 @@
 from flow.command_runner.handler import CommandLineSubmitMessageHandler
 from flow.commands.service import ServiceCommand
-from flow.conf.broker import BrokerConfiguration
-from flow.conf.fork_executor import ForkExecutorConfiguration
-from flow.conf.redis_conf import RedisConfiguration
+from flow.configuration.inject.broker import BrokerConfiguration
+from flow.configuration.inject.fork_executor import ForkExecutorConfiguration
+from flow.configuration.inject.redis_conf import RedisConfiguration
 from flow.interfaces import IOrchestrator, ILocalShellCommand, IGridShellCommand
 from injector import inject
 
@@ -22,6 +22,6 @@ class ForkShellCommand(ServiceCommand):
     def __call__(self, *args, **kwargs):
         self.service_interfaces = {}
 
-        self.handlers = [self.injector.get(CommandLineSubmitMessageHandler)]
+        self.handlers = [self.inject.get(CommandLineSubmitMessageHandler)]
 
         return ServiceCommand.__call__(self, *args, **kwargs)

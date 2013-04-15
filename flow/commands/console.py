@@ -1,7 +1,7 @@
 from IPython import embed
 from flow.commands.base import CommandBase
-from flow.conf.broker import BlockingBrokerConfiguration
-from flow.conf.redis_conf import RedisConfiguration
+from flow.configuration.inject.broker import BlockingBrokerConfiguration
+from flow.configuration.inject.redis_conf import RedisConfiguration
 from injector import inject, Injector
 import flow.interfaces
 import flow.redisom
@@ -33,7 +33,7 @@ class ConsoleCommand(CommandBase):
         namespace = {
                 'broker': self.broker,
                 'get_object': self.get_key,
-                'injector': self.injector,
+                'injector': self.inject,
                 'interfaces': flow.interfaces,
                 'rom': flow.redisom,
                 'storage': self.storage,

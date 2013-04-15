@@ -1,6 +1,6 @@
 from flow.commands.base import CommandBase
-from flow.conf.broker import BlockingBrokerConfiguration
-from flow.conf.redis_conf import RedisConfiguration
+from flow.configuration.inject.broker import BlockingBrokerConfiguration
+from flow.configuration.inject.redis_conf import RedisConfiguration
 from flow.petri.netbase import Token, SetTokenMessage
 from injector import inject, Setting
 

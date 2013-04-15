@@ -1,4 +1,4 @@
-from flow.brokers.acking_strategy import PublisherConfirmation
+from flow.brokers.acking_strategies import PublisherConfirmation
 from flow.brokers.amqp_parameters import AmqpConnectionParameters
 from flow.brokers.base import BrokerBase
 from flow.protocol.exceptions import InvalidMessageException
@@ -95,6 +95,7 @@ class StrategicAmqpBroker(BrokerBase):
 
     def disconnect(self):
         LOG.info("Closing AMQP connection.")
+        # XXX bug: _connection does not always have a transport member
         self._connection.transport.loseConnection()
 
     def _on_connected(self, connection):

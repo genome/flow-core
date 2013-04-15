@@ -1,7 +1,7 @@
 from flow.commands.service import ServiceCommand
-from flow.conf.broker import BrokerConfiguration
-from flow.conf.redis_conf import RedisConfiguration
-from flow.conf.shell import LocalShellConfiguration, LSFConfiguration
+from flow.configuration.inject.broker import BrokerConfiguration
+from flow.configuration.inject.redis_conf import RedisConfiguration
+from flow.configuration.inject.shell import LocalShellConfiguration, LSFConfiguration
 from flow.interfaces import IOrchestrator, ILocalShellCommand, IGridShellCommand
 from injector import inject
 

@@ -6,9 +6,6 @@ import flow.interfaces
 import injector
 
 class BrokerConfiguration(injector.Module):
-    def configure(self, binder):
-        binder.bind(flow.interfaces.IAckingStrategy, PublisherConfirmation)
-
     @injector.singleton
     @injector.provides(flow.interfaces.IBroker)
     def provide_broker(self):

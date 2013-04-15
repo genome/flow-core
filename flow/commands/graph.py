@@ -1,5 +1,5 @@
 from flow.commands.base import CommandBase
-from flow.conf.redis_conf import RedisConfiguration
+from flow.configuration.inject.redis_conf import RedisConfiguration
 from injector import inject, Setting
 
 import flow.interfaces
