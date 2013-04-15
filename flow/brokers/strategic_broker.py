@@ -1,6 +1,6 @@
+from flow.brokers.acking_strategy import PublisherConfirmation
 from flow.brokers.amqp_parameters import AmqpConnectionParameters
 from flow.brokers.base import BrokerBase
-from flow.interfaces import IAckingStrategy
 from flow.protocol.exceptions import InvalidMessageException
 from flow.util import stats
 from injector import inject, Setting
@@ -16,7 +16,7 @@ LOG = logging.getLogger(__name__)
 
 @inject(connection_params=AmqpConnectionParameters,
         prefetch_count=Setting('amqp.prefetch_count'),
-        acking_strategy=IAckingStrategy)
+        acking_strategy=PublisherConfirmation)
 class StrategicAmqpBroker(BrokerBase):
     def __init__(self):
         self._publish_properties = pika.BasicProperties(delivery_mode=2)

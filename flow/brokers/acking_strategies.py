@@ -1,45 +1,13 @@
-from flow import interfaces
-import injector
+from flow.util import stats
 from pika.spec import Basic
 
-from flow.util import stats
-
-import collections
 import blist
+import collections
+import injector
 import logging
 
+
 LOG = logging.getLogger(__name__)
-
-
-class Immediate(object):
-    def __init__(self):
-        self._largest_receive_tag = 0
-        self.broker = None
-
-    def reset(self):
-        self._largest_receive_tag = 0
-
-    def register_broker(self, broker):
-        self.broker = broker
-
-    def on_channel_open(self, channel):
-        pass
-
-    def add_publish_tag(self, receive_tag=None, publish_tag=None):
-        pass
-
-    def add_receive_tag(self, receive_tag):
-        self._largest_receive_tag = receive_tag
-
-    def remove_publish_tag(self, publish_tag, multiple=False):
-        pass
-
-    def remove_receieve_tag(self, publish_tag, multiple=False):
-        pass
-
-
-    def pop_ackable_receive_tags(self):
-        return [self._largest_receive_tag], True
 
 
 class TagRelationships(object):

@@ -1,39 +1,9 @@
-import unittest
-try:
-    from unittest import mock
-except ImportError:
-    import mock
-
-import itertools
 from flow.brokers import acking_strategies
 
-class TestImmediate(unittest.TestCase):
-    def setUp(self):
-        self.immediate = acking_strategies.Immediate()
-        self.immediate.reset()
+import itertools
+import mock
+import unittest
 
-    def test_initialization(self):
-        self.assertEqual(0, self.immediate._largest_receive_tag)
-
-    def test_add_receive_tag(self):
-        tag = mock.Mock()
-        self.immediate.add_receive_tag(tag)
-        self.assertEqual(tag, self.immediate._largest_receive_tag)
-
-    def test_reset(self):
-        tag = mock.Mock()
-        self.immediate.add_receive_tag(tag)
-        self.immediate.reset()
-        self.assertEqual(0, self.immediate._largest_receive_tag)
-
-    def test_pop_ackable_receive_tags(self):
-        tag = mock.Mock()
-        self.immediate.add_receive_tag(tag)
-
-        tags, multiple = self.immediate.pop_ackable_receive_tags()
-        self.assertEqual([tag], tags)
-
-        self.assertEqual(True, multiple)
 
 class TestTagRelationships(unittest.TestCase):
     ACK_TEST_DATA = [

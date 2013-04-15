@@ -1,10 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
 
-class IAckingStrategy(object):
-    __metaclass__ = ABCMeta
-
-
 class IBroker(object):
     __metaclass__ = ABCMeta
 
