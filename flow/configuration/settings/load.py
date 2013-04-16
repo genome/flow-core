@@ -9,7 +9,7 @@ def get_valid_config_dirs():
     config_path = os.environ.get('FLOW_CONFIG_PATH', DEFAULT_FLOW_CONFIG_PATH)
     config_dirs = [os.path.expandvars(d) for d in config_path.split(':')]
 
-    return [d for d in config_dirs if os.path.isdir(d)]
+    return [d for d in reversed(config_dirs) if os.path.isdir(d)]
 
 
 def load_settings(command_name, parsed_arguments):

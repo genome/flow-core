@@ -18,17 +18,8 @@ class ServiceCommand(CommandBase):
         pass
 
     def __call__(self, parsed_arguments):
-        for service_name, client in self.service_interfaces.iteritems():
-            client.broker = self.broker
-
         for handler in self.handlers:
-            handler.service_interfaces = self.service_interfaces
-            handler.storage = self.storage
-
             self.broker.register_handler(handler)
-
-            # TODO This should not be needed.  Fix up handlers and remove this
-            handler.broker = self.broker
 
         self.broker.connect_and_listen()
 

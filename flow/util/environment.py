@@ -18,7 +18,8 @@ def environment(environment_dicts):
 def set_environment(*environment_dicts):
     temporary_environment = dict()
     for env in environment_dicts:
-        temporary_environment.update(env)
+        if env:
+            temporary_environment.update(env)
 
     os.environ.clear()
     for key, value in temporary_environment.iteritems():

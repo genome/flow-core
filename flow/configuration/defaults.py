@@ -1,4 +1,4 @@
-DEFAULT_FLOW_CONFIG_PATH = '/etc/flow:$HOME/.flow'
+DEFAULT_FLOW_CONFIG_PATH = '$HOME/.flow:/etc/flow'
 
 DEFAULT_LOGGING_CONFIG = {
     'version': 1,

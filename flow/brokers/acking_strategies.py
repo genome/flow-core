@@ -23,7 +23,7 @@ class TagRelationships(object):
         }
 
     def reset(self):
-        LOG.debug('Restting PublisherConfirmation state.')
+        LOG.debug('Resetting PublisherConfirmation state.')
         self._ackable_receive_tags = blist.sortedlist()
         self._non_ackable_receive_tags = blist.sortedlist()
         self._unconfirmed_publish_tags = blist.sortedlist()

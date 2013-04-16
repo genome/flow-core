@@ -1,18 +1,18 @@
-import logging
-import time
-import uuid
-
 from flow.petri import SetTokenMessage, NotifyTransitionMessage
 from flow.redisom import get_object
+from injector import inject, Setting
+
+import flow.interfaces
+import logging
+
 
 LOG = logging.getLogger(__name__)
 
+@inject(redis=flow.interfaces.IStorage,
+        service_interfaces=flow.interfaces.IServiceLocator,
+        queue_name=Setting('orchestrator.set_token_queue'))
 class PetriSetTokenHandler(object):
     message_class = SetTokenMessage
-    def __init__(self, redis=None, service_interfaces=None, queue_name=None):
-        self.redis = redis
-        self.service_interfaces = service_interfaces
-        self.queue_name = queue_name
 
     def __call__(self, message):
         try:
@@ -25,14 +25,11 @@ class PetriSetTokenHandler(object):
                     % (self, message.net_key, message.place_idx, str(e)))
             raise e
 
-
+@inject(redis=flow.interfaces.IStorage,
+        service_interfaces=flow.interfaces.IServiceLocator,
+        queue_name=Setting('orchestrator.notify_transition_queue'))
 class PetriNotifyTransitionHandler(object):
     message_class = NotifyTransitionMessage
-    def __init__(self, redis=None, service_interfaces=None, queue_name=None):
-        self.redis = redis
-        self.service_interfaces = service_interfaces
-        self.queue_name = queue_name
-
     def __call__(self, message):
         try:
             net = get_object(self.redis, message.net_key)

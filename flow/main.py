@@ -8,6 +8,7 @@ from flow.configuration.settings.load import load_settings
 import flow.exit_codes
 import flow.util.stats
 import logging.config
+import pika
 import sys
 import traceback
 
@@ -42,6 +43,9 @@ def naked_main():
     injector = initialize_injector(settings, command_class)
 
     flow.util.stats.increment_as_user('command', command_class._name)
+
+    # XXX Hack to get the command to show up in the rabbitmq admin interface
+    pika.connection.PRODUCT = command_class._name
 
     try:
         LOG.info('Loading command (%s)', command_class._name)

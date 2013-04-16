@@ -12,9 +12,13 @@ LOG = logging.getLogger(__name__)
 class BlockingAmqpBroker(BrokerBase):
     def connect(self):
         params = pika.ConnectionParameters(
-                host=self.connection_params.hostname,
-                port=self.connection_params.port,
-                virtual_host=self.connection_params.virtual_host)
+            connection_attempts=self.connection_params.connection_attempts,
+            host=self.connection_params.hostname,
+            port=self.connection_params.port,
+            retry_delay=self.connection_params.retry_delay,
+            socket_timeout=self.connection_params.socket_timeout,
+            virtual_host=self.connection_params.virtual_host,
+        )
         self.connection = pika.BlockingConnection(params)
 
         self.channel = self.connection.channel()

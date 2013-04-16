@@ -14,6 +14,11 @@ command_line_wrapper = flow.commands.wrapper:WrapperCommand
 configure_rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 console = flow.commands.console:ConsoleCommand
 graph = flow.commands.graph:GraphCommand
+
+[flow.services]
+orchestrator = flow.orchestrator.service_interface:OrchestratorServiceInterface
+fork = flow.command_runner.service_interface:ForkCommandLineServiceInterface
+lsf = flow.command_runner.service_interface:LSFCommandLineServiceInterface
 '''
 
 setup(

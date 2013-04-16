@@ -9,8 +9,8 @@ def create_parser(valid_command_names):
     return parser
 
 
-def parse_arguments(command):
-    parser = create_parser([command._name])
-    command.annotate_parser(parser)
+def parse_arguments(command_class):
+    parser = create_parser([command_class._name])
+    command_class.annotate_parser(parser)
 
     return parser.parse_args()

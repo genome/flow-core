@@ -28,3 +28,7 @@ class IShellCommandExecutor(object):
 
 class IStorage(object):
     __metaclass__ = ABCMeta
+
+
+class IServiceLocator(object):
+    __metaclass__ = ABCMeta

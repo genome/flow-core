@@ -6,7 +6,7 @@ from flow.orchestrator.service_interface import OrchestratorServiceInterface
 from flow.orchestrator.handlers import PetriSetTokenHandler
 from flow.orchestrator.handlers import PetriNotifyTransitionHandler
 
-from flow.command_runner.service_interface import CommandLineServiceInterface
+from flow.command_runner.service_interface import ForkCommandLineServiceInterface
 from flow.command_runner.handler import CommandLineSubmitMessageHandler
 from flow.command_runner.executors.local import SubprocessExecutor
 
@@ -31,7 +31,7 @@ class TestSystemFork(redistest.RedisTest):
                     set_token_routing_key='set_token_rk',
                     notify_transition_exchange='notify_transition_x',
                     notify_transition_routing_key='notify_transition_rk'),
-                'fork': CommandLineServiceInterface(broker=self.broker,
+                'fork': ForkCommandLineServiceInterface(broker=self.broker,
                     exchange='fork_submit_x',
                     submit_routing_key='fork_submit_rk')}
 
