@@ -36,6 +36,7 @@ setup(
         install_requires = [
             'blist',
             'hiredis',
+            'injector',
             'ipython',
             'pika',
             'platform-python-lsf-api',
