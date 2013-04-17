@@ -7,29 +7,33 @@ except:
 from flow.petri import SetTokenMessage
 
 import flow.shell_command.handler
-from flow.shell_command.handler import ForkShellCommandMessageHandler
+from flow.shell_command.handler import LSFShellCommandMessageHandler
 
 class ShellCommandMessageHandlerTest(unittest.TestCase):
     def setUp(self):
         self.executor = mock.Mock()
 
-        self.broker = mock.Mock()
-        self.broker.publish = mock.Mock()
+        orchestrator = mock.Mock()
+        self.set_token = mock.Mock()
+        orchestrator.set_token = self.set_token
+
+        service_locator = {'orchestrator':orchestrator}
+
         self.exchange = mock.Mock()
         self.routing_key = mock.Mock()
 
         self.storage = mock.Mock()
 
-        self.handler = ForkShellCommandMessageHandler(executor=self.executor,
-                broker=self.broker, storage=self.storage, queue_name='',
-                exchange=self.exchange, response_routing_key=self.routing_key)
+        self.handler = LSFShellCommandMessageHandler(executor=self.executor,
+                storage=self.storage, queue_name='',
+                service_locator=service_locator,
+                exchange=self.exchange,
+                response_routing_key=self.routing_key)
 
         self.net_key = mock.Mock(str)
-        self.pre_dispatch_place_idx = 0
         self.dispatch_success_place_idx = 1
         self.dispatch_failure_place_idx = 2
         self.response_places = {
-                'pre_dispatch': self.pre_dispatch_place_idx,
                 'post_dispatch_success': self.dispatch_success_place_idx,
                 'post_dispatch_failure': self.dispatch_failure_place_idx
         }
@@ -41,32 +45,9 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
         self.message.executor_options = {'passthru': True}
 
 
-    def test_set_token(self):
-        with mock.patch("flow.shell_command.handler.Token") as T:
-            T.create = mock.Mock()
-            token = mock.Mock
-            token.key = mock.Mock(str)
-            T.create.return_value = token
-
-            place_idx = self.dispatch_success_place_idx
-
-            self.handler.set_token(self.net_key, place_idx)
-
-            T.create.assert_called_once_with(self.storage, data=None)
-
-            response_message = SetTokenMessage(token_key=token.key,
-                    net_key=self.net_key,
-                    place_idx=place_idx)
-            self.broker.publish.assert_called_once_with(
-                    self.exchange, self.routing_key, response_message)
-
-
     def test_message_handler_executor_success(self):
         job_id = 1234
         self.executor.return_value = (job_id, True)
-
-        set_token = mock.Mock()
-        self.handler.set_token = set_token
 
         self.handler(self.message)
 
@@ -74,32 +55,22 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
                 net_key=self.net_key, response_places=self.response_places,
                 passthru=True)
 
-        expected = [
-                mock.call(self.net_key, self.pre_dispatch_place_idx),
-                mock.call(self.net_key, self.dispatch_success_place_idx,
-                        data={'pid': str(job_id)})
-                ]
+        self.set_token.assert_any_call(net_key=self.net_key,
+                place_idx=self.dispatch_success_place_idx, token_key=mock.ANY)
 
-        self.assertEqual(expected, set_token.mock_calls)
 
     def test_message_handler_executor_failure(self):
         job_id = 1234
         self.executor.return_value = (job_id, False)
 
-        set_token = mock.Mock()
-        self.handler.set_token = set_token
-
         self.handler(self.message)
 
         self.executor.assert_called_once_with(self.message.command_line,
                 net_key=self.net_key, response_places=self.response_places,
                 passthru=True)
 
-        self.assertEqual([mock.call(self.net_key, self.pre_dispatch_place_idx),
-                          mock.call(self.net_key, self.dispatch_failure_place_idx,
-                              data={'pid': str(job_id)})],
-                         set_token.mock_calls)
-
+        self.set_token.assert_any_call(net_key=self.net_key,
+                place_idx=self.dispatch_failure_place_idx, token_key=mock.ANY)
 
 
     def test_message_handler_executor_exception(self):

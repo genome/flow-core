@@ -48,7 +48,6 @@ class TestSystemFork(redistest.RedisTest):
                 default_environment={}, mandatory_environment={})
         self.broker.register_handler(
                 ForkShellCommandMessageHandler(
-                    broker=self.broker, storage=self.conn,
                     executor=fork_executor, queue_name='fork_submit_q',
                     exchange='set_token_x', response_routing_key='set_token_rk'))
 
