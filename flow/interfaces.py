@@ -77,9 +77,6 @@ class IShellCommand(object):
             **executor_options):
         pass
 
-class IForkShellCommand(IShellCommand): pass
-class IGridShellCommand(IShellCommand): pass
-class ILSFShellCommand(IGridShellCommand): pass
 
 class IShellCommandExecutor(object):
     __metaclass__ = ABCMeta

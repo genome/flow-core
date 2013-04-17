@@ -11,7 +11,7 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(broker=flow.interfaces.IBroker)
-class ShellCommandServiceInterface(object):
+class ShellCommandServiceInterface(flow.interfaces.IShellCommand):
     def submit(self, command_line, net_key=None, response_places=None,
             **executor_options):
         message = ShellCommandSubmitMessage(
