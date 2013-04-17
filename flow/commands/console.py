@@ -34,7 +34,7 @@ class ConsoleCommand(CommandBase):
         namespace = {
                 'broker': self.broker,
                 'get_object': self.get_key,
-                'injector': self.inject,
+                'injector': self.injector,
                 'interfaces': flow.interfaces,
                 'rom': flow.redisom,
                 'storage': self.storage,
