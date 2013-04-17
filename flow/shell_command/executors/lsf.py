@@ -59,7 +59,7 @@ def _make_rusage_string(require, reserve):
     return str(" ".join(rv))
 
 
-@inject(post_exec=setting('shell_command.post_exec'),
+@inject(post_exec=setting('shell_command.lsf.post_exec'),
         default_queue=setting('shell_command.lsf.default_queue'))
 class LSFExecutor(ExecutorBase):
     def execute(self, command_line, **kwargs):

@@ -1,6 +1,7 @@
-from injector import inject, Injector
 from flow.configuration.settings.injector import setting
+from flow.configuration.inject import initialize
 from flow.configuration.inject.settings import InjectedSettings
+from injector import inject
 
 import mock
 import unittest
@@ -15,9 +16,15 @@ class TestInjectedSettings(unittest.TestCase):
             'existing_key': self.existing_value,
         }
 
+        initialize.reset_injector()
+
+    def tearDown(self):
+        initialize.reset_injector()
+
 
     def get_injector(self):
-        return Injector(InjectedSettings(self.settings))
+        initialize.add_modules(initialize.INJECTOR, InjectedSettings(self.settings))
+        return initialize.INJECTOR
 
     def get_object(self, cls):
         i = self.get_injector()
@@ -61,10 +68,9 @@ class TestInjectedSettings(unittest.TestCase):
         @inject(x=setting('existing_key'))
         class Foo(object): pass
 
-        i = Injector()
+        i = initialize.INJECTOR
 
         self.assertRaises(TypeError, i.get, Foo)
-
 
 if __name__ == "__main__":
     unittest.main()

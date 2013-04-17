@@ -1,6 +1,11 @@
 from flow.configuration.inject import settings
+from flow.configuration.inject import initialize
 
 import abc
+import flow.interfaces
+
+
+SENTINEL = object()
 
 
 class BaseSetting(object):
@@ -13,17 +18,22 @@ class BaseSetting(object):
         registering a provider.
         '''
 
-def _create_new_class(key, default):
+
+def setting(key, default=SENTINEL):
     new_class = type('Setting__%s__%s__' % (key, default),
             (BaseSetting,), {'key': key, 'default': default})
 
-    settings.SETTING_REGISTRY[(key, default)] = new_class
+    initialize.INJECTOR.binder.bind(new_class, get_setting_factory(new_class))
 
     return new_class
 
 
-def setting(key, default=settings.SENTINEL):
-    try:
-        return settings.SETTING_REGISTRY[(key, default)]
-    except KeyError:
-        return _create_new_class(key, default)
+def get_setting_factory(setting_class):
+    def get_setting():
+        settings = initialize.INJECTOR.get(flow.interfaces.ISettings)
+        if setting_class.default is not SENTINEL:
+            return settings.get(setting_class.key, setting_class.default)
+        else:
+            return settings[setting_class.key]
+
+    return get_setting

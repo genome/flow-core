@@ -1,6 +1,6 @@
 from flow.configuration import defaults
 from flow.configuration.commands import determine_command
-from flow.configuration.inject import initialize_injector
+from flow.configuration.inject.initialize import initialize_injector
 from flow.configuration.metrics import initialize_metrics
 from flow.configuration.parser import parse_arguments
 from flow.configuration.settings.load import load_settings

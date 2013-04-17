@@ -12,8 +12,8 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(wrapper=setting('shell_command.wrapper'),
-        default_environment=setting('shell_command.default_environment'),
-        mandatory_environment=setting('shell_command.mandatory_environment'))
+        default_environment=setting('shell_command.default_environment', {}),
+        mandatory_environment=setting('shell_command.mandatory_environment', {}))
 class ExecutorBase(object):
     __metaclass__ = abc.ABCMeta
 

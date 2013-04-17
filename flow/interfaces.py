@@ -30,3 +30,7 @@ class IStorage(object):
 
 class IServiceLocator(object):
     __metaclass__ = ABCMeta
+
+
+class ISettings(object):
+    __metaclass__ = ABCMeta
