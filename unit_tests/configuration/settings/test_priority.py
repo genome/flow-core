@@ -63,6 +63,17 @@ class TestPrioritySettings(unittest.TestCase):
 
         self.assertEqual(value2, c.get('a.b.c'))
 
+    def test_getitem_raises(self):
+        c = PrioritySettings()
+
+        self.assertRaises(KeyError, c.__getitem__, 'a.b.c')
+
+    def test_getitem_simple(self):
+        c = PrioritySettings()
+        value1 = self.add_delegate(c, 'a.b.c')
+
+        self.assertEqual(value1, c['a.b.c'])
+
 
 if __name__ == "__main__":
     unittest.main()

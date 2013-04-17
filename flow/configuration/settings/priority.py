@@ -23,10 +23,3 @@ class PrioritySettings(SettingsBase):
 
     def clear(self):
         self._settings_objects = []
-
-#    def set(self, path, value):
-#        pass
-
-    # XXX This seems like a really important feature for debugging
-#    def to_dict(self):
-#        pass
