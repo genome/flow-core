@@ -50,7 +50,7 @@ class TestSystemFork(redistest.RedisTest):
                 ForkShellCommandMessageHandler(
                     broker=self.broker, storage=self.conn,
                     executor=fork_executor, queue_name='fork_submit_q',
-                    exchange='set_token_x', routing_key='set_token_rk'))
+                    exchange='set_token_x', response_routing_key='set_token_rk'))
 
     def test_system_fork(self):
         # XXX This test is quite weak, because we rely on the wrapper to talk to

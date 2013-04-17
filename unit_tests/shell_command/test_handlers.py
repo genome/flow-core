@@ -22,7 +22,7 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
 
         self.handler = ForkShellCommandMessageHandler(executor=self.executor,
                 broker=self.broker, storage=self.storage, queue_name='',
-                exchange=self.exchange, routing_key=self.routing_key)
+                exchange=self.exchange, response_routing_key=self.routing_key)
 
         self.net_key = mock.Mock(str)
         self.pre_dispatch_place_idx = 0
