@@ -1,4 +1,4 @@
-from flow.command_runner.executors.lsf import LSFExecutor
+from flow.shell_command.executors.lsf import LSFExecutor
 
 import flow.interfaces
 import injector

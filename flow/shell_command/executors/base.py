@@ -10,9 +10,9 @@ import socket
 LOG = logging.getLogger(__name__)
 
 
-@inject(wrapper=Setting('shell.wrapper'),
-        default_environment=Setting('shell.default_environment'),
-        mandatory_environment=Setting('shell.mandatory_environment'))
+@inject(wrapper=Setting('shell_command.wrapper'),
+        default_environment=Setting('shell_command.default_environment'),
+        mandatory_environment=Setting('shell_command.mandatory_environment'))
 class ExecutorBase(object):
     __metaclass__ = abc.ABCMeta
 

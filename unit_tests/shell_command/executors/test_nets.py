@@ -1,6 +1,5 @@
-import flow.command_runner.executors.nets as enets
 import flow.petri.netbuilder as nb
-
+import flow.shell_command.executors.nets as enets
 import unittest
 
 
@@ -43,13 +42,13 @@ class TestLSFCommandNet(unittest.TestCase):
         self.assertEqual(expected_args, action.args)
 
 
-class TestLocalCommandNet(unittest.TestCase):
+class TestForkCommandNet(unittest.TestCase):
     def test_construct(self):
         builder = nb.NetBuilder()
         cmdline = ["ls", "-al"]
 
-        net = enets.LocalCommandNet(builder, "test lsf",
-                action_class=enets.LocalDispatchAction,
+        net = enets.ForkCommandNet(builder, "test lsf",
+                action_class=enets.ForkDispatchAction,
                 action_args={"command_line": cmdline})
 
         expected_places = ["start", "success", "failure", "dispatched",
@@ -95,7 +94,7 @@ class TestLocalCommandNet(unittest.TestCase):
                 }
 
         self.assertIsInstance(action, nb.ActionSpec)
-        self.assertEqual(enets.LocalDispatchAction, action.cls)
+        self.assertEqual(enets.ForkDispatchAction, action.cls)
         self.assertEqual(expected_args, action.args)
 
 

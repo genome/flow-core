@@ -1,8 +1,8 @@
-from flow.command_runner.executors.local import SubprocessExecutor
+from flow.shell_command.executors.fork import ForkExecutor
 
 import flow.interfaces
 import injector
 
 class ForkExecutorConfiguration(injector.Module):
     def configure(self, binder):
-        binder.bind(flow.interfaces.IShellCommandExecutor, SubprocessExecutor)
+        binder.bind(flow.interfaces.IShellCommandExecutor, ForkExecutor)

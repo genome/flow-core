@@ -6,7 +6,7 @@ except:
 
 import os
 from uuid import uuid4
-from flow.command_runner import util
+from flow.shell_command import util
 
 
 class JoinPathIfRelTest(unittest.TestCase):

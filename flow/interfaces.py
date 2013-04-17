@@ -16,11 +16,9 @@ class IOrchestrator(object):
 class IShellCommand(object):
     __metaclass__ = ABCMeta
 
-class ILocalShellCommand(IShellCommand):
-    pass
-
-class IGridShellCommand(IShellCommand):
-    pass
+class IForkShellCommand(IShellCommand): pass
+class IGridShellCommand(IShellCommand): pass
+class ILSFShellCommand(IGridShellCommand): pass
 
 class IShellCommandExecutor(object):
     __metaclass__ = ABCMeta

@@ -1,18 +1,17 @@
-import unittest
-try:
-    from unittest import mock
-except:
-    import mock
+from flow.shell_command.executors import fork
 
-from flow.command_runner.executors import local
+import mock
 import sys
+import unittest
+
 
 success_script = "import sys; sys.exit(0)"
 failure_script = "import sys; sys.exit(1)"
 
-class SubprocessExecutorTest(unittest.TestCase):
+
+class ForkExecutorTest(unittest.TestCase):
     def setUp(self):
-        self.dispatcher = local.SubprocessExecutor(wrapper=[],
+        self.dispatcher = fork.ForkExecutor(wrapper=[],
                 default_environment={}, mandatory_environment={})
         self.response_places = {
             'begin_execute': '0',

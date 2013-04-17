@@ -1,7 +1,7 @@
+from flow.shell_command.executors.base import ExecutorBase
+
 import mock
 import unittest
-
-from flow.command_runner.executor import ExecutorBase
 
 
 class SucceedingExecutor(ExecutorBase):

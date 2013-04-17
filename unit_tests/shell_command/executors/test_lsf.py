@@ -5,8 +5,8 @@ try:
 except:
     import mock
 
-from flow.command_runner.executors import lsf
-from flow.command_runner.resource import ResourceException
+from flow.shell_command.executors import lsf
+from flow.shell_command.resource import ResourceException
 from pythonlsf import lsf as lsf_driver
 from twisted.python.procutils import which
 

@@ -2,7 +2,7 @@ from flow.protocol.message import Message
 from flow.protocol import exceptions
 
 
-class CommandLineSubmitMessage(Message):
+class ShellCommandSubmitMessage(Message):
     required_fields = {
             'command_line': list,
             'net_key': basestring,

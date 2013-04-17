@@ -1,21 +1,20 @@
-from flow.command_runner.messages import CommandLineSubmitMessage
+from flow.shell_command.messages import ShellCommandSubmitMessage
 from flow.interfaces import IShellCommandExecutor, IBroker, IStorage
 from flow.petri import Token, SetTokenMessage
 from injector import inject, Setting
 
 import logging
 
+
 LOG = logging.getLogger(__name__)
 
 
-@inject(executor=IShellCommandExecutor, broker=IBroker, storage=IStorage,
-        queue_name=Setting('shell.queue'), exchange=Setting('shell.exchange'),
-        routing_key=Setting('shell.routing_key'))
-class CommandLineSubmitMessageHandler(object):
-    message_class = CommandLineSubmitMessage
+@inject(executor=IShellCommandExecutor, broker=IBroker, storage=IStorage)
+class ShellCommandSubmitMessageHandler(object):
+    message_class = ShellCommandSubmitMessage
 
     def __call__(self, message):
-        LOG.debug('CommandLineSubmitMessageHandler got message')
+        LOG.debug('ShellCommandSubmitMessageHandler got message')
         executor_options = getattr(message, 'executor_options', {})
 
         response_places = message.response_places
@@ -41,3 +40,13 @@ class CommandLineSubmitMessageHandler(object):
                     net_key=net_key, place_idx=int(place_idx))
             self.broker.publish(self.exchange,
                     self.routing_key, response_message)
+
+@inject(queue_name=Setting('shell_command.fork.queue'),
+        exchange=Setting('shell_command.fork.exchange'),
+        routing_key=Setting('shell_command.fork.routing_key'))
+class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler): pass
+
+@inject(queue_name=Setting('shell_command.lsf.queue'),
+        exchange=Setting('shell_command.lsf.exchange'),
+        routing_key=Setting('shell_command.lsf.routing_key'))
+class LSFShellCommandMessageHandler(ShellCommandSubmitMessageHandler): pass

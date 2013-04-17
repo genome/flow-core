@@ -1,16 +1,16 @@
-import logging
-import os
-
+from flow.shell_command import util
+from flow.shell_command.executors.base import ExecutorBase
+from flow.shell_command.resource import Resource, ResourceException
+from injector import inject, Setting
 from pythonlsf import lsf
 from twisted.python.procutils import which
 
-from flow.command_runner import util
-from flow.command_runner.resource import Resource, ResourceException
-from flow.command_runner.executor import ExecutorBase
-from injector import inject, Setting
+import logging
+import os
 
 
 LOG = logging.getLogger(__name__)
+
 
 _RESOURCE_MAP = {
         "min_proc": Resource(name="ncpus", type="int", units=None,
@@ -22,6 +22,7 @@ _RESOURCE_MAP = {
         "temp_space": Resource(name="gtmp", type="memory", units="GiB",
                 operator=">=", reservable=True),
         }
+
 
 def _select_item(name, value):
     resource = _RESOURCE_MAP[name]
@@ -57,8 +58,8 @@ def _make_rusage_string(require, reserve):
     return str(" ".join(rv))
 
 
-@inject(post_exec=Setting('shell.post_exec'),
-        default_queue=Setting('shell.lsf.default_queue'))
+@inject(post_exec=Setting('shell_command.post_exec'),
+        default_queue=Setting('shell_command.lsf.default_queue'))
 class LSFExecutor(ExecutorBase):
     def execute(self, command_line, **kwargs):
         request = self.construct_request(command_line, **kwargs)

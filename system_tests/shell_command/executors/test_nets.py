@@ -1,4 +1,4 @@
-import flow.command_runner.executors.nets as enets
+import flow.shell_command.executors.nets as enets
 import flow.petri.netbuilder as nb
 
 import os
@@ -80,9 +80,9 @@ class TestLsfDispatchAction(TestBase, _TestDispatchActionMixIn):
         self.assertEqual(expected, response_places)
 
 
-class TestLocalDispatchAction(TestBase, _TestDispatchActionMixIn):
-    net_class = enets.LocalCommandNet
-    action_class = enets.LocalDispatchAction
+class TestForkDispatchAction(TestBase, _TestDispatchActionMixIn):
+    net_class = enets.ForkCommandNet
+    action_class = enets.ForkDispatchAction
 
     def test_response_places(self):
         expected = {
@@ -92,7 +92,7 @@ class TestLocalDispatchAction(TestBase, _TestDispatchActionMixIn):
         }
 
         self.assertEqual("dispatch", str(self.dispatch_transition.name))
-        self.assertIsInstance(self.action, enets.LocalDispatchAction)
+        self.assertIsInstance(self.action, enets.ForkDispatchAction)
 
         response_places = self.action._response_places()
         self.assertEqual(expected, response_places)

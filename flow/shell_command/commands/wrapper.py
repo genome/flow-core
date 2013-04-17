@@ -1,12 +1,13 @@
+from flow.commands.token_sender import TokenSenderCommand
 from tempfile import NamedTemporaryFile
+
 import flow.redisom as rom
 import json
-import subprocess
+import logging
 import os
 import platform
-import logging
+import subprocess
 
-from flow.commands.token_sender import TokenSenderCommand
 
 LOG = logging.getLogger(__name__)
 

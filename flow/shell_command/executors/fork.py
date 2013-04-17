@@ -1,13 +1,15 @@
+from flow.shell_command import util
+from flow.shell_command.executors.base import ExecutorBase
+
 import logging
 import os
 import subprocess
 
-from flow.command_runner.executor import ExecutorBase
-from flow.command_runner import util
 
 LOG = logging.getLogger(__name__)
 
-class SubprocessExecutor(ExecutorBase):
+
+class ForkExecutor(ExecutorBase):
     def execute(self, command_line, net_key=None, response_places=None,
             working_directory=None, stdout=None, stderr=None,
             with_inputs=None, with_outputs=False,

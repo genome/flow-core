@@ -6,10 +6,10 @@ except:
 
 from flow.petri import SetTokenMessage
 
-import flow.command_runner.handler
-from flow.command_runner.handler import CommandLineSubmitMessageHandler
+import flow.shell_command.handler
+from flow.shell_command.handler import ForkShellCommandMessageHandler
 
-class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
+class ShellCommandMessageHandlerTest(unittest.TestCase):
     def setUp(self):
         self.executor = mock.Mock()
 
@@ -20,7 +20,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
 
         self.storage = mock.Mock()
 
-        self.handler = CommandLineSubmitMessageHandler(executor=self.executor,
+        self.handler = ForkShellCommandMessageHandler(executor=self.executor,
                 broker=self.broker, storage=self.storage, queue_name='',
                 exchange=self.exchange, routing_key=self.routing_key)
 
@@ -42,7 +42,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
 
 
     def test_set_token(self):
-        with mock.patch("flow.command_runner.handler.Token") as T:
+        with mock.patch("flow.shell_command.handler.Token") as T:
             T.create = mock.Mock()
             token = mock.Mock
             token.key = mock.Mock(str)
@@ -105,7 +105,7 @@ class CommandLineSubmitMessageHandlerTest(unittest.TestCase):
     def test_message_handler_executor_exception(self):
         self.executor.side_effect = RuntimeError
 
-        with mock.patch("flow.command_runner.handler.Token") as T:
+        with mock.patch("flow.shell_command.handler.Token") as T:
             T.create = mock.Mock()
             token = mock.Mock
             token.key = mock.Mock(str)

@@ -1,12 +1,14 @@
 from flow import petri
-import flow.petri.netbuilder as nb
 
-import os
+import flow.petri.netbuilder as nb
 import logging
+import os
+
 
 LOG = logging.getLogger(__name__)
 
-class CommandLineDispatchAction(petri.TransitionAction):
+
+class ShellCommandDispatchAction(petri.TransitionAction):
     net_constants = ['user_id', 'working_directory', 'mail_user']
     place_refs = []
 
@@ -99,7 +101,7 @@ class CommandLineDispatchAction(petri.TransitionAction):
         return token
 
 
-class LSFDispatchAction(CommandLineDispatchAction):
+class LSFDispatchAction(ShellCommandDispatchAction):
     service_name = "lsf"
     place_refs = ["post_dispatch_success",
             "post_dispatch_failure", "begin_execute",
@@ -107,7 +109,7 @@ class LSFDispatchAction(CommandLineDispatchAction):
     required_arguments = place_refs
 
 
-class LocalDispatchAction(CommandLineDispatchAction):
+class ForkDispatchAction(ShellCommandDispatchAction):
     service_name = "fork"
     place_refs = ["begin_execute", "execute_success",
             "execute_failure"]
@@ -182,7 +184,7 @@ class LSFCommandNet(nb.SuccessFailureNet):
         self.execute_failure.arcs_out.add(self.failure)
 
 
-class LocalCommandNet(nb.SuccessFailureNet):
+class ForkCommandNet(nb.SuccessFailureNet):
     def __init__(self, builder, name, action_class, action_args={},
             begin_execute_action=None,
             success_action=None,

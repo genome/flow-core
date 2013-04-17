@@ -6,13 +6,13 @@ from flow.orchestrator.service_interface import OrchestratorServiceInterface
 from flow.orchestrator.handlers import PetriSetTokenHandler
 from flow.orchestrator.handlers import PetriNotifyTransitionHandler
 
-from flow.command_runner.service_interface import ForkCommandLineServiceInterface
-from flow.command_runner.handler import CommandLineSubmitMessageHandler
-from flow.command_runner.executors.local import SubprocessExecutor
+from flow.shell_command.service_interface import ForkShellCommandServiceInterface
+from flow.shell_command.handler import ForkShellCommandMessageHandler
+from flow.shell_command.executors.fork import ForkExecutor
 
 from flow import petri
 from flow.petri.netbuilder import NetBuilder
-from flow.command_runner.executors import nets
+from flow.shell_command.executors import nets
 
 
 class TestSystemFork(redistest.RedisTest):
@@ -31,7 +31,7 @@ class TestSystemFork(redistest.RedisTest):
                     set_token_routing_key='set_token_rk',
                     notify_transition_exchange='notify_transition_x',
                     notify_transition_routing_key='notify_transition_rk'),
-                'fork': ForkCommandLineServiceInterface(broker=self.broker,
+                'fork': ForkShellCommandServiceInterface(broker=self.broker,
                     exchange='fork_submit_x',
                     submit_routing_key='fork_submit_rk')}
 
@@ -44,10 +44,10 @@ class TestSystemFork(redistest.RedisTest):
                     service_interfaces=self.service_interfaces,
                     queue_name='notify_transition_q'))
 
-        fork_executor = SubprocessExecutor(wrapper=['bash', '-c', ':'],
+        fork_executor = ForkExecutor(wrapper=['bash', '-c', ':'],
                 default_environment={}, mandatory_environment={})
         self.broker.register_handler(
-                CommandLineSubmitMessageHandler(
+                ForkShellCommandMessageHandler(
                     broker=self.broker, storage=self.conn,
                     executor=fork_executor, queue_name='fork_submit_q',
                     exchange='set_token_x', routing_key='set_token_rk'))
@@ -56,8 +56,8 @@ class TestSystemFork(redistest.RedisTest):
         # XXX This test is quite weak, because we rely on the wrapper to talk to
         # the broker even for the fork executor.
         builder = NetBuilder()
-        building_net = nets.LocalCommandNet(builder, 'net name',
-                nets.LocalDispatchAction,
+        building_net = nets.ForkCommandNet(builder, 'net name',
+                nets.ForkDispatchAction,
                 action_args={'command_line': ['non', 'sense', 'command'],
                     'stdout': '/dev/null'})
 
