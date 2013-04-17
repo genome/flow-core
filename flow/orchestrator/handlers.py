@@ -12,7 +12,7 @@ LOG = logging.getLogger(__name__)
 @inject(redis=flow.interfaces.IStorage,
         service_interfaces=flow.interfaces.IServiceLocator,
         queue_name=setting('orchestrator.set_token_queue'))
-class PetriSetTokenHandler(object):
+class PetriSetTokenHandler(flow.interfaces.IHandler):
     message_class = SetTokenMessage
 
     def __call__(self, message):
@@ -29,8 +29,9 @@ class PetriSetTokenHandler(object):
 @inject(redis=flow.interfaces.IStorage,
         service_interfaces=flow.interfaces.IServiceLocator,
         queue_name=setting('orchestrator.notify_transition_queue'))
-class PetriNotifyTransitionHandler(object):
+class PetriNotifyTransitionHandler(flow.interfaces.IHandler):
     message_class = NotifyTransitionMessage
+
     def __call__(self, message):
         try:
             net = get_object(self.redis, message.net_key)

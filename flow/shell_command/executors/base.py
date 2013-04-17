@@ -4,6 +4,7 @@ from flow.util import environment as env_util
 from injector import inject
 
 import abc
+import flow.interfaces
 import logging
 import os
 import socket
@@ -14,13 +15,7 @@ LOG = logging.getLogger(__name__)
 @inject(wrapper=setting('shell_command.wrapper'),
         default_environment=setting('shell_command.default_environment', {}),
         mandatory_environment=setting('shell_command.mandatory_environment', {}))
-class ExecutorBase(object):
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def execute(self, command_line, **kwargs):
-        pass
-
+class ExecutorBase(flow.interfaces.IShellCommandExecutor):
     def __call__(self, command_line, group_id=None, user_id=None,
             environment={}, **kwargs):
         parent_socket, child_socket = socketpair_or_exit()

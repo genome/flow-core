@@ -1,12 +1,14 @@
 from abc import ABCMeta, abstractmethod
 from flow.util import stats
+
+import flow.interfaces
 import logging
+
 
 LOG = logging.getLogger(__name__)
 
-class BrokerBase(object):
-    __metaclass__ = ABCMeta
 
+class BrokerBase(flow.interfaces.IBroker):
     def publish(self, exchange_name, routing_key, message):
         timer = stats.create_timer('messages.publish.%s' % message.__class__.__name__)
         timer.start()
@@ -17,15 +19,3 @@ class BrokerBase(object):
         self.raw_publish(exchange_name, routing_key, encoded_message)
         timer.split('publish')
         timer.stop()
-
-    @abstractmethod
-    def raw_publish(self, exchange_name, routing_key, encoded_message):
-        pass
-
-    @abstractmethod
-    def register_handler(self, handler):
-        pass
-
-    @abstractmethod
-    def connect_and_listen(self):
-        pass

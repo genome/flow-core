@@ -1,16 +1,10 @@
-import abc
+import flow.interfaces
 
 
 _SENTINEL = object()
 
 
-class SettingsBase(object):
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def get(self, path, defaut=None):
-        pass
-
+class SettingsBase(flow.interfaces.ISettings):
     def __getitem__(self, path):
         result = self.get(path, _SENTINEL)
         if result is _SENTINEL:

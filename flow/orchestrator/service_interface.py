@@ -14,7 +14,7 @@ LOG = logging.getLogger(__name__)
         set_token_routing_key=setting('orchestrator.set_token_routing_key'),
         notify_transition_exchange=setting('orchestrator.notify_transition_exchange'),
         notify_transition_routing_key=setting('orchestrator.notify_transition_routing_key'))
-class OrchestratorServiceInterface(object):
+class OrchestratorServiceInterface(flow.interfaces.IOrchestrator):
     def set_token(self, net_key, place_idx, token_key=None):
         message = SetTokenMessage(net_key=net_key, place_idx=place_idx,
                 token_key=token_key)

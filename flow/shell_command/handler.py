@@ -4,6 +4,7 @@ from flow.interfaces import IShellCommandExecutor, IBroker, IStorage
 from flow.petri import Token, SetTokenMessage
 from injector import inject
 
+import flow.interfaces
 import logging
 
 
@@ -11,7 +12,7 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(executor=IShellCommandExecutor, broker=IBroker, storage=IStorage)
-class ShellCommandSubmitMessageHandler(object):
+class ShellCommandSubmitMessageHandler(flow.interfaces.IHandler):
     message_class = ShellCommandSubmitMessage
 
     def __call__(self, message):
