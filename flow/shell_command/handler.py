@@ -39,14 +39,14 @@ class ShellCommandSubmitMessageHandler(object):
             response_message = SetTokenMessage(token_key=token.key,
                     net_key=net_key, place_idx=int(place_idx))
             self.broker.publish(self.exchange,
-                    self.routing_key, response_message)
+                    self.response_routing_key, response_message)
 
 @inject(queue_name=Setting('shell_command.fork.queue'),
         exchange=Setting('shell_command.fork.exchange'),
-        routing_key=Setting('shell_command.fork.routing_key'))
+        response_routing_key=Setting('shell_command.fork.response_routing_key'))
 class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler): pass
 
 @inject(queue_name=Setting('shell_command.lsf.queue'),
         exchange=Setting('shell_command.lsf.exchange'),
-        routing_key=Setting('shell_command.lsf.routing_key'))
+        response_routing_key=Setting('shell_command.lsf.response_routing_key'))
 class LSFShellCommandMessageHandler(ShellCommandSubmitMessageHandler): pass
