@@ -1,9 +1,10 @@
 from flow.brokers.acking_strategies import PublisherConfirmation
 from flow.brokers.amqp_parameters import AmqpConnectionParameters
 from flow.brokers.base import BrokerBase
+from flow.configuration.settings.injector import setting
 from flow.protocol.exceptions import InvalidMessageException
 from flow.util import stats
-from injector import inject, Setting
+from injector import inject
 from pika.adapters import twisted_connection
 from twisted.internet import reactor, protocol, defer
 from twisted.internet.error import ReactorNotRunning
@@ -15,7 +16,7 @@ import pika
 LOG = logging.getLogger(__name__)
 
 @inject(connection_params=AmqpConnectionParameters,
-        prefetch_count=Setting('amqp.prefetch_count'),
+        prefetch_count=setting('amqp.prefetch_count'),
         acking_strategy=PublisherConfirmation)
 class StrategicAmqpBroker(BrokerBase):
     def __init__(self):

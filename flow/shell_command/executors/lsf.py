@@ -1,7 +1,8 @@
+from flow.configuration.settings.injector import setting
 from flow.shell_command import util
 from flow.shell_command.executors.base import ExecutorBase
 from flow.shell_command.resource import Resource, ResourceException
-from injector import inject, Setting
+from injector import inject
 from pythonlsf import lsf
 from twisted.python.procutils import which
 
@@ -58,8 +59,8 @@ def _make_rusage_string(require, reserve):
     return str(" ".join(rv))
 
 
-@inject(post_exec=Setting('shell_command.post_exec'),
-        default_queue=Setting('shell_command.lsf.default_queue'))
+@inject(post_exec=setting('shell_command.post_exec'),
+        default_queue=setting('shell_command.lsf.default_queue'))
 class LSFExecutor(ExecutorBase):
     def execute(self, command_line, **kwargs):
         request = self.construct_request(command_line, **kwargs)

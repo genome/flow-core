@@ -1,6 +1,7 @@
 from flow.commands.base import CommandBase
 from flow.configuration.inject.redis_conf import RedisConfiguration
-from injector import inject, Setting
+from flow.configuration.settings.injector import setting
+from injector import inject
 
 import flow.interfaces
 import flow.redisom as rom

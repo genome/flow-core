@@ -1,6 +1,7 @@
 from flow import exit_codes
+from flow.configuration.settings.injector import setting
 from flow.util import environment as env_util
-from injector import inject, Setting
+from injector import inject
 
 import abc
 import logging
@@ -10,9 +11,9 @@ import socket
 LOG = logging.getLogger(__name__)
 
 
-@inject(wrapper=Setting('shell_command.wrapper'),
-        default_environment=Setting('shell_command.default_environment'),
-        mandatory_environment=Setting('shell_command.mandatory_environment'))
+@inject(wrapper=setting('shell_command.wrapper'),
+        default_environment=setting('shell_command.default_environment'),
+        mandatory_environment=setting('shell_command.mandatory_environment'))
 class ExecutorBase(object):
     __metaclass__ = abc.ABCMeta
 

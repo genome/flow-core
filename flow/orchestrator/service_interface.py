@@ -1,5 +1,6 @@
+from flow.configuration.settings.injector import setting
 from flow.petri import NotifyTransitionMessage, SetTokenMessage
-from injector import inject, Setting
+from injector import inject
 
 import flow.interfaces
 import logging
@@ -9,10 +10,10 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(broker=flow.interfaces.IBroker,
-        set_token_exchange=Setting('orchestrator.set_token_exchange'),
-        set_token_routing_key=Setting('orchestrator.set_token_routing_key'),
-        notify_transition_exchange=Setting('orchestrator.notify_transition_exchange'),
-        notify_transition_routing_key=Setting('orchestrator.notify_transition_routing_key'))
+        set_token_exchange=setting('orchestrator.set_token_exchange'),
+        set_token_routing_key=setting('orchestrator.set_token_routing_key'),
+        notify_transition_exchange=setting('orchestrator.notify_transition_exchange'),
+        notify_transition_routing_key=setting('orchestrator.notify_transition_routing_key'))
 class OrchestratorServiceInterface(object):
     def set_token(self, net_key, place_idx, token_key=None):
         message = SetTokenMessage(net_key=net_key, place_idx=place_idx,

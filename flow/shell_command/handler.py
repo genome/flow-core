@@ -1,7 +1,8 @@
+from flow.configuration.settings.injector import setting
 from flow.shell_command.messages import ShellCommandSubmitMessage
 from flow.interfaces import IShellCommandExecutor, IBroker, IStorage
 from flow.petri import Token, SetTokenMessage
-from injector import inject, Setting
+from injector import inject
 
 import logging
 
@@ -41,12 +42,12 @@ class ShellCommandSubmitMessageHandler(object):
             self.broker.publish(self.exchange,
                     self.response_routing_key, response_message)
 
-@inject(queue_name=Setting('shell_command.fork.queue'),
-        exchange=Setting('shell_command.fork.exchange'),
-        response_routing_key=Setting('shell_command.fork.response_routing_key'))
+@inject(queue_name=setting('shell_command.fork.queue'),
+        exchange=setting('shell_command.fork.exchange'),
+        response_routing_key=setting('shell_command.fork.response_routing_key'))
 class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler): pass
 
-@inject(queue_name=Setting('shell_command.lsf.queue'),
-        exchange=Setting('shell_command.lsf.exchange'),
-        response_routing_key=Setting('shell_command.lsf.response_routing_key'))
+@inject(queue_name=setting('shell_command.lsf.queue'),
+        exchange=setting('shell_command.lsf.exchange'),
+        response_routing_key=setting('shell_command.lsf.response_routing_key'))
 class LSFShellCommandMessageHandler(ShellCommandSubmitMessageHandler): pass

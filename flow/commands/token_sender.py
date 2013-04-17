@@ -1,8 +1,9 @@
 from flow.commands.base import CommandBase
 from flow.configuration.inject.broker import BlockingBrokerConfiguration
 from flow.configuration.inject.redis_conf import RedisConfiguration
+from flow.configuration.settings.injector import setting
 from flow.petri.netbase import Token, SetTokenMessage
-from injector import inject, Setting
+from injector import inject
 
 import flow.interfaces
 import logging
@@ -12,8 +13,8 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(broker=flow.interfaces.IBroker, storage=flow.interfaces.IStorage,
-        exchange=Setting('send_token.exchange'),
-        routing_key=Setting('send_token.routing_key'))
+        exchange=setting('send_token.exchange'),
+        routing_key=setting('send_token.routing_key'))
 class TokenSenderCommand(CommandBase):
     injector_modules = [
             BlockingBrokerConfiguration,

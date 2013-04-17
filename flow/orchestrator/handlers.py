@@ -1,6 +1,7 @@
+from flow.configuration.settings.injector import setting
 from flow.petri import SetTokenMessage, NotifyTransitionMessage
 from flow.redisom import get_object
-from injector import inject, Setting
+from injector import inject
 
 import flow.interfaces
 import logging
@@ -10,7 +11,7 @@ LOG = logging.getLogger(__name__)
 
 @inject(redis=flow.interfaces.IStorage,
         service_interfaces=flow.interfaces.IServiceLocator,
-        queue_name=Setting('orchestrator.set_token_queue'))
+        queue_name=setting('orchestrator.set_token_queue'))
 class PetriSetTokenHandler(object):
     message_class = SetTokenMessage
 
@@ -27,7 +28,7 @@ class PetriSetTokenHandler(object):
 
 @inject(redis=flow.interfaces.IStorage,
         service_interfaces=flow.interfaces.IServiceLocator,
-        queue_name=Setting('orchestrator.notify_transition_queue'))
+        queue_name=setting('orchestrator.notify_transition_queue'))
 class PetriNotifyTransitionHandler(object):
     message_class = NotifyTransitionMessage
     def __call__(self, message):
