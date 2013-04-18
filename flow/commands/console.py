@@ -11,11 +11,10 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-@inject(storage=flow.interfaces.IStorage, broker=flow.interfaces.IBroker,
+@inject(storage=flow.interfaces.IStorage,
         injector=Injector)
 class ConsoleCommand(CommandBase):
     injector_modules = [
-            BlockingBrokerConfiguration,
             RedisConfiguration,
     ]
 
@@ -32,7 +31,6 @@ class ConsoleCommand(CommandBase):
 
     def __call__(self, parsed_arguments):
         namespace = {
-                'broker': self.broker,
                 'get_object': self.get_key,
                 'injector': self.injector,
                 'interfaces': flow.interfaces,
