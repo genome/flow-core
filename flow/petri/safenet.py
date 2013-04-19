@@ -2,6 +2,7 @@ from flow.petri.netbase import NetBase, Token, PlaceCapacityError
 
 from flow.protocol.message import Message
 from flow.util import stats
+from twisted.internet import defer
 
 from uuid import uuid4
 import base64
@@ -207,13 +208,15 @@ class SafeNet(NetBase):
 
         if rv[0] != 0:
             timer.stop()
-            return
+            return defer.succeed(None)
 
         action = trans.action
         new_token = None
+        deferreds = []
         if action is not None:
-            new_token = action.execute(active_tokens_key, net=self,
+            new_token, deferred = action.execute(active_tokens_key, net=self,
                     service_interfaces=service_interfaces)
+            deferreds.append(deferred)
             timer.split('execute_action.%s' % action.__class__.__name__)
 
         if new_token is None:
@@ -228,11 +231,13 @@ class SafeNet(NetBase):
         if tokens_pushed == 1:
             orchestrator = service_interfaces['orchestrator']
             for place_idx in places_to_notify:
-                orchestrator.set_token(self.key, int(place_idx), token_key='')
+                deferred = orchestrator.set_token(self.key, int(place_idx), token_key='')
+                deferreds.append(deferred)
             timer.split('set_tokens')
             self.connection.delete(tokens_pushed_key)
             timer.split('delete_pushed_tokens')
         timer.stop()
+        return defer.DeferredList(deferreds)
 
     def set_token(self, place_idx, token_key='', service_interfaces=None,
             token_color=None):
@@ -258,6 +263,7 @@ class SafeNet(NetBase):
                     "a token already exists" %
                     (token_key, place.key))
 
+        deferreds = []
         if self.connection.hexists(marking_key, place_idx):
             place.first_token_timestamp.setnx()
 
@@ -265,12 +271,14 @@ class SafeNet(NetBase):
             arcs_out = place.arcs_out.value
 
             for packet in place.entry_observers.value:
-                orchestrator.place_entry_observed(packet)
+                deferreds.append(orchestrator.place_entry_observed(packet))
 
             for trans_idx in arcs_out:
-                orchestrator.notify_transition(self.key, int(trans_idx),
+                deferred = orchestrator.notify_transition(self.key, int(trans_idx),
                         int(place_idx))
+                deferreds.append(deferred)
         timer.stop()
+        return defer.DeferredList(deferreds)
 
     def _place_plot_color(self, place, idx):
         ftt = False

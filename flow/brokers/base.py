@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from flow.util import stats
+from twisted.internet import defer
 
 import flow.interfaces
 import logging
@@ -19,3 +20,4 @@ class BrokerBase(flow.interfaces.IBroker):
         self.raw_publish(exchange_name, routing_key, encoded_message)
         timer.split('publish')
         timer.stop()
+        return defer.succeed(None)

@@ -2,6 +2,7 @@ from flow.petri.netbase import Token, NetBase, TransitionAction,\
         TokenColorError
 
 from flow.protocol.message import Message
+from twisted.internet import defer
 
 from uuid import uuid4
 import base64
@@ -263,17 +264,20 @@ class Net(NetBase):
                     (token_key, color_idx))
 
         token_count = len(self.marking(token_color))
+        deferreds = []
         if token_count > 0:
             place.first_token_timestamp.setnx()
             orchestrator = service_interfaces['orchestrator']
             arcs_out = place.arcs_out.value
 
             for packet in place.entry_observers.value:
-                orchestrator.place_entry_observed(packet)
+                deferreds.append(orchestrator.place_entry_observed(packet))
 
             for trans_idx in arcs_out:
-                orchestrator.notify_transition(self.key, int(trans_idx),
+                deferred = orchestrator.notify_transition(self.key, int(trans_idx),
                         int(place_idx), token_color=token_color)
+                deferreds.append(deferred)
+        return defer.DeferredList(deferreds)
 
     def consume_tokens(self, transition, notifying_place_idx, color_idx):
         active_tokens_key = transition.active_tokens_for_color(color_idx).key
@@ -335,7 +339,7 @@ class Net(NetBase):
         trans = self.transition(trans_idx)
 
         if not self.consume_tokens(trans, place_idx, token_color):
-            return
+            return defer.succeed(None)
 
         active_tokens_key = trans.active_tokens_for_color(token_color).key
         tokens_pushed_key = trans.tokens_pushed(token_color).key
@@ -343,9 +347,11 @@ class Net(NetBase):
 
         action = trans.action
         new_token = None
+        deferreds = []
         if action is not None:
-            new_token = action.execute(active_tokens_key, net=self,
+            new_token, deferred = action.execute(active_tokens_key, net=self,
                     service_interfaces=service_interfaces)
+            deferreds.append(deferred)
 
         if new_token is None:
             new_token = Token.create(self.connection)
@@ -364,9 +370,11 @@ class Net(NetBase):
             orchestrator = service_interfaces['orchestrator']
             for place_idx in arcs_out:
                 LOG.debug("Notify place %r color=%r", place_idx, token_color)
-                orchestrator.set_token(self.key, int(place_idx), token_key='',
+                deferred = orchestrator.set_token(self.key, int(place_idx), token_key='',
                         token_color=token_color)
+                deferreds.append(deferred)
             self.connection.delete(tokens_pushed_key)
+        return defer.DeferredList(deferreds)
 
     def _place_plot_name(self, place, idx):
         name = str(place.name)
@@ -403,6 +411,10 @@ class ColorJoinAction(TransitionAction):
         added, size = self.arrived.add_return_size(color)
         if added and size == net.num_token_colors.value:
             self.on_complete(active_tokens_key, net, service_interfaces)
+            deferred = self.on_complete(active_tokens_key, net, service_interfaces)
+            return None, deferred
+        else:
+            return None, defer.succeed(None)
 
     def on_complete(self, active_tokens_key, net, service_interfaces):
-        pass
+        return defer.succeed(None)

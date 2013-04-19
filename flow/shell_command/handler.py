@@ -4,6 +4,7 @@ from flow.interfaces import IShellCommandExecutor, IBroker, IStorage
 from flow.service_locator import ServiceLocator
 from flow.petri import Token, SetTokenMessage
 from injector import inject
+from twisted.internet import defer
 
 import flow.interfaces
 import logging
@@ -31,6 +32,7 @@ class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
         job_id, success = self.executor(message.command_line,
                 net_key=net_key, response_places=response_places,
                 **executor_options)
+        return defer.succeed(True)
 
 @inject(storage=IStorage,
         service_locator=ServiceLocator,
@@ -59,6 +61,6 @@ class LSFShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
                 color_idx=token_color)
 
         orchestrator = self.service_locator['orchestrator']
-        orchestrator.set_token(net_key=net_key, place_idx=response_place,
+        return orchestrator.set_token(net_key=net_key, place_idx=response_place,
                 token_key=token.key, token_color=token_color)
 

@@ -21,7 +21,7 @@ class ShellCommandServiceInterface(flow.interfaces.IShellCommand):
                 token_color=token_color,
                 executor_options=executor_options)
 
-        self.broker.publish(self.exchange, self.submit_routing_key, message)
+        return self.broker.publish(self.exchange, self.submit_routing_key, message)
 
 
 @inject(exchange=setting('shell_command.fork.exchange'),

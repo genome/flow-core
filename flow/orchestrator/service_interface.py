@@ -18,7 +18,7 @@ class OrchestratorServiceInterface(flow.interfaces.IOrchestrator):
     def set_token(self, net_key, place_idx, token_key=None, token_color=None):
         message = SetTokenMessage(net_key=net_key, place_idx=int(place_idx),
                 token_key=token_key, token_color=token_color)
-        self.broker.publish(self.set_token_exchange,
+        return self.broker.publish(self.set_token_exchange,
                 self.set_token_routing_key, message)
 
     def notify_transition(self, net_key, transition_idx, place_idx,
@@ -28,7 +28,7 @@ class OrchestratorServiceInterface(flow.interfaces.IOrchestrator):
                 transition_idx=transition_idx,
                 place_idx=place_idx,
                 token_color=token_color)
-        self.broker.publish(self.notify_transition_exchange,
+        return self.broker.publish(self.notify_transition_exchange,
                 self.notify_transition_routing_key, message)
 
     def place_entry_observed(self, packet):
@@ -36,4 +36,4 @@ class OrchestratorServiceInterface(flow.interfaces.IOrchestrator):
         routing_key = packet['routing_key']
         body        = packet['body']
 
-        self.broker.raw_publish(exchange, routing_key, body)
+        return self.broker.raw_publish(exchange, routing_key, body)

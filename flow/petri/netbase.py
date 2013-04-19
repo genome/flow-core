@@ -1,4 +1,5 @@
 from flow.protocol.message import Message
+from twisted.internet import defer
 
 from uuid import uuid4
 import base64
@@ -193,9 +194,17 @@ class NetBase(rom.Object):
 
     def notify_transition(self, trans_idx=None, place_idx=None,
             service_interfaces=None, token_color=None):
+        """
+        Returns a deferred that fires when all service_interface related
+        deferreds have fired.
+        """
         raise NotImplementedError()
 
     def set_token(self, place_idx, token_key='', service_interfaces=None):
+        """
+        Returns a deferred that fires when all service_interface related
+        deferreds have fired.
+        """
         raise NotImplementedError()
 
     def _trans_plot_color(self, trans):
@@ -279,6 +288,9 @@ class TransitionAction(rom.Object):
             return None
 
     def execute(self, active_tokens_key, net, service_interfaces):
+        """
+        Returns a (new_token, deferred) tuple. new_token may be None
+        """
         raise NotImplementedError("In class %s: execute not implemented" %
                 self.__class__.__name__)
 
@@ -291,6 +303,7 @@ class CounterAction(TransitionAction):
 
     def execute(self, active_tokens_key, net, service_interfaces):
         self.call_count.incr(1)
+        return None, defer.succeed(None)
 
 
 class ShellCommandAction(TransitionAction):
@@ -307,7 +320,8 @@ class ShellCommandAction(TransitionAction):
         else:
             return_place = self.args["failure_place_id"]
 
-        orchestrator.set_token(net.key, int(return_place), token_key=token.key)
+        deferred = orchestrator.set_token(net.key, int(return_place), token_key=token.key)
+        return None, deferred
 
 
 class SetRemoteTokenAction(TransitionAction):
@@ -323,7 +337,8 @@ class SetRemoteTokenAction(TransitionAction):
                 data_type=data_type)
 
         orchestrator = service_interfaces['orchestrator']
-        orchestrator.set_token(remote_net_key, remote_place_id, token.key)
+        deferred = orchestrator.set_token(remote_net_key, remote_place_id, token.key)
+        return None, deferred
 
 
 class MergeTokensAction(TransitionAction):
@@ -335,4 +350,5 @@ class MergeTokensAction(TransitionAction):
         input_type = self.args["input_type"]
         output_type = self.args["output_type"]
         data = merge_token_data(tokens, data_type=input_type)
-        return Token.create(self.connection, data_type=output_type, data=data)
+        token = Token.create(self.connection, data_type=output_type, data=data)
+        return token, defer.succeed(None)

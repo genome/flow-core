@@ -2,6 +2,7 @@ from flow.configuration.settings.injector import setting
 from flow.petri import SetTokenMessage, NotifyTransitionMessage
 from flow.redisom import get_object
 from injector import inject
+from twisted.internet import defer
 
 import flow.interfaces
 import logging
@@ -22,6 +23,7 @@ class PetriSetTokenHandler(flow.interfaces.IHandler):
             net.set_token(message.place_idx, message.token_key,
                     service_interfaces=self.service_interfaces,
                     token_color=color)
+            return defer.succeed(True)
         except Exception as e:
             LOG.exception(
                     'Handler (%s) failed to add tokens to net %s place %d: %s'
@@ -41,6 +43,7 @@ class PetriNotifyTransitionHandler(flow.interfaces.IHandler):
             net.notify_transition(message.transition_idx, message.place_idx,
                     service_interfaces=self.service_interfaces,
                     token_color=color)
+            return defer.succeed(True)
         except Exception as e:
             LOG.exception('Handler (%s) failed to execute transition %s'
                           ' on net %s: %s' % (self, message.transition_idx,

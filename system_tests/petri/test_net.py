@@ -1,4 +1,5 @@
 from flow import petri
+from twisted.internet import defer
 
 import flow.redisom as rom
 
@@ -195,6 +196,7 @@ class TestableColorJoinAction(petri.ColorJoinAction):
     completed = rom.Property(rom.String)
     def on_complete(self, active_tokens_key, net, service_interfaces):
         self.completed = "hello"
+        return defer.succeed(None)
 
 class TestJoinAction(TestBase):
     def test_join_action(self):

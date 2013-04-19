@@ -93,7 +93,7 @@ class ShellCommandDispatchAction(petri.TransitionAction):
                 LOG.debug("Flow environment variable set: %s=%s", k, v)
 
         response_places = self._response_places()
-        service_interfaces[self.service_name].submit(
+        deferred = service_interfaces[self.service_name].submit(
                 command_line=cmdline,
                 net_key=net.key,
                 response_places=response_places,
@@ -101,7 +101,7 @@ class ShellCommandDispatchAction(petri.TransitionAction):
                 **executor_options
                 )
 
-        return token
+        return token, deferred
 
 
 class LSFDispatchAction(ShellCommandDispatchAction):
