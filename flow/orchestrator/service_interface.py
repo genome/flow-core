@@ -1,25 +1,22 @@
+from flow.configuration.settings.injector import setting
+from flow.petri import NotifyTransitionMessage, SetTokenMessage
+from injector import inject
+
+import flow.interfaces
 import logging
 
-from flow.petri import NotifyTransitionMessage, SetTokenMessage
 
 LOG = logging.getLogger(__name__)
 
-class OrchestratorServiceInterface(object):
-    def __init__(self, broker=None,
-            set_token_exchange=None,
-            set_token_routing_key=None,
-            notify_transition_exchange=None,
-            notify_transition_routing_key=None):
 
-        self.broker = broker
-
-        self.set_token_exchange            = set_token_exchange
-        self.set_token_routing_key         = set_token_routing_key
-        self.notify_transition_exchange    = notify_transition_exchange
-        self.notify_transition_routing_key = notify_transition_routing_key
-
+@inject(broker=flow.interfaces.IBroker,
+        set_token_exchange=setting('orchestrator.set_token_exchange'),
+        set_token_routing_key=setting('orchestrator.set_token_routing_key'),
+        notify_transition_exchange=setting('orchestrator.notify_transition_exchange'),
+        notify_transition_routing_key=setting('orchestrator.notify_transition_routing_key'))
+class OrchestratorServiceInterface(flow.interfaces.IOrchestrator):
     def set_token(self, net_key, place_idx, token_key=None):
-        message = SetTokenMessage(net_key=net_key, place_idx=place_idx,
+        message = SetTokenMessage(net_key=net_key, place_idx=int(place_idx),
                 token_key=token_key)
         self.broker.publish(self.set_token_exchange,
                 self.set_token_routing_key, message)

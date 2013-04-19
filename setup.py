@@ -2,18 +2,25 @@ from setuptools import setup, find_packages
 
 entry_points = '''
 [console_scripts]
-flow = flow.commands.main:main
+flow = flow.main:main
 
 [flow.commands]
 set-token = flow.commands.set_token:SetTokenCommand
-orchestrator = flow.commands.service:ServiceCommand
-local_command_line_service = flow.commands.service:ServiceCommand
-lsf_command_line_service = flow.commands.service:ServiceCommand
-lsf_post_exec = flow.commands.lsf_post_exec:LsfPostExecCommand
-command_line_wrapper = flow.commands.wrapper:WrapperCommand
+orchestrator = flow.commands.orchestrator:OrchestratorCommand
+
+fork-shell-command-service = flow.shell_command.commands.fork_service:ForkShellCommand
+lsf-shell-command-service = flow.shell_command.commands.lsf_service:LSFShellCommand
+lsf-post-exec = flow.shell_command.commands.lsf_post_exec:LsfPostExecCommand
+shell-command-wrapper = flow.shell_command.commands.wrapper:WrapperCommand
+
 configure_rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 console = flow.commands.console:ConsoleCommand
 graph = flow.commands.graph:GraphCommand
+
+[flow.services]
+orchestrator = flow.orchestrator.service_interface:OrchestratorServiceInterface
+fork = flow.shell_command.service_interface:ForkShellCommandServiceInterface
+lsf = flow.shell_command.service_interface:LSFShellCommandServiceInterface
 '''
 
 setup(
@@ -29,6 +36,7 @@ setup(
         install_requires = [
             'blist',
             'hiredis',
+            'injector',
             'ipython',
             'pika',
             'platform-python-lsf-api',

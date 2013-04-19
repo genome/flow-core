@@ -1,24 +1,25 @@
-import logging
-
-import pika
+from flow.brokers.acking_strategies import PublisherConfirmation
+from flow.brokers.amqp_parameters import AmqpConnectionParameters
+from flow.brokers.base import BrokerBase
+from flow.configuration.settings.injector import setting
+from flow.protocol.exceptions import InvalidMessageException
+from flow.util import stats
+from injector import inject
 from pika.adapters import twisted_connection
 from twisted.internet import reactor, protocol, defer
 from twisted.internet.error import ReactorNotRunning
 
-from flow.protocol.exceptions import InvalidMessageException
-from flow.brokers.base import BrokerBase
-from flow.util import stats
+import logging
+import pika
 
 
 LOG = logging.getLogger(__name__)
 
+@inject(connection_params=AmqpConnectionParameters,
+        prefetch_count=setting('amqp.prefetch_count'),
+        acking_strategy=PublisherConfirmation)
 class StrategicAmqpBroker(BrokerBase):
-    def __init__(self, prefetch_count=None, acking_strategy=None,
-            **connection_params):
-        self.prefetch_count = prefetch_count
-        self.acking_strategy = acking_strategy
-        self.connection_params = connection_params
-
+    def __init__(self):
         self._publish_properties = pika.BasicProperties(delivery_mode=2)
 
         self._consumer_tags = []
@@ -76,7 +77,10 @@ class StrategicAmqpBroker(BrokerBase):
         self.connect()
 
     def connect(self):
-        params = pika.ConnectionParameters(**self.connection_params)
+        params = pika.ConnectionParameters(
+                host=self.connection_params.hostname,
+                port=self.connection_params.port,
+                virtual_host=self.connection_params.virtual_host)
 
         self._connection = protocol.ClientCreator(reactor,
                 twisted_connection.TwistedProtocolConnection,
@@ -92,6 +96,7 @@ class StrategicAmqpBroker(BrokerBase):
 
     def disconnect(self):
         LOG.info("Closing AMQP connection.")
+        # XXX bug: _connection does not always have a transport member
         self._connection.transport.loseConnection()
 
     def _on_connected(self, connection):

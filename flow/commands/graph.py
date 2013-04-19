@@ -1,15 +1,22 @@
-import flow.redisom as rom
-
 from flow.commands.base import CommandBase
+from flow.configuration.inject.redis_conf import RedisConfiguration
+from flow.configuration.settings.injector import setting
+from injector import inject
 
+import flow.interfaces
+import flow.redisom as rom
 import logging
 import sys
 
+
 LOG = logging.getLogger(__name__)
 
+
+@inject(storage=flow.interfaces.IStorage)
 class GraphCommand(CommandBase):
-    def __init__(self, storage=None):
-        self.storage = storage
+    injector_modules = [
+            RedisConfiguration,
+    ]
 
     @staticmethod
     def annotate_parser(parser):

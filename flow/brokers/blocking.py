@@ -1,17 +1,24 @@
+from flow.brokers.amqp_parameters import AmqpConnectionParameters
+from flow.brokers.base import BrokerBase
+from injector import inject
+
 import logging
 import pika
-
-from flow.brokers.base import BrokerBase
 
 LOG = logging.getLogger(__name__)
 
 
+@inject(connection_params=AmqpConnectionParameters)
 class BlockingAmqpBroker(BrokerBase):
-    def __init__(self, **connection_params):
-        self.connection_params = connection_params
-
     def connect(self):
-        params = pika.ConnectionParameters(**self.connection_params)
+        params = pika.ConnectionParameters(
+            connection_attempts=self.connection_params.connection_attempts,
+            host=self.connection_params.hostname,
+            port=self.connection_params.port,
+            retry_delay=self.connection_params.retry_delay,
+            socket_timeout=self.connection_params.socket_timeout,
+            virtual_host=self.connection_params.virtual_host,
+        )
         self.connection = pika.BlockingConnection(params)
 
         self.channel = self.connection.channel()

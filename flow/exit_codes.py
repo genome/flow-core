@@ -11,3 +11,5 @@ EXECUTE_ERROR = os.EX_SOFTWARE
 #   should retry.  Retrying usually means re-delivering a messages and/or
 #   restarting a service.
 EXECUTE_SYSTEM_FAILURE = os.EX_TEMPFAIL
+
+UNKNOWN_ERROR = 1
