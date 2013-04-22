@@ -1,12 +1,12 @@
 from flow.configuration.settings.injector import setting
-from flow.shell_command.messages import ShellCommandSubmitMessage
+from flow.handler import Handler
 from flow.interfaces import IShellCommandExecutor, IBroker, IStorage
-from flow.service_locator import ServiceLocator
 from flow.petri import Token, SetTokenMessage
+from flow.service_locator import ServiceLocator
+from flow.shell_command.messages import ShellCommandSubmitMessage
 from injector import inject
 from twisted.internet import defer
 
-import flow.interfaces
 import logging
 
 
@@ -14,7 +14,7 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(executor=IShellCommandExecutor)
-class ShellCommandSubmitMessageHandler(flow.interfaces.IHandler):
+class ShellCommandSubmitMessageHandler(Handler):
     message_class = ShellCommandSubmitMessage
 
 
@@ -22,7 +22,7 @@ class ShellCommandSubmitMessageHandler(flow.interfaces.IHandler):
         exchange=setting('shell_command.fork.exchange'),
         response_routing_key=setting('shell_command.fork.response_routing_key'))
 class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
-    def __call__(self, message):
+    def _handle_message(self, message):
         LOG.debug('ForkShellCommandSubmitMessageHandler got message')
         executor_options = getattr(message, 'executor_options', {})
 
@@ -40,7 +40,7 @@ class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
         exchange=setting('shell_command.lsf.exchange'),
         response_routing_key=setting('shell_command.lsf.response_routing_key'))
 class LSFShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
-    def __call__(self, message):
+    def _handle_message(self, message):
         LOG.debug('LsfShellCommandSubmitMessageHandler got message')
         executor_options = getattr(message, 'executor_options', {})
 

@@ -1,6 +1,5 @@
 from flow.brokers.amqp_parameters import AmqpConnectionParameters
 from flow.configuration.settings.injector import setting
-from flow.protocol.exceptions import InvalidMessageException
 from flow.util import stats
 from injector import inject
 from pika.adapters import twisted_connection
@@ -37,11 +36,6 @@ class AmqpBroker(flow.interfaces.IBroker):
         self._channel.basic_reject(receive_tag, requeue=False)
 
     def register_handler(self, handler):
-        """
-        Register a handler to accept messages on a queue.  When a connection is
-        made the listener will be set up for you and will deliver message_class
-        objects to the handler's __call__ function.
-        """
         queue_name = handler.queue_name
         message_class = handler.message_class
 
@@ -53,11 +47,6 @@ class AmqpBroker(flow.interfaces.IBroker):
         self._listeners[queue_name] = listener
 
     def publish(self, exchange_name, routing_key, message):
-        """
-        Publish an unencoded message to the amqp server and submit timing info.
-
-        Returns the deferred from self.raw_publish
-        """
         timer = stats.create_timer('messages.publish.%s' %
                 message.__class__.__name__)
         timer.start()
@@ -71,13 +60,6 @@ class AmqpBroker(flow.interfaces.IBroker):
         return deferred
 
     def raw_publish(self, exchange_name, routing_key, encoded_message):
-        """
-        Publish an encoded message to the amqp server.
-
-        Returns a deferred that will callback when amqp server confirms and
-        will errback when amqp server rejects published message.  Both are
-        called with the publish_tag
-        """
         self._last_publish_tag += 1
         publish_tag = self._last_publish_tag
         LOG.debug("Publishing message (%d) to routing key (%s): %s",
@@ -230,33 +212,23 @@ class AmqpListener(object):
     def listen(self, channel, basic_deliver, properties, encoded_message):
         timer = stats.create_timer(self.message_stats_tag)
         timer.start()
+
         broker = self.broker
-
         recieve_tag = basic_deliver.delivery_tag
-
         LOG.debug('Received message (%d), properties = %s',
                 recieve_tag, properties)
-
         timer.split('setup')
-        try:
-            message = self.message_class.decode(encoded_message)
-            timer.split('decode')
-            deferred = self.handler(message)
-            deferred.addCallbacks(self.ack, self.reject,
-                    callbackArgs=(recieve_tag,),
-                    errbackArgs=(recieve_tag,))
-            timer.split('handle')
-        except InvalidMessageException:
-            LOG.exception('Invalid message.  Properties = %s, message = %s',
-                    properties, encoded_message)
-            broker.reject(recieve_tag)
-            timer.split('reject')
-        except:
-            LOG.exception('Unexpected error handling message.')
-            broker.reject(recieve_tag)
-            timer.split('reject')
-        finally:
-            timer.stop()
+
+        message = self.message_class.decode(encoded_message)
+        timer.split('decode')
+
+        deferred = self.handler(message)
+        deferred.addCallbacks(self.ack, self.reject,
+                callbackArgs=(recieve_tag,),
+                errbackArgs=(recieve_tag,))
+        timer.split('handle')
+
+        timer.stop()
 
     def ack(self, _, receive_tag):
         self.broker.ack(receive_tag)

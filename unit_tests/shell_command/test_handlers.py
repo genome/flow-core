@@ -8,6 +8,8 @@ from flow.petri import SetTokenMessage
 
 import flow.shell_command.handler
 from flow.shell_command.handler import LSFShellCommandMessageHandler
+from twisted.python.failure import Failure
+from twisted.internet import defer
 
 class ShellCommandMessageHandlerTest(unittest.TestCase):
     def setUp(self):
@@ -15,6 +17,7 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
 
         orchestrator = mock.Mock()
         self.set_token = mock.Mock()
+        self.set_token.return_value = defer.succeed(None)
         orchestrator.set_token = self.set_token
 
         service_locator = {'orchestrator':orchestrator}
@@ -49,7 +52,10 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
         self.executor.return_value = (job_id, True)
 
         self.message.token_color = None
-        self.handler(self.message)
+        deferred = self.handler(self.message)
+
+        self.assertEqual(deferred.called, True)
+        self.assertEqual(deferred.result, None)
 
         self.executor.assert_called_once_with(self.message.command_line,
                 net_key=self.net_key, response_places=self.response_places,
@@ -63,7 +69,10 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
         self.executor.return_value = (job_id, False)
 
         self.message.token_color = 3
-        self.handler(self.message)
+        deferred = self.handler(self.message)
+
+        self.assertEqual(deferred.called, True)
+        self.assertEqual(deferred.result, None)
 
         self.executor.assert_called_once_with(self.message.command_line,
                 net_key=self.net_key, response_places=self.response_places,
@@ -82,11 +91,19 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
             token.key = mock.Mock(str)
             T.create.return_value = token
 
-            self.assertRaises(RuntimeError, self.handler, self.message)
+            self.assertRaises(RuntimeError, self.handler._handle_message, self.message)
 
             self.executor.assert_called_once_with(self.message.command_line,
                     net_key=self.net_key, response_places=self.response_places,
                     token_color=self.message.token_color, passthru=True)
+
+            # handler.__call__ returns failed deferred
+            deferred = self.handler(self.message)
+            self.assertEqual(deferred.called, True)
+            self.assertTrue(isinstance(deferred.result, Failure))
+
+            # keep twisted from catching the exception.
+            deferred.addErrback(lambda *args: None)
 
 
 if '__main__' == __name__:
