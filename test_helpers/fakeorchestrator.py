@@ -22,8 +22,6 @@ class FakeOrchestrator(object):
         deferred = net.notify_transition(trans_idx, place_idx,
                 service_interfaces=self.service_interfaces,
                 token_color=token_color)
-
-        deferred = net.notify_transition(trans_idx, place_idx, service_interfaces=self.service_interfaces)
         return deferred
 
     def place_entry_observed(self, packet):
