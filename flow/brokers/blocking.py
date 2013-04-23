@@ -1,15 +1,27 @@
 from flow.brokers.amqp_parameters import AmqpConnectionParameters
-from flow.brokers.base import BrokerBase
+from flow.util import stats
 from injector import inject
 
 import logging
 import pika
+import flow.interfaces
 
 LOG = logging.getLogger(__name__)
 
 
 @inject(connection_params=AmqpConnectionParameters)
-class BlockingAmqpBroker(BrokerBase):
+class BlockingAmqpBroker(flow.interfaces.IBroker):
+    def publish(self, exchange_name, routing_key, message):
+        timer = stats.create_timer('messages.publish.%s' % message.__class__.__name__)
+        timer.start()
+
+        encoded_message = message.encode()
+        timer.split('encode')
+
+        self.raw_publish(exchange_name, routing_key, encoded_message)
+        timer.split('publish')
+        timer.stop()
+
     def connect(self):
         params = pika.ConnectionParameters(
             connection_attempts=self.connection_params.connection_attempts,

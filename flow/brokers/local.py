@@ -1,16 +1,30 @@
 import logging
 from collections import deque, defaultdict
+from flow.util import stats
+from twisted.internet import defer
 
-from flow.brokers.base import BrokerBase
+import flow.interfaces
 
 LOG = logging.getLogger(__name__)
 
 
-class LocalBroker(BrokerBase):
+class LocalBroker(flow.interfaces.IBroker):
     def __init__(self, bindings):
         self.bindings = _transform_bindings(bindings)
         self.queue = deque()
         self.handlers = {}
+
+    def publish(self, exchange_name, routing_key, message):
+        timer = stats.create_timer('messages.publish.%s' % message.__class__.__name__)
+        timer.start()
+
+        encoded_message = message.encode()
+        timer.split('encode')
+
+        deferred = self.raw_publish(exchange_name, routing_key, encoded_message)
+        timer.split('publish')
+        timer.stop()
+        return deferred
 
     def register_handler(self, handler):
         self.handlers[handler.queue_name] = handler
@@ -20,6 +34,7 @@ class LocalBroker(BrokerBase):
                   'routing_key (%s) in queue: %s',
                   exchange, routing_key, encoded_message)
         self.queue.append((exchange, routing_key, encoded_message))
+        return defer.succeed(None)
 
     def connect_and_listen(self):
         return self.listen()
@@ -35,6 +50,7 @@ class LocalBroker(BrokerBase):
                     h = self.handlers[q]
                     message_class = h.message_class
                     message = message_class.decode(encoded_message)
+                    print h
                     h(message)
                 except KeyError:
                     pass
