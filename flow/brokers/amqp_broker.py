@@ -33,6 +33,7 @@ class AmqpBroker(flow.interfaces.IBroker):
         self._confirm_tags = blist.sortedlist()
         self._confirm_deferreds = {}
         self._handlers = []
+        self._ready_callbacks = {}
 
         self._last_publish_tag = 0
 
@@ -65,6 +66,18 @@ class AmqpBroker(flow.interfaces.IBroker):
         deferred = defer.Deferred()
         self.add_confirm_deferred(publish_tag, deferred)
         return deferred
+
+    def add_persistent_ready_callback(self, callback, *args, **kwargs):
+        self._ready_callbacks[callback] = (args, kwargs, False)
+
+    def add_ready_callback(self, callback, *args, **kwargs):
+        self._ready_callbacks[callback] = (args, kwargs, True)
+
+    def remove_ready_callback(self, callback):
+        del self._ready_callbacks[callback]
+
+    def get_ready_callbacks(self):
+        return self._ready_callbacks.values()
 
     def connect_and_listen(self):
         self._connect()
@@ -114,6 +127,14 @@ class AmqpBroker(flow.interfaces.IBroker):
             LOG.debug('Beginning consumption on queue (%s)', queue_name)
 
             self._get_message_from_queue(queue, handler)
+
+        to_be_removed = set()
+        for callback, (args, kwargs, delete) in self._ready_callbacks.iteritems():
+            callback(*args, **kwargs)
+            if delete:
+                to_be_removed.add(callback)
+        for callback in to_be_removed:
+            self.remove_ready_callback(callback)
 
     def _setup_publisher_confirms(self, channel):
         LOG.debug('Enabling publisher confirms.')
