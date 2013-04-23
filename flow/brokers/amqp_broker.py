@@ -29,7 +29,7 @@ class AmqpBroker(flow.interfaces.IBroker):
     def __init__(self):
         self._publish_properties = pika.BasicProperties(delivery_mode=2)
 
-        self._connection = None
+        self.connection = None
         self._confirm_tags = blist.sortedlist()
         self._confirm_deferreds = {}
         self._handlers = []
@@ -67,35 +67,35 @@ class AmqpBroker(flow.interfaces.IBroker):
         return deferred
 
     def connect_and_listen(self):
-        self.connect()
+        self._connect()
         reactor.run()
 
-    def connect(self):
+    def _connect(self):
         params = pika.ConnectionParameters(
                 host=self.connection_params.hostname,
                 port=self.connection_params.port,
                 virtual_host=self.connection_params.virtual_host)
 
-        self._connection = protocol.ClientCreator(reactor,
+        self.connection = protocol.ClientCreator(reactor,
                 twisted_connection.TwistedProtocolConnection,
                 params)
 
         LOG.debug('Attempting to establish connection to host: %s on port: %s',
                 params.host, params.port)
-        deferred = self._connection.connectTCP(params.host, params.port)
+        deferred = self.connection.connectTCP(params.host, params.port)
         deferred.addCallback(self._on_connected)
 
         reactor.addSystemEventTrigger('before', 'shutdown', self.disconnect)
 
     def disconnect(self):
         LOG.info("Closing AMQP connection.")
-        if hasattr(self._connection, 'transport'):
-            self._connection.transport.loseConnection()
+        if hasattr(self.connection, 'transport'):
+            self.connection.transport.loseConnection()
 
     def _on_connected(self, connection):
         LOG.debug('Established connection to AMQP')
         connection.ready.addCallback(self._on_ready)
-        self._connection = connection
+        self.connection = connection
 
     @defer.inlineCallbacks
     def _on_ready(self, connection):
@@ -103,7 +103,7 @@ class AmqpBroker(flow.interfaces.IBroker):
         LOG.debug('Channel open')
 
         if self.prefetch_count:
-            self._channel.basic_qos(prefetch_count=self.prefetch_count)
+            yield self._channel.basic_qos(prefetch_count=self.prefetch_count)
 
         self._setup_publisher_confirms(self._channel)
 
