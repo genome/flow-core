@@ -23,35 +23,19 @@ class AmqpBroker(flow.interfaces.IBroker):
         self._connection = None
         self._confirm_tags = blist.sortedlist()
         self._confirm_deferreds = {}
-        self._listeners = {}
+        self._handlers = []
 
         self._last_publish_tag = 0
 
-    def ack(self, receive_tag, multiple=False):
-        LOG.debug('Acking message (%d), multiple = %s', receive_tag, multiple)
-        self._channel.basic_ack(receive_tag, multiple=multiple)
-
-    def reject(self, receive_tag):
-        LOG.debug('Rejecting message (%d)', receive_tag)
-        self._channel.basic_reject(receive_tag, requeue=False)
-
     def register_handler(self, handler):
-        queue_name = handler.queue_name
-        message_class = handler.message_class
-
-        LOG.debug('Registering handler (%s) listening for (%s) on queue (%s)',
-                handler, message_class.__name__, queue_name)
-
-        listener = AmqpListener(handler=handler,
-                message_class=message_class, broker=self)
-        self._listeners[queue_name] = listener
+        self._handlers.append(handler)
 
     def publish(self, exchange_name, routing_key, message):
         timer = stats.create_timer('messages.publish.%s' %
                 message.__class__.__name__)
         timer.start()
 
-        encoded_message = message.encode()
+        encoded_message = message.encode() 
         timer.split('encode')
 
         deferred = self.raw_publish(exchange_name, routing_key, encoded_message)
@@ -114,11 +98,13 @@ class AmqpBroker(flow.interfaces.IBroker):
 
         self._setup_publisher_confirms(self._channel)
 
-        for queue_name, listener in self._listeners.iteritems():
+        for handler in self._handlers:
+            queue_name = handler.queue_name
             (queue, consumer_tag) = yield self._channel.basic_consume(
                     queue=queue_name)
-            listener.register_queue(queue)
             LOG.debug('Beginning consumption on queue (%s)', queue_name)
+
+            self._get_message_from_queue(queue, handler)
 
     def _setup_publisher_confirms(self, channel):
         LOG.debug('Enabling publisher confirms.')
@@ -146,7 +132,42 @@ class AmqpBroker(flow.interfaces.IBroker):
                 publish_tag, multiple)
 
         self._fire_confirm_deferreds(publish_tag, multiple, errback=True)
-        # TODO disconnect and crash?
+        self.disconnect()
+        raise RuntimeError("AMQP failed to confirm a published message!")
+
+    def _get_message_from_queue(self, queue, handler):
+        deferred = queue.get()
+        deferred.addCallbacks(self._on_get, self._on_connection_lost,
+                callbackArgs=(queue, handler))
+
+    def _on_get(self, payload, queue, handler):
+        (channel, basic_deliver, properties, encoded_message) = payload
+
+        deferred = handler(encoded_message)
+        receive_tag = basic_deliver.delivery_tag
+        deferred.addCallbacks(self._ack, self._reject,
+                callbackArgs=(receive_tag,),
+                errbackArgs=(receive_tag,))
+
+        self._get_message_from_queue(queue, handler)
+
+    def _ack(self, _, receive_tag):
+        LOG.debug('Acking message (%d)', receive_tag)
+        self._channel.basic_ack(receive_tag)
+
+    def _reject(self, _, receive_tag):
+        LOG.debug('Rejecting message (%d)', receive_tag)
+        self._channel.basic_reject(receive_tag, requeue=False)
+
+
+    @staticmethod
+    def _on_connection_lost(reason):
+        LOG.warning("Queue on was closed (reason: %s)", reason)
+        try:
+            reactor.stop()
+            LOG.critical('Stopped twisted reactor')
+        except ReactorNotRunning:
+            pass
 
     def _fire_confirm_deferreds(self, publish_tag, multiple, errback=False):
         call_fn = 'callback'
@@ -176,62 +197,62 @@ class AmqpBroker(flow.interfaces.IBroker):
         del self._confirm_deferreds[publish_tag]
 
 
-class AmqpListener(object):
-    def __init__(self, broker=None, message_class=None, handler=None):
-        self.broker = broker
-        self.message_class = message_class
-        self.handler = handler
-
-        self.message_stats_tag = 'messages.receive.%s' % message_class.__name__
-
-    def register_queue(self, queue):
-        LOG.debug('Registered %r to AmqpListener %r', queue, self)
-        self._queue = queue
-        self._get()
-
-    def _get(self):
-        deferred = self._queue.get()
-        deferred.addCallbacks(self.listen_and_get, self._on_connection_lost)
-        return deferred
-
-    def listen_and_get(self, args):
-        self.listen(*args)
-        # ensure we start listening for next item on queue
-        self._get()
-
-    @staticmethod
-    def _on_connection_lost(reason):
-        LOG.warning("Queue on %r was closed (reason: %s)", self, reason)
-        try:
-            reactor.stop()
-            LOG.critical('Stopped twisted reactor')
-        except ReactorNotRunning:
-            # multiple AmqpListeners sometimes get disconnected at once
-            pass
-
-    def listen(self, channel, basic_deliver, properties, encoded_message):
-        timer = stats.create_timer(self.message_stats_tag)
-        timer.start()
-
-        broker = self.broker
-        recieve_tag = basic_deliver.delivery_tag
-        LOG.debug('Received message (%d), properties = %s',
-                recieve_tag, properties)
-        timer.split('setup')
-
-        message = self.message_class.decode(encoded_message)
-        timer.split('decode')
-
-        deferred = self.handler(message)
-        deferred.addCallbacks(self.ack, self.reject,
-                callbackArgs=(recieve_tag,),
-                errbackArgs=(recieve_tag,))
-        timer.split('handle')
-
-        timer.stop()
-
-    def ack(self, _, receive_tag):
-        self.broker.ack(receive_tag)
-
-    def reject(self, _, receive_tag):
-        self.broker.reject(receive_tag)
+#class AmqpListener(object):
+#    def __init__(self, broker=None, message_class=None, handler=None):
+#        self.broker = broker
+#        self.message_class = message_class
+#        self.handler = handler
+#
+#        self.message_stats_tag = 'messages.receive.%s' % message_class.__name__
+#
+#    def register_queue(self, queue):
+#        LOG.debug('Registered %r to AmqpListener %r', queue, self)
+#        self._queue = queue
+#        self._get()
+#
+#    def _get(self):
+#        deferred = self._queue.get()
+#        deferred.addCallbacks(self.listen_and_get, self._on_connection_lost)
+#        return deferred
+#
+#    def listen_and_get(self, args):
+#        self.listen(*args)
+#        # ensure we start listening for next item on queue
+#        self._get()
+#
+#    @staticmethod
+#    def _on_connection_lost(reason):
+#        LOG.warning("Queue on was closed (reason: %s)", reason)
+#        try:
+#            reactor.stop()
+#            LOG.critical('Stopped twisted reactor')
+#        except ReactorNotRunning:
+#            # multiple AmqpListeners sometimes get disconnected at once
+#            pass
+#
+#    def listen(self, channel, basic_deliver, properties, encoded_message):
+#        timer = stats.create_timer(self.message_stats_tag)
+#        timer.start()
+#
+#        broker = self.broker
+#        recieve_tag = basic_deliver.delivery_tag
+#        LOG.debug('Received message (%d), properties = %s',
+#                recieve_tag, properties)
+#        timer.split('setup')
+#
+#        message = self.message_class.decode(encoded_message)
+#        timer.split('decode')
+#
+#        deferred = self.handler(message)
+#        deferred.addCallbacks(self.ack, self.reject,
+#                callbackArgs=(recieve_tag,),
+#                errbackArgs=(recieve_tag,))
+#        timer.split('handle')
+#
+#        timer.stop()
+#
+#    def ack(self, _, receive_tag):
+#        self.broker.ack(receive_tag)
+#
+#    def reject(self, _, receive_tag):
+#        self.broker.reject(receive_tag)

@@ -41,8 +41,9 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
                 'post_dispatch_failure': self.dispatch_failure_place_idx
         }
 
-        self.message = mock.Mock()
+        self.message = mock.Mock(self.handler.message_class)
         self.message.command_line = mock.Mock()
+        self.message.token_color = None
         self.message.net_key = self.net_key
         self.message.response_places = self.response_places
         self.message.executor_options = {'passthru': True}
@@ -51,7 +52,6 @@ class ShellCommandMessageHandlerTest(unittest.TestCase):
         job_id = 1234
         self.executor.return_value = (job_id, True)
 
-        self.message.token_color = None
         deferred = self.handler(self.message)
 
         self.assertEqual(deferred.called, True)

@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 from flow.protocol.exceptions import InvalidMessageException
+from flow.util import stats
 from flow.interfaces import IHandler
 from twisted.internet import defer
 import logging
@@ -7,9 +8,18 @@ import logging
 LOG = logging.getLogger(__name__)
 
 class Handler(IHandler):
-    __metaclass__ = ABCMeta
+    def __call__(self, encoded_message):
+        message_class = self.message_class
 
-    def __call__(self, message):
+        timer = stats.create_timer("messages.receive.%s" %
+                message_class.__name__)
+        timer.start()
+        if not isinstance(encoded_message, self.message_class):
+            message = self.message_class.decode(encoded_message)
+            timer.split('decode')
+        else:
+            message = encoded_message
+
         try:
             deferred = self._handle_message(message)
         except InvalidMessageException:
@@ -19,6 +29,7 @@ class Handler(IHandler):
             LOG.exception('Unexpected error handling message. message = %s',
                     message)
             deferred = defer.fail(None)
+        timer.split('handle')
         return deferred
 
     @abstractmethod
