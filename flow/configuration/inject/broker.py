@@ -1,5 +1,5 @@
 from flow.brokers.blocking import BlockingAmqpBroker
-from flow.amqp_broker import AmqpBroker
+from flow.brokers.amqp_broker import AmqpBroker
 
 import flow.interfaces
 import injector
