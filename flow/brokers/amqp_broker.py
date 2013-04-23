@@ -1,4 +1,3 @@
-from flow.brokers.amqp_parameters import AmqpConnectionParameters
 from flow.configuration.settings.injector import setting
 from flow.util import stats
 from injector import inject
@@ -13,6 +12,16 @@ import logging
 import pika
 
 LOG = logging.getLogger(__name__)
+
+@inject(
+    connection_attempts=setting('amqp.connection_attempts'),
+    hostname=setting('amqp.hostname'),
+    port=setting('amqp.port'),
+    retry_delay=setting('amqp.retry_delay'),
+    socket_timeout=setting('amqp.socket_timeout'),
+    virtual_host=setting('amqp.vhost'),
+)
+class AmqpConnectionParameters(object): pass
 
 @inject(connection_params=AmqpConnectionParameters,
         prefetch_count=setting('amqp.prefetch_count'))
