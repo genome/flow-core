@@ -178,7 +178,17 @@ class AmqpBroker(flow.interfaces.IBroker):
     def _on_get(self, payload, queue, handler):
         (channel, basic_deliver, properties, encoded_message) = payload
 
+        timer = stats.create_timer("messages.receive.%s" %
+                message_class.__name__)
+        timer.start()
+
+        message_class = handler.message_class
+        encoded_message = message_class.decode(encoded_message)
+        timer.split('decode')
+
         deferred = handler(encoded_message)
+        timer.split('handle')
+
         receive_tag = basic_deliver.delivery_tag
         deferred.addCallbacks(self._ack, self._reject,
                 callbackArgs=(receive_tag,),

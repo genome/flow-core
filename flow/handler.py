@@ -9,27 +9,15 @@ LOG = logging.getLogger(__name__)
 
 class Handler(IHandler):
     def __call__(self, encoded_message):
-        message_class = self.message_class
-
-        timer = stats.create_timer("messages.receive.%s" %
-                message_class.__name__)
-        timer.start()
-        if not isinstance(encoded_message, message_class):
-            message = message_class.decode(encoded_message)
-            timer.split('decode')
-        else:
-            message = encoded_message
-
         try:
-            deferred = self._handle_message(message)
+            deferred = self._handle_message(encoded_message)
         except InvalidMessageException:
-            LOG.exception('Invalid message.  message = %s', message)
+            LOG.exception('Invalid message.  message = %s', encoded_message)
             deferred = defer.fail(None)
         except:
             LOG.exception('Unexpected error handling message. message = %s',
-                    message)
+                    encoded_message)
             deferred = defer.fail(None)
-        timer.split('handle')
         return deferred
 
     @abstractmethod
