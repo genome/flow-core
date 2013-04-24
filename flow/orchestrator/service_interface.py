@@ -1,5 +1,6 @@
 from flow.configuration.settings.injector import setting
-from flow.petri import NotifyTransitionMessage, SetTokenMessage
+from flow.petri import (NotifyTransitionMessage, SetTokenMessage,
+        PlaceEntryObservedMessage)
 from injector import inject
 
 import flow.interfaces
@@ -36,4 +37,5 @@ class OrchestratorServiceInterface(flow.interfaces.IOrchestrator):
         routing_key = packet['routing_key']
         body        = packet['body']
 
-        return self.broker.raw_publish(exchange, routing_key, body)
+        message = PlaceEntryObservedMessage(body=body)
+        return self.broker.publish(exchange, routing_key, message)

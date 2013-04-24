@@ -3,7 +3,8 @@ from netbase import PlaceCapacityError, TokenColorError
 from netbase import Token
 
 # Messages
-from netbase import NotifyTransitionMessage, SetTokenMessage
+from netbase import (NotifyTransitionMessage, SetTokenMessage,
+        PlaceEntryObservedMessage)
 
 # Actions
 from netbase import TransitionAction

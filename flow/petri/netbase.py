@@ -57,6 +57,13 @@ class NotifyTransitionMessage(Message):
             "token_color": int
     }
 
+class PlaceEntryObservedMessage(Message):
+    required_fields = {
+            "body": basestring,
+    }
+
+    optional_fields = {
+    }
 
 class Token(rom.Object):
     data_type = rom.Property(rom.String)
