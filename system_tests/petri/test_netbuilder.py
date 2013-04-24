@@ -95,12 +95,12 @@ class TestNetBuilder(_TestBody, TestBase):
                 for x in xrange(3)]
 
         for x in xrange(3):
-            stored_net.set_token(0, tokens[x])
+            stored_net.add_token(0, tokens[x])
             stored_net.notify_place(0, token_color=tokens[x].color_idx,
                     service_interfaces=self.service_interfaces)
 
         for x in xrange(3):
-            stored_net.set_token(1, tokens[x])
+            stored_net.add_token(1, tokens[x])
             stored_net.notify_place(1, token_color=tokens[x].color_idx,
                     service_interfaces=self.service_interfaces)
 

@@ -63,16 +63,16 @@ class TestNet(TestBase):
         too_large_token = self.net.create_token(token_color=99)
         valid_token = self.net.create_token(token_color=9)
 
-        self.assertRaises(petri.TokenColorError, self.net.set_token,
+        self.assertRaises(petri.TokenColorError, self.net.add_token,
                 0, uncolored_token)
 
         self.net.set_num_token_colors(10)
-        self.assertRaises(petri.TokenColorError, self.net.set_token,
+        self.assertRaises(petri.TokenColorError, self.net.add_token,
                 0, uncolored_token)
-        self.assertRaises(petri.TokenColorError, self.net.set_token,
+        self.assertRaises(petri.TokenColorError, self.net.add_token,
                 0, too_large_token)
 
-        self.net.set_token(0, valid_token)
+        self.net.add_token(0, valid_token)
 
     def test_consume_tokens(self):
         self.net.set_num_token_colors(1)
@@ -180,7 +180,7 @@ class TestNet(TestBase):
 
         for i in xrange(len(self.input_places)):
             for t in tokens:
-                self.net.set_token(i, t)
+                self.net.add_token(i, t)
                 self.net.notify_place(i, t.color_idx, self.service_interfaces)
 
         for pidx in xrange(len(self.input_places)):

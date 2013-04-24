@@ -17,7 +17,7 @@ import subprocess
 
 LOG = logging.getLogger(__name__)
 
-_SET_TOKEN_SCRIPT = """
+_ADD_TOKEN_SCRIPT = """
 local marking_hash = KEYS[1]
 local place_key = ARGV[1]
 local token_key = ARGV[2]
@@ -164,7 +164,7 @@ class SafeNet(NetBase):
 
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
     _push_tokens = rom.Script(_PUSH_TOKENS_SCRIPT)
-    _set_token = rom.Script(_SET_TOKEN_SCRIPT)
+    _add_token = rom.Script(_ADD_TOKEN_SCRIPT)
 
     def _set_initial_transition_state(self):
         for i in xrange(self.num_transitions.value):
@@ -241,8 +241,8 @@ class SafeNet(NetBase):
         return defer.DeferredList(deferreds)
 
 
-    def set_token(self, place_idx, token):
-        rv = self._set_token(keys=[self.marking.key],
+    def add_token(self, place_idx, token):
+        rv = self._add_token(keys=[self.marking.key],
                 args=[place_idx, token.key])
         if rv != 0:
             raise PlaceCapacityError(

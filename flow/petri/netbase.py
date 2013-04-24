@@ -186,7 +186,7 @@ class NetBase(rom.Object):
             token_color=None, **create_token_kwargs):
         token = self.create_token(
                 token_color=token_color, **create_token_kwargs)
-        self.set_token(place_idx, token)
+        self.add_token(place_idx, token)
         return self.notify_place(place_idx, token_color=token_color,
                 service_interfaces=service_interfaces)
 
@@ -221,7 +221,7 @@ class NetBase(rom.Object):
 
         rom.Object.delete(self)
 
-    def set_token(self, place_idx, token):
+    def add_token(self, place_idx, token):
         raise NotImplementedError()
 
     def notify_place(self, place_idx, token_color, service_interfaces):
