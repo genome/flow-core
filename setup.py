@@ -6,7 +6,7 @@ flow = flow.main:main
 
 [flow.commands]
 set-token = flow.commands.set_token:SetTokenCommand
-orchestrator = flow.commands.orchestrator:OrchestratorCommand
+orchestrator = flow.orchestrator.command:OrchestratorCommand
 
 fork-shell-command-service = flow.shell_command.commands.fork_service:ForkShellCommand
 lsf-shell-command-service = flow.shell_command.commands.lsf_service:LSFShellCommand
