@@ -14,8 +14,8 @@ class Handler(IHandler):
         timer = stats.create_timer("messages.receive.%s" %
                 message_class.__name__)
         timer.start()
-        if not isinstance(encoded_message, self.message_class):
-            message = self.message_class.decode(encoded_message)
+        if not isinstance(encoded_message, message_class):
+            message = message_class.decode(encoded_message)
             timer.split('decode')
         else:
             message = encoded_message
