@@ -44,7 +44,7 @@ class Token(rom.Object):
 
     @property
     def net(self):
-        return rom.get_object(self.net_key)
+        return rom.get_object(self.connection, self.net_key)
 
     def _on_create(self):
         try:
