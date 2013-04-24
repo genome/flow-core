@@ -1,6 +1,11 @@
 from flow.commands.token_sender import TokenSenderCommand
+from flow.configuration.settings.injector import setting
+from flow.configuration.inject.broker import BlockingBrokerConfiguration
+from flow.configuration.inject.redis_conf import RedisConfiguration
+from injector import inject
 from tempfile import NamedTemporaryFile
 
+import flow.interfaces
 import flow.redisom as rom
 import json
 import logging
@@ -11,8 +16,13 @@ import subprocess
 
 LOG = logging.getLogger(__name__)
 
-
+@inject(storage=flow.interfaces.IStorage)
 class WrapperCommand(TokenSenderCommand):
+    injector_modules = [
+            BlockingBrokerConfiguration,
+            RedisConfiguration,
+    ]
+
     @staticmethod
     def annotate_parser(parser):
         parser.add_argument('--net-key', '-n')

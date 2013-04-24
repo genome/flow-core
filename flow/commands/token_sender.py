@@ -1,6 +1,5 @@
 from flow.commands.base import CommandBase
 from flow.configuration.inject.broker import BlockingBrokerConfiguration
-from flow.configuration.inject.redis_conf import RedisConfiguration
 from flow.configuration.settings.injector import setting
 from flow.service_locator import ServiceLocator
 from injector import inject
@@ -18,15 +17,14 @@ LOG = logging.getLogger(__name__)
 class TokenSenderCommand(CommandBase):
     injector_modules = [
             BlockingBrokerConfiguration,
-            RedisConfiguration,
     ]
 
     def send_token(self, net_key=None, place_idx=None, data=None, color=None):
         orchestrator = self.service_locator['orchestrator']
         orchestrator.broker.connect()
 
-        LOG.info("Sending command response token %s to net %s, place %r",
-                token.key, net_key, place_idx)
+        LOG.info("Sending command response token to net %s, place %r",
+                net_key, place_idx)
         orchestrator.create_token(net_key=net_key, place_idx=int(place_idx),
                 data=data, data_type="output", token_color=color)
 
