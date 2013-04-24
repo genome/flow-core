@@ -30,6 +30,7 @@ class AmqpBroker(flow.interfaces.IBroker):
         self._publish_properties = pika.BasicProperties(delivery_mode=2)
 
         self.connection = None
+        self.channel = None
         self._confirm_tags = blist.sortedlist()
         self._confirm_deferreds = {}
         self._handlers = []
@@ -45,7 +46,7 @@ class AmqpBroker(flow.interfaces.IBroker):
                 message.__class__.__name__)
         timer.start()
 
-        encoded_message = message.encode() 
+        encoded_message = message.encode()
         timer.split('encode')
 
         deferred = self.raw_publish(exchange_name, routing_key, encoded_message)
@@ -59,7 +60,7 @@ class AmqpBroker(flow.interfaces.IBroker):
         LOG.debug("Publishing message (%d) to routing key (%s): %s",
                 publish_tag, routing_key, encoded_message)
 
-        self._channel.basic_publish(exchange=exchange_name,
+        self.channel.basic_publish(exchange=exchange_name,
                 routing_key=routing_key, body=encoded_message,
                 properties=self._publish_properties)
 
@@ -78,6 +79,10 @@ class AmqpBroker(flow.interfaces.IBroker):
 
     def get_ready_callbacks(self):
         return self._ready_callbacks.values()
+
+    def stop(self):
+        self.disconnect()
+        reactor.stop()
 
     def connect_and_listen(self):
         self._connect()
@@ -112,21 +117,13 @@ class AmqpBroker(flow.interfaces.IBroker):
 
     @defer.inlineCallbacks
     def _on_ready(self, connection):
-        self._channel = yield connection.channel()
+        self.channel = yield connection.channel()
         LOG.debug('Channel open')
 
         if self.prefetch_count:
-            yield self._channel.basic_qos(prefetch_count=self.prefetch_count)
+            yield self.channel.basic_qos(prefetch_count=self.prefetch_count)
 
-        self._setup_publisher_confirms(self._channel)
-
-        for handler in self._handlers:
-            queue_name = handler.queue_name
-            (queue, consumer_tag) = yield self._channel.basic_consume(
-                    queue=queue_name)
-            LOG.debug('Beginning consumption on queue (%s)', queue_name)
-
-            self._get_message_from_queue(queue, handler)
+        self._setup_publisher_confirms(self.channel)
 
         to_be_removed = set()
         for callback, (args, kwargs, delete) in self._ready_callbacks.iteritems():
@@ -135,6 +132,14 @@ class AmqpBroker(flow.interfaces.IBroker):
                 to_be_removed.add(callback)
         for callback in to_be_removed:
             self.remove_ready_callback(callback)
+
+        for handler in self._handlers:
+            queue_name = handler.queue_name
+            (queue, consumer_tag) = yield self.channel.basic_consume(
+                    queue=queue_name)
+            LOG.debug('Beginning consumption on queue (%s)', queue_name)
+
+            self._get_message_from_queue(queue, handler)
 
     def _setup_publisher_confirms(self, channel):
         LOG.debug('Enabling publisher confirms.')
@@ -183,11 +188,11 @@ class AmqpBroker(flow.interfaces.IBroker):
 
     def _ack(self, _, receive_tag):
         LOG.debug('Acking message (%d)', receive_tag)
-        self._channel.basic_ack(receive_tag)
+        self.channel.basic_ack(receive_tag)
 
     def _reject(self, _, receive_tag):
         LOG.debug('Rejecting message (%d)', receive_tag)
-        self._channel.basic_reject(receive_tag, requeue=False)
+        self.channel.basic_reject(receive_tag, requeue=False)
 
 
     @staticmethod
