@@ -1,5 +1,6 @@
 from flow.configuration.settings.injector import setting
-from flow.petri import NotifyTransitionMessage, SetTokenMessage
+from flow.orchestrator.messages import CreateTokenMessage, NotifyPlaceMessage
+from flow.orchestrator.messages import NotifyTransitionMessage
 from injector import inject
 
 import flow.interfaces
@@ -10,16 +11,24 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(broker=flow.interfaces.IBroker,
-        set_token_exchange=setting('orchestrator.set_token_exchange'),
-        set_token_routing_key=setting('orchestrator.set_token_routing_key'),
+        create_token_exchange=setting('orchestrator.create_token_exchange'),
+        create_token_routing_key=setting('orchestrator.create_token_routing_key'),
+        notify_place_exchange=setting('orchestrator.notify_place_exchange'),
+        notify_place_routing_key=setting('orchestrator.notify_place_routing_key'),
         notify_transition_exchange=setting('orchestrator.notify_transition_exchange'),
         notify_transition_routing_key=setting('orchestrator.notify_transition_routing_key'))
 class OrchestratorServiceInterface(flow.interfaces.IOrchestrator):
-    def set_token(self, net_key, place_idx, token_key=None, token_color=None):
-        message = SetTokenMessage(net_key=net_key, place_idx=int(place_idx),
-                token_key=token_key, token_color=token_color)
-        return self.broker.publish(self.set_token_exchange,
-                self.set_token_routing_key, message)
+    def create_token(self, net_key, place_idx, **create_token_kwargs):
+        message = CreateTokenMessage(net_key=net_key, place_idx=place_idx,
+                create_token_kwargs=create_token_kwargs)
+        return self.broker.publish(self.create_token_exchange,
+                self.create_token_routing_key, message)
+
+    def notify_place(self, net_key, place_idx, token_color):
+        message = NotifyPlaceMessage(net_key=net_key, place_idx=place_idx,
+                token_color=token_color)
+        return self.broker.publish(self.notify_place_exchange,
+                self.notify_place_routing_key, message)
 
     def notify_transition(self, net_key, transition_idx, place_idx,
             token_color=None):

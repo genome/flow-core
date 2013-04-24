@@ -86,7 +86,7 @@ class LSFExecutor(ExecutorBase):
     def construct_request(self, command_line,
             net_key=None, response_places=None, with_inputs=None,
             with_outputs=None, token_color=None, **lsf_kwargs):
-        LOG.info("lsf kwargs: %r", lsf_kwargs)
+        LOG.debug("lsf kwargs: %r", lsf_kwargs)
 
         if self.post_exec is not None:
             executable_name = self.post_exec[0]
@@ -193,7 +193,7 @@ def create_request(post_exec_cmd, default_queue,
         request.resReq = rusage
 
     rlimits = resources.get("limit", {})
-    LOG.info("Setting rlimits: %r", rlimits)
+    LOG.debug("Setting rlimits: %r", rlimits)
     request.rLimits = get_rlimits(**rlimits)
 
     return request

@@ -1,4 +1,3 @@
-from flow.protocol.message import Message
 from twisted.internet import defer
 
 from uuid import uuid4
@@ -34,36 +33,18 @@ def merge_token_data(tokens, data_type=None):
     return data
 
 
-class SetTokenMessage(Message):
-    required_fields = {
-            "net_key": basestring,
-            "place_idx": int,
-            "token_key": basestring,
-    }
-
-    optional_fields = {
-            "token_color": int
-    }
-
-
-class NotifyTransitionMessage(Message):
-    required_fields = {
-            "net_key": basestring,
-            "place_idx": int,
-            "transition_idx": int,
-    }
-
-    optional_fields = {
-            "token_color": int
-    }
-
-
 class Token(rom.Object):
     data_type = rom.Property(rom.String)
     data = rom.Property(rom.Hash, value_encoder=rom.json_enc,
             value_decoder=rom.json_dec)
 
+    net_key = rom.Property(rom.String)
+
     color_idx = rom.Property(rom.Int)
+
+    @property
+    def net(self):
+        return rom.get_object(self.net_key)
 
     def _on_create(self):
         try:
@@ -84,6 +65,8 @@ class NetBase(rom.Object):
 
     num_places = rom.Property(rom.Int)
     num_transitions = rom.Property(rom.Int)
+    num_tokens = rom.Property(rom.Int)
+
     variables = rom.Property(rom.Hash, value_encoder=rom.json_enc,
             value_decoder=rom.json_dec)
     _constants = rom.Property(rom.Hash, value_encoder=rom.json_enc,
@@ -139,6 +122,7 @@ class NetBase(rom.Object):
     def _set_initial_transition_state(self):
         raise NotImplementedError()
 
+
     def set_constant(self, key, value):
         if self._constants.setnx(key, value) == 0:
             raise TypeError("Tried to overwrite constant %s in net %s" %
@@ -168,17 +152,44 @@ class NetBase(rom.Object):
     def variable(self, key):
         return self.variables.get(key)
 
+
     def place_key(self, idx):
         return self.subkey("place/%d" % int(idx))
 
     def place(self, idx):
         return self.place_class(self.connection, self.place_key(idx))
 
+
     def transition_key(self, idx):
         return self.subkey("trans/%d" % int(idx))
 
     def transition(self, idx):
         return self.transition_class(self.connection, self.transition_key(idx))
+
+
+    def token_key(self, idx):
+        return self.subkey("tok/%d" % int(idx))
+
+    def token(self, idx):
+        return Token(self.connection, self.token_key(idx))
+
+    def _next_token_key(self):
+        return self.token_key(self.num_tokens.incr() - 1)
+
+    def create_token(self, data=None, data_type=None, token_color=None):
+        key = self._next_token_key()
+        return Token.create(self.connection, key, net_key=self.key,
+                data=data, data_type=data_type, color_idx=token_color)
+
+
+    def create_set_notify(self, place_idx, service_interfaces,
+            token_color=None, **create_token_kwargs):
+        token = self.create_token(
+                token_color=token_color, **create_token_kwargs)
+        self.set_token(place_idx, token)
+        return self.notify_place(place_idx, token_color=token_color,
+                service_interfaces=service_interfaces)
+
 
     def copy(self, dst_key):
         copied = rom.Object.copy(self, dst_key)
@@ -192,15 +203,36 @@ class NetBase(rom.Object):
 
         return copied
 
-    def notify_transition(self, trans_idx=None, place_idx=None,
-            service_interfaces=None, token_color=None):
+    def delete(self):
+        for i in xrange(self.num_places.value):
+            place = self.place(i)
+            place.delete()
+
+        for i in xrange(self.num_transitions.value):
+            transition = self.transition(i)
+            transition.delete()
+
+        try:
+            for i in xrange(self.num_tokens.value):
+                token = self.token(i)
+                token.delete()
+        except NotInRedisError:  # Wanted default value 0
+            pass
+
+        rom.Object.delete(self)
+
+    def set_token(self, place_idx, token):
+        raise NotImplementedError()
+
+    def notify_place(self, place_idx, token_color, service_interfaces):
         """
         Returns a deferred that fires when all service_interface related
         deferreds have fired.
         """
         raise NotImplementedError()
 
-    def set_token(self, place_idx, token_key='', service_interfaces=None):
+    def notify_transition(self, trans_idx=None, place_idx=None,
+            service_interfaces=None, token_color=None):
         """
         Returns a deferred that fires when all service_interface related
         deferreds have fired.
@@ -314,13 +346,14 @@ class ShellCommandAction(TransitionAction):
         cmdline = self.args["command_line"]
         rv = subprocess.call(cmdline)
         orchestrator = service_interfaces['orchestrator']
-        token = Token.create(self.connection, data={"return_code": rv})
         if rv == 0:
             return_place = self.args["success_place_id"]
         else:
             return_place = self.args["failure_place_id"]
 
-        deferred = orchestrator.set_token(net.key, int(return_place), token_key=token.key)
+        token_color = self.active_color(active_tokens_key)
+        deferred = orchestrator.create_token(net.key, int(return_place),
+                token_color=token_color, data={"return_code": rv})
         return None, deferred
 
 
@@ -333,11 +366,12 @@ class SetRemoteTokenAction(TransitionAction):
         data_type = self.args["data_type"]
 
         input_data = self.input_data(active_tokens_key, net)
-        token = Token.create(self.connection, data=input_data,
-                data_type=data_type)
+        remote_net = rom.get_object(self.connection, remote_net_key)
 
         orchestrator = service_interfaces['orchestrator']
-        deferred = orchestrator.set_token(remote_net_key, remote_place_id, token.key)
+        token_color = self.active_color(active_tokens_key)
+        deferred = orchestrator.create_token(remote_net_key, remote_place_id,
+                token_color=token_color, data=input_data, data_type=data_type)
         return None, deferred
 
 
@@ -347,8 +381,12 @@ class MergeTokensAction(TransitionAction):
     def execute(self, active_tokens_key, net, service_interfaces):
         token_keys = self.connection.lrange(active_tokens_key, 0, -1)
         tokens = [Token(self.connection, k) for k in token_keys]
+
         input_type = self.args["input_type"]
         output_type = self.args["output_type"]
+
         data = merge_token_data(tokens, data_type=input_type)
-        token = Token.create(self.connection, data_type=output_type, data=data)
+        token_color = self.active_color(active_tokens_key)
+        token = net.create_token(data_type=output_type, data=data,
+                token_color=token_color)
         return token, defer.succeed(None)

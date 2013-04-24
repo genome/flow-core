@@ -95,10 +95,14 @@ class TestNetBuilder(_TestBody, TestBase):
                 for x in xrange(3)]
 
         for x in xrange(3):
-            stored_net.set_token(0, tokens[x].key, self.service_interfaces)
+            stored_net.set_token(0, tokens[x])
+            stored_net.notify_place(0, token_color=tokens[x].color_idx,
+                    service_interfaces=self.service_interfaces)
 
         for x in xrange(3):
-            stored_net.set_token(1, tokens[x].key, self.service_interfaces)
+            stored_net.set_token(1, tokens[x])
+            stored_net.notify_place(1, token_color=tokens[x].color_idx,
+                    service_interfaces=self.service_interfaces)
 
         for x in xrange(stored_net.num_transitions):
             self.assertEqual(3, stored_net.transition(x).action.call_count.value)

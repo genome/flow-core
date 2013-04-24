@@ -220,7 +220,7 @@ class SafeNet(NetBase):
             timer.split('execute_action.%s' % action.__class__.__name__)
 
         if new_token is None:
-            new_token = Token.create(self.connection)
+            new_token = self.create_token()
             timer.split('create_token')
 
         keys = [active_tokens_key, arcs_in_key, arcs_out_key, marking_key,
@@ -231,7 +231,8 @@ class SafeNet(NetBase):
         if tokens_pushed == 1:
             orchestrator = service_interfaces['orchestrator']
             for place_idx in places_to_notify:
-                deferred = orchestrator.set_token(self.key, int(place_idx), token_key='')
+                deferred = orchestrator.notify_place(self.key,
+                        int(place_idx), token_color=None)
                 deferreds.append(deferred)
             timer.split('set_tokens')
             self.connection.delete(tokens_pushed_key)
@@ -239,32 +240,29 @@ class SafeNet(NetBase):
         timer.stop()
         return defer.DeferredList(deferreds)
 
-    def set_token(self, place_idx, token_key='', service_interfaces=None,
-            token_color=None):
 
+    def set_token(self, place_idx, token):
+        rv = self._set_token(keys=[self.marking.key],
+                args=[place_idx, token.key])
+        if rv != 0:
+            raise PlaceCapacityError(
+                "Failed to add token %s to place %s: "
+                "a token already exists" %
+                (token.key, place_idx))
+
+    def notify_place(self, place_idx, token_color, service_interfaces):
         if token_color is not None:
             raise RuntimeError("Safenet %s place %d got a colored token" %
                     (self.key, place_idx))
 
-        timer = stats.create_timer('petri.SafeNet.set_token')
+        timer = stats.create_timer('petri.SafeNet.notify_place')
         timer.start()
-        place = self.place(place_idx)
-        LOG.debug("Net %s setting token %s for place %s (#%d)", self.key,
-                token_key, place.name, place_idx)
-
-        marking_key = self.marking.key
-
-        if token_key:
-            rv = self._set_token(keys=[marking_key],
-                    args=[place_idx, token_key])
-            if rv != 0:
-                raise PlaceCapacityError(
-                    "Failed to add token %s to place %s: "
-                    "a token already exists" %
-                    (token_key, place.key))
 
         deferreds = []
-        if self.connection.hexists(marking_key, place_idx):
+        if self.connection.hexists(self.marking.key, place_idx):
+            place = self.place(place_idx)
+            LOG.debug("Net %s notifying place %s (#%d)", self.key,
+                    place.name, place_idx)
             place.first_token_timestamp.setnx()
 
             orchestrator = service_interfaces['orchestrator']
@@ -274,9 +272,14 @@ class SafeNet(NetBase):
                 deferreds.append(orchestrator.place_entry_observed(packet))
 
             for trans_idx in arcs_out:
-                deferred = orchestrator.notify_transition(self.key, int(trans_idx),
-                        int(place_idx))
+                deferred = orchestrator.notify_transition(self.key,
+                        int(trans_idx), int(place_idx))
                 deferreds.append(deferred)
+
+        else:
+            LOG.warning("Attempted to notify place %d on net (%s), which has no tokens.",
+                    place_idx, self.key)
+
         timer.stop()
         return defer.DeferredList(deferreds)
 

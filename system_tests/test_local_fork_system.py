@@ -3,7 +3,7 @@ from test_helpers import redistest
 
 from flow.brokers.local import LocalBroker
 from flow.orchestrator.service_interface import OrchestratorServiceInterface
-from flow.orchestrator.handlers import PetriSetTokenHandler
+from flow.orchestrator.handlers import PetriCreateTokenHandler, PetriNotifyPlaceHandler
 from flow.orchestrator.handlers import PetriNotifyTransitionHandler
 
 from flow.shell_command.service_interface import ForkShellCommandServiceInterface
@@ -19,7 +19,10 @@ class TestSystemFork(redistest.RedisTest):
     def setUp(self):
         redistest.RedisTest.setUp(self)
 
-        bindings = {'set_token_x': {'set_token_q': ['set_token_rk']},
+        bindings = {'create_token_x': {'create_token_q':
+                                            ['create_token_rk']},
+                    'notify_place_x': {'notify_place_q':
+                                            ['notify_place_rk']},
                     'notify_transition_x': {'notify_transition_q':
                                             ['notify_transition_rk']},
                     'fork_submit_x': {'fork_submit_q': ['fork_submit_rk']}}
@@ -27,8 +30,10 @@ class TestSystemFork(redistest.RedisTest):
 
         self.service_interfaces = {
                 'orchestrator': OrchestratorServiceInterface(broker=self.broker,
-                    set_token_exchange='set_token_x',
-                    set_token_routing_key='set_token_rk',
+                    create_token_exchange='create_token_x',
+                    create_token_routing_key='create_token_rk',
+                    notify_place_exchange='notify_place_x',
+                    notify_place_routing_key='notify_place_rk',
                     notify_transition_exchange='notify_transition_x',
                     notify_transition_routing_key='notify_transition_rk'),
                 'fork': ForkShellCommandServiceInterface(broker=self.broker,
@@ -36,9 +41,13 @@ class TestSystemFork(redistest.RedisTest):
                     submit_routing_key='fork_submit_rk')}
 
         self.broker.register_handler(
-                PetriSetTokenHandler(redis=self.conn,
+                PetriCreateTokenHandler(redis=self.conn,
                     service_interfaces=self.service_interfaces,
-                    queue_name='set_token_q'))
+                    queue_name='create_token_q'))
+        self.broker.register_handler(
+                PetriNotifyPlaceHandler(redis=self.conn,
+                    service_interfaces=self.service_interfaces,
+                    queue_name='notify_place_q'))
         self.broker.register_handler(
                 PetriNotifyTransitionHandler(redis=self.conn,
                     service_interfaces=self.service_interfaces,
@@ -49,7 +58,7 @@ class TestSystemFork(redistest.RedisTest):
         self.broker.register_handler(
                 ForkShellCommandMessageHandler(
                     executor=fork_executor, queue_name='fork_submit_q',
-                    exchange='set_token_x', response_routing_key='set_token_rk'))
+                    exchange='create_token_x', response_routing_key='create_token_rk'))
 
     def test_system_fork(self):
         # XXX This test is quite weak, because we rely on the wrapper to talk to
@@ -62,9 +71,7 @@ class TestSystemFork(redistest.RedisTest):
 
         net = builder.store(self.conn)
 
-        token = petri.Token.create(self.conn)
-        self.service_interfaces['orchestrator'].set_token(net.key,
-                0, token_key=token.key)
+        self.service_interfaces['orchestrator'].create_token(net.key, 0)
         self.broker.listen()
 
         # XXX This is the marking for dispatched, not success/failure
