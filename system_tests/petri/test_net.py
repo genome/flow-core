@@ -217,7 +217,7 @@ class TestJoinAction(TestBase):
         net.set_num_token_colors(4)
 
         for i in xrange(4):
-            net.create_set_notify(0, token_color=i,
+            net.create_add_notify(0, token_color=i,
                     service_interfaces=self.service_interfaces)
             if i < 3:
                 self.assertRaises(rom.NotInRedisError, getattr,

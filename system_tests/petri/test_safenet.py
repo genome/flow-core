@@ -206,13 +206,13 @@ class TestSafeNet(TestBase):
         self.assertEqual(['4'], net.transition(0).arcs_out.value)
         self.assertEqual(action.key, str(net.transition(0).action_key))
 
-        net.create_set_notify(0, self.service_interfaces)
+        net.create_add_notify(0, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.create_set_notify(1, self.service_interfaces)
+        net.create_add_notify(1, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.create_set_notify(2, self.service_interfaces)
+        net.create_add_notify(2, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.create_set_notify(3, self.service_interfaces)
+        net.create_add_notify(3, self.service_interfaces)
         self.assertEqual(1, int(action.call_count))
 
         for i in xrange(0, 3):

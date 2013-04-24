@@ -182,7 +182,7 @@ class NetBase(rom.Object):
                 data=data, data_type=data_type, color_idx=token_color)
 
 
-    def create_set_notify(self, place_idx, service_interfaces,
+    def create_add_notify(self, place_idx, service_interfaces,
             token_color=None, **create_token_kwargs):
         token = self.create_token(
                 token_color=token_color, **create_token_kwargs)
