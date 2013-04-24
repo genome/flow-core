@@ -63,16 +63,16 @@ class TestNet(TestBase):
         too_large_token = self.net.create_token(token_color=99)
         valid_token = self.net.create_token(token_color=9)
 
-        self.assertRaises(petri.TokenColorError, self.net.add_token,
+        self.assertRaises(petri.TokenColorError, self.net.put_token,
                 0, uncolored_token)
 
         self.net.set_num_token_colors(10)
-        self.assertRaises(petri.TokenColorError, self.net.add_token,
+        self.assertRaises(petri.TokenColorError, self.net.put_token,
                 0, uncolored_token)
-        self.assertRaises(petri.TokenColorError, self.net.add_token,
+        self.assertRaises(petri.TokenColorError, self.net.put_token,
                 0, too_large_token)
 
-        self.net.add_token(0, valid_token)
+        self.net.put_token(0, valid_token)
 
     def test_consume_tokens(self):
         self.net.set_num_token_colors(1)
@@ -180,7 +180,7 @@ class TestNet(TestBase):
 
         for i in xrange(len(self.input_places)):
             for t in tokens:
-                self.net.add_token(i, t)
+                self.net.put_token(i, t)
                 self.net.notify_place(i, t.color_idx, self.service_interfaces)
 
         for pidx in xrange(len(self.input_places)):
@@ -217,7 +217,7 @@ class TestJoinAction(TestBase):
         net.set_num_token_colors(4)
 
         for i in xrange(4):
-            net.create_add_notify(0, token_color=i,
+            net.create_put_notify(0, token_color=i,
                     service_interfaces=self.service_interfaces)
             if i < 3:
                 self.assertRaises(rom.NotInRedisError, getattr,

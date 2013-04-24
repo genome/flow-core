@@ -23,7 +23,7 @@ class PetriCreateTokenHandler(Handler):
 
         create_token_kwargs = getattr(message, 'create_token_kwargs', {})
 
-        return net.create_add_notify(message.place_idx,
+        return net.create_put_notify(message.place_idx,
                 self.service_interfaces, **create_token_kwargs)
 
 

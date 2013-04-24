@@ -17,7 +17,7 @@ import subprocess
 
 LOG = logging.getLogger(__name__)
 
-_ADD_TOKEN_SCRIPT = """
+_PUT_TOKEN_SCRIPT = """
 local marking_key = KEYS[1]
 local global_marking_key = KEYS[2]
 local place_key = ARGV[1]
@@ -190,7 +190,7 @@ class Net(NetBase):
 
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
     _push_tokens = rom.Script(_PUSH_TOKENS_SCRIPT)
-    _add_token = rom.Script(_ADD_TOKEN_SCRIPT)
+    _put_token = rom.Script(_PUT_TOKEN_SCRIPT)
 
     def _set_initial_transition_state(self):
         pass
@@ -219,7 +219,7 @@ class Net(NetBase):
 
         return color_idx >= 0 and color_idx < num_token_colors
 
-    def add_token(self, place_idx, token):
+    def put_token(self, place_idx, token):
         LOG.debug('Putting token (%s) into place (%d) on net (%s)',
                 token.key, place_idx, self.key)
         try:
@@ -233,7 +233,7 @@ class Net(NetBase):
 
         marking_key = self.marking(token_color).key
         global_marking_key = self.global_marking.key
-        rv = self._add_token(keys=[marking_key, global_marking_key],
+        rv = self._put_token(keys=[marking_key, global_marking_key],
                 args=[place_idx, token.key])
 
         if rv != 0:

@@ -151,7 +151,7 @@ class TestSafeNet(TestBase):
         p.add_observer('exchange 2', 'routing key 2', 'body 2')
 
         token = net.create_token()
-        net.add_token(0, token)
+        net.put_token(0, token)
         net.notify_place(0, token_color=None,
                 service_interfaces=self.service_interfaces)
 
@@ -206,13 +206,13 @@ class TestSafeNet(TestBase):
         self.assertEqual(['4'], net.transition(0).arcs_out.value)
         self.assertEqual(action.key, str(net.transition(0).action_key))
 
-        net.create_add_notify(0, self.service_interfaces)
+        net.create_put_notify(0, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.create_add_notify(1, self.service_interfaces)
+        net.create_put_notify(1, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.create_add_notify(2, self.service_interfaces)
+        net.create_put_notify(2, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.create_add_notify(3, self.service_interfaces)
+        net.create_put_notify(3, self.service_interfaces)
         self.assertEqual(1, int(action.call_count))
 
         for i in xrange(0, 3):
@@ -231,16 +231,16 @@ class TestSafeNet(TestBase):
         self.assertTrue(net.marking.get(place_idx) is None)
         self.assertEqual({}, net.marking.value)
 
-        net.add_token(place_idx, token1)
+        net.put_token(place_idx, token1)
         self.assertEqual(token1.key, net.marking.get(place_idx))
-        net.add_token(place_idx, token1)
+        net.put_token(place_idx, token1)
         self.assertEqual({"0": str(token1.key)}, net.marking.value)
 
         # setting the same token twice is not an error
         self.assertEqual(token1.key, net.marking.get(place_idx))
         self.assertEqual({"0": str(token1.key)}, net.marking.value)
 
-        self.assertRaises(petri.PlaceCapacityError, net.add_token,
+        self.assertRaises(petri.PlaceCapacityError, net.put_token,
             place_idx, token2)
 
     def test_copy(self):
@@ -306,7 +306,7 @@ class TestSafeNet(TestBase):
 
         # Test that marked places show up in red
         token = net.create_token()
-        rv = net._add_token(keys=[net.subkey("marking")],
+        rv = net._put_token(keys=[net.subkey("marking")],
                 args=[0, token.key])
 
         marked_graph = net.graph()

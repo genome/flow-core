@@ -164,7 +164,7 @@ class SafeNet(NetBase):
 
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
     _push_tokens = rom.Script(_PUSH_TOKENS_SCRIPT)
-    _add_token = rom.Script(_ADD_TOKEN_SCRIPT)
+    _put_token = rom.Script(_ADD_TOKEN_SCRIPT)
 
     def _set_initial_transition_state(self):
         for i in xrange(self.num_transitions.value):
@@ -241,8 +241,8 @@ class SafeNet(NetBase):
         return defer.DeferredList(deferreds)
 
 
-    def add_token(self, place_idx, token):
-        rv = self._add_token(keys=[self.marking.key],
+    def put_token(self, place_idx, token):
+        rv = self._put_token(keys=[self.marking.key],
                 args=[place_idx, token.key])
         if rv != 0:
             raise PlaceCapacityError(
