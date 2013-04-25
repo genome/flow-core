@@ -1,5 +1,7 @@
 from flow.commands.token_sender import TokenSenderCommand
+from twisted.internet import defer
 from tempfile import NamedTemporaryFile
+from flow.util.logannotator import LogAnnotator
 
 import flow.redisom as rom
 import json
@@ -26,13 +28,20 @@ class WrapperCommand(TokenSenderCommand):
 
         parser.add_argument('command_line', nargs='+')
 
-    def __call__(self, parsed_arguments):
-        self.send_token(net_key=parsed_arguments.net_key,
+    def _execute(self, parsed_arguments):
+        execute_deferred = defer.Deferred()
+        self.__execute(parsed_arguments, execute_deferred)
+        return execute_deferred
+
+    @defer.inlineCallbacks
+    def __execute(self, parsed_arguments, execute_deferred):
+        deferreds = []
+        deferred = self.send_token(net_key=parsed_arguments.net_key,
                 place_idx=parsed_arguments.running_place_id,
                 data={"pid": str(os.getpid())},
                 color=parsed_arguments.token_color)
+        deferreds.append(deferred)
 
-        rv = 1
         cmdline = parsed_arguments.command_line
 
         with NamedTemporaryFile() as inputs_file:
@@ -62,28 +71,28 @@ class WrapperCommand(TokenSenderCommand):
                 LOG.info("On host %s: executing %s", platform.node(),
                         " ".join(cmdline))
 
-                try:
-                    subprocess.check_call(cmdline)
+                logannotator = LogAnnotator(cmdline)
+                self.exit_code = yield logannotator.start()
 
+                if self.exit_code == 0:
                     outputs = None
                     if parsed_arguments.with_outputs:
                         outputs = json.load(outputs_file)
 
-                    self.send_token(net_key=parsed_arguments.net_key,
+                    deferred = self.send_token(net_key=parsed_arguments.net_key,
                             place_idx=parsed_arguments.success_place_id,
                             data={"exit_code": 0, "outputs": outputs},
                             color=parsed_arguments.token_color)
-
-                    rv = 0
-                except subprocess.CalledProcessError as e:
-                    LOG.info("Failed to execute command '%s': %s",
-                            " ".join(cmdline), str(e))
+                    deferreds.append(deferred)
+                else:
+                    LOG.info("Failed to execute command '%s'.",
+                            " ".join(cmdline))
                     if parsed_arguments.failure_place_id is not None:
-                        self.send_token(net_key=parsed_arguments.net_key,
+                        deferred = self.send_token(net_key=parsed_arguments.net_key,
                                 place_idx=parsed_arguments.failure_place_id,
-                                data={"exit_code": e.returncode},
+                                data={"exit_code": self.exit_code},
                                 color=parsed_arguments.token_color)
+                        deferreds.append(deferred)
 
-                    rv = e.returncode
-
-        return rv
+        dlist = defer.DeferredList(deferreds)
+        dlist.chainDeferred(execute_deferred)

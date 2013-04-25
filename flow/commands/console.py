@@ -1,7 +1,7 @@
 from IPython import embed
 from flow.commands.base import CommandBase
-from flow.configuration.inject.broker import BlockingBrokerConfiguration
 from flow.configuration.inject.redis_conf import RedisConfiguration
+from twisted.internet import defer
 from injector import inject, Injector
 
 import flow.interfaces
@@ -29,7 +29,7 @@ class ConsoleCommand(CommandBase):
                 help='Load the object associated with KEY '
                      'into the NAME variable.')
 
-    def __call__(self, parsed_arguments):
+    def _execute(self, parsed_arguments):
         namespace = {
                 'get_object': self.get_key,
                 'injector': self.injector,
@@ -46,6 +46,7 @@ class ConsoleCommand(CommandBase):
                     parsed_arguments.object[1])
 
         embed(user_ns=namespace, display_banner=False)
+        return defer.succeed(None)
 
 
     def get_key(self, key):

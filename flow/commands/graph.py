@@ -1,6 +1,7 @@
 from flow.commands.base import CommandBase
 from flow.configuration.inject.redis_conf import RedisConfiguration
 from flow.configuration.settings.injector import setting
+from twisted.internet import defer
 from injector import inject
 
 import flow.interfaces
@@ -28,7 +29,7 @@ class GraphCommand(CommandBase):
         parser.add_argument('--format', '-f', default='ps',
                 help='Output format for graph')
 
-    def __call__(self, parsed_arguments):
+    def _execute(self, parsed_arguments):
         net = rom.get_object(self.storage, parsed_arguments.netkey)
 
         s = net.graph().draw(format=parsed_arguments.format, prog='dot')
@@ -37,3 +38,5 @@ class GraphCommand(CommandBase):
         else:
             f = sys.stdout
         f.write(s)
+
+        return defer.succeed(None)

@@ -19,7 +19,7 @@ class ForkShellCommand(ServiceCommand):
             ServiceLocatorConfiguration,
     ]
 
-    def __call__(self, *args, **kwargs):
+    def _setup(self, *args, **kwargs):
         self.handlers = [self.injector.get(ForkShellCommandMessageHandler)]
 
-        return ServiceCommand.__call__(self, *args, **kwargs)
+        return ServiceCommand._setup(self, *args, **kwargs)

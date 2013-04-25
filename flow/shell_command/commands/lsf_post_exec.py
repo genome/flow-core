@@ -3,6 +3,7 @@ import os
 import sys
 
 from flow.commands.token_sender import TokenSenderCommand
+from twisted.internet import defer
 
 LOG = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class LsfPostExecCommand(TokenSenderCommand):
         parser.add_argument('--failure-place-id', '-f', type=int)
         parser.add_argument('--token-color', '-c', default=None)
 
-    def __call__(self, parsed_arguments):
+    def _execute(self, parsed_arguments):
         LOG.debug("Starting POST_EXEC_CMD")
 
         info = os.environ.get('LSB_JOBEXIT_INFO', None)
@@ -30,9 +31,11 @@ class LsfPostExecCommand(TokenSenderCommand):
         if info is not None or stat != 0:
             return_code = stat >> 8
             LOG.debug("Found return code to be %s", return_code)
-            self.send_token(net_key=parsed_arguments.net_key,
+            deferred = self.send_token(net_key=parsed_arguments.net_key,
                     place_idx=parsed_arguments.failure_place_id,
                     data={"exit_code": return_code},
                     color=parsed_arguments.token_color)
+            return deferred
         else:
             LOG.debug("Process exited normally")
+            return defer.succeed(None)

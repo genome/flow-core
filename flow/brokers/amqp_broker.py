@@ -29,12 +29,15 @@ class AmqpBroker(flow.interfaces.IBroker):
     def __init__(self):
         self._publish_properties = pika.BasicProperties(delivery_mode=2)
 
-        self.connection = None
+        self._connection = None
         self.channel = None
+
+        self.connect_deferred = None
+        self._connect_deferred = None
+
         self._confirm_tags = blist.sortedlist()
         self._confirm_deferreds = {}
         self._handlers = []
-        self._ready_callbacks = {}
 
         self._last_publish_tag = 0
 
@@ -42,6 +45,16 @@ class AmqpBroker(flow.interfaces.IBroker):
         self._handlers.append(handler)
 
     def publish(self, exchange_name, routing_key, message):
+        LOG.debug("Publishing to exchange (%s) with routing_key (%s) "
+                "the message (%s)", exchange_name, routing_key, message)
+
+        confirm_deferred = defer.Deferred()
+        deferred = self._connect()
+        deferred.addCallback(self._publish, exchange_name, routing_key, message,
+                confirm_deferred)
+        return confirm_deferred
+
+    def _publish(self, _, exchange_name, routing_key, message, confirm_deferred):
         timer = stats.create_timer('messages.publish.%s' %
                 message.__class__.__name__)
         timer.start()
@@ -52,7 +65,7 @@ class AmqpBroker(flow.interfaces.IBroker):
         deferred = self.raw_publish(exchange_name, routing_key, encoded_message)
         timer.split('publish')
         timer.stop()
-        return deferred
+        deferred.addCallback(confirm_deferred.callback)
 
     def raw_publish(self, exchange_name, routing_key, encoded_message):
         self._last_publish_tag += 1
@@ -68,78 +81,77 @@ class AmqpBroker(flow.interfaces.IBroker):
         self.add_confirm_deferred(publish_tag, deferred)
         return deferred
 
-    def add_persistent_ready_callback(self, callback, *args, **kwargs):
-        self._ready_callbacks[callback] = (args, kwargs, False)
-
-    def add_ready_callback(self, callback, *args, **kwargs):
-        self._ready_callbacks[callback] = (args, kwargs, True)
-
-    def remove_ready_callback(self, callback):
-        del self._ready_callbacks[callback]
-
-    def get_ready_callbacks(self):
-        return self._ready_callbacks.values()
-
-    def stop(self):
-        self.disconnect()
-        reactor.stop()
-
-    def connect_and_listen(self):
-        self._connect()
-        reactor.run()
+    def connect(self):
+        # only allow one attempt to connect at a time.
+        if self.connect_deferred is None:
+            self.connect_deferred = defer.Deferred()
+            deferred = self._connect()
+            deferred.chainDeferred(self.connect_deferred)
+        return self.connect_deferred
 
     def _connect(self):
-        params = pika.ConnectionParameters(
-                host=self.connection_params.hostname,
-                port=self.connection_params.port,
-                virtual_host=self.connection_params.virtual_host)
+        if self._connect_deferred is None:
+            self._connect_deferred = defer.Deferred()
+            LOG.debug('Connecting to AMQP')
 
-        self.connection = protocol.ClientCreator(reactor,
-                twisted_connection.TwistedProtocolConnection,
-                params)
+            params = pika.ConnectionParameters(
+                    host=self.connection_params.hostname,
+                    port=self.connection_params.port,
+                    virtual_host=self.connection_params.virtual_host)
 
-        LOG.debug('Attempting to establish connection to host: %s on port: %s',
-                params.host, params.port)
-        deferred = self.connection.connectTCP(params.host, params.port)
-        deferred.addCallback(self._on_connected)
+            connection = protocol.ClientCreator(reactor,
+                    twisted_connection.TwistedProtocolConnection,
+                    params)
 
-        reactor.addSystemEventTrigger('before', 'shutdown', self.disconnect)
+            LOG.debug('Attempting to establish connection to host: %s on port: %s',
+                    params.host, params.port)
+            deferred = connection.connectTCP(params.host, params.port)
+            deferred.addCallback(self._on_connected)
 
-    def disconnect(self):
-        LOG.info("Closing AMQP connection.")
-        if hasattr(self.connection, 'transport'):
-            self.connection.transport.loseConnection()
+            reactor.addSystemEventTrigger('before', 'shutdown', self.disconnect)
+        else:
+            LOG.debug('Already Connected to AMQP (or connection in progress)')
+        return self._connect_deferred
 
     def _on_connected(self, connection):
         LOG.debug('Established connection to AMQP')
         connection.ready.addCallback(self._on_ready)
-        self.connection = connection
+        self._connection = connection
+
+    def disconnect(self):
+        LOG.info("Closing AMQP connection.")
+        if hasattr(self._connection, 'transport'):
+            self._connection.transport.loseConnection()
+        self._connection = None
+        self._connect_deferred = None
+        self.connect_defered = None
 
     @defer.inlineCallbacks
     def _on_ready(self, connection):
+        LOG.debug('AMQP connection is ready.')
         self.channel = yield connection.channel()
-        LOG.debug('Channel open')
+        LOG.debug('Channel is open')
 
         if self.prefetch_count:
             yield self.channel.basic_qos(prefetch_count=self.prefetch_count)
 
         self._setup_publisher_confirms(self.channel)
 
-        to_be_removed = set()
-        for callback, (args, kwargs, delete) in self._ready_callbacks.iteritems():
-            callback(*args, **kwargs)
-            if delete:
-                to_be_removed.add(callback)
-        for callback in to_be_removed:
-            self.remove_ready_callback(callback)
-
         for handler in self._handlers:
-            queue_name = handler.queue_name
-            (queue, consumer_tag) = yield self.channel.basic_consume(
-                    queue=queue_name)
-            LOG.debug('Beginning consumption on queue (%s)', queue_name)
+            self.start_handler(handler)
 
-            self._get_message_from_queue(queue, handler)
+        LOG.debug("Firing callbacks on the _connect deferred")
+        self._connect_deferred.callback(None)
+        LOG.debug("_on_ready completed.")
+
+    @defer.inlineCallbacks
+    def start_handler(self, handler):
+        queue_name = handler.queue_name
+        (queue, consumer_tag) = yield self.channel.basic_consume(
+                queue=queue_name)
+        LOG.debug('Beginning consumption on queue (%s)', queue_name)
+
+        self._get_message_from_queue(queue, handler)
 
     def _setup_publisher_confirms(self, channel):
         LOG.debug('Enabling publisher confirms.')
@@ -178,11 +190,11 @@ class AmqpBroker(flow.interfaces.IBroker):
     def _on_get(self, payload, queue, handler):
         (channel, basic_deliver, properties, encoded_message) = payload
 
+        message_class = handler.message_class
         timer = stats.create_timer("messages.receive.%s" %
                 message_class.__name__)
         timer.start()
 
-        message_class = handler.message_class
         encoded_message = message_class.decode(encoded_message)
         timer.split('decode')
 

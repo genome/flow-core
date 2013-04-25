@@ -55,7 +55,7 @@ def naked_main():
         return flow.exit_codes.EXECUTE_ERROR
 
     try:
-        exit_code = command(parsed_args)
+        exit_code = command.execute(parsed_args)
     except:
         LOG.exception('Command execution failed')
         return flow.exit_codes.EXECUTE_FAILURE

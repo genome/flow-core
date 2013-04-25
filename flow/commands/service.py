@@ -1,6 +1,7 @@
 from flow.commands.base import CommandBase
 from flow.configuration.inject.redis_conf import RedisConfiguration
 from injector import inject, Injector
+from twisted.internet import defer
 
 import flow.interfaces
 import logging
@@ -16,10 +17,13 @@ class ServiceCommand(CommandBase):
     def annotate_parser(parser):
         pass
 
-    def __call__(self, parsed_arguments):
+    def _setup(self, parsed_arguments):
         for handler in self.handlers:
             self.broker.register_handler(handler)
 
-        self.broker.connect_and_listen()
+        self.broker.connect()
 
-        return 0
+    def _execute(self, parsed_arguments):
+        # services never shut down
+        deferred = defer.Deferred()
+        return deferred # will never fire

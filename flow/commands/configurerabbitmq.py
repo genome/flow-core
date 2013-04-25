@@ -1,4 +1,5 @@
 from flow.commands.base import CommandBase
+from twisted.internet import defer
 import logging
 import sys
 import json
@@ -20,8 +21,7 @@ class ConfigureRabbitMQCommand(CommandBase):
         parser.add_argument('--output_filename', '-o',
                             default=None, help='Filename to write to. Defaults to STDOUT')
 
-    def __call__(self, parsed_arguments):
-
+    def _execute(self, parsed_arguments):
         if not self.is_generated:
             self.parse_exchanges_queues_bindings()
 
@@ -32,8 +32,7 @@ class ConfigureRabbitMQCommand(CommandBase):
             self.is_generated = True
 
         self.dump_config_to_file(parsed_arguments.output_filename)
-
-        return 0
+        return defer.succeed(None)
 
     def parse_exchanges_queues_bindings(self):
         exchanges = self.exchanges = set()

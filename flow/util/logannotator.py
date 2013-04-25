@@ -1,5 +1,4 @@
-from twisted.internet import protocol
-from twisted.internet import reactor
+from twisted.internet import protocol, reactor, defer
 from datetime import datetime
 import socket
 import os
@@ -28,6 +27,8 @@ def write_output(fd, data, newline_pending, prefix=''):
 class LogAnnotator(protocol.ProcessProtocol):
     def __init__(self, cmdline, stdout_fd=sys.stdout, stderr_fd=sys.stderr,
             log_hostname=True):
+
+        self.deferred = defer.Deferred()
         self.cmdline = cmdline
         self.stdout_fd = stdout_fd
         self.stderr_fd = stderr_fd
@@ -35,8 +36,6 @@ class LogAnnotator(protocol.ProcessProtocol):
 
         self.stdout_newline_pending = False
         self.stderr_newline_pending = False
-
-        self.exit_code = 1
 
     def connectionMade(self):
         pass
@@ -61,16 +60,19 @@ class LogAnnotator(protocol.ProcessProtocol):
             self.transport.loseConnection()
 
     def processEnded(self, reason):
-        self.exit_code = reason.value.exitCode
-        reactor.stop()
+        exit_code = reason.value.exitCode
+        self.deferred.callback(exit_code)
 
     def start(self):
+        """
+        Returns a deferred that fires (with the exit_code) when the
+        process exits.
+        """
         if self.log_hostname:
             self.announce_hostname()
         reactor.spawnProcess(self, self.cmdline[0], self.cmdline,
                 env=os.environ, childFDs={0:0, 1:'r', 2:'r'})
-        reactor.run()
-        return self.exit_code
+        return self.deferred
 
     def announce_hostname(self):
         hostname = socket.gethostname()
