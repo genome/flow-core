@@ -1,7 +1,5 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 from twisted.internet import reactor, defer
-import collections
-import injector
 import logging
 
 LOG = logging.getLogger(__name__)

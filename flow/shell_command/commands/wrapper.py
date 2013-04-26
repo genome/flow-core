@@ -8,7 +8,6 @@ import json
 import logging
 import os
 import platform
-import subprocess
 
 
 LOG = logging.getLogger(__name__)
@@ -55,9 +54,9 @@ class WrapperCommand(TokenSenderCommand):
 
                     inputs = inputs_hash.value
 
-                    LOG.debug("Fetched inputs from key %s" %
+                    LOG.debug("Fetched inputs from key %s",
                             parsed_arguments.with_inputs)
-                    LOG.debug("Input values: %r" % inputs)
+                    LOG.debug("Input values: %r", inputs)
 
                     json.dump(inputs, inputs_file)
                     inputs_file.flush()
@@ -88,7 +87,8 @@ class WrapperCommand(TokenSenderCommand):
                     LOG.info("Failed to execute command '%s'.",
                             " ".join(cmdline))
                     if parsed_arguments.failure_place_id is not None:
-                        deferred = self.send_token(net_key=parsed_arguments.net_key,
+                        deferred = self.send_token(
+                                net_key=parsed_arguments.net_key,
                                 place_idx=parsed_arguments.failure_place_id,
                                 data={"exit_code": self.exit_code},
                                 color=parsed_arguments.token_color)

@@ -1,6 +1,5 @@
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import abstractmethod
 from flow.protocol.exceptions import InvalidMessageException
-from flow.util import stats
 from flow.interfaces import IHandler
 from twisted.internet import defer
 import logging
