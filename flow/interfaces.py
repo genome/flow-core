@@ -11,8 +11,8 @@ class IBroker(object):
 
         Returns the deferred from IBroker.raw_publish
         """
-        pass
 
+    # XXX This should be removed.  It's only used by place observers.
     @abstractmethod
     def raw_publish(self, exchange_name, routing_key, encoded_message):
         """
@@ -22,7 +22,6 @@ class IBroker(object):
         will errback when amqp server rejects published message.  Both are
         called with the publish_tag
         """
-        pass
 
     @abstractmethod
     def register_handler(self, handler):
@@ -31,7 +30,6 @@ class IBroker(object):
         made the listener will be set up for you and will deliver message_class
         objects to the handler's __call__ function.
         """
-        pass
 
 
 class IHandler(object):
@@ -54,7 +52,11 @@ class IOrchestrator(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def set_token(self, net_key, place_idx, token_key=None):
+    def create_token(self, net_key, place_idx, **create_token_kwargs):
+        pass
+
+    @abstractmethod
+    def notify_place(self, net_key, place_idx):
         pass
 
     @abstractmethod

@@ -1,5 +1,5 @@
 from flow.petri.netbase import Token, NetBase, TransitionAction,\
-        TokenColorError
+        TokenColorError, PlaceCapacityError
 
 from flow.protocol.message import Message
 from twisted.internet import defer
@@ -17,7 +17,7 @@ import subprocess
 
 LOG = logging.getLogger(__name__)
 
-_SET_TOKEN_SCRIPT = """
+_PUT_TOKEN_SCRIPT = """
 local marking_key = KEYS[1]
 local global_marking_key = KEYS[2]
 local place_key = ARGV[1]
@@ -190,7 +190,7 @@ class Net(NetBase):
 
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
     _push_tokens = rom.Script(_PUSH_TOKENS_SCRIPT)
-    _set_token = rom.Script(_SET_TOKEN_SCRIPT)
+    _put_token = rom.Script(_PUT_TOKEN_SCRIPT)
 
     def _set_initial_transition_state(self):
         pass
@@ -219,53 +219,40 @@ class Net(NetBase):
 
         return color_idx >= 0 and color_idx < num_token_colors
 
-    def set_token(self, place_idx, token_key='', service_interfaces=None,
-            token_color=None):
-
-        if token_color is None and token_key == '':
-            raise RuntimeError("net %s, place %d: token_color is none!" %
-                    (self.key, place_idx))
-
-        place = self.place(place_idx)
-        LOG.debug("Set token net=%s, place=%s (#%d), token_key='%s'",
-                self.key, place.name.value, place_idx, token_key)
-
-        if token_key:
-            token = rom.get_object(self.connection, token_key)
-            try:
-                color_idx = token.color_idx.value
-            except rom.NotInRedisError:
-                raise TokenColorError("Token %s has no color set!" % token_key)
-
-            if token_color is None:
-                token_color = color_idx
-            elif color_idx != token_color:
-                raise RuntimeError("Token color mismatch! %r vs %r" %
-                        (color_idx, token_color))
-
-            LOG.debug("Token color = %d", token_color)
-
-            marking_key = self.marking(token_color).key
-            global_marking_key = self.global_marking.key
-            keys = [marking_key, global_marking_key]
-            args = [place_idx, token_key]
-            LOG.debug("Calling lua set_token, keys=%r, args=%r",
-                    keys, args)
-            rv = self._set_token(keys=keys, args=args)
-
-            if rv != 0:
-                raise PlaceCapacityError(
-                    "Failed to add token %s (color %r) to place %s: "
-                    "a token already exists" %
-                    (token_key, token.color_idx.value, place.key))
+    def put_token(self, place_idx, token):
+        LOG.debug('Putting token (%s) into place (%d) on net (%s)',
+                token.key, place_idx, self.key)
+        try:
+            token_color = token.color_idx.value
+        except rom.NotInRedisError:
+            raise TokenColorError("Token %s has no color set!" % token.key)
 
         if not self._validate_token_color(token_color):
             raise TokenColorError("Token=%s: invalid token color %r" %
-                    (token_key, color_idx))
+                    (token.key, token_color))
 
-        token_count = len(self.marking(token_color))
+        marking_key = self.marking(token_color).key
+        global_marking_key = self.global_marking.key
+        rv = self._put_token(keys=[marking_key, global_marking_key],
+                args=[place_idx, token.key])
+
+        if rv != 0:
+            raise PlaceCapacityError(
+                "Failed to add token %s (color %r) to place %s: "
+                "a token already exists" %
+                (token.key, token_color, place_idx))
+
+    def notify_place(self, place_idx, token_color, service_interfaces):
+        if token_color is None:
+            raise RuntimeError("net %s, place %d: token_color is none!" %
+                    (self.key, place_idx))
+
         deferreds = []
-        if token_count > 0:
+        if place_idx in self.marking(token_color):
+            place = self.place(place_idx)
+            LOG.debug("Notify place net=%s, place=%s (#%d), token_color=%d",
+                    self.key, place.name.value, place_idx, token_color)
+
             place.first_token_timestamp.setnx()
             orchestrator = service_interfaces['orchestrator']
             arcs_out = place.arcs_out.value
@@ -277,6 +264,12 @@ class Net(NetBase):
                 deferred = orchestrator.notify_transition(self.key, int(trans_idx),
                         int(place_idx), token_color=token_color)
                 deferreds.append(deferred)
+
+        else:
+            LOG.warn("Notify place (%d) on net %s for color (%d), "
+                    "but place had no tokens of that color",
+                    place_idx, self.key, token_color)
+
         return defer.DeferredList(deferreds)
 
     def consume_tokens(self, transition, notifying_place_idx, color_idx):
@@ -354,11 +347,7 @@ class Net(NetBase):
             deferreds.append(deferred)
 
         if new_token is None:
-            new_token = Token.create(self.connection)
-
-        new_token.color_idx.value = token_color
-        LOG.debug("Setting token %s color to %d" % (
-                new_token.key, token_color))
+            new_token = self.create_token(token_color=token_color)
 
         tokens_pushed, arcs_out = self.push_tokens(trans, new_token.key,
                 token_color)
@@ -370,7 +359,7 @@ class Net(NetBase):
             orchestrator = service_interfaces['orchestrator']
             for place_idx in arcs_out:
                 LOG.debug("Notify place %r color=%r", place_idx, token_color)
-                deferred = orchestrator.set_token(self.key, int(place_idx), token_key='',
+                deferred = orchestrator.notify_place(self.key, int(place_idx),
                         token_color=token_color)
                 deferreds.append(deferred)
             self.connection.delete(tokens_pushed_key)

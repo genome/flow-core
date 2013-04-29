@@ -59,20 +59,20 @@ class TestNet(TestBase):
         self.assertRaises(TypeError, petri.Net.create, None)
 
     def test_num_token_colors(self):
-        uncolored_token = petri.Token.create(self.conn)
-        too_large_token = petri.Token.create(self.conn, color_idx=99)
-        valid_token = petri.Token.create(self.conn, color_idx=9)
+        uncolored_token = self.net.create_token()
+        too_large_token = self.net.create_token(token_color=99)
+        valid_token = self.net.create_token(token_color=9)
 
-        self.assertRaises(petri.TokenColorError, self.net.set_token,
-                0, uncolored_token.key, self.service_interfaces)
+        self.assertRaises(petri.TokenColorError, self.net.put_token,
+                0, uncolored_token)
 
         self.net.set_num_token_colors(10)
-        self.assertRaises(petri.TokenColorError, self.net.set_token,
-                0, uncolored_token.key, self.service_interfaces)
-        self.assertRaises(petri.TokenColorError, self.net.set_token,
-                0, too_large_token.key, self.service_interfaces)
+        self.assertRaises(petri.TokenColorError, self.net.put_token,
+                0, uncolored_token)
+        self.assertRaises(petri.TokenColorError, self.net.put_token,
+                0, too_large_token)
 
-        self.net.set_token(0, valid_token.key, self.service_interfaces)
+        self.net.put_token(0, valid_token)
 
     def test_consume_tokens(self):
         self.net.set_num_token_colors(1)
@@ -180,7 +180,8 @@ class TestNet(TestBase):
 
         for i in xrange(len(self.input_places)):
             for t in tokens:
-                self.net.set_token(i, t.key, self.service_interfaces)
+                self.net.put_token(i, t)
+                self.net.notify_place(i, t.color_idx, self.service_interfaces)
 
         for pidx in xrange(len(self.input_places)):
             self.assertEqual('0', self.net.global_marking[pidx])
@@ -215,9 +216,9 @@ class TestJoinAction(TestBase):
 
         net.set_num_token_colors(4)
 
-        tokens = [petri.Token.create(self.conn, color_idx=x) for x in xrange(4)]
         for i in xrange(4):
-            net.set_token(0, tokens[i].key, self.service_interfaces)
+            net.create_put_notify(0, token_color=i,
+                    service_interfaces=self.service_interfaces)
             if i < 3:
                 self.assertRaises(rom.NotInRedisError, getattr,
                     action.completed, "value")

@@ -1,8 +1,13 @@
 from flow.commands.token_sender import TokenSenderCommand
 from twisted.internet import defer
+from flow.configuration.settings.injector import setting
+from flow.configuration.inject.redis_conf import RedisConfiguration
+from flow.configuration.inject.broker import BrokerConfiguration
+from injector import inject
 from tempfile import NamedTemporaryFile
 from flow.util.logannotator import LogAnnotator
 
+import flow.interfaces
 import flow.redisom as rom
 import json
 import logging
@@ -12,8 +17,13 @@ import platform
 
 LOG = logging.getLogger(__name__)
 
-
+@inject(storage=flow.interfaces.IStorage)
 class WrapperCommand(TokenSenderCommand):
+    injector_modules = [
+            RedisConfiguration,
+            BrokerConfiguration,
+    ]
+
     @staticmethod
     def annotate_parser(parser):
         parser.add_argument('--net-key', '-n')

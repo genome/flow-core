@@ -2,6 +2,7 @@ from flow import petri
 
 # netbuilder makes the "copy net" test easier
 import flow.petri.netbuilder as nb
+import flow.petri.netbase
 
 from test_helpers import RedisTest, FakeOrchestrator
 import mock
@@ -149,8 +150,10 @@ class TestSafeNet(TestBase):
         p.add_observer('exchange 1', 'routing key 1', 'body 1')
         p.add_observer('exchange 2', 'routing key 2', 'body 2')
 
-        token = petri.Token.create(self.conn)
-        net.set_token(0, token.key, self.service_interfaces)
+        token = net.create_token()
+        net.put_token(0, token)
+        net.notify_place(0, token_color=None,
+                service_interfaces=self.service_interfaces)
 
         orch = self.service_interfaces['orchestrator']
         self.assertEqual(orch.place_entry_observed.call_args_list,
@@ -174,7 +177,7 @@ class TestSafeNet(TestBase):
             place_idx=0)
 
     def test_fire_transition(self):
-        places = ["place %d" % i for i in xrange(5)]
+        places = ["Place %d" % i for i in xrange(5)]
         action = petri.CounterAction.create(connection=self.conn, name="counter")
         place_arcs_out = dict((i, [0]) for i in xrange(4))
         trans_arcs_out = {0: [4]}
@@ -186,11 +189,11 @@ class TestSafeNet(TestBase):
                 place_arcs_out=place_arcs_out,
                 trans_arcs_out=trans_arcs_out)
 
-        self.assertEqual("place 0", str(net.place(0).name))
-        self.assertEqual("place 1", str(net.place(1).name))
-        self.assertEqual("place 2", str(net.place(2).name))
-        self.assertEqual("place 3", str(net.place(3).name))
-        self.assertEqual("place 4", str(net.place(4).name))
+        self.assertEqual("Place 0", str(net.place(0).name))
+        self.assertEqual("Place 1", str(net.place(1).name))
+        self.assertEqual("Place 2", str(net.place(2).name))
+        self.assertEqual("Place 3", str(net.place(3).name))
+        self.assertEqual("Place 4", str(net.place(4).name))
 
         self.assertEqual(['0'], net.place(0).arcs_out.value)
         self.assertEqual(['0'], net.place(1).arcs_out.value)
@@ -203,14 +206,13 @@ class TestSafeNet(TestBase):
         self.assertEqual(['4'], net.transition(0).arcs_out.value)
         self.assertEqual(action.key, str(net.transition(0).action_key))
 
-        token = petri.Token.create(self.conn)
-        net.set_token(0, token.key, self.service_interfaces)
+        net.create_put_notify(0, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.set_token(1, token.key, self.service_interfaces)
+        net.create_put_notify(1, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.set_token(2, token.key, self.service_interfaces)
+        net.create_put_notify(2, self.service_interfaces)
         self.assertEqual(0, int(action.call_count))
-        net.set_token(3, token.key, self.service_interfaces)
+        net.create_put_notify(3, self.service_interfaces)
         self.assertEqual(1, int(action.call_count))
 
         for i in xrange(0, 3):
@@ -223,23 +225,23 @@ class TestSafeNet(TestBase):
 
         place_idx = 0
 
-        token1 = petri.Token.create(self.conn)
-        token2 = petri.Token.create(self.conn)
+        token1 = net.create_token()
+        token2 = net.create_token()
 
         self.assertTrue(net.marking.get(place_idx) is None)
         self.assertEqual({}, net.marking.value)
 
-        net.set_token(place_idx, token1.key, self.service_interfaces)
+        net.put_token(place_idx, token1)
         self.assertEqual(token1.key, net.marking.get(place_idx))
-        net.set_token(place_idx, token1.key, self.service_interfaces)
+        net.put_token(place_idx, token1)
         self.assertEqual({"0": str(token1.key)}, net.marking.value)
 
         # setting the same token twice is not an error
         self.assertEqual(token1.key, net.marking.get(place_idx))
         self.assertEqual({"0": str(token1.key)}, net.marking.value)
 
-        self.assertRaises(petri.PlaceCapacityError, net.set_token,
-            place_idx, token2.key, self.service_interfaces)
+        self.assertRaises(petri.PlaceCapacityError, net.put_token,
+            place_idx, token2)
 
     def test_copy(self):
         builder = nb.NetBuilder()
@@ -303,8 +305,8 @@ class TestSafeNet(TestBase):
         self.assertEqual(2, len(edges))
 
         # Test that marked places show up in red
-        token = petri.Token.create(self.conn)
-        rv = net._set_token(keys=[net.subkey("marking")],
+        token = net.create_token()
+        rv = net._put_token(keys=[net.subkey("marking")],
                 args=[0, token.key])
 
         marked_graph = net.graph()
@@ -366,15 +368,17 @@ class TestTransitionActions(TestBase):
 
         active_tokens_key = "x"
         action.execute(active_tokens_key, net, service_interfaces)
-        orchestrator.set_token.assert_called_with(
-                net.key, success_place_id, token_key=mock.ANY)
+        orchestrator.create_token.assert_called_once_with(
+                net.key, success_place_id, token_color=None,
+                data={"return_code": 0})
 
         action.args["command_line"] = fail_cmdline
         orchestrator.reset_mock()
 
         action.execute(active_tokens_key, net, service_interfaces)
-        orchestrator.set_token.assert_called_with(
-                    net.key, failure_place_id, token_key=mock.ANY)
+        orchestrator.create_token.assert_called_once_with(
+                net.key, failure_place_id, token_color=None,
+                data={"return_code": 1})
 
     def test_required_arguments(self):
         self.assertRaises(TypeError, petri.SetRemoteTokenAction.create,
@@ -409,14 +413,19 @@ class TestTransitionActions(TestBase):
 
         orchestrator = mock.Mock()
         service_interfaces = {"orchestrator": orchestrator}
-        net = mock.MagicMock()
-        action.execute(active_tokens_key="x", net=net, service_interfaces=service_interfaces)
-        orchestrator.set_token.assert_called_once_with("netkey!", 1, mock.ANY)
 
-        token_key = orchestrator.set_token.call_args[0][2]
-        token = petri.Token(connection=self.conn, key=token_key)
-        self.assertEqual("output", token.data_type.value)
-        self.assertEqual(inputs, token.data.value)
+        net = mock.Mock()
+        remote_net = mock.Mock()
+        remote_net.create_token = mock.Mock()
+
+        with mock.patch('flow.petri.netbase.rom') as p:
+            p.get_object = mock.Mock()
+            p.get_object.return_value = remote_net
+            action.execute(active_tokens_key="x", net=net,
+                    service_interfaces=service_interfaces)
+
+        orchestrator.create_token.assert_called_once_with("netkey!", 1,
+                token_color=None, data=inputs, data_type="output")
 
 
 if __name__ == "__main__":

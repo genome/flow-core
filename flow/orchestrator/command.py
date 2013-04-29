@@ -2,7 +2,8 @@ from flow.commands.service import ServiceCommand
 from flow.configuration.inject.broker import BrokerConfiguration
 from flow.configuration.inject.redis_conf import RedisConfiguration
 from flow.configuration.inject.service_locator import ServiceLocatorConfiguration
-from flow.orchestrator.handlers import PetriSetTokenHandler, PetriNotifyTransitionHandler
+from flow.orchestrator.handlers import PetriCreateTokenHandler, PetriNotifyPlaceHandler
+from flow.orchestrator.handlers import PetriNotifyTransitionHandler
 from injector import inject, Injector
 
 import flow.interfaces
@@ -22,7 +23,8 @@ class OrchestratorCommand(ServiceCommand):
 
     def _setup(self, *args, **kwargs):
         self.handlers = [
-                self.injector.get(PetriSetTokenHandler),
+                self.injector.get(PetriCreateTokenHandler),
+                self.injector.get(PetriNotifyPlaceHandler),
                 self.injector.get(PetriNotifyTransitionHandler)
         ]
 

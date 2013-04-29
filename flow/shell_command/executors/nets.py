@@ -77,8 +77,9 @@ class ShellCommandDispatchAction(petri.TransitionAction):
         LOG.debug('Inputs for %s: %r', self.name, input_data)
 
         if input_data:
-            token = petri.Token.create(self.connection, data=input_data,
-                    data_type=self.output_token_type)
+            token = net.create_token(data=input_data,
+                    data_type=self.output_token_type,
+                    token_color=token_color)
             input_data_key = token.data.key
             LOG.debug("Created data token %s", token.key)
 

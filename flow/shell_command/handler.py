@@ -1,7 +1,6 @@
 from flow.configuration.settings.injector import setting
 from flow.handler import Handler
 from flow.interfaces import IShellCommandExecutor, IBroker, IStorage
-from flow.petri import Token, SetTokenMessage
 from flow.service_locator import ServiceLocator
 from flow.shell_command.messages import ShellCommandSubmitMessage
 from injector import inject
@@ -34,8 +33,7 @@ class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
                 **executor_options)
         return defer.succeed(True)
 
-@inject(storage=IStorage,
-        service_locator=ServiceLocator,
+@inject(service_locator=ServiceLocator,
         queue_name=setting('shell_command.lsf.queue'),
         exchange=setting('shell_command.lsf.exchange'),
         response_routing_key=setting('shell_command.lsf.response_routing_key'))
@@ -57,10 +55,6 @@ class LSFShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
         else:
             response_place = response_places.get('post_dispatch_failure')
 
-        token = Token.create(self.storage, data={"pid": str(job_id)},
-                color_idx=token_color)
-
         orchestrator = self.service_locator['orchestrator']
-        return orchestrator.set_token(net_key=net_key, place_idx=response_place,
-                token_key=token.key, token_color=token_color)
-
+        return orchestrator.create_token(net_key=net_key, place_idx=response_place,
+                data={"pid": str(job_id)}, token_color=token_color)
