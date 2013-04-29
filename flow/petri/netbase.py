@@ -335,7 +335,7 @@ class CounterAction(TransitionAction):
 
     def execute(self, active_tokens_key, net, service_interfaces):
         self.call_count.incr(1)
-        return None, defer.succeed(None)
+        return defer.succeed(None)
 
 
 class ShellCommandAction(TransitionAction):
@@ -354,7 +354,10 @@ class ShellCommandAction(TransitionAction):
         token_color = self.active_color(active_tokens_key)
         deferred = orchestrator.create_token(net.key, int(return_place),
                 token_color=token_color, data={"return_code": rv})
-        return None, deferred
+
+        execute_deferred = defer.Deferred()
+        deferred.addCallback(lambda _: execute_deferred.callback(None))
+        return execute_deferred
 
 
 class SetRemoteTokenAction(TransitionAction):
@@ -372,7 +375,10 @@ class SetRemoteTokenAction(TransitionAction):
         token_color = self.active_color(active_tokens_key)
         deferred = orchestrator.create_token(remote_net_key, remote_place_id,
                 token_color=token_color, data=input_data, data_type=data_type)
-        return None, deferred
+
+        execute_deferred = defer.Deferred()
+        deferred.addCallback(lambda _: execute_deferred.callback(None))
+        return execute_deferred
 
 
 class MergeTokensAction(TransitionAction):
@@ -389,4 +395,5 @@ class MergeTokensAction(TransitionAction):
         token_color = self.active_color(active_tokens_key)
         token = net.create_token(data_type=output_type, data=data,
                 token_color=token_color)
-        return token, defer.succeed(None)
+
+        return defer.succeed(token)

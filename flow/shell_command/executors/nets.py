@@ -1,4 +1,5 @@
 from flow import petri
+from twisted.internet import defer
 
 import flow.petri.netbuilder as nb
 import logging
@@ -102,7 +103,9 @@ class ShellCommandDispatchAction(petri.TransitionAction):
                 **executor_options
                 )
 
-        return token, deferred
+        execute_deferred = defer.Deferred()
+        deferred.addCallback(lambda _: execute_deferred.callback(token))
+        return execute_deferred
 
 
 class LSFDispatchAction(ShellCommandDispatchAction):

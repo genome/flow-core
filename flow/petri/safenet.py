@@ -171,9 +171,9 @@ class SafeNet(NetBase):
             trans = self.transition(i)
             trans.state = trans.arcs_in.value
 
-    def notify_transition(self, trans_idx=None, place_idx=None,
-            service_interfaces=None, token_color=None):
-
+    @defer.inlineCallbacks
+    def notify_transition(self, trans_idx, place_idx,
+            service_interfaces, token_color=None):
         if token_color is not None:
             raise RuntimeError("SafeNet %s, transition %d: colored "
                     "tokens are not supported in this net" %
@@ -208,15 +208,13 @@ class SafeNet(NetBase):
 
         if rv[0] != 0:
             timer.stop()
-            return defer.succeed(None)
+            defer.returnValue(None)
 
         action = trans.action
         new_token = None
-        deferreds = []
         if action is not None:
-            new_token, deferred = action.execute(active_tokens_key, net=self,
+            new_token = yield action.execute(active_tokens_key, net=self,
                     service_interfaces=service_interfaces)
-            deferreds.append(deferred)
             timer.split('execute_action.%s' % action.__class__.__name__)
 
         if new_token is None:
@@ -228,6 +226,7 @@ class SafeNet(NetBase):
         rv = self._push_tokens(keys=keys)
         timer.split('push_tokens')
         tokens_pushed, places_to_notify = rv
+        deferreds = []
         if tokens_pushed == 1:
             orchestrator = service_interfaces['orchestrator']
             for place_idx in places_to_notify:
@@ -238,7 +237,7 @@ class SafeNet(NetBase):
             self.connection.delete(tokens_pushed_key)
             timer.split('delete_pushed_tokens')
         timer.stop()
-        return defer.DeferredList(deferreds)
+        yield defer.DeferredList(deferreds)
 
 
     def put_token(self, place_idx, token):

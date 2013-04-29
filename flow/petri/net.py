@@ -314,25 +314,16 @@ class Net(NetBase):
 
         return tokens_pushed, arcs_out
 
-    def notify_transition(self, trans_idx=None, place_idx=None,
-            service_interfaces=None, token_color=None):
-
-        if any([x == None for x in trans_idx, place_idx, service_interfaces]):
-            raise TypeError(
-                    "You must specify trans_idx, place_idx, and "
-                    "service_interfaces")
-
-        if token_color is None:
-            raise RuntimeError("Net %s, transition %d: token "
-                    "color missing" % (self.key, trans_idx))
-
+    @defer.inlineCallbacks
+    def notify_transition(self, trans_idx, place_idx, service_interfaces,
+            token_color):
         LOG.debug("notify net %s, transition #%d color=%d", self.key, trans_idx,
                 token_color)
 
         trans = self.transition(trans_idx)
 
         if not self.consume_tokens(trans, place_idx, token_color):
-            return defer.succeed(None)
+            defer.returnValue(None)
 
         active_tokens_key = trans.active_tokens_for_color(token_color).key
         tokens_pushed_key = trans.tokens_pushed(token_color).key
@@ -340,11 +331,9 @@ class Net(NetBase):
 
         action = trans.action
         new_token = None
-        deferreds = []
         if action is not None:
-            new_token, deferred = action.execute(active_tokens_key, net=self,
+            new_token = yield action.execute(active_tokens_key, net=self,
                     service_interfaces=service_interfaces)
-            deferreds.append(deferred)
 
         if new_token is None:
             new_token = self.create_token(token_color=token_color)
@@ -355,6 +344,7 @@ class Net(NetBase):
         LOG.debug("push_tokens (#%d): pushed=%r, arcs_out=%r", trans_idx,
                 tokens_pushed, arcs_out)
 
+        deferreds = []
         if tokens_pushed is True:
             orchestrator = service_interfaces['orchestrator']
             for place_idx in arcs_out:
@@ -363,7 +353,8 @@ class Net(NetBase):
                         token_color=token_color)
                 deferreds.append(deferred)
             self.connection.delete(tokens_pushed_key)
-        return defer.DeferredList(deferreds)
+        yield defer.DeferredList(deferreds)
+
 
     def _place_plot_name(self, place, idx):
         name = str(place.name)
@@ -400,10 +391,14 @@ class ColorJoinAction(TransitionAction):
         added, size = self.arrived.add_return_size(color)
         if added and size == net.num_token_colors.value:
             self.on_complete(active_tokens_key, net, service_interfaces)
-            deferred = self.on_complete(active_tokens_key, net, service_interfaces)
-            return None, deferred
+            deferred = self.on_complete(active_tokens_key, net,
+                    service_interfaces)
+
+            execute_deferred = defer.Deferred()
+            deferred.addCallback(lambda _: execute_deferred.callback(None))
+            return execute_deferred
         else:
-            return None, defer.succeed(None)
+            return defer.succeed(None)
 
     def on_complete(self, active_tokens_key, net, service_interfaces):
         return defer.succeed(None)
