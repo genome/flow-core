@@ -37,13 +37,8 @@ class WrapperCommand(TokenSenderCommand):
 
         parser.add_argument('command_line', nargs='+')
 
-    def _execute(self, parsed_arguments):
-        execute_deferred = defer.Deferred()
-        self.__execute(parsed_arguments, execute_deferred)
-        return execute_deferred
-
     @defer.inlineCallbacks
-    def __execute(self, parsed_arguments, execute_deferred):
+    def _execute(self, parsed_arguments):
         deferreds = []
         deferred = self.send_token(net_key=parsed_arguments.net_key,
                 place_idx=parsed_arguments.running_place_id,
@@ -104,5 +99,4 @@ class WrapperCommand(TokenSenderCommand):
                                 color=parsed_arguments.token_color)
                         deferreds.append(deferred)
 
-        dlist = defer.DeferredList(deferreds)
-        dlist.chainDeferred(execute_deferred)
+        yield defer.gatherResults(deferreds)

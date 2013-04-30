@@ -274,7 +274,7 @@ class Net(NetBase):
                     "but place had no tokens of that color",
                     place_idx, self.key, token_color)
 
-        return defer.DeferredList(deferreds)
+        return defer.gatherResults(deferreds)
 
     def consume_tokens(self, transition, notifying_place_idx, color_idx):
         active_tokens_key = transition.active_tokens_for_color(color_idx).key
@@ -360,8 +360,7 @@ class Net(NetBase):
                         token_color=token_color)
                 deferreds.append(deferred)
             self.connection.delete(tokens_pushed_key)
-        yield defer.DeferredList(deferreds)
-
+        yield defer.gatherResults(deferreds)
 
     def _place_plot_name(self, place, idx):
         name = str(place.name)

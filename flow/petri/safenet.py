@@ -242,7 +242,7 @@ class SafeNet(NetBase):
             self.connection.delete(tokens_pushed_key)
             timer.split('delete_pushed_tokens')
         timer.stop()
-        yield defer.DeferredList(deferreds)
+        yield defer.gatherResults(deferreds)
 
 
     def put_token(self, place_idx, token):
@@ -289,7 +289,7 @@ class SafeNet(NetBase):
                     place_idx, self.key)
 
         timer.stop()
-        return defer.DeferredList(deferreds)
+        return defer.gatherResults(deferreds)
 
     def _place_plot_color(self, place, idx):
         ftt = False
