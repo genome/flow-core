@@ -61,7 +61,9 @@ class NetBase(rom.Object):
 
     input_places = rom.Property(rom.Hash)
     output_places = rom.Property(rom.Hash)
-    related_nets = rom.Property(rom.List)
+
+    parent_net_key = rom.Property(rom.String)
+    child_net_keys = rom.Property(rom.List)
 
     num_places = rom.Property(rom.Int)
     num_transitions = rom.Property(rom.Int)

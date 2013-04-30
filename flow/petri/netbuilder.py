@@ -107,6 +107,14 @@ class NetBuilder(object):
         self._place_map = {}
         self._trans_map = {}
 
+        self._child_builders = []
+
+    def add_child_builder(self, net_type):
+        builder = NetBuilder(net_type=net_type)
+        idx = len(self._child_builders)
+        self._child_builders.append(builder)
+        return idx, builder
+
     def add_subnet(self, cls, *args, **kwargs):
         subnet = cls(self, *args, **kwargs)
         self.subnets.append(subnet)
@@ -201,7 +209,7 @@ class NetBuilder(object):
 
         return graph
 
-    def store(self, connection, name="net"):
+    def store(self, connection, name="net"): # FIXME: do we need name here?
         timer = stats.create_timer('petri.NetBuilder.store')
         timer.start()
 
@@ -238,6 +246,14 @@ class NetBuilder(object):
         for key, value in self.constants.iteritems():
             net.set_constant(key, value)
         timer.split('var_and_const')
+
+        child_net_keys = []
+        for child_builder in self._child_builders:
+            child_net = child_builder.store(connection)
+            child_net.parent_net_key = net.key
+            child_net_keys.append(child_net.key)
+
+        net.child_net_keys.value = child_net_keys
 
         timer.stop()
         return net

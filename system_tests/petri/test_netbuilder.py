@@ -1,5 +1,6 @@
 from flow import petri
 import flow.petri.netbuilder as nb
+import flow.redisom as rom
 
 import mock
 import os
@@ -14,9 +15,53 @@ class TestBase(RedisTest):
         orch = FakeOrchestrator(self.conn)
         self.service_interfaces = orch.service_interfaces
 
-
 class _TestBody(object):
     net_type = None
+
+    def test_children(self):
+        builder = nb.NetBuilder(net_type=self.net_type)
+
+        idx, c1 = builder.add_child_builder(petri.Net)
+        self.assertEqual(0, idx)
+        c1.add_place("c1")
+
+        idx, c2 = builder.add_child_builder(petri.SafeNet)
+        self.assertEqual(1, idx)
+        c2.add_place("c2")
+
+        idx, c1c1 = c1.add_child_builder(petri.SafeNet)
+        self.assertEqual(0, idx)
+        c1c1.add_place("c1c1")
+
+        idx, c2c1 = c2.add_child_builder(petri.Net)
+        self.assertEqual(0, idx)
+        c2c1.add_place("c2c1")
+
+        stored_net = builder.store(self.conn)
+
+        self.assertRaises(rom.NotInRedisError, str, stored_net.parent_net_key)
+        self.assertEqual(2, len(stored_net.child_net_keys))
+
+        stored_children = [rom.get_object(self.conn, k)
+                for k in stored_net.child_net_keys.value]
+
+        self.assertIsInstance(stored_children[0], petri.Net)
+        self.assertIsInstance(stored_children[1], petri.SafeNet)
+
+        self.assertEqual(1, stored_children[0].num_places.value)
+        self.assertEqual(1, stored_children[1].num_places.value)
+        self.assertEqual("c1", stored_children[0].place(0).name.value)
+        self.assertEqual("c2", stored_children[1].place(0).name.value)
+
+        other_class = {petri.Net: petri.SafeNet, petri.SafeNet: petri.Net}
+        for i, c in enumerate(stored_children):
+            self.assertEqual(stored_net.key, c.parent_net_key.value)
+            self.assertEqual(1, len(c.child_net_keys))
+            child = rom.get_object(self.conn, c.child_net_keys[0])
+            self.assertIsInstance(child, other_class[c.__class__])
+            expected_place_name = "c%dc1" % (i+1)
+            self.assertEqual(1, child.num_places.value)
+            self.assertEqual(expected_place_name, child.place(0).name.value)
 
     def test_store(self):
         builder = nb.NetBuilder(net_type=self.net_type)
@@ -106,7 +151,3 @@ class TestNetBuilder(_TestBody, TestBase):
 
         for x in xrange(stored_net.num_transitions):
             self.assertEqual(3, stored_net.transition(x).action.call_count.value)
-
-
-class TestSafeNetBuilder(_TestBody, TestBase):
-    net_type = petri.SafeNet
