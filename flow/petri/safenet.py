@@ -174,6 +174,10 @@ class SafeNet(NetBase):
     @defer.inlineCallbacks
     def notify_transition(self, trans_idx, place_idx,
             service_interfaces, token_color=None):
+        """
+        Returns a deferred that will callback when all messages it has asked to
+        be published have been confirmed.
+        """
         if token_color is not None:
             raise RuntimeError("SafeNet %s, transition %d: colored "
                     "tokens are not supported in this net" %
@@ -226,6 +230,7 @@ class SafeNet(NetBase):
         rv = self._push_tokens(keys=keys)
         timer.split('push_tokens')
         tokens_pushed, places_to_notify = rv
+
         deferreds = []
         if tokens_pushed == 1:
             orchestrator = service_interfaces['orchestrator']
@@ -250,6 +255,10 @@ class SafeNet(NetBase):
                 (token.key, place_idx))
 
     def notify_place(self, place_idx, token_color, service_interfaces):
+        """
+        Returns a deferred that will callback when all messages it has asked to
+        be published have been confirmed.
+        """
         if token_color is not None:
             raise RuntimeError("Safenet %s place %d got a colored token" %
                     (self.key, place_idx))

@@ -46,6 +46,11 @@ class AmqpBroker(flow.interfaces.IBroker):
         self._handlers.append(handler)
 
     def publish(self, exchange_name, routing_key, message):
+        """
+        Returns a deferred that will callback once the message has been
+        confirmed.  If the AMQP server rejects the message then the deferred
+        will not callback (nor errback) and the program will exit.
+        """
         LOG.debug("Publishing to exchange (%s) with routing_key (%s) "
                 "the message (%s)", exchange_name, routing_key, message)
 

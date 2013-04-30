@@ -243,6 +243,10 @@ class Net(NetBase):
                 (token.key, token_color, place_idx))
 
     def notify_place(self, place_idx, token_color, service_interfaces):
+        """
+        Returns a deferred that will callback when all messages it has asked to
+        be published have been confirmed.
+        """
         if token_color is None:
             raise RuntimeError("net %s, place %d: token_color is none!" %
                     (self.key, place_idx))
@@ -317,6 +321,10 @@ class Net(NetBase):
     @defer.inlineCallbacks
     def notify_transition(self, trans_idx, place_idx, service_interfaces,
             token_color):
+        """
+        Returns a deferred that will callback when all messages it has asked to
+        be published have been confirmed.
+        """
         LOG.debug("notify net %s, transition #%d color=%d", self.key, trans_idx,
                 token_color)
 
@@ -327,7 +335,6 @@ class Net(NetBase):
 
         active_tokens_key = trans.active_tokens_for_color(token_color).key
         tokens_pushed_key = trans.tokens_pushed(token_color).key
-
 
         action = trans.action
         new_token = None
@@ -390,10 +397,10 @@ class ColorJoinAction(TransitionAction):
         color = tokens[0].color_idx.value
         added, size = self.arrived.add_return_size(color)
         if added and size == net.num_token_colors.value:
-            self.on_complete(active_tokens_key, net, service_interfaces)
             deferred = self.on_complete(active_tokens_key, net,
                     service_interfaces)
 
+            # hoops to jump through if on_complete is overridden
             execute_deferred = defer.Deferred()
             deferred.addCallback(lambda _: execute_deferred.callback(None))
             return execute_deferred

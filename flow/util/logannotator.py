@@ -65,7 +65,7 @@ class LogAnnotator(protocol.ProcessProtocol):
 
     def start(self):
         """
-        Returns a deferred that fires (with the exit_code) when the
+        Returns a deferred that will callback (with the exit_code) when the
         process exits.
         """
         if self.log_hostname:

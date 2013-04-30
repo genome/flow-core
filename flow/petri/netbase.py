@@ -334,7 +334,8 @@ class TransitionAction(rom.Object):
 
     def execute(self, active_tokens_key, net, service_interfaces):
         """
-        Returns a (new_token, deferred) tuple. new_token may be None
+        Returns a deferred that will callback (with either a new_token or
+        None) once the action has been completed.
         """
         raise NotImplementedError("In class %s: execute not implemented" %
                 self.__class__.__name__)

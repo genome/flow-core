@@ -24,6 +24,8 @@ class ServiceCommand(CommandBase):
         self.broker.connect()
 
     def _execute(self, parsed_arguments):
-        # services never shut down
+        """
+        Returns a deferred that will never fire.
+        """
         deferred = defer.Deferred()
-        return deferred # will never fire
+        return deferred
