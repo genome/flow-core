@@ -265,8 +265,8 @@ class Net(NetBase):
                 deferreds.append(orchestrator.place_entry_observed(packet))
 
             for trans_idx in arcs_out:
-                deferred = orchestrator.notify_transition(self.key, int(trans_idx),
-                        int(place_idx), token_color=token_color)
+                deferred = orchestrator.notify_transition(self.key,
+                        int(trans_idx), int(place_idx), token_color=token_color)
                 deferreds.append(deferred)
 
         else:
