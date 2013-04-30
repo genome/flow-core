@@ -158,9 +158,20 @@ class NetBase(rom.Object):
     def place_key(self, idx):
         return self.subkey("place/%d" % int(idx))
 
+    @property
+    def parent_net(self):
+        try:
+            key = self.parent_net_key.value
+        except rom.NotInRedisError:
+            return None
+
+        return rom.get_object(self.connection, key)
+
+    def child_net(self, idx):
+        return rom.get_object(self.connection, self.child_net_keys[idx])
+
     def place(self, idx):
         return self.place_class(self.connection, self.place_key(idx))
-
 
     def transition_key(self, idx):
         return self.subkey("trans/%d" % int(idx))

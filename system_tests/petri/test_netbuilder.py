@@ -39,11 +39,10 @@ class _TestBody(object):
 
         stored_net = builder.store(self.conn)
 
-        self.assertRaises(rom.NotInRedisError, str, stored_net.parent_net_key)
+        self.assertIsNone(stored_net.parent_net)
         self.assertEqual(2, len(stored_net.child_net_keys))
 
-        stored_children = [rom.get_object(self.conn, k)
-                for k in stored_net.child_net_keys.value]
+        stored_children = [stored_net.child_net(x) for x in (0, 1)]
 
         self.assertIsInstance(stored_children[0], petri.Net)
         self.assertIsInstance(stored_children[1], petri.SafeNet)
@@ -55,9 +54,9 @@ class _TestBody(object):
 
         other_class = {petri.Net: petri.SafeNet, petri.SafeNet: petri.Net}
         for i, c in enumerate(stored_children):
-            self.assertEqual(stored_net.key, c.parent_net_key.value)
+            self.assertEqual(stored_net.key, c.parent_net.key)
             self.assertEqual(1, len(c.child_net_keys))
-            child = rom.get_object(self.conn, c.child_net_keys[0])
+            child = c.child_net(0)
             self.assertIsInstance(child, other_class[c.__class__])
             expected_place_name = "c%dc1" % (i+1)
             self.assertEqual(1, child.num_places.value)
