@@ -65,7 +65,7 @@ class AmqpBroker(flow.interfaces.IBroker):
         deferred = self.raw_publish(exchange_name, routing_key, encoded_message)
         timer.split('publish')
         timer.stop()
-        deferred.addCallback(confirm_deferred.callback)
+        deferred.chainDeferred(confirm_deferred)
 
     def raw_publish(self, exchange_name, routing_key, encoded_message):
         self._last_publish_tag += 1
