@@ -8,6 +8,11 @@ LOG = logging.getLogger(__name__)
 
 class Handler(IHandler):
     def __call__(self, encoded_message):
+        """
+        Returns a deferred that will callback when the message has been
+        completely handled, or will errback when the message cannot be
+        handled.
+        """
         try:
             deferred = self._handle_message(encoded_message)
         except InvalidMessageException:
@@ -22,7 +27,5 @@ class Handler(IHandler):
     @abstractmethod
     def _handle_message(self, message):
         """
-        Returns a deferred that will callback when the message has been
-        completely handled, or will errback when the message cannot be
-        handled.  This function may also raise an InvalidMessageException.
+        Returns a deferred to __call__ or it will raise an InvalidMessageException.
         """
