@@ -1,6 +1,5 @@
 from flow import petri
 import flow.petri.netbuilder as nb
-import flow.redisom as rom
 
 import mock
 import os

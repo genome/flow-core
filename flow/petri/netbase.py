@@ -382,7 +382,6 @@ class SetRemoteTokenAction(TransitionAction):
         data_type = self.args["data_type"]
 
         input_data = self.input_data(active_tokens_key, net)
-        remote_net = rom.get_object(self.connection, remote_net_key)
 
         orchestrator = service_interfaces['orchestrator']
         token_color = self.active_color(active_tokens_key)
