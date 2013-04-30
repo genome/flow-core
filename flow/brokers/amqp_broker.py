@@ -10,6 +10,7 @@ import flow.interfaces
 import blist
 import logging
 import pika
+import os
 
 LOG = logging.getLogger(__name__)
 
@@ -171,16 +172,13 @@ class AmqpBroker(flow.interfaces.IBroker):
 
     def _on_publisher_confirm_nack(self, method_frame):
         """
-        This indicates very bad situations
+        This indicates very bad situations, we'll just die if this happens.
         """
         publish_tag = method_frame.method.delivery_tag
         multiple = method_frame.method.multiple
         LOG.critical('Got publisher rejection for message (%d), multiple = %s',
                 publish_tag, multiple)
-
-        self._fire_confirm_deferreds(publish_tag, multiple, errback=True)
-        self.disconnect()
-        raise RuntimeError("AMQP failed to confirm a published message!")
+        os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     def _get_message_from_queue(self, queue, handler):
         deferred = queue.get()
@@ -226,15 +224,11 @@ class AmqpBroker(flow.interfaces.IBroker):
         except ReactorNotRunning:
             pass
 
-    def _fire_confirm_deferreds(self, publish_tag, multiple, errback=False):
-        call_fn = 'callback'
-        if errback:
-            call_fn = 'errback'
-
+    def _fire_confirm_deferreds(self, publish_tag, multiple):
         confirm_deferreds = self.get_confirm_deferreds(publish_tag, multiple)
-        for d, t in confirm_deferreds:
-            getattr(d, call_fn)(t)
-            self.remove_confirm_deferred(t)
+        for deferred, tag in confirm_deferreds:
+            deferred.callback(tag)
+            self.remove_confirm_deferred(tag)
 
     def get_confirm_deferreds(self, publish_tag, multiple):
         if multiple:
