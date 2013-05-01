@@ -280,6 +280,9 @@ class EmptyNet(object):
         self.transitions.append(transition)
         self._trans_set.add(transition)
 
+    def add_child_builder(self, *args, **kwargs):
+        return self.builder.add_child_builder(*args, **kwargs)
+
     def add_place(self, name=""):
         if not name:
             name = "p%d" % len(self.places)
