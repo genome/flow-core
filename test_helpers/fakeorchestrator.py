@@ -14,7 +14,7 @@ class FakeOrchestrator(flow.interfaces.IOrchestrator):
 
     def create_token(self, net_key, place_idx, **ct_kwargs):
         net = rom.get_object(self.conn, net_key)
-        return net.create_set_notify(place_idx,
+        return net.create_put_notify(place_idx,
                 service_interfaces=self.service_interfaces,
                 **ct_kwargs)
 
