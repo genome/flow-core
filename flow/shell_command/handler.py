@@ -27,10 +27,11 @@ class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
 
         response_places = message.response_places
         net_key = message.net_key
+        token_color = getattr(message, "token_color", None)
 
         job_id, success = self.executor(message.command_line,
                 net_key=net_key, response_places=response_places,
-                **executor_options)
+                token_color=token_color, **executor_options)
         return defer.succeed(True)
 
 @inject(service_locator=ServiceLocator,
