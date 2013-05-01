@@ -215,8 +215,10 @@ class AmqpBroker(flow.interfaces.IBroker):
         LOG.debug('Acking message (%d)', receive_tag)
         self.channel.basic_ack(receive_tag)
 
-    def _reject(self, _, receive_tag):
-        LOG.debug('Rejecting message (%d)', receive_tag)
+    def _reject(self, err, receive_tag):
+        LOG.error('Rejecting message (%d) due to error: %s', receive_tag,
+                err.getTraceback())
+
         self.channel.basic_reject(receive_tag, requeue=False)
 
 
