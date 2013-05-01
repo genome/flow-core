@@ -130,7 +130,7 @@ class NetBase(rom.Object):
             raise TypeError("Tried to overwrite constant %s in net %s" %
                     (key, self.key))
 
-    def capture_environment(self):
+    def capture_environment(self, recursive=True):
         uid = os.getuid()
         gid = os.getgid()
         user_name = pwd.getpwuid(uid).pw_name
@@ -141,6 +141,12 @@ class NetBase(rom.Object):
         self.set_constant("group_id", gid)
         self.set_constant("user_name", user_name)
         self.set_constant("working_directory", cwd)
+
+        if recursive is True:
+            n_children = len(self.child_net_keys)
+            children = [self.child_net(x) for x in xrange(n_children)]
+            for child in children:
+                child.capture_environment(recursive)
 
     def copy_constants_from(self, other_net):
         other_net._constants.copy(self._constants.key)
