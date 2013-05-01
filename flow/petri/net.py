@@ -266,7 +266,7 @@ class Net(NetBase):
 
             for trans_idx in arcs_out:
                 deferred = orchestrator.notify_transition(self.key,
-                        int(trans_idx), int(place_idx), token_color=token_color)
+                        int(trans_idx), int(place_idx), token_color=int(token_color))
                 deferreds.append(deferred)
 
         else:
@@ -343,10 +343,10 @@ class Net(NetBase):
                     service_interfaces=service_interfaces)
 
         if new_token is None:
-            new_token = self.create_token(token_color=token_color)
+            new_token = self.create_token(token_color=int(token_color))
 
         tokens_pushed, arcs_out = self.push_tokens(trans, new_token.key,
-                token_color)
+                int(token_color))
 
         LOG.debug("push_tokens (#%d): pushed=%r, arcs_out=%r", trans_idx,
                 tokens_pushed, arcs_out)
@@ -357,7 +357,7 @@ class Net(NetBase):
             for place_idx in arcs_out:
                 LOG.debug("Notify place %r color=%r", place_idx, token_color)
                 deferred = orchestrator.notify_place(self.key, int(place_idx),
-                        token_color=token_color)
+                        token_color=int(token_color))
                 deferreds.append(deferred)
             self.connection.delete(tokens_pushed_key)
         yield defer.gatherResults(deferreds)
