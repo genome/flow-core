@@ -197,7 +197,9 @@ class TestableColorJoinAction(petri.ColorJoinAction):
     completed = rom.Property(rom.String)
     def on_complete(self, active_tokens_key, net, service_interfaces):
         self.completed = "hello"
-        return defer.succeed(None)
+        return petri.ColorJoinAction.on_complete(self, active_tokens_key, net,
+                service_interfaces)
+
 
 class TestJoinAction(TestBase):
     def test_join_action(self):
