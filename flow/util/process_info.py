@@ -8,7 +8,7 @@ import psutil
 _MAGIC = Magic()
 
 class SingleProcessInfo(object):
-    def __init__(self, process=None, stat_freq=10.0, cpu_percent_freq=10.0):
+    def __init__(self, process=None, stat_freq=10.0, cpu_percent_freq=2.0):
         self.pid = process.pid
         self.stat_freq = stat_freq
         self.cpu_percent_freq = cpu_percent_freq
@@ -121,7 +121,10 @@ class SingleProcessInfo(object):
 
     def get_fdinfo(self, fd):
         fdinfo_path = self.fdinfo_path(fd)
-        fdinfo = open(fdinfo_path).readlines()
+        try:
+            fdinfo = open(fdinfo_path).readlines()
+        except IOError:
+            fdinfo = []
 
         info = {}
         for line in fdinfo:
