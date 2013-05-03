@@ -1,0 +1,60 @@
+.boxhead {
+    border: solid 1px #aaa;
+    background-color: #ddd;
+    font-color: black;
+    font-family: verdana, tahoma, sans;
+    font-size: 14px;
+    font-weight: bold
+    margin-top: 5px;
+    margin-bottom: 0;
+    padding: 4px;
+}
+
+.boxbody {
+    border-left: solid 1px #aaa;
+    border-right: solid 1px #aaa;
+    border-bottom: solid 1px #aaa;
+    font-size: 12px;
+    background-color: #fff;
+    margin-top: 0;
+    margin-bottom: 5px;
+    padding: 4px;
+}
+
+svg { font-size: 10px; }
+
+.axis {
+  shape-rendering: crispEdges;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke-width: .5px;
+}
+
+.x.axis path {
+  stroke: #000;
+}
+
+.x.axis line {
+  stroke: #fff;
+  stroke-opacity: .5;
+}
+
+.y.axis line {
+  stroke: #ddd;
+}
+
+path.line {
+  fill: none;
+  stroke: #000;
+  stroke-width: .5px;
+}
+
+rect.pane {
+  cursor: move;
+  fill: none;
+  pointer-events: all;
+}
+
+
