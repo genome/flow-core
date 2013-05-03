@@ -2,7 +2,7 @@ from flow.configuration.settings.injector import setting
 from flow.util import stats
 from injector import inject
 from pika.adapters import twisted_connection
-from twisted.internet import reactor, protocol, defer
+from twisted.internet import reactor, defer, protocol
 from twisted.internet.error import ReactorNotRunning
 from pika.spec import Basic
 
@@ -25,6 +25,8 @@ LOG = logging.getLogger(__name__)
 class AmqpConnectionParameters(object): pass
 
 @inject(connection_params=AmqpConnectionParameters,
+        connection_attempts=setting('amqp.connection_attempts'),
+        retry_delay=setting('amqp.retry_delay'),
         prefetch_count=setting('amqp.prefetch_count'))
 class AmqpBroker(flow.interfaces.IBroker):
     def __init__(self):
@@ -34,6 +36,8 @@ class AmqpBroker(flow.interfaces.IBroker):
         self.channel = None
 
         self.connect_deferred = None
+        self._connection_attempts = 0
+        self._reconnecting = False
         self._connect_deferred = None
 
         self._confirm_tags = blist.sortedlist()
@@ -41,6 +45,13 @@ class AmqpBroker(flow.interfaces.IBroker):
         self._handlers = []
 
         self._last_publish_tag = 0
+
+    def _get_connection_params(self):
+        params = pika.ConnectionParameters(
+                host=self.connection_params.hostname,
+                port=self.connection_params.port,
+                virtual_host=self.connection_params.virtual_host)
+        return params
 
     def register_handler(self, handler):
         self._handlers.append(handler)
@@ -95,29 +106,53 @@ class AmqpBroker(flow.interfaces.IBroker):
             deferred.chainDeferred(self.connect_deferred)
         return self.connect_deferred
 
-    def _connect(self):
-        if self._connect_deferred is None:
-            self._connect_deferred = defer.Deferred()
+    def _connect(self, force=False):
+        if self._connect_deferred is None or force:
+            self._connection_attempts += 1
+            if not force:
+                self._connect_deferred = defer.Deferred()
             LOG.debug('Connecting to AMQP')
 
-            params = pika.ConnectionParameters(
-                    host=self.connection_params.hostname,
-                    port=self.connection_params.port,
-                    virtual_host=self.connection_params.virtual_host)
-
+            params = self._get_connection_params()
             connection = protocol.ClientCreator(reactor,
                     twisted_connection.TwistedProtocolConnection,
                     params)
 
             LOG.debug('Attempting to establish connection to host: %s on port: %s',
-                    params.host, params.port)
+                    self.connection_params.hostname, self.connection_params.port)
             deferred = connection.connectTCP(params.host, params.port)
-            deferred.addCallback(self._on_connected)
+            deferred.addCallbacks(self._on_connected, self._on_connect_failed)
 
             reactor.addSystemEventTrigger('before', 'shutdown', self.disconnect)
         else:
             LOG.debug('Already Connected to AMQP (or connection in progress)')
         return self._connect_deferred
+
+    def _on_connect_failed(self, reason):
+        LOG.warning("Attempt %d to connect to AMQP server failed: %s",
+                self._connection_attempts, reason)
+        self._reconnect()
+
+    def _reconnect(self):
+        if self._connection_attempts >= self.connection_attempts:
+            LOG.critical('Maximum number of connection attempts (%d) '
+                    'reached... shutting down.', self.connection_attempts)
+            try:
+                reactor.stop()
+                LOG.critical('Stopped twisted reactor')
+            except ReactorNotRunning:
+                pass
+        else:
+            LOG.info("Attempting to reconnect to the AMQP server in %s seconds.",
+                    self.retry_delay)
+            self._reconnecting = True
+            self._last_publish_tag = 0
+            reactor.callLater(self.retry_delay, self._connect, force=True)
+
+    def _on_connection_lost(self, reason):
+        LOG.warning("Queue was closed: %s", reason)
+        if not self._reconnecting:
+            self._reconnect()
 
     def _on_connected(self, connection):
         LOG.debug('Established connection to AMQP')
@@ -128,6 +163,8 @@ class AmqpBroker(flow.interfaces.IBroker):
         LOG.info("Closing AMQP connection.")
         if hasattr(self._connection, 'transport'):
             self._connection.transport.loseConnection()
+        self._reconnecting = False
+        self._connection_attempts = 0
         self._connection = None
         self._connect_deferred = None
         self.connect_defered = None
@@ -146,8 +183,11 @@ class AmqpBroker(flow.interfaces.IBroker):
         for handler in self._handlers:
             self.start_handler(handler)
 
-        LOG.debug("Firing callbacks on the _connect deferred")
-        self._connect_deferred.callback(None)
+        if self._reconnecting:
+            self.reconnecting = False
+        else:
+            LOG.debug("Firing callbacks on the _connect deferred")
+            self._connect_deferred.callback(None)
         LOG.debug("_on_ready completed.")
 
     @defer.inlineCallbacks
@@ -221,15 +261,6 @@ class AmqpBroker(flow.interfaces.IBroker):
 
         self.channel.basic_reject(receive_tag, requeue=False)
 
-
-    @staticmethod
-    def _on_connection_lost(reason):
-        LOG.warning("Queue on was closed (reason: %s)", reason)
-        try:
-            reactor.stop()
-            LOG.critical('Stopped twisted reactor')
-        except ReactorNotRunning:
-            pass
 
     def _fire_confirm_deferreds(self, publish_tag, multiple):
         confirm_deferreds = self.get_confirm_deferreds(publish_tag, multiple)

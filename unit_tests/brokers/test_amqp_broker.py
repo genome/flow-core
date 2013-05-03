@@ -8,10 +8,12 @@ from twisted.python.failure import Failure
 from twisted.internet import defer
 
 from flow.brokers.amqp_broker import AmqpBroker
+from flow.brokers import amqp_broker
 
 class AmqpBrokerTest(unittest.TestCase):
     def setUp(self):
-        self.broker = AmqpBroker(connection_params=None, prefetch_count=None)
+        self.broker = AmqpBroker(connection_params=None, prefetch_count=None,
+                retry_delay=0.01, connection_attempts=3)
 
         self.broker._connect = mock.Mock()
         self.connect_deferred = defer.Deferred()
@@ -92,3 +94,54 @@ class AmqpBrokerTest(unittest.TestCase):
         self.confirm_deferreds[1].callback(None)
         self.assertTrue(publish_deferreds[0].called)
         self.assertTrue(publish_deferreds[1].called)
+
+
+class MoreAmqpBrokerTest(unittest.TestCase):
+    def setUp(self):
+        self.broker = AmqpBroker(connection_params=mock.Mock(), prefetch_count=None,
+                retry_delay=0.01, connection_attempts=3)
+        self.broker._get_connection_params = mock.Mock()
+
+    def test_reconnect(self):
+        self._connect_deferreds = []
+        def make_deferred(*args):
+            deferred = defer.Deferred()
+            self._connect_deferreds.append(deferred)
+            return deferred
+
+        def fake_client_creator(*args, **kwargs):
+            m = mock.Mock()
+            m.connectTCP = make_deferred
+            return m
+
+        self.assertFalse(amqp_broker.protocol.ClientCreator is fake_client_creator)
+        with mock.patch('twisted.internet.protocol.ClientCreator',
+                new=fake_client_creator):
+            self.assertTrue(amqp_broker.protocol.ClientCreator is fake_client_creator)
+            connect_deferred = self.broker.connect()
+            self.assertEqual(len(self._connect_deferreds), 1)
+
+            # only one connection attempt at a time.
+            same_connect_deferred = self.broker.connect()
+            self.assertTrue(connect_deferred is same_connect_deferred)
+            self.assertEqual(len(self._connect_deferreds), 1)
+            self.assertFalse(connect_deferred.called)
+
+            def call_now(time, fn, *args, **kwargs):
+                fn(*args, **kwargs)
+
+            with mock.patch('twisted.internet.reactor.callLater',
+                    new=call_now):
+
+                self._connect_deferreds[0].errback(RuntimeError('bad'))
+                self.assertEqual(len(self._connect_deferreds), 2)
+                self.assertFalse(connect_deferred.called)
+
+                self._connect_deferreds[1].errback(RuntimeError('bad'))
+                self.assertEqual(len(self._connect_deferreds), 3)
+                self.assertFalse(connect_deferred.called)
+
+                # reached retry limit
+                self._connect_deferreds[2].errback(RuntimeError('bad'))
+                self.assertEqual(len(self._connect_deferreds), 3)
+                self.assertFalse(connect_deferred.called)
