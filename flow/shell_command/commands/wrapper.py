@@ -6,6 +6,7 @@ from flow.configuration.inject.broker import BrokerConfiguration
 from injector import inject
 from tempfile import NamedTemporaryFile
 from flow.util.logannotator import LogAnnotator
+from flow.util.process_monitor import ProcessMonitor
 
 import flow.interfaces
 import flow.redisom as rom
@@ -74,6 +75,9 @@ class WrapperCommand(TokenSenderCommand):
 
                 LOG.info("On host %s: executing %s", platform.node(),
                         " ".join(cmdline))
+
+                process_monitor = ProcessMonitor(os.getpid())
+                process_monitor.start()
 
                 logannotator = LogAnnotator(cmdline)
                 self.exit_code = yield logannotator.start()
