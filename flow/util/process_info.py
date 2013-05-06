@@ -40,22 +40,23 @@ class SingleProcessInfo(object):
 
     def _get_file_info(self):
         p = self._process
-        ofi = {}
+        ofi = defaultdict(dict)
         for openfile in p.get_open_files():
             real_path = openfile.path
             fd = openfile.fd
+
             file_key = str((real_path, fd))
 
             fdinfo = self.get_fdinfo(fd)
             if (file_key in self._open_file_stats and
-                    (fdinfo['read only'] or not self.should_stat(file_key))):
+                    (fdinfo['read_only'] or not self.should_stat(file_key))):
                 file_stats = self._open_file_stats[file_key]
             else:
                 file_stats = self.get_file_stats(real_path)
                 self._open_file_stats[file_key] = file_stats
 
-            ofi[file_key] = file_stats
-            ofi[file_key].update(fdinfo)
+            ofi[real_path][fd] = file_stats
+            ofi[real_path][fd].update(fdinfo)
         return {'open_files':ofi}
 
     def _get_general_info(self):
@@ -116,7 +117,7 @@ class SingleProcessInfo(object):
         time_of_stat = time.time()
         size = os.stat(real_path).st_size
         file_type = _MAGIC.from_file(real_path)
-        return {'size':size, "type":file_type, "real_path":real_path,
+        return {'size':size, "type":file_type,
                 "time_of_stat":time_of_stat}
 
     def get_fdinfo(self, fd):
@@ -135,7 +136,7 @@ class SingleProcessInfo(object):
                 fields = line.split()
                 flags = int(fields[1])
                 info["flags"] = flags
-                info["read only"] = flags % 10 == 0
+                info["read_only"] = flags % 10 == 0
         return info
 
     def fdinfo_path(self, fd):

@@ -1,13 +1,6 @@
-function objToString (obj) {
-    var str = '...';
-    for (var p in obj) {
-            str += p + '::' + obj[p] + '\n';
-    }
-    return str;
-}
+var NUM_DATA_PTS = 1000;
+var UPDATE_DELTA = 250; // ms
 
-
-var num_data_pts = 1000;
 var ARRAY_FIELDS = [
     'cpu_percent',
     'cpu_user',
@@ -18,8 +11,24 @@ var ARRAY_FIELDS = [
     'memory_vms',
 ];
 
+// process_status is the main data-model object:
+//   it is a dictionary of pid:info
+//
+//   pid1: {'cpu_percent':[0..num_data_pts],
+//          'cpu_user':[0..num_data_pts],
+//          ... <ARRAY_FIELDS> ...,
+//          'file_info':{<filename1>:{<fh1>:{'size':[0..NUM_DATA_PTS],
+//                                           'pos':[0..NUM_DATA_PTS],
+//                                           'flags':man open(2),
+//                                           'read_only':bool},
+//                                    <fh2>: ...},
+//                       <filename2>: ...},
+//         },
+//   pid2: ...},
 var process_status = {};
 var master_pid = 0;
+
+
 var initialize_process = function (url) {
     $.getJSON(url, function (data) {
         var pid = data['pid'];
@@ -38,76 +47,77 @@ var initialize_process = function (url) {
     });
 }
 
-initialize_process('/basic');
 
-var update_process_from_data = function(data) {
+var update_status = function() {
+    $.getJSON('/status', _update_process_from_data);
+    setTimeout(update_status, UPDATE_DELTA);
+}
+
+var _update_process_from_data = function(data) {
     for (var pid in data) {
-        pinfo = data[pid]
+        var pinfo = data[pid]
         if (!(pid in process_status)) {
             process_status[pid] = {};
             initialize_process( sprintf('/basic/%s', pid) )
         }
 
+        _store_file_info(data, pid)
         for (var field in pinfo) {
             if ($.inArray(field, ARRAY_FIELDS) != -1) {
-                if (field in process_status[pid]) {
-                    process_status[pid][field]['values'].push({x:pinfo['time'], y:pinfo[field], size:0});
-                    if (process_status[pid][field]['values'].length > num_data_pts) {
-                        process_status[pid][field]['values'].splice(0,1);
-                    }
-                } else {
-                    process_status[pid][field] = {values:[pinfo[field]], key:field};
+                if (!(field in process_status[pid])) {
+                    process_status[pid][field] = {'values':[], 'key':field};
                 }
-            } else {
+                _store_array(pinfo[field], process_status[pid][field], pinfo['time'])
             }
         }
     }
 }
 
-var update_status = function() {
-    $.getJSON('/status', update_process_from_data);
-    setTimeout(update_status, 100);
-
-//   setTimeout(update_status, 1000);
+var _store_array = function(src, dest, time) {
+    values = dest['values']
+    values.push({x:time, y:src});
+    if (values.length > NUM_DATA_PTS) {
+        values.splice(0,1);
+    }
 }
+
+var _store_file_info = function(data, pid) {
+    finfo = data[pid]['open_files']
+    if (!('open_files' in process_status[pid])) {
+        process_status[pid]['open_files'] = {}
+    }
+    stored_finfo = process_status[pid]['open_files']
+
+    for (var fname in finfo) {
+        if (!(fname in stored_finfo)) {
+            stored_finfo[fname] = {}
+        }
+        for (var fd in finfo[fname]) {
+            if (!(fd in stored_finfo[fname])) {
+                var stat_info = {
+                    'type':finfo[fname][fd]['type'],
+                    'read_only':finfo[fname][fd]['read_only'],
+                    'flags':finfo[fname][fd]['flags']
+                }
+                stored_finfo[fname][fd] = stat_info
+            }
+            this_stored_finfo = stored_finfo[fname][fd]
+
+            // size
+            if (!('size' in this_stored_finfo)) {
+                this_stored_finfo['size'] = {'values':[], 'key':'size'}
+            }
+            _store_array(finfo[fname][fd]['size'], this_stored_finfo['size'], finfo[fname][fd]['time_of_stat'])
+
+            // pos
+            if (!('pos' in this_stored_finfo)) {
+                this_stored_finfo['pos'] = {'values':[], 'key':'pos'}
+            }
+            _store_array(finfo[fname][fd]['pos'], this_stored_finfo['pos'], data[pid]['time'])
+        }
+    }
+}
+
+
+initialize_process('/basic');
 update_status();
-
-// Wrapping in nv.addGraph allows for '0 timeout render', stores rendered charts in nv.graphs, and may do more in the future... it's NOT required
-var chart;
-
-var time_to_string = function(t) {
-    var dt = new Date(0);
-    dt.setUTCSeconds(t)
-    return dt.toLocaleTimeString()
-}
-
-
-nv.addGraph(function() {
-  chart = nv.models.lineChart();
-
-  chart.xAxis // chart sub-models (ie. xAxis, yAxis, etc) when accessed directly, return themselves, not the parent chart, so need to chain separately
-      .tickFormat(time_to_string);
-
-  chart.yAxis
-      .axisLabel('Percentage')
-
-  chart.forceY([0, 100]);
-
-  return chart;
-});
-
-var update_cpu_chart = function() {
-    cpu_percent = process_status[master_pid]['cpu_percent']
-    cpu_percent.area = true
-
-    memory_percent = process_status[master_pid]['memory_percent']
-    memory_percent.area = true
-
-    d3.select('#chart1 svg')
-      .datum([cpu_percent, memory_percent])
-      .transition().duration(0)
-      .call(chart);
-    setTimeout(update_cpu_chart, 100);
-}
-setTimeout(update_cpu_chart, 200);
-
