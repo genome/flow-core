@@ -38,6 +38,7 @@ setup(
             'hiredis',
             'injector',
             'python-magic==0.4.3',
+            'psutil==0.7.0',
             'ipython',
             'pika',
             'platform-python-lsf-api',
