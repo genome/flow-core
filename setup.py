@@ -37,6 +37,7 @@ setup(
             'blist',
             'hiredis',
             'injector',
+            'python-magic==0.4.3',
             'ipython',
             'pika',
             'platform-python-lsf-api',
