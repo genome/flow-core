@@ -31,18 +31,20 @@ var master_pid = 0;
 
 var initialize_process = function (url) {
     $.getJSON(url, function (data) {
-        var pid = data['pid'];
+        if ('pid' in data) {
+            var pid = data['pid'];
 
-        if (url == '/basic') {
-            master_pid = pid
-        }
+            if (url == '/basic') {
+                master_pid = pid
+            }
 
-        if (!(pid in process_status)) {
-            process_status[pid] = {};
-        }
+            if (!(pid in process_status)) {
+                process_status[pid] = {};
+            }
 
-        for (var field in data) {
-            process_status[pid][field] = data[field];
+            for (var field in data) {
+                process_status[pid][field] = data[field];
+            }
         }
     });
 }

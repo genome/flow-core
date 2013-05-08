@@ -20,22 +20,30 @@ class SingleProcessInfo(object):
 
     def get_basic_info(self):
         p = self._process
+        basic_info = {}
+        try:
+            p = self._process
 
-        basic_info = {
-                'cmdline': p.cmdline,
-                'parent_pid': p.ppid,
-                'pid': p.pid,
-                'working_directory': p.getcwd()
-                }
+            basic_info = {
+                    'cmdline': p.cmdline,
+                    'parent_pid': p.ppid,
+                    'pid': p.pid,
+                    'working_directory': p.getcwd()
+                    }
+        except psutil._error.Error:
+            pass
         return basic_info
 
     def get_process_status(self):
         info = {}
-        info.update(self._get_general_info())
-        info.update(self._get_thread_info())
-        info.update(self._get_memory_info())
-        info.update(self._get_cpu_info())
-        info.update(self._get_file_info())
+        try:
+            info.update(self._get_general_info())
+            info.update(self._get_thread_info())
+            info.update(self._get_memory_info())
+            info.update(self._get_cpu_info())
+            info.update(self._get_file_info())
+        except psutil._error.Error:
+            info['is_running'] = self._process.is_running()
         return info
 
     def _get_file_info(self):
