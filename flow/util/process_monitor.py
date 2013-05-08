@@ -68,13 +68,12 @@ class ProcessMonitor(object):
     def __init__(self, pid):
         self.pid = pid
 
-    def start(self):
+    def start(self, port=0):
         process = psutil.Process(os.getpid())
         process_info = ParentProcessInfo(process=process)
 
         factory = Site(RootResource(process_info))
-        # FIXME fixed port
-        iport = reactor.listenTCP(0, factory)
+        iport = reactor.listenTCP(port, factory)
         listen_port = iport.getHost().port
         listen_host = socket.gethostname()
 
