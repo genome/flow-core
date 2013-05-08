@@ -2,15 +2,80 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+        <meta name="description" content=""/>
+        <meta name="viewport" content="width=device-width"/>
+
         <title>Flow Process Monitor</title>
-        <link href="styles/vendor/nv.d3.css" rel="stylesheet" type="text/css">
-        <script type="text/javascript" src="scripts/vendor/d3.v2.min.js"></script>
+        <link rel="stylesheet"      type="text/css" href="styles/vendor/nv.d3.css"/>
+
+        <!-- VENDOR LIBS -->
         <script type="text/javascript" src="scripts/vendor/jquery-2.0.0.min.js"></script>
+
+        <script type="text/javascript" src="scripts/vendor/angular.min.js"></script>
+        <script type="text/javascript" src="scripts/vendor/angular-resource.min.js"></script>
+
+        <script type="text/javascript" src="scripts/vendor/d3.v2.min.js"></script>
         <script type="text/javascript" src="scripts/vendor/nv.d3.js"></script>
+
+        <script type="text/javascript" src="scripts/vendor/angular.tree.js"></script>
         <script type="text/javascript" src="scripts/vendor/sprintf.min.js"></script>
 
+        <!-- APP SCRIPTS -->
         <script type="text/javascript" src="scripts/update_status.js"></script>
+
     </head>
-    <body>
+    <body ng-app='processMonitorApp'>
+        <div ng-controller='MainController'>
+            Some text {{cpu_percents[0]}}
+            {{process_tree}}
+            <ul ng-tree="process_tree">
+                <li>{{item.pid}}</li>
+            </ul>
+        </div>
+        <script>
+            var processMonitorModule = angular.module('processMonitorApp', ['angularTree']);
+
+            processMonitorModule.controller('MainController',
+                function($scope, $timeout) {
+                    function tick() {
+                        $scope.master_pid = master_pid;
+                        $scope.process_status = process_status;
+
+                        $scope.process_tree = [
+                            {
+                                pid:1234,
+                                children:[
+                                    {
+                                    pid:234,
+                                    }, {
+                                    pid:235,
+                                    },
+                                ]
+                            }, {
+                                pid:4321,
+                                children:[
+                                    {
+                                    pid:321,
+                                    },
+                                ]
+                            }
+                        ];
+                        $scope.cpu_percents = [];
+                        for (var pid in process_status) {
+                            if (process_status[pid].is_running) {
+                                var len = $scope.process_status[pid]['cpu_percent']['values'].length - 1;
+                                $scope.cpu_percents.push(
+                                    {'pid':pid, value:process_status[pid]['cpu_percent']['values'][len]['y']}
+                                );
+                            }
+                        }
+                        $timeout(tick, 1000);
+                    }
+                    tick();
+                }
+            );
+
+        </script>
     </body>
 </html>
