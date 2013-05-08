@@ -17,6 +17,9 @@ configure_rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 console = flow.commands.console:ConsoleCommand
 graph = flow.commands.graph:GraphCommand
 
+monitoring-command = flow.util.monitoring_command:MonitoringCommand
+reading-command = flow.util.reading_command:ReadingCommand
+
 [flow.services]
 orchestrator = flow.orchestrator.service_interface:OrchestratorServiceInterface
 fork = flow.shell_command.service_interface:ForkShellCommandServiceInterface
