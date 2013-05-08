@@ -11,6 +11,10 @@ var ARRAY_FIELDS = [
     'memory_vms',
 ];
 
+var SCALAR_FIELDS = [
+    'is_running',
+];
+
 // process_status is the main data-model object:
 //   it is a dictionary of pid:info
 //
@@ -70,6 +74,8 @@ var _update_process_from_data = function(data) {
                     process_status[pid][field] = {'values':[], 'key':field};
                 }
                 _store_array(pinfo[field], process_status[pid][field], pinfo['time'])
+            } else if ($.inArray(field, SCALAR_FIELDS) != -1) {
+                process_status[pid][field] = pinfo[field];
             }
         }
     }
@@ -84,12 +90,24 @@ var _store_array = function(src, dest, time) {
 }
 
 var _store_file_info = function(data, pid) {
-    finfo = data[pid]['open_files']
     if (!('open_files' in process_status[pid])) {
         process_status[pid]['open_files'] = {}
     }
     stored_finfo = process_status[pid]['open_files']
 
+    // note files that are no longer open
+    finfo = data[pid]['open_files'] || {}
+    for (var fname in stored_finfo) {
+        for (var fd in stored_finfo[fname]) {
+            if (!(fname in finfo)) {
+                stored_finfo[fname][fd].closed = true
+            } else if (!(fd in finfo[fname])) {
+                stored_finfo[fname][fd].closed = true
+            }
+        }
+    }
+
+    // store info about currently open files
     for (var fname in finfo) {
         if (!(fname in stored_finfo)) {
             stored_finfo[fname] = {}
@@ -99,7 +117,8 @@ var _store_file_info = function(data, pid) {
                 var stat_info = {
                     'type':finfo[fname][fd]['type'],
                     'read_only':finfo[fname][fd]['read_only'],
-                    'flags':finfo[fname][fd]['flags']
+                    'flags':finfo[fname][fd]['flags'],
+                    'closed':false,
                 }
                 stored_finfo[fname][fd] = stat_info
             }
