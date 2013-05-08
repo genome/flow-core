@@ -32,14 +32,24 @@ class MonitoringCommand(CommandBase):
         logannotator = LogAnnotator(cmdline)
         logannotator.start()
 
-        periodic_deferred = self._start_reading(parsed_arguments.file)
+        self._start_reading(parsed_arguments.file)
+        self._start_reading_random()
 
         return long_deferred
+
+    def _start_reading_random(self):
+        cmdline = ['flow', 'random-reading-command',
+                '-n', str(5)]
+        logannotator = LogAnnotator(cmdline)
+        this_deferred = logannotator.start()
+
+        this_deferred.addCallback(
+                lambda *args: reactor.callLater(1.0, self._start_reading_random))
 
     def _start_reading(self, filename):
         cmdline = ['flow', 'reading-command',
                 '-f', filename,
-                '-s', str(32768),
+                '-s', str(128),
                 '-t', str(2.0)]
         logannotator = LogAnnotator(cmdline)
         this_deferred = logannotator.start()

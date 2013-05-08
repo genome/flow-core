@@ -41,3 +41,53 @@ class ReadingCommand(CommandBase):
         deferred = defer.Deferred()
         reactor.callLater(delay, deferred.callback, data)
         return deferred
+
+class RandomReadingCommand(CommandBase):
+    injector_modules = []
+    @staticmethod
+    def annotate_parser(parser):
+        parser.add_argument('--num-files', '-n', type=int)
+
+    def _initialize(self, parsed_arguments):
+        filenames = [fn for fn in os.listdir('.') if os.path.isfile(fn)]
+        filenames = filenames[:3]
+
+        self.settings = []
+        for i in range(parsed_arguments.num_files):
+            filename = random.choice(filenames)
+            settings = {'filename':filename,
+                        'read_size':random.choice([256, 4096, 32768]),
+                        'read_time':random.choice([0.1, 0.5, 1.0, 4.0]),
+                        'read_strategy':random.choice(['normal','jump']),
+                        'file_size':os.stat(filename).st_size,
+                       }
+            self.settings.append(settings)
+
+    def _execute(self, parsed_arguments):
+        self._initialize(parsed_arguments)
+
+        deferreds = []
+        for setting in self.settings:
+            fh = open(setting['filename'], 'r', 0)
+            deferred = defer.Deferred()
+            deferreds.append(deferred)
+            self._read_file(fh=fh, deferred=deferred, **setting)
+
+        return defer.gatherResults(deferreds)
+
+    def _read_file(self, fh, deferred, read_size, file_size, read_time,
+            read_strategy, **kwargs):
+        if read_strategy == 'jump':
+            fh.seek(random.randint(0, file_size))
+        data = fh.read(read_size)
+        if data == '' or fh.read(1) == '':
+            deferred.callback(None)
+            fh.close()
+        else:
+            reactor.callLater(read_time, self._read_file,
+                    fh=fh,
+                    deferred=deferred,
+                    read_size=read_size,
+                    file_size=file_size,
+                    read_time=read_time,
+                    read_strategy=read_strategy)
