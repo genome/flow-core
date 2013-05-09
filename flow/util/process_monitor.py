@@ -66,6 +66,7 @@ class StatusResource(JSONResource):
 
 class ProcessMonitor(object):
     def __init__(self, pid):
+        self.port = None
         self.pid = pid
 
     def start(self, port=0):
@@ -75,6 +76,7 @@ class ProcessMonitor(object):
         factory = Site(RootResource(process_info))
         iport = reactor.listenTCP(port, factory)
         listen_port = iport.getHost().port
+        self.port = listen_port
         listen_host = socket.gethostname()
 
         LOG.info("Process Monitor at http://%s:%s/view", listen_host, listen_port)

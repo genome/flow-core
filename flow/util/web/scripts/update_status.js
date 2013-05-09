@@ -20,7 +20,7 @@ var SCALAR_FIELDS = [
 //   pid1: {'cpu_percent':[0..num_data_pts],
 //          'cpu_user':[0..num_data_pts],
 //          ... <ARRAY_FIELDS> ...,
-//          'file_info':{<filename1>:{<fh1>:{'size':[0..NUM_DATA_PTS],
+//          'open_files':{<filename1>:{<fh1>:{'size':[0..NUM_DATA_PTS],
 //                                           'pos':[0..NUM_DATA_PTS],
 //                                           'flags':man open(2),
 //                                           'read_only':bool},
@@ -51,7 +51,6 @@ var initialize_process = function (url) {
         }
     });
 }
-
 
 var update_status = function() {
     $.getJSON('/status', _update_process_from_data)
