@@ -39,7 +39,7 @@ class MonitoringCommand(CommandBase):
 
     def _start_reading_random(self):
         cmdline = ['flow', 'random-reading-command',
-                '-n', str(5)]
+                '-n', str(5), '-c', str(4)]
         logannotator = LogAnnotator(cmdline)
         this_deferred = logannotator.start()
 

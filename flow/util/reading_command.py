@@ -1,5 +1,6 @@
 from flow.commands.base import CommandBase
 from twisted.internet import defer, reactor
+from flow.util.logannotator import LogAnnotator
 import time
 import os
 import random
@@ -47,6 +48,7 @@ class RandomReadingCommand(CommandBase):
     @staticmethod
     def annotate_parser(parser):
         parser.add_argument('--num-files', '-n', type=int)
+        parser.add_argument('--children', '-c', default=0, type=int)
 
     def _initialize(self, parsed_arguments):
         filenames = [fn for fn in os.listdir('.') if os.path.isfile(fn)]
@@ -56,9 +58,9 @@ class RandomReadingCommand(CommandBase):
         for i in range(parsed_arguments.num_files):
             filename = random.choice(filenames)
             settings = {'filename':filename,
-                        'read_size':random.choice([256, 4096, 32768]),
-                        'read_time':random.choice([0.1, 0.5, 1.0, 4.0]),
-                        'read_strategy':random.choice(['normal','jump']),
+                        'read_size':random.choice([256, 4096, 4096, 4096, 32768, 32768]),
+                        'read_time':random.choice([0.1, 0.25, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 4.0]),
+                        'read_strategy':random.choice(['normal', 'jump']),
                         'file_size':os.stat(filename).st_size,
                        }
             self.settings.append(settings)
@@ -66,12 +68,22 @@ class RandomReadingCommand(CommandBase):
     def _execute(self, parsed_arguments):
         self._initialize(parsed_arguments)
 
-        deferreds = []
+        time_deferred = defer.Deferred()
+        reactor.callLater(5, time_deferred.callback, None)
+        deferreds = [time_deferred]
         for setting in self.settings:
             fh = open(setting['filename'], 'r', 0)
             deferred = defer.Deferred()
             deferreds.append(deferred)
             self._read_file(fh=fh, deferred=deferred, **setting)
+
+        for i in range(parsed_arguments.children):
+            cmdline = ['flow', 'random-reading-command',
+                    '-n', str(random.choice(range(5))),
+                    '-c', str(random.choice([0,0,0,0,0,0,0,1,2]))]
+            logannotator = LogAnnotator(cmdline)
+            deferred = logannotator.start()
+            deferreds.append(deferred)
 
         return defer.gatherResults(deferreds)
 
