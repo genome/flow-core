@@ -12,7 +12,6 @@ var ARRAY_FIELDS = [
 ];
 
 var SCALAR_FIELDS = [
-    'is_running',
 ];
 
 // process_status is the main data-model object:
@@ -43,7 +42,7 @@ var initialize_process = function (url) {
             }
 
             if (!(pid in process_status)) {
-                process_status[pid] = {};
+                process_status[pid] = {'is_running':true};
             }
 
             for (var field in data) {
@@ -63,7 +62,7 @@ var _update_process_from_data = function(data) {
     for (var pid in data) {
         var pinfo = data[pid]
         if (!(pid in process_status)) {
-            process_status[pid] = {};
+            process_status[pid] = {'is_running':true};
             initialize_process( sprintf('/basic/%s', pid) )
         }
 
@@ -77,6 +76,12 @@ var _update_process_from_data = function(data) {
             } else if ($.inArray(field, SCALAR_FIELDS) != -1) {
                 process_status[pid][field] = pinfo[field];
             }
+        }
+    }
+
+    for (var pid in process_status) {
+        if (!(pid in data)) {
+            process_status[pid]['is_running'] = false;
         }
     }
 }

@@ -18,18 +18,22 @@ class SingleProcessInfo(object):
         self._process = process
         self.last = 0.0
 
+        self._basic_info = self._get_basic_info()
+
     def get_basic_info(self):
+        return self._basic_info
+
+    def _get_basic_info(self):
         p = self._process
-        basic_info = {}
+        basic_info = {'pid':self.pid}
         try:
             p = self._process
 
-            basic_info = {
+            basic_info.update({
                     'cmdline': p.cmdline,
                     'parent_pid': p.ppid,
-                    'pid': p.pid,
                     'working_directory': p.getcwd()
-                    }
+                    })
         except psutil._error.Error:
             pass
         return basic_info
@@ -43,7 +47,7 @@ class SingleProcessInfo(object):
             info.update(self._get_cpu_info())
             info.update(self._get_file_info())
         except psutil._error.Error:
-            info['is_running'] = self._process.is_running()
+            info = None
         return info
 
     def _get_file_info(self):
@@ -72,7 +76,6 @@ class SingleProcessInfo(object):
         info = {}
         info['pid'] = p.pid
         info['time'] = time.time()
-        info['is_running'] = p.is_running()
         return info
 
     def _get_thread_info(self):
@@ -162,18 +165,26 @@ class ParentProcessInfo(SingleProcessInfo):
         self._last_children_update = 0.0
 
     def get_process_status(self):
-        self.update_children()
+        self._update_children()
 
         my_status = SingleProcessInfo.get_process_status(self)
         my_pid = self.pid
 
         info = {my_pid: my_status}
+        dead_children = []
         for pid, child in self.children.iteritems():
-            info[pid] = child.get_process_status()
+            process_status = child.get_process_status()
+            if process_status is None:
+                dead_children.append(pid)
+            else:
+                info[pid] = process_status
+
+        for dead_child in dead_children:
+            del self.children[dead_child]
 
         return info
 
-    def update_children(self):
+    def _update_children(self):
         if self._should(self._last_children_update, self.update_children_freq):
             self._last_children_update = time.time()
 
