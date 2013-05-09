@@ -54,8 +54,13 @@ var initialize_process = function (url) {
 
 
 var update_status = function() {
-    $.getJSON('/status', _update_process_from_data);
-    setTimeout(update_status, UPDATE_DELTA);
+    $.getJSON('/status', _update_process_from_data)
+        .fail(function (data, textStatus, jqXHR) {
+                alert("Could not retrieve process status. " +
+                      "The process has most likely completed. " +
+                      "This monitor will continue to function but it will not recieve any more updates.");
+        })
+        .success(function () {setTimeout(update_status, UPDATE_DELTA)});
 }
 
 var _update_process_from_data = function(data) {
