@@ -30,7 +30,14 @@
         <div ng-controller='MainController'>
             <div ng-controller='ProcessTree'>
                 <ul ng-tree="process_tree">
-                    <li>{{item.cpu}}% {{item.pid}} command: {{item.cmdline}}</li>
+                    <li select='selected()'>
+                    <div style='background-color:{{colors[this.selected_pid == this.item.pid]}}'>
+                    <div style='width:40px;float:left;' ng-controller='CpuUpdate'>
+                        {{cpu_percent[item.pid]}}%
+                    </div>
+                    {{item.pid}} command: {{item.cmdline}}
+                    </div>
+                    </li>
                 </ul>
             </div>
         </div>
