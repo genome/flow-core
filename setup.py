@@ -13,7 +13,7 @@ lsf-shell-command-service = flow.shell_command.commands.lsf_service:LSFShellComm
 lsf-post-exec = flow.shell_command.commands.lsf_post_exec:LsfPostExecCommand
 shell-command-wrapper = flow.shell_command.commands.wrapper:WrapperCommand
 
-configure_rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
+configure-rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 console = flow.commands.console:ConsoleCommand
 graph = flow.commands.graph:GraphCommand
 

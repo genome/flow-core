@@ -1,111 +1,93 @@
 from flow.commands.base import CommandBase
+from flow.configuration.inject.broker import BrokerConfiguration
+from flow.configuration.settings.injector import setting
+from injector import inject
 from twisted.internet import defer
+
+import flow.interfaces
 import logging
-import sys
-import json
-import itertools
+import time
+
 
 LOG = logging.getLogger(__name__)
 
 
+@inject(broker=flow.interfaces.IBroker,
+        binding_config=setting('bindings'))
 class ConfigureRabbitMQCommand(CommandBase):
-    def __init__(self, bindings={}, vhost='', server_config={}):
+    injector_modules = [
+        BrokerConfiguration,
+    ]
 
-        self.bindings_config = bindings
-        self.vhost = vhost
-        self.rabbit_configuration = server_config
-        self.is_generated = False
 
     @staticmethod
     def annotate_parser(parser):
-        parser.add_argument('--output_filename', '-o',
-                            default=None, help='Filename to write to. Defaults to STDOUT')
+        pass
 
+
+    @defer.inlineCallbacks
     def _execute(self, parsed_arguments):
-        if not self.is_generated:
-            self.parse_exchanges_queues_bindings()
+        self._parse_config()
 
-            self.make_exchange_defs()
-            self.make_queue_defs()
-            self.make_binding_defs()
+        yield self.broker.connect()
 
-            self.is_generated = True
+        yield self._declare_exchanges()
+        yield self._declare_queues()
+        yield self._declare_bindings()
 
-        self.dump_config_to_file(parsed_arguments.output_filename)
-        return defer.succeed(None)
+        # XXX Dirty workaround.  I can't tell why the bindings aren't declared
+        # by the time we get here.
+        time.sleep(2)
 
-    def parse_exchanges_queues_bindings(self):
-        exchanges = self.exchanges = set()
-        queues = self.queues = set()
-        bindings = self.bindings = set()
 
-        for exchange_name, queue_bindings in self.bindings_config.iteritems():
-            exchanges.add(exchange_name)
+    def _parse_config(self):
+        self.exchanges = set()
+        self.queues = set()
+        self.bindings = set()
+
+        for exchange_name, queue_bindings in self.binding_config.iteritems():
+            self.exchanges.add(exchange_name)
+
             for queue_name, topics in queue_bindings.iteritems():
-                queues.add(queue_name)
+                self.queues.add(queue_name)
+
                 for topic in topics:
-                    bindings.add( (exchange_name, topic, queue_name) )
+                    self.bindings.add( (queue_name, exchange_name, topic) )
 
-    def make_exchange_defs(self):
+    def _declare_exchanges(self):
+        deferreds = []
+        deferreds.append(self.broker.declare_exchange('alt'))
 
-        def new_exchange(name, args):
-            return {'name': name,
-                    'vhost': self.vhost,
-                    'durable': True,
-                    'auto_delete': False,
-                    'internal': False,
-                    'type': 'topic',
-                    'arguments': args,
-                   }
+        arguments = {'alternate-exchange': 'alt'}
+        deferreds.append(self.broker.declare_exchange(
+            'dead', arguments=arguments))
 
-        result = [ new_exchange('alt', {}) ]
-        for exch_name in itertools.chain(self.exchanges, ['dead']):
-            result.append( new_exchange(exch_name, { 'alternate-exchange': 'alt'} ) )
-        self.rabbit_configuration['exchanges'] = result
+        for exchange_name in self.exchanges:
+            deferreds.append(self.broker.declare_exchange(
+                exchange_name, arguments=arguments))
 
-    def make_queue_defs(self):
+        return defer.DeferredList(deferreds)
 
-        def new_queue(name, args):
-            return {'name': name,
-                    'vhost': self.vhost,
-                    'durable': True,
-                    'auto_delete': False,
-                    'arguments': args,
-                    }
+    def _declare_queues(self):
+        deferreds = []
+        deferreds.append(self.broker.declare_queue('missing_routing_key'))
 
+        arguments = {'x-dead-letter-exchange': 'dead'}
+        for queue in self.queues:
+            deferreds.append(self.broker.declare_queue(
+                queue, arguments=arguments))
+            deferreds.append(self.broker.declare_queue('dead_' + queue))
 
-        result = [ new_queue( 'missing_routing_key', {} )]
-        for queue_name in itertools.chain(self.queues):
-            result.append( new_queue(queue_name, { 'x-dead-letter-exchange': 'dead'} ) )
+        return defer.DeferredList(deferreds)
 
-            if queue_name != 'missing_routing_key':
-                result.append( new_queue('dead_' + queue_name, {}) )
-        self.rabbit_configuration['queues'] = result
+    def _declare_bindings(self):
+        deferreds = []
+        deferreds.append(self.broker.bind_queue(
+            'missing_routing_key', 'alt', '#'))
 
+        for queue, exchange, topic in self.bindings:
+            deferreds.append(self.broker.bind_queue(queue, exchange, topic))
+            deferreds.append(self.broker.bind_queue(
+                'dead_' + queue, 'dead', topic))
 
-    def make_binding_defs(self):
-
-        def new_binding(source, routing_key, destination):
-            return {'vhost': self.vhost,
-                    'source': source,
-                    'routing_key': routing_key,
-                    'destination': destination,
-                    'destination_type': 'queue',
-                    'arguments': {},
-                    }
-
-        result = [ new_binding('alt', '#', 'missing_routing_key') ]
-        for name, topic, queue_name in self.bindings:
-            result.append( new_binding( name, topic, queue_name ) )
-            result.append( new_binding( 'dead', topic, 'dead_' + queue_name) )
-        self.rabbit_configuration['bindings'] = result
-
-
-    def dump_config_to_file(self, output_filename):
-        if output_filename:
-            of = open(output_filename, 'w')
-        else:
-            of = sys.stdout
-
-        json.dump(self.rabbit_configuration, of)
-
+        return defer.DeferredList(deferreds)
