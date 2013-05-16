@@ -298,6 +298,35 @@ class AmqpBroker(flow.interfaces.IBroker):
         else:
             return [(self._confirm_deferreds[publish_tag], publish_tag)]
 
+
+    def bind_queue(self, queue_name, exchange_name, topic, **properties):
+        if self.channel:
+            return self.channel.queue_bind(queue=queue_name,
+                    exchange=exchange_name, routing_key=topic, **properties)
+        else:
+            return defer.fail(
+                    RuntimeError('No channel -- probably not connected'))
+
+    def declare_exchange(self, exchange_name, exchange_type='topic',
+            durable=True, **other_properties):
+        if self.channel:
+            return self.channel.exchange_declare(exchange=exchange_name,
+                    durable=durable, exchange_type=exchange_type,
+                    **other_properties)
+
+        else:
+            return defer.fail(
+                    RuntimeError('No channel -- probably not connected'))
+
+    def declare_queue(self, queue_name, durable=True, **other_properties):
+        if self.channel:
+            return self.channel.queue_declare(queue=queue_name,
+                    durable=durable, **other_properties)
+        else:
+            return defer.fail(
+                    RuntimeError('No channel -- probably not connected'))
+
+
     def add_confirm_deferred(self, publish_tag, deferred):
         self._confirm_tags.add(publish_tag)
         self._confirm_deferreds[publish_tag] = deferred
