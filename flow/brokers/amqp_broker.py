@@ -2,17 +2,19 @@ from flow.configuration.settings.injector import setting
 from flow.util import stats
 from injector import inject
 from pika.adapters import twisted_connection
+from pika.spec import Basic
 from twisted.internet import reactor, defer, protocol
 from twisted.internet.error import ReactorNotRunning
-from pika.spec import Basic
 
-import flow.interfaces
 import blist
+import flow.interfaces
 import logging
-import pika
 import os
+import pika
+
 
 LOG = logging.getLogger(__name__)
+
 
 @inject(
     connection_attempts=setting('amqp.connection_attempts'),
@@ -23,6 +25,7 @@ LOG = logging.getLogger(__name__)
     virtual_host=setting('amqp.vhost'),
 )
 class AmqpConnectionParameters(object): pass
+
 
 @inject(connection_params=AmqpConnectionParameters,
         connection_attempts=setting('amqp.connection_attempts'),
