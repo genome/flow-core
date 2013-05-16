@@ -16,6 +16,11 @@ import pika
 LOG = logging.getLogger(__name__)
 
 
+_EXIT_REPLY_CODES = set([
+    320,  # Connection closed via management plugin
+])
+
+
 @inject(
     connection_attempts=setting('amqp.connection_attempts'),
     hostname=setting('amqp.hostname'),
@@ -140,11 +145,7 @@ class AmqpBroker(flow.interfaces.IBroker):
         if self._connection_attempts >= self.connection_attempts:
             LOG.critical('Maximum number of connection attempts (%d) '
                     'reached... shutting down.', self.connection_attempts)
-            try:
-                reactor.stop()
-                LOG.critical('Stopped twisted reactor')
-            except ReactorNotRunning:
-                pass
+            self._stop_reactor()
         else:
             LOG.info("Attempting to reconnect to the AMQP server in %s seconds.",
                     self.retry_delay)
@@ -157,10 +158,27 @@ class AmqpBroker(flow.interfaces.IBroker):
         if not self._reconnecting:
             self._reconnect()
 
+    def _on_connection_closed(self, connection, reply_code, reply_text):
+        LOG.info('Connection closed with code %d: %s', reply_code, reply_text)
+        if reply_code in _EXIT_REPLY_CODES:
+            self._stop_reactor()
+        else:
+            if not self._reconnecting:
+                self._reconnect()
+
     def _on_connected(self, connection):
         LOG.debug('Established connection to AMQP')
         connection.ready.addCallback(self._on_ready)
+        connection.add_on_close_callback(self._on_connection_closed)
+
         self._connection = connection
+
+    def _stop_reactor(self):
+        try:
+            reactor.stop()
+            LOG.info('Stopped twisted reactor')
+        except ReactorNotRunning:
+            LOG.warning("Tried to stop twisted reactor, but it's not running")
 
     def disconnect(self):
         LOG.info("Closing AMQP connection.")
