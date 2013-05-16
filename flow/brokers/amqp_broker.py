@@ -287,4 +287,3 @@ class AmqpBroker(flow.interfaces.IBroker):
     def remove_confirm_deferred(self, publish_tag):
         self._confirm_tags.remove(publish_tag)
         del self._confirm_deferreds[publish_tag]
-
