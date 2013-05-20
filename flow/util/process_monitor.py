@@ -28,7 +28,7 @@ class JSONResource(Resource):
         Resource.__init__(self)
         self.process_info = process_info
 
-    def get_data(self, process_info):
+    def get_data(self):
         raise NotImplementedError
 
     def render_GET(self, request):
@@ -79,4 +79,5 @@ class ProcessMonitor(object):
         self.port = listen_port
         listen_host = socket.gethostname()
 
-        LOG.info("Process Monitor at http://%s:%s/view", listen_host, listen_port)
+        LOG.info("Process Monitor at http://%s:%s/view",
+                listen_host, listen_port)

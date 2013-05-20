@@ -1,6 +1,5 @@
 from flow.petri.netbase import NetBase
 from flow.petri.netbase import PlaceCapacityError
-from flow.petri.netbase import Token
 from flow.petri.netbase import TokenColorError
 from flow.petri.netbase import TransitionAction
 from twisted.internet import defer
@@ -145,9 +144,6 @@ class _Place(_Node):
 class _Transition(_Node):
     action_key = rom.Property(rom.String)
     active_tokens = rom.Property(rom.List)
-    state = rom.Property(rom.Set)
-    tokens_pushed = rom.Property(rom.Int)
-    enabler = rom.Property(rom.String)
 
     @property
     def action(self):

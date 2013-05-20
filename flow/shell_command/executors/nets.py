@@ -3,7 +3,6 @@ from twisted.internet import defer
 
 import flow.petri.netbuilder as nb
 import logging
-import os
 
 
 LOG = logging.getLogger(__name__)

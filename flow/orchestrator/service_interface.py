@@ -12,12 +12,18 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(broker=flow.interfaces.IBroker,
-        create_token_exchange=setting('orchestrator.create_token_exchange'),
-        create_token_routing_key=setting('orchestrator.create_token_routing_key'),
-        notify_place_exchange=setting('orchestrator.notify_place_exchange'),
-        notify_place_routing_key=setting('orchestrator.notify_place_routing_key'),
-        notify_transition_exchange=setting('orchestrator.notify_transition_exchange'),
-        notify_transition_routing_key=setting('orchestrator.notify_transition_routing_key'))
+        create_token_exchange=
+            setting('orchestrator.create_token_exchange'),
+        create_token_routing_key=
+            setting('orchestrator.create_token_routing_key'),
+        notify_place_exchange=
+            setting('orchestrator.notify_place_exchange'),
+        notify_place_routing_key=
+            setting('orchestrator.notify_place_routing_key'),
+        notify_transition_exchange=
+            setting('orchestrator.notify_transition_exchange'),
+        notify_transition_routing_key=
+            setting('orchestrator.notify_transition_routing_key'))
 class OrchestratorServiceInterface(flow.interfaces.IOrchestrator):
     def create_token(self, net_key, place_idx, **create_token_kwargs):
         message = CreateTokenMessage(net_key=net_key, place_idx=place_idx,

@@ -1,7 +1,7 @@
 from flow.commands.base import CommandBase
-from twisted.internet import defer, reactor
 from flow.util.logannotator import LogAnnotator
-import time
+from twisted.internet import defer, reactor
+
 import os
 import random
 
@@ -12,8 +12,10 @@ class ReadingCommand(CommandBase):
         parser.add_argument('--file', '-f', type=str)
         parser.add_argument('--time-per-read', '-t', type=float)
         parser.add_argument('--read-size', '-s', type=int)
-        parser.add_argument('--repeat', '-r', default=False, action='store_true')
-        parser.add_argument('--jump-around', '-j', default=False, action='store_true')
+        parser.add_argument('--repeat', '-r',
+                default=False, action='store_true')
+        parser.add_argument('--jump-around', '-j',
+                default=False, action='store_true')
 
     @defer.inlineCallbacks
     def _execute(self, parsed_arguments):
@@ -55,13 +57,15 @@ class RandomReadingCommand(CommandBase):
         filenames = filenames[:3]
 
         self.settings = []
-        for i in range(parsed_arguments.num_files):
+        for i in xrange(parsed_arguments.num_files):
             filename = random.choice(filenames)
-            settings = {'filename':filename,
-                        'read_size':random.choice([256, 4096, 4096, 4096, 32768, 32768]),
-                        'read_time':random.choice([0.1, 0.25, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 4.0]),
-                        'read_strategy':random.choice(['normal', 'jump']),
-                        'file_size':os.stat(filename).st_size,
+            settings = {'filename': filename,
+                        'read_size': random.choice(
+                            [256, 4096, 4096, 4096, 32768, 32768]),
+                        'read_time': random.choice(
+                            [0.1, 0.25, 0.5, 0.5, 0.5, 0.5, 0.5, 1.0, 4.0]),
+                        'read_strategy': random.choice(['normal', 'jump']),
+                        'file_size': os.stat(filename).st_size,
                        }
             self.settings.append(settings)
 
@@ -77,7 +81,7 @@ class RandomReadingCommand(CommandBase):
             deferreds.append(deferred)
             self._read_file(fh=fh, deferred=deferred, **setting)
 
-        for i in range(parsed_arguments.children):
+        for i in xrange(parsed_arguments.children):
             cmdline = ['flow', 'random-reading-command',
                     '-n', str(random.choice(range(5))),
                     '-c', str(random.choice([0,0,0,0,0,0,0,1,2]))]
