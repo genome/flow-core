@@ -79,7 +79,8 @@ class AmqpBroker(flow.interfaces.IBroker):
                 confirm_deferred)
         return confirm_deferred
 
-    def _publish(self, _, exchange_name, routing_key, message, confirm_deferred):
+    def _publish(self, _, exchange_name, routing_key,
+            message, confirm_deferred):
         timer = stats.create_timer('messages.publish.%s' %
                 message.__class__.__name__)
         timer.start()
@@ -126,8 +127,9 @@ class AmqpBroker(flow.interfaces.IBroker):
                     twisted_connection.TwistedProtocolConnection,
                     params)
 
-            LOG.debug('Attempting to establish connection to host: %s on port: %s',
-                    self.connection_params.hostname, self.connection_params.port)
+            LOG.debug('Attempting to establish connection to host: %s '
+                    'on port: %s', self.connection_params.hostname,
+                    self.connection_params.port)
             deferred = connection.connectTCP(params.host, params.port)
             deferred.addCallbacks(self._on_connected, self._on_connect_failed)
 
@@ -147,8 +149,8 @@ class AmqpBroker(flow.interfaces.IBroker):
                     'reached... shutting down.', self.connection_attempts)
             self._stop_reactor()
         else:
-            LOG.info("Attempting to reconnect to the AMQP server in %s seconds.",
-                    self.retry_delay)
+            LOG.info("Attempting to reconnect to the AMQP "
+                    "server in %s seconds.", self.retry_delay)
             self._reconnecting = True
             self._last_publish_tag = 0
             reactor.callLater(self.retry_delay, self._connect, force=True)
