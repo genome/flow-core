@@ -1,18 +1,12 @@
-from flow.petri.netbase import Token, NetBase, TransitionAction,\
-        TokenColorError, PlaceCapacityError
-
-from flow.protocol.message import Message
+from flow.petri.netbase import NetBase
+from flow.petri.netbase import PlaceCapacityError
+from flow.petri.netbase import Token
+from flow.petri.netbase import TokenColorError
+from flow.petri.netbase import TransitionAction
 from twisted.internet import defer
 
-from uuid import uuid4
-import base64
 import flow.redisom as rom
-import json
 import logging
-import os
-import pwd
-import pygraphviz
-import subprocess
 
 
 LOG = logging.getLogger(__name__)
@@ -251,7 +245,7 @@ class Net(NetBase):
             raise RuntimeError("net %s, place %d: token_color is none!" %
                     (self.key, place_idx))
 
-        token_color=int(token_color)
+        token_color = int(token_color)
         deferreds = []
         if place_idx in self.marking(token_color):
             place = self.place(place_idx)
@@ -321,7 +315,7 @@ class Net(NetBase):
 
     @defer.inlineCallbacks
     def notify_transition(self, trans_idx, place_idx, service_interfaces,
-            token_color):
+            token_color=None):
         """
         Returns a deferred that will callback when all messages it has asked to
         be published have been confirmed.

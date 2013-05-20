@@ -1,18 +1,11 @@
-from flow.petri.netbase import NetBase, Token, PlaceCapacityError
-
-from flow.protocol.message import Message
+from flow.petri.netbase import NetBase
+from flow.petri.netbase import PlaceCapacityError
 from flow.util import stats
 from twisted.internet import defer
-
 from uuid import uuid4
-import base64
+
 import flow.redisom as rom
-import json
 import logging
-import os
-import pwd
-import pygraphviz
-import subprocess
 
 
 LOG = logging.getLogger(__name__)
@@ -285,8 +278,8 @@ class SafeNet(NetBase):
                 deferreds.append(deferred)
 
         else:
-            LOG.warning("Attempted to notify place %d on net (%s), which has no tokens.",
-                    place_idx, self.key)
+            LOG.warning("Attempted to notify place %d on net (%s), "
+                    "which has no tokens.", place_idx, self.key)
 
         timer.stop()
         return defer.gatherResults(deferreds)

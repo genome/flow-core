@@ -3,7 +3,6 @@ from flow.configuration.settings.injector import setting
 from flow.util import environment as env_util
 from injector import inject
 
-import abc
 import flow.interfaces
 import logging
 import os
@@ -14,7 +13,8 @@ LOG = logging.getLogger(__name__)
 
 @inject(wrapper=setting('shell_command.wrapper'),
         default_environment=setting('shell_command.default_environment', {}),
-        mandatory_environment=setting('shell_command.mandatory_environment', {}))
+        mandatory_environment=
+            setting('shell_command.mandatory_environment', {}))
 class ExecutorBase(flow.interfaces.IShellCommandExecutor):
     def __call__(self, command_line, group_id=None, user_id=None,
             environment={}, **kwargs):
@@ -23,14 +23,15 @@ class ExecutorBase(flow.interfaces.IShellCommandExecutor):
         pid = fork_or_exit()
         if pid:  # Parent
             child_socket.close()
-            job_id, exit_code = self._wait_for_child(parent_socket, pid)
+            job_id, exit_code = wait_for_child(parent_socket, pid)
 
             if exit_code == exit_codes.EXECUTE_SUCCESS:
                 return job_id, True
             elif exit_code == exit_codes.EXECUTE_FAILURE:
                 return job_id, False
             else:
-                raise RuntimeError('Unknown exit code (%d) from child!' % exit_code)
+                raise RuntimeError('Unknown exit code (%d) from child!'
+                        % exit_code)
 
         else:  # Child
             parent_socket.close()
@@ -41,29 +42,6 @@ class ExecutorBase(flow.interfaces.IShellCommandExecutor):
                     command_line, environment, kwargs)
 
             os._exit(exit_code)
-
-    def _wait_for_child(self, parent_socket, pid):
-        child_pid, exit_status = os.waitpid(pid, 0)
-        signal_number = 255 & exit_status
-        exit_code = exit_status >> 8
-
-        if signal_number:
-            raise RuntimeError('Executor child got signal (%d), '
-                    'rejecting message' % signal_number)
-
-        if exit_code == exit_codes.EXECUTE_SYSTEM_FAILURE:
-            os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
-        elif exit_code == exit_codes.EXECUTE_ERROR:
-            raise RuntimeError('Error in executor child process '
-                    '(exit code %d).  Rejecting message.' % exit_code)
-
-        job_id = -1
-        if not signal_number and exit_code == exit_codes.EXECUTE_SUCCESS:
-            job_id = int(parent_socket.recv(64))
-
-        parent_socket.close()
-
-        return job_id, exit_code
 
     def _child_execute(self, child_socket, command_line, environment, kwargs):
         try:
@@ -109,6 +87,29 @@ class ExecutorBase(flow.interfaces.IShellCommandExecutor):
 
         return [str(x) for x in cmdline]
 
+
+def wait_for_child(parent_socket, pid):
+    child_pid, exit_status = os.waitpid(pid, 0)
+    signal_number = 255 & exit_status
+    exit_code = exit_status >> 8
+
+    if signal_number:
+        raise RuntimeError('Executor child got signal (%d), '
+                'rejecting message' % signal_number)
+
+    if exit_code == exit_codes.EXECUTE_SYSTEM_FAILURE:
+        os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+    elif exit_code == exit_codes.EXECUTE_ERROR:
+        raise RuntimeError('Error in executor child process '
+                '(exit code %d).  Rejecting message.' % exit_code)
+
+    job_id = -1
+    if not signal_number and exit_code == exit_codes.EXECUTE_SUCCESS:
+        job_id = int(parent_socket.recv(64))
+
+    parent_socket.close()
+
+    return job_id, exit_code
 
 def socketpair_or_exit():
     try:

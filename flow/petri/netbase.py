@@ -235,7 +235,7 @@ class NetBase(rom.Object):
             for i in xrange(self.num_tokens.value):
                 token = self.token(i)
                 token.delete()
-        except NotInRedisError:  # Wanted default value 0
+        except rom.NotInRedisError:  # Wanted default value 0
             pass
 
         rom.Object.delete(self)
@@ -250,8 +250,8 @@ class NetBase(rom.Object):
         """
         raise NotImplementedError()
 
-    def notify_transition(self, trans_idx=None, place_idx=None,
-            service_interfaces=None, token_color=None):
+    def notify_transition(self, trans_idx, place_idx,
+            service_interfaces, token_color):
         """
         Returns a deferred that fires when all service_interface related
         deferreds have fired.
