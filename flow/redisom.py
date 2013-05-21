@@ -238,8 +238,8 @@ class Set(Value):
 
 
 class EncodableContainer(Value):
-    def __init__(self, value_encoder=None, value_decoder=None, **kwargs):
-        Value.__init__(self, **kwargs)
+    def __init__(self, value_encoder=None, value_decoder=None, *args, **kwargs):
+        Value.__init__(self, *args, **kwargs)
         self._value_encoder = value_encoder
         self._value_decoder = value_decoder
 
