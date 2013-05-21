@@ -19,56 +19,78 @@ class TestBarrier(TestBase):
         self.color_marking = rom.Hash(connection=self.conn, key="cm")
         self.group_marking = rom.Hash(connection=self.conn, key="gm")
 
-    def test_consume_tokens_success(self):
-        color_group = self.net.add_color_group(size=1)
-
-        token = self.net.create_token(color=color_group.begin,
-                color_group_idx=color_group.idx)
-
-        notifying_place = 0
-        self.trans.arcs_in = range(5)
-
-        for place_id in self.trans.arcs_in.value:
-            self.color_marking["0:%s" % place_id] = token.key
-            self.group_marking["0:%s" % place_id] = 1
-
-        self.trans.consume_tokens(notifying_place, color_group,
-                self.color_marking.key, self.group_marking.key)
-
-        self.assertEqual([token.key]*5, self.trans.active_tokens(0).value)
-        self.assertEqual(0, len(self.color_marking))
-        self.assertEqual(0, len(self.group_marking))
-
-    def test_consume_tokens_large_color_group(self):
-        color_group = self.net.add_color_group(size=5)
-
-        notifying_place = 2
-        self.trans.arcs_in = range(10)
-
+    def _make_colored_tokens(self, color_group):
         tokens = {}
         for color_id in xrange(color_group.begin, color_group.end):
             tokens[color_id] = self.net.create_token(color=color_id,
                     color_group_idx=color_group.idx)
+        return tokens
 
-        for place_id in self.trans.arcs_in.value:
-            for color_id in xrange(color_group.begin, color_group.end):
+    def _put_tokens(self, place_ids, color_ids, cg_id, token_hash):
+        for place_id in place_ids:
+            for color_id in color_ids:
+                token_key = token_hash[color_id].key
                 key = "%s:%s" % (color_id, place_id)
-                self.color_marking[key] = tokens[color_id].key
+                self.color_marking[key] = token_key
 
-            key = "%s:%s" % (color_group.idx, place_id)
-            self.group_marking[key] = color_group.size
+            key = "%s:%s" % (cg_id, place_id)
+            self.group_marking[key] = len(color_ids)
 
-        self.trans.consume_tokens(notifying_place, color_group,
+    def test_consume_tokens_with_empty_marking(self):
+        color_group = self.net.add_color_group(size=5)
+
+        enabler = 2
+        self.trans.arcs_in = range(10)
+
+        rv = self.trans.consume_tokens(enabler, color_group,
                 self.color_marking.key, self.group_marking.key)
 
-        self.assertEqual(50, len(self.trans.active_tokens(0).value))
-        expected_token_keys = sorted([x.key for x in tokens.values()] * 10)
-        self.assertEqual(expected_token_keys,
-                sorted(self.trans.active_tokens(0)))
+        self.assertEqual(5, rv)
 
+        self.assertEqual(0, len(self.trans.enablers))
+        self.assertEqual(0, len(self.trans.active_tokens(0).value))
         self.assertEqual(0, len(self.color_marking))
         self.assertEqual(0, len(self.group_marking))
 
+    def test_consume_tokens_partially_ready(self):
+        color_group = self.net.add_color_group(size=5)
+        self.trans.arcs_in = range(3)
+
+        tokens = self._make_colored_tokens(color_group)
+        num_places = len(self.trans.arcs_in)
+
+        num_successes = 0
+        for i in self.trans.arcs_in:
+            enabler = int(i)
+            place_ids = range(enabler+1)
+            for j in xrange(len(color_group.colors)):
+                colors = color_group.colors[:j+1]
+
+                self._put_tokens(place_ids, colors, color_group.idx, tokens)
+                color_marking_copy = self.color_marking.value
+                group_marking_copy = self.group_marking.value
+
+                rv = self.trans.consume_tokens(enabler, color_group,
+                        self.color_marking.key, self.group_marking.key)
+
+                if rv != 0:
+                    self.assertEqual(color_marking_copy,
+                            self.color_marking.value)
+                    self.assertEqual(group_marking_copy,
+                            self.group_marking.value)
+                    self.assertEqual(0, len(self.trans.enablers))
+                else:
+                    num_successes += 1
+                    self.assertEqual(0, len(self.color_marking.value))
+                    self.assertEqual(0, len(self.group_marking.value))
+                    self.assertEqual(enabler, int(self.trans.enablers[color_group.idx]))
+                    expected_token_keys = sorted([x.key for x in tokens.values()] *
+                            num_places)
+
+                    self.assertEqual(expected_token_keys,
+                            sorted(self.trans.active_tokens(color_group.idx)))
+
+        self.assertEqual(1, num_successes)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ local active_tokens_key = KEYS[2]
 local arcs_in_key = KEYS[3]
 local color_marking_key = KEYS[4]
 local group_marking_key = KEYS[5]
-local enabler_key = KEYS[6]
+local enablers_key = KEYS[6]
 
 local place_key = ARGV[1]
 local cg_id = ARGV[2]
@@ -27,7 +27,7 @@ local cg_last = cg_end - 1
 local expected_count = cg_end - cg_first
 
 local count = redis.call('HGET', group_marking_key, marking_key(cg_id, place_key))
-
+if count == false then count = 0 end
 
 local remaining_tokens = expected_count - count
 if remaining_tokens > 0 then
@@ -40,10 +40,8 @@ if remaining_places > 0 then
     return {remaining_places, "Waiting for places"}
 end
 
-local enabler_value = redis.call('GET', enabler_key)
-if enabler_value == false then
-    redis.call('SET', enabler_key, place_key)
-elseif enabler_value ~= place_key then
+local enabler_value = redis.call('HGET', enablers_key, cg_id)
+if enabler_value and enabler_value ~= place_key then
     return {-1, "Transition enabled by a different place: " .. enabler_value}
 end
 
@@ -62,13 +60,14 @@ for i, place_id in pairs(arcs_in) do
     if token_counts[i] ~= expected_count then
         redis.call('SADD', state_set_key, place_id)
         remaining_places = remaining_places + 1
-        return {-1, key, token_counts[i], expected_count}
     end
 end
 
 if remaining_places > 0 then
     return {remaining_places, "Waiting for places (after full check)"}
 end
+
+redis.call('HSET', enablers_key, cg_id, place_key)
 
 local token_keys = {}
 for i, place_id in pairs(arcs_in) do
@@ -110,10 +109,10 @@ class BarrierTransition(TransitionBase):
         active_tokens_key = self.active_tokens_key(color_group.idx)
         arcs_in_key = self.arcs_in.key
         state_key = self.state_key(color_group.idx)
-        enabler_key = self.enabler_key(color_group.idx)
+        enablers_key = self.enablers.key
 
         keys = [state_key, active_tokens_key, arcs_in_key, color_marking_key,
-                group_marking_key, enabler_key]
+                group_marking_key, enablers_key]
         args = [notifying_place_idx, color_group.idx, color_group.begin,
                 color_group.end]
 

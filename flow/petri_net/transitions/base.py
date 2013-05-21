@@ -5,6 +5,8 @@ class TransitionBase(rom.Object):
     arcs_in = rom.Property(rom.List)
     arcs_out = rom.Property(rom.List)
 
+    enablers = rom.Property(rom.Hash)
+
     def notify(self, net, place_idx, color, service_interfaces):
         raise NotImplementedError()
 
@@ -26,9 +28,6 @@ class TransitionBase(rom.Object):
 
     def state_key(self, tag):
         return self.subkey("state", tag)
-
-    def enabler_key(self, tag):
-        return self.subkey("enabler", tag)
 
     def active_tokens_key(self, tag):
         return self.subkey("active_tokens", tag)
