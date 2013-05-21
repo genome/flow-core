@@ -2,8 +2,8 @@ import flow.redisom as rom
 from twisted.internet import defer
 
 class TransitionBase(rom.Object):
-    arcs_in = rom.Property(rom.Set)
-    arcs_out = rom.Property(rom.Set)
+    arcs_in = rom.Property(rom.List)
+    arcs_out = rom.Property(rom.List)
 
     def notify(self, net, place_idx, color, service_interfaces):
         raise NotImplementedError()
@@ -26,3 +26,13 @@ class TransitionBase(rom.Object):
 
     def state_key(self, tag):
         return self.subkey("state", tag)
+
+    def enabler_key(self, tag):
+        return self.subkey("enabler", tag)
+
+    def active_tokens_key(self, tag):
+        return self.subkey("active_tokens", tag)
+
+    def active_tokens(self, tag):
+        return rom.List(connection=self.connection,
+                key=self.active_tokens_key(tag))

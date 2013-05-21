@@ -12,17 +12,23 @@ local active_tokens_key = KEYS[2]
 local arcs_in_key = KEYS[3]
 local color_marking_key = KEYS[4]
 local group_marking_key = KEYS[5]
-local marking_counts_key = KEYS[6]
-local enabler_key = KEYS[7]
+local enabler_key = KEYS[6]
 
 local place_key = ARGV[1]
-local cg_first = ARGV[2]
-local cg_end = ARGV[3]
+local cg_id = ARGV[2]
+local cg_first = ARGV[3]
+local cg_end = ARGV[4]
+
+local marking_key = function(color_tag, place_id)
+    return string.format("%s:%s", color_tag, place_id)
+end
 
 local cg_last = cg_end - 1
 local expected_count = cg_end - cg_first
 
-local count = redis.call('HGET', group_marking_key, place_key)
+local count = redis.call('HGET', group_marking_key, marking_key(cg_id, place_key))
+
+
 local remaining_tokens = expected_count - count
 if remaining_tokens > 0 then
     return {remaining_tokens, "Incoming tokens remaining at place: " .. place_key}
@@ -49,42 +55,48 @@ end
 local arcs_in = redis.call('LRANGE', arcs_in_key, 0, -1)
 
 local token_counts = {}
-local token_keys = {}
 remaining_places = 0
 for i, place_id in pairs(arcs_in) do
-    token_counts[i] = redis.call('HGET', group_marking_key, place_id)
-    if token_counts[i] != expected_count then
+    local key = marking_key(cg_id, place_id)
+    token_counts[i] = tonumber(redis.call('HGET', group_marking_key, key))
+    if token_counts[i] ~= expected_count then
         redis.call('SADD', state_set_key, place_id)
         remaining_places = remaining_places + 1
+        return {-1, key, token_counts[i], expected_count}
     end
 end
 
 if remaining_places > 0 then
-    return {remaining_places, "Waiting for places"}
+    return {remaining_places, "Waiting for places (after full check)"}
 end
 
+local token_keys = {}
 for i, place_id in pairs(arcs_in) do
     for color = cg_first, cg_last do
-        local key = string.format("%s:%s", color, place_id)
+        local key = marking_key(color, place_id)
         local token_key = redis.call('HGET', color_marking_key, key)
         if token_key == false then
             return {-1, string.format(
                 "Mismatch between group and color markings at place %s, " ..
                 "color %s", place_id, color)  }
         end
-        token_keys[token_key] = {color, place_id}
+        table.insert(token_keys, {token_key, color, place_id})
     end
 end
 
-for token_key, color_place_table in pairs(token_keys) do
-    local color = color_place_table[1]
-    local place_id = color_place_table[2]
-    local cp_key = string.format("%s:%s", color, place_id)
+for i, token_info in pairs(token_keys) do
+    local token_key = token_info[1]
+    local color = token_info[2]
+    local place_id = token_info[3]
+    local cp_key = marking_key(color, place_id)
+    local gp_key = marking_key(cg_id, place_id)
 
     redis.call('LPUSH', active_tokens_key, token_key)
     redis.call('HDEL', color_marking_key, cp_key)
-    redis.call('HINCRBY', marking_counts_key, place_id, -1)
-    redis.call('HINCRBY', group_marking_key, place_id, -1)
+    local res = redis.call('HINCRBY', group_marking_key, gp_key, -1)
+    if res == 0 then
+        redis.call("HDEL", group_marking_key, gp_key)
+    end
 end
 return {0, "Transition enabled"}
 """
@@ -93,29 +105,23 @@ return {0, "Transition enabled"}
 class BarrierTransition(TransitionBase):
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
 
-    def consume_tokens(self, net, notifying_place_idx, color_group):
-        active_tokens_key = self.active_tokens(color_group.idx).key
+    def consume_tokens(self, notifying_place_idx, color_group,
+            color_marking_key, group_marking_key):
+        active_tokens_key = self.active_tokens_key(color_group.idx)
         arcs_in_key = self.arcs_in.key
-        state_key = self.state(color_group.idx).key
-        enabler_key = self.enabler(color_group.idx).key
-        color_marking_key = net.color_marking.key
-        group_marking_key = net.group_marking(color_group.idx).key
-        marking_counts_key = net.marking_counts.key
+        state_key = self.state_key(color_group.idx)
+        enabler_key = self.enabler_key(color_group.idx)
 
         keys = [state_key, active_tokens_key, arcs_in_key, color_marking_key,
-                group_marking_key, marking_counts_key, enabler_key]
-        args = [notifying_place_idx, color_group.begin, color_group.end]
+                group_marking_key, enabler_key]
+        args = [notifying_place_idx, color_group.idx, color_group.begin,
+                color_group.end]
 
         LOG.debug("Consume tokens: KEYS=%r, ARGS=%r", keys, args)
-        LOG.debug("Transition state (color=%d): %r", color_idx,
-                self.state(color_group.idx).value)
-        LOG.debug("Net marking (color=%d): %r", color_group.idx,
-                net.color_marking.value)
-        status, message = self._consume_tokens(keys=keys, args=args)
-        LOG.debug("Consume tokens (%d) status=%r, message=%r", color_group.idx,
-                status, message)
+        rv = self._consume_tokens(keys=keys, args=args)
+        LOG.debug("Consume tokens returned: %r", rv)
 
-        return status == 0
+        return rv[0]
 
 
     def notify(self, net, place_idx, color, service_interfaces):
