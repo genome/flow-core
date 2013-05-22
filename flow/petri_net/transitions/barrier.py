@@ -122,8 +122,10 @@ class BarrierTransition(TransitionBase):
         return rv[0]
 
 
-    def notify(self, net, place_idx, color, service_interfaces):
-        raise NotImplementedError()
+    def notify(self, net, place_idx, token, service_interfaces):
+        color_group = net.color_group(token.color_group.value)
+        rv = self.consume_tokens(place_idx, color_group, net.color_marking.key,
+                net.group_marking.key)
 
     def fire(self, net, color, service_interfaces):
         raise NotImplementedError()

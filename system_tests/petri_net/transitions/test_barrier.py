@@ -61,11 +61,10 @@ class TestBarrier(NetTest):
                     self.assertEqual(0, len(self.color_marking.value))
                     self.assertEqual(0, len(self.group_marking.value))
                     self.assertEqual(enabler, int(self.trans.enablers[color_group.idx]))
-                    expected_token_keys = sorted([x.key for x in tokens.values()] *
-                            num_places)
+                    expected_token_keys = [x.key for x in tokens.values()] * num_places
 
-                    self.assertEqual(expected_token_keys,
-                            sorted(self.trans.active_tokens(color_group.idx)))
+                    self.assertItemsEqual(expected_token_keys,
+                            self.trans.active_tokens(color_group.idx))
 
         self.assertEqual(1, num_successes)
 
