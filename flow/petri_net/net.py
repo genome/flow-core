@@ -154,7 +154,15 @@ class Net(rom.Object):
 
         trans = self.transition(transition_idx)
         token = self.token(token_idx)
-        return trans.notify(self, place_idx, token, service_interfaces) 
+        color = token.color.value
+        color_group = token.color_group.value
+
+        consume_rv = trans.consume_tokens(place_idx, color_group, color,
+                self.color_marking.key, self.group_marking.key)
+
+        if consume_rv == 0:
+            new_tokens = trans.fire(self, color_group, color, service_interfaces)
+
 
     def color_group(self, idx):
         return self.color_groups[idx]

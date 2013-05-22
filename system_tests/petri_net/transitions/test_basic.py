@@ -15,11 +15,12 @@ class TestBasic(NetTest):
 
     def test_consume_tokens_with_empty_marking(self):
         color_group = self.net.add_color_group(size=5)
+        color = color_group.begin
 
         enabler = 2
         self.trans.arcs_in = range(10)
 
-        rv = self.trans.consume_tokens(enabler, 0, color_group.idx,
+        rv = self.trans.consume_tokens(enabler, color_group, color,
                 self.color_marking.key, self.group_marking.key)
 
         self.assertNotEqual(0, rv)
@@ -47,7 +48,7 @@ class TestBasic(NetTest):
                 color_marking_copy = self.color_marking.value
                 group_marking_copy = self.group_marking.value
 
-                rv = self.trans.consume_tokens(enabler, color_group.idx, j,
+                rv = self.trans.consume_tokens(enabler, color_group, j,
                         self.color_marking.key, self.group_marking.key)
 
                 if rv != 0:

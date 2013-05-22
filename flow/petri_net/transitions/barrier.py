@@ -104,7 +104,7 @@ return {0, "Transition enabled"}
 class BarrierTransition(TransitionBase):
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
 
-    def consume_tokens(self, enabler, color_group, color_marking_key,
+    def consume_tokens(self, enabler, color_group, color, color_marking_key,
             group_marking_key):
         active_tokens_key = self.active_tokens_key(color_group.idx)
         arcs_in_key = self.arcs_in.key
@@ -121,11 +121,6 @@ class BarrierTransition(TransitionBase):
 
         return rv[0]
 
-
-    def notify(self, net, place_idx, token, service_interfaces):
-        color_group = net.color_group(token.color_group.value)
-        rv = self.consume_tokens(place_idx, color_group, net.color_marking.key,
-                net.group_marking.key)
 
     def fire(self, net, color, service_interfaces):
         raise NotImplementedError()

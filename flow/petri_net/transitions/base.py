@@ -6,14 +6,16 @@ class TransitionBase(rom.Object):
     arcs_out = rom.Property(rom.List)
 
     enablers = rom.Property(rom.Hash)
+    action_key = rom.Property(rom.String)
 
-    def notify(self, net, place_idx, color, service_interfaces):
+    def consume_tokens(self, enabler, color_group, color, color_marking_key,
+            group_marking_key):
         raise NotImplementedError()
 
-    def fire(self, net, color, service_interfaces):
+    def fire(self, net, color_group, color, service_interfaces):
         raise NotImplementedError()
 
-    def push_tokens(self, net, tokens, color, service_interfaces):
+    def push_tokens(self, net, tokens, service_interfaces):
         raise NotImplementedError()
 
     def notify_places(self, net, color, service_interfaces):
