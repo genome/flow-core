@@ -1,6 +1,32 @@
 import flow.redisom as rom
 from collections import namedtuple
 
+_PUT_TOKEN_SCRIPT = """
+local color_marking_key = KEYS[1]
+local group_marking_key = KEYS[2]
+
+local place_id = ARGV[1]
+local token_key = ARGV[2]
+local color = ARGV[3]
+local color_group_idx = ARGV[4]
+
+local color_key = string.format("%s:%s", color, place_id)
+local group_key = string.format("%s:%s", color_group_idx, place_id)
+
+local set = redis.call('HSETNX', color_marking_key, color_key, token_key)
+if set == 0 then
+    local existing_key = redis.call('HGET', color_marking_key, color_key)
+    if existing_key ~= token_key then
+        return -1
+    else
+        return 0
+    end
+end
+
+redis.call('HINCRBY', group_marking_key, group_key, 1)
+return 0
+"""
+
 ColorGroup = namedtuple("ColorGroup", ["idx", "parent_color",
         "parent_color_group", "begin", "end"])
 
@@ -14,7 +40,6 @@ def _color_group_enc(value):
 
 def _color_group_dec(value):
     return ColorGroup(**rom.json_dec(value))
-
 
 class Token(rom.Object):
     data_type = rom.Property(rom.String)
@@ -46,9 +71,14 @@ class Net(rom.Object):
     color_marking = rom.Property(rom.Hash)
     group_marking = rom.Property(rom.Hash)
 
+    place_names = rom.Property(rom.Hash)
+    place_observer_keys = rom.Property(rom.Hash)
+
     num_places = rom.Property(rom.Int)
     num_transitions = rom.Property(rom.Int)
     num_tokens = rom.Property(rom.Int)
+
+    _put_token_script = rom.Script(_PUT_TOKEN_SCRIPT)
 
     @classmethod
     def create(cls, connection=None, name=None, place_names=[],
@@ -71,6 +101,7 @@ class Net(rom.Object):
 
         self.num_places.value = len(place_names)
         self.num_transitions.value = len(transitions)
+        self.place_names.value = {i: x for i, x in enumerate(place_names)}
 
         #for i, pname in enumerate(place_names):
             #key = self.subkey("place/%d" % i)
@@ -91,6 +122,13 @@ class Net(rom.Object):
 
         return self
 
+    def _put_token(self, place_idx, token):
+        keys = [self.color_marking.key, self.group_marking.key]
+        args = [place_idx, token.key, token.color.value,
+                token.color_group_idx.value]
+
+        rv = self._put_token_script(keys=keys, args=args)
+        return rv
 
     def color_group(self, idx):
         return self.color_groups[idx]
