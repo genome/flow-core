@@ -1,6 +1,5 @@
 import flow.redisom as rom
 from base import TransitionBase
-
 import logging
 
 LOG = logging.getLogger(__file__)
@@ -120,11 +119,3 @@ class BarrierTransition(TransitionBase):
         LOG.debug("Consume tokens returned: %r", rv)
 
         return rv[0]
-
-
-    def fire(self, net, color, service_interfaces):
-        raise NotImplementedError()
-
-    def push_tokens(self, net, tokens, color, service_interfaces):
-        raise NotImplementedError()
-

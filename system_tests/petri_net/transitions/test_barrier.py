@@ -10,8 +10,8 @@ class TestBarrier(NetTest):
     def setUp(self):
         NetTest.setUp(self)
         self.trans = barrier.BarrierTransition.create(self.conn)
-        self.color_marking = rom.Hash(connection=self.conn, key="cm")
-        self.group_marking = rom.Hash(connection=self.conn, key="gm")
+        self.color_marking = self.net.color_marking
+        self.group_marking = self.net.group_marking
 
     def test_consume_tokens_with_empty_marking(self):
         color_group = self.net.add_color_group(size=5)
@@ -68,6 +68,29 @@ class TestBarrier(NetTest):
 
         self.assertEqual(1, num_successes)
 
+    def test_push_tokens(self):
+        color_group = self.net.add_color_group(size=1)
+        self.trans.arcs_in = range(4)
+        self.trans.arcs_out = range(4, 6)
+
+        tokens = self._make_colored_tokens(color_group)
+        num_places = len(self.trans.arcs_in)
+
+        self._put_tokens(self.trans.arcs_in, color_group.colors,
+                color_group.idx, tokens)
+
+        rv = self.trans.consume_tokens(0, color_group, None,
+                self.color_marking.key, self.group_marking.key)
+
+
+        self.assertEqual(0, rv)
+        rv = self.trans.push_tokens(self.net, color_group.idx, tokens.values())
+
+        expected_color = {"0:4": "0", "0:5": "0"}
+        expected_group = {"0:4": "1", "0:5": "1"}
+
+        self.assertEqual(expected_color, self.net.color_marking.value)
+        self.assertEqual(expected_group, self.net.group_marking.value)
 
 if __name__ == "__main__":
     main()

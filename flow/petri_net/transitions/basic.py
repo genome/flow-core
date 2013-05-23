@@ -72,9 +72,7 @@ return {0, "Transition enabled"}
 """
 
 
-
 class BasicTransition(TransitionBase):
-    pass
 
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
 

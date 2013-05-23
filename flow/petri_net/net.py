@@ -162,6 +162,7 @@ class Net(rom.Object):
 
         if consume_rv == 0:
             new_tokens = trans.fire(self, color_group, color, service_interfaces)
+            trans.push_tokens(self, tokens, service_interfaces)
 
 
     def color_group(self, idx):
