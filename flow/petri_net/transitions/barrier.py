@@ -103,11 +103,14 @@ return {0, "Transition enabled"}
 class BarrierTransition(TransitionBase):
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
 
-    def consume_tokens(self, enabler, color_group, color, color_marking_key,
+    def consume_tokens(self, enabler, color_descriptor, color_marking_key,
             group_marking_key):
-        active_tokens_key = self.active_tokens_key(color_group.idx)
+
+        color_group = color_descriptor.group
+
+        active_tokens_key = self.active_tokens_key(color_descriptor)
+        state_key = self.state_key(color_descriptor)
         arcs_in_key = self.arcs_in.key
-        state_key = self.state_key(color_group.idx)
         enablers_key = self.enablers.key
 
         keys = [state_key, active_tokens_key, arcs_in_key, color_marking_key,
@@ -119,3 +122,13 @@ class BarrierTransition(TransitionBase):
         LOG.debug("Consume tokens returned: %r", rv)
 
         return rv[0]
+
+    def state_key(self, color_descriptor):
+        return self.subkey("state", color_descriptor.group.idx)
+
+    def active_tokens_key(self, color_descriptor):
+        return self.subkey("active_tokens", color_descriptor.group.idx)
+
+    def active_tokens(self, color_descriptor):
+        return rom.List(connection=self.connection,
+                key=self.active_tokens_key(color_descriptor))

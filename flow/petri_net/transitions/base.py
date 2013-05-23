@@ -1,5 +1,7 @@
 import flow.redisom as rom
 from twisted.internet import defer
+from itertools import product
+
 import logging
 
 LOG = logging.getLogger(__file__)
@@ -65,15 +67,28 @@ class TransitionBase(rom.Object):
 
     _push_tokens_script = rom.Script(_PUSH_TOKENS_SCRIPT)
 
-    def consume_tokens(self, enabler, color_group, color, color_marking_key,
+    @property
+    def action(self):
+        action_key = None
+        try:
+            action_key = self.action_key.value
+        except rom.NotInRedisError:
+            return None
+
+        if action_key:
+            return rom.get_object(self.connection, action_key)
+        else:
+            return None
+
+    def consume_tokens(self, enabler, color_descriptor, color_marking_key,
             group_marking_key):
         raise NotImplementedError()
 
-    def fire(self, net, color_group, color, service_interfaces):
+    def fire(self, net, color_descriptor, service_interfaces):
         raise NotImplementedError()
 
-    def push_tokens(self, net, tag, tokens):
-        keys = [self.active_tokens(tag).key, self.arcs_out.key,
+    def push_tokens(self, net, color_descriptor, tokens):
+        keys = [self.active_tokens(color_descriptor).key, self.arcs_out.key,
                 net.color_marking.key, net.group_marking.key]
 
         args = [len(tokens)]
@@ -84,22 +99,21 @@ class TransitionBase(rom.Object):
         LOG.debug("rv=%r", rv)
         return rv[0]
 
-    def notify_places(self, net, color, service_interfaces):
+    def notify_places(self, net_key, colors, service_interfaces):
         deferreds = []
 
         orchestrator = service_interfaces['orchestrator']
-        for place_idx in self.arcs_out:
-            deferred = orchestrator.notify_place(net.key, place_idx, color)
+        for place_idx, color in product(self.arcs_out, colors):
+            deferred = orchestrator.notify_place(net_key, place_idx, color)
             deferreds.append(deferred)
 
         return defer.DeferredList(deferreds)
 
-    def state_key(self, tag):
-        return self.subkey("state", tag)
+    def state_key(self, color_descriptor):
+        raise NotImplementedError()
 
-    def active_tokens_key(self, tag):
-        return self.subkey("active_tokens", tag)
+    def active_tokens_key(self, color_descriptor):
+        raise NotImplementedError()
 
-    def active_tokens(self, tag):
-        return rom.List(connection=self.connection,
-                key=self.active_tokens_key(tag))
+    def active_tokens(self, color_descriptor):
+        raise NotImplementedError()

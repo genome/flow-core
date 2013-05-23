@@ -42,6 +42,8 @@ ColorGroup = namedtuple("ColorGroup", ["idx", "parent_color",
 ColorGroup.size = property(lambda self: self.end - self.begin)
 ColorGroup.colors = property(lambda self: range(self.begin, self.end))
 
+ColorDescriptor = namedtuple("ColorDescriptor", ["color", "group"])
+
 
 def _color_group_enc(value):
     return rom.json_enc(value._asdict())
@@ -76,6 +78,10 @@ class Token(rom.Object):
     color = rom.Property(rom.Int)
     color_group_idx = rom.Property(rom.Int)
     index = rom.Property(rom.Int)
+
+    @property
+    def color_descriptor(self):
+        return ColorDescriptor(self.color.value, self.net.color_group)
 
     @property
     def net(self):
@@ -155,15 +161,19 @@ class Net(rom.Object):
         trans = self.transition(transition_idx)
         token = self.token(token_idx)
         color = token.color.value
-        color_group = token.color_group.value
+        color_group_idx = token.color_group.value
+        color_group = self.color_groups[color_group_idx]
 
-        consume_rv = trans.consume_tokens(place_idx, color_group, color,
+        color_descriptor = ColorDescriptor(color, color_group)
+
+        consume_rv = trans.consume_tokens(place_idx, color_descriptor,
                 self.color_marking.key, self.group_marking.key)
 
         if consume_rv == 0:
-            new_tokens = trans.fire(self, color_group, color, service_interfaces)
-            trans.push_tokens(self, tokens, service_interfaces)
-
+            new_tokens = trans.fire(self, color_descriptor, service_interfaces)
+            colors = [x.color.value for x in new_tokens]
+            trans.push_tokens(self, color_descriptor, tokens, service_interfaces)
+            trans.notify_places(self.key, colors, service_interfaces)
 
     def color_group(self, idx):
         return self.color_groups[idx]

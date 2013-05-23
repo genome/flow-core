@@ -76,20 +76,30 @@ class BasicTransition(TransitionBase):
 
     _consume_tokens = rom.Script(_CONSUME_TOKENS_SCRIPT)
 
-    def consume_tokens(self, enabler, color_group, color, color_marking_key,
+    def consume_tokens(self, enabler, color_descriptor, color_marking_key,
             group_marking_key):
 
+        active_tokens_key = self.active_tokens_key(color_descriptor)
+        state_key = self.state_key(color_descriptor)
         arcs_in_key = self.arcs_in.key
-        active_tokens_key = self.active_tokens_key(color)
-        state_key = self.state_key(color)
         enablers_key = self.enablers.key
 
         keys = [state_key, active_tokens_key, arcs_in_key, color_marking_key,
                 group_marking_key, enablers_key]
-        args = [enabler, color_group.idx, color]
+        args = [enabler, color_descriptor.group.idx, color_descriptor.color]
 
         LOG.debug("Consume tokens: KEYS=%r, ARGS=%r", keys, args)
         rv = self._consume_tokens(keys=keys, args=args)
         LOG.debug("Consume tokens returned: %r", rv)
 
         return rv[0]
+
+    def state_key(self, color_descriptor):
+        return self.subkey("state", color_descriptor.color)
+
+    def active_tokens_key(self, color_descriptor):
+        return self.subkey("active_tokens", color_descriptor.color)
+
+    def active_tokens(self, color_descriptor):
+        return rom.List(connection=self.connection,
+                key=self.active_tokens_key(color_descriptor))

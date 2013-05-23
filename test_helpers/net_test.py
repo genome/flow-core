@@ -18,7 +18,7 @@ class NetTest(RedisTest):
             for color_id in color_ids:
                 token_key = token_hash[color_id].key
                 key = "%s:%s" % (color_id, place_id)
-                self.color_marking[key] = token_key
+                self.net.color_marking[key] = token_key
 
             key = "%s:%s" % (cg_id, place_id)
-            self.group_marking[key] = len(color_ids)
+            self.net.group_marking[key] = len(color_ids)
