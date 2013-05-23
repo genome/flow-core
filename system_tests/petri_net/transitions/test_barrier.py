@@ -1,9 +1,24 @@
 import flow.petri_net.transitions.barrier as barrier
-import flow.redisom as rom
 from flow.petri_net.net import Net, Token, ColorDescriptor
-
+from flow.petri_net.transitions.action import TransitionAction
 from test_helpers import NetTest
+import flow.redisom as rom
+
+from mock import MagicMock
 from unittest import main
+
+class SimpleAction(TransitionAction):
+    count = rom.Property(rom.Int)
+
+    def execute(self, color_descriptor, active_tokens_key, net,
+            service_interfaces):
+
+        self.count.incr(1)
+        color = color_descriptor.color
+        color_group_idx = color_descriptor.group.idx
+
+        new_token = net.create_token(color, color_group_idx)
+        return [new_token]
 
 
 class TestBarrier(NetTest):
@@ -98,6 +113,37 @@ class TestBarrier(NetTest):
                 len(self.trans.active_tokens(color_descriptor).value))
         self.assertEqual(expected_color, self.net.color_marking.value)
         self.assertEqual(expected_group, self.net.group_marking.value)
+
+    def test_fire_action(self):
+        color_group = self.net.add_color_group(size=1)
+        color_descriptor = ColorDescriptor(color_group.begin, color_group)
+        action = SimpleAction.create(self.conn)
+        self.trans.action_key = action.key
+
+        self.trans.arcs_in = range(4)
+        self.trans.arcs_out = range(4, 6)
+
+        tokens = self._make_colored_tokens(color_group)
+        num_places = len(self.trans.arcs_in)
+
+        self._put_tokens(self.trans.arcs_in, color_group.colors,
+                color_group.idx, tokens)
+
+        rv = self.trans.consume_tokens(0, color_descriptor,
+                self.net.color_marking.key, self.net.group_marking.key)
+
+        self.assertEqual(0, rv)
+        self.assertEqual(len(self.trans.arcs_in),
+                len(self.trans.active_tokens(color_descriptor).value))
+
+        svcs = MagicMock()
+        new_tokens = self.trans.fire(self.net, color_descriptor, svcs)
+        self.assertEqual(1, action.count.value)
+        self.assertEqual(1, len(new_tokens))
+        token = new_tokens[0]
+        self.assertEqual(color_descriptor.color, token.color.value)
+        self.assertEqual(color_descriptor.group.idx,
+                token.color_group_idx.value)
 
 
 if __name__ == "__main__":

@@ -132,3 +132,13 @@ class BarrierTransition(TransitionBase):
     def active_tokens(self, color_descriptor):
         return rom.List(connection=self.connection,
                 key=self.active_tokens_key(color_descriptor))
+
+    def fire(self, net, color_descriptor, service_interfaces):
+        action = self.action
+        new_tokens = None
+        if action is not None:
+            act_toks_key = self.active_tokens_key(color_descriptor)
+            new_tokens = action.execute(color_descriptor, act_toks_key, net,
+                    service_interfaces)
+
+        return new_tokens
