@@ -82,15 +82,18 @@ class TestBarrier(NetTest):
         rv = self.trans.consume_tokens(0, color_group, None,
                 self.color_marking.key, self.group_marking.key)
 
-
         self.assertEqual(0, rv)
+        self.assertEqual(len(self.trans.arcs_in), len(self.trans.active_tokens(0).value))
+
         rv = self.trans.push_tokens(self.net, color_group.idx, tokens.values())
 
         expected_color = {"0:4": "0", "0:5": "0"}
         expected_group = {"0:4": "1", "0:5": "1"}
 
+        self.assertEqual(0, len(self.trans.active_tokens(0).value))
         self.assertEqual(expected_color, self.net.color_marking.value)
         self.assertEqual(expected_group, self.net.group_marking.value)
+
 
 if __name__ == "__main__":
     main()
