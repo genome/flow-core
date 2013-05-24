@@ -120,22 +120,6 @@ class Value(object):
     def __str__(self):
         return str(self.value)
 
-    def _timed_value_getter(self):
-        timer = stats.create_timer('rom.%s.value_getter'
-                % self.__class__.__name__)
-        timer.start()
-        result = self._value_getter()
-        timer.stop()
-        return result
-
-    def _timed_value_setter(self, *args, **kwargs):
-        timer = stats.create_timer('rom.%s.value_setter'
-                % self.__class__.__name__)
-        timer.start()
-        result = self._value_setter(*args, **kwargs)
-        timer.stop()
-        return result
-
     value = property(_value_getter, _value_setter)
 
 
