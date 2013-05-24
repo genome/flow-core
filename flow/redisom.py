@@ -74,12 +74,15 @@ class Property(object):
         self.kwargs = kwargs
 
 
+UNINITIALIZED = object()
 class Value(object):
-    def __init__(self, connection=None, key=None):
+    def __init__(self, connection=None, key=None, cacheable=False):
         if connection is None or key is None:
             raise TypeError("You must specify a connection and a key")
         self.connection = connection
         self.key = key
+        self.cacheable = cacheable
+        self._cached_value = UNINITIALIZED
 
     @classmethod
     def create(cls, *args, **kwargs):
@@ -101,12 +104,25 @@ class Value(object):
     def _decode(self, value):
         return value
 
-    def _value_getter(self):
-        result = self.connection.get(self.key)
+    def _get_decoded_value(self):
+        result = self._get_raw_value()
         if result is None:
-            raise NotInRedisError("Redis has no data for key (%s)." %
-                    (self.key))
-        return self._decode(result)
+            raise NotInRedisError("Redis has no data for key (%s)."
+                    % (self.key))
+        else:
+            return self._decode(result)
+
+    def _get_raw_value(self):
+        return self.connection.get(self.key)
+
+    def _value_getter(self):
+        if self.cacheable:
+            if self._cached_value is UNINITIALIZED:
+                self._cached_value = self._get_decoded_value()
+
+            return self._cached_value
+        else:
+            return self._get_decoded_value()
 
     def _value_setter(self, new_value):
         return self.connection.set(self.key, self._encode(new_value))
@@ -175,7 +191,7 @@ class String(Value):
 
 
 class Set(Value):
-    def _value_getter(self):
+    def _get_raw_value(self):
         return self.connection.smembers(self.key)
 
     def _value_setter(self, val):
@@ -185,7 +201,7 @@ class Set(Value):
             pipe.sadd(self.key, *val)
         pipe.execute()
 
-    value = property(_value_getter, _value_setter)
+    value = property(Value._value_getter, _value_setter)
 
     def add(self, val):
         return self.connection.sadd(self.key, val)
@@ -284,7 +300,7 @@ class List(EncodableContainer):
     def __len__(self):
         return self.connection.llen(self.key)
 
-    def _value_getter(self):
+    def _get_raw_value(self):
         return self._decode_values(self.connection.lrange(self.key, 0, -1))
 
     def _value_setter(self, val):
@@ -292,7 +308,7 @@ class List(EncodableContainer):
         if val:
             return self.connection.rpush(self.key, *self._encode_values(val))
 
-    value = property(_value_getter, _value_setter)
+    value = property(Value._value_getter, _value_setter)
 
     def append(self, val):
         return self.extend([val])
@@ -306,14 +322,14 @@ class List(EncodableContainer):
 
 
 class Hash(EncodableContainer):
-    def _encode_dict(self, d):
+    def _encode(self, d):
         if self._value_encoder is None:
             return d
         else:
             encoder = self._value_encoder
             return dict((k, encoder(v)) for k, v in d.iteritems())
 
-    def _decode_dict(self, d):
+    def _decode(self, d):
         if self._value_encoder is None:
             return d
         else:
@@ -330,20 +346,19 @@ class Hash(EncodableContainer):
     def incrby(self, key, n):
         return self.connection.hincrby(self.key, key, n)
 
-    def _value_getter(self):
-        raw = self.connection.hgetall(self.key)
-        return self._decode_dict(raw)
+    def _get_raw_value(self):
+        return self.connection.hgetall(self.key)
 
     def _value_setter(self, d):
         if d:
             pipe = self.connection.pipeline()
             pipe.delete(self.key)
-            pipe.hmset(self.key, self._encode_dict(d))
+            pipe.hmset(self.key, self._encode(d))
             pipe.execute()
         else:
             return self.connection.delete(self.key)
 
-    value = property(_value_getter, _value_setter)
+    value = property(Value._value_getter, _value_setter)
 
     def __setitem__(self, hkey, val):
         return self.connection.hset(self.key, hkey, self._encode_value(val))
@@ -395,7 +410,7 @@ class Hash(EncodableContainer):
     def update(self, other):
         if not other:
             return None
-        return self.connection.hmset(self.key, self._encode_dict(other))
+        return self.connection.hmset(self.key, self._encode(other))
 
     def iteritems(self):
         return self.value.iteritems()

@@ -85,6 +85,7 @@ class TestInt(TestBase):
     def setUp(self):
         TestBase.setUp(self)
         self.x = rom.Int(connection=self.conn, key='/x')
+        self.c = rom.Int(connection=self.conn, key='/c', cacheable=True)
 
     def test_value(self):
         self.assertRaises(ValueError, setattr, self.x, 'value', 'string')
@@ -109,10 +110,19 @@ class TestInt(TestBase):
         self.assertEqual(5, self.x.decr(2))
         self.assertEqual(5, self.x.value)
 
+    def test_cachable(self):
+        self.conn.set(self.c.key, 42)
+        self.assertEqual(42, self.c.value)
+
+        self.conn.set(self.c.key, 7)
+        self.assertEqual(42, self.c.value)
+
+
 class TestFloat(TestBase):
     def setUp(self):
         TestBase.setUp(self)
         self.x = rom.Float(connection=self.conn, key='/x')
+        self.c = rom.Float(connection=self.conn, key='/c', cacheable=True)
 
     def test_value(self):
         self.assertRaises(ValueError, setattr, self.x, 'value', 'string')
@@ -129,14 +139,31 @@ class TestFloat(TestBase):
         self.assertEqual(11, self.x.incr(2))
         self.assertEqual(11, self.x.value)
 
+    def test_cachable(self):
+        self.conn.set(self.c.key, 42.3)
+        self.assertEqual(42.3, self.c.value)
+
+        self.conn.set(self.c.key, 7.8)
+        self.assertEqual(42.3, self.c.value)
+
+
 class TestString(TestBase):
     def setUp(self):
         TestBase.setUp(self)
         self.x = rom.String(connection=self.conn, key='/x')
+        self.c = rom.String(connection=self.conn, key='/c', cacheable=True)
 
     def test_value(self):
         self.x.value = 1234
         self.assertEqual("1234", self.x.value)
+
+    def test_cachable(self):
+        self.conn.set(self.c.key, "hi")
+        self.assertEqual("hi", self.c.value)
+
+        self.conn.set(self.c.key, "bye")
+        self.assertEqual("hi", self.c.value)
+
 
 class TestTimestamp(TestBase):
     def test_timestamp(self):
@@ -170,6 +197,13 @@ class TestTimestamp(TestBase):
             ts.value = 'something'
         self.assertRaises(AttributeError, tester)
 
+    def test_cachable(self):
+        ts = rom.Timestamp(connection=self.conn, key="ts", cacheable=True)
+        ts.set()
+        value = ts.value
+
+        ts.set()
+        self.assertEqual(value, ts.value)
 
 
 class TestList(TestBase):
@@ -253,6 +287,15 @@ class TestList(TestBase):
         print type(r1), r1
         self.assertEqual(e1, r1)
 
+    def test_cachable(self):
+        l = rom.List(connection=self.conn, key="l", cacheable=True)
+        l.value = ['a', 'b', 'c']
+        value = l.value
+
+        self.conn.rpush(l.key, 'd')
+        self.assertEqual(value + ['d'], self.conn.lrange(l.key, 0, -1))
+        self.assertEqual(value, l.value)
+
 
 class TestSet(TestBase):
     def test_value(self):
@@ -332,6 +375,15 @@ class TestSet(TestBase):
         s = rom.Set(connection=self.conn, key="s")
         s.value = ["a", "b", "c"]
         self.assertEqual(["a", "b", "c"], sorted([x for x in s]))
+
+    def test_cachable(self):
+        s = rom.Set(connection=self.conn, key="s", cacheable=True)
+        s.value = set(['a', 'b', 'c'])
+        value = s.value
+
+        self.conn.sadd(s.key, 'd')
+        self.assertEqual(set(['d']).union(value), self.conn.smembers(s.key))
+        self.assertEqual(value, s.value)
 
 
 class TestHash(TestBase):
@@ -466,6 +518,17 @@ class TestHash(TestBase):
         upd = {"one": { "two": ["three", "four", "five"] } }
         h.update(upd)
         self.assertEqual(upd["one"], h["one"])
+
+    def test_cachable(self):
+        h = rom.Hash(connection=self.conn, key="h", cacheable=True)
+        h.value = {'a': 1, 'b': 2}
+        value = h.value
+
+        self.conn.hset(h.key, 'c', 3)
+        expected_hash = {'c': 3}
+        expected_hash.update(value)
+        self.assertEqual(expected_hash, self.conn.hgetall(h.key))
+        self.assertEqual(value, h.value)
 
 
 class TestObject(TestBase):
