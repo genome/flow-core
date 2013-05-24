@@ -192,26 +192,16 @@ class TestTimestampCopy(RedisTest):
     def test_copy(self):
         # Patch "now" on the timestamp object (which returns the current time
         # in floating point seconds) to return a custom sequence
-        values = ["1.1", "2.2", "3.3"]
-        values_iter = iter(values)
         with patch.object(rom.Timestamp, "now") as mock_now:
-            mock_now.__get__ = Mock(side_effect=values_iter)
+            mock_now.__get__ = Mock(return_value='1.1')
             ts1 = rom.Timestamp(connection=self.conn, key="ts1")
 
-            ts1.set()
+            ts1.setnx()
             ts2 = ts1.copy("ts2")
             self.assertEqual("ts2", ts2.key)
 
-            self.assertEqual(values[0], ts1.value)
-            self.assertEqual(values[0], ts2.value)
-
-            ts1.set()
-            self.assertEqual(values[1], ts1.value)
-            self.assertEqual(values[0], ts2.value)
-
-            ts2.set()
-            self.assertEqual(values[1], ts1.value)
-            self.assertEqual(values[2], ts2.value)
+            self.assertEqual(1.1, float(ts1))
+            self.assertEqual(1.1, float(ts2))
 
 
 class TestCopyObject(RedisTest):
@@ -224,7 +214,7 @@ class TestCopyObject(RedisTest):
 
         obj1 = SimpleObj.create(connection=self.conn, key="key1", **args)
 
-        args['atimestamp'] = obj1.atimestamp.set()
+        args['atimestamp'] = obj1.atimestamp.setnx()
 
         initial_keys = self.conn.keys()
 

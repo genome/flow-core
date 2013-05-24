@@ -7,6 +7,7 @@ import os
 import unittest
 from redistest import RedisTest
 
+
 class SimpleObj(rom.Object):
     """A simple class with one of each type of property to test rom.Object"""
 
@@ -21,9 +22,11 @@ class SimpleObj(rom.Object):
         self.a_method_arg = arg
         return arg
 
+
 class OtherObj(rom.Object):
     """Used to test what happens getting an object of the wrong type"""
     pass
+
 
 class TestBase(unittest.TestCase):
     def setUp(self):
@@ -41,6 +44,7 @@ class TestEncoders(TestBase):
         enc = rom.json_enc(val)
         self.assertTrue(isinstance(enc, basestring))
         self.assertEqual(val, rom.json_dec(enc))
+
 
 class TestProperty(TestBase):
     def test_property_class_validity(self):
@@ -81,6 +85,7 @@ class TestValue(TestBase):
         self.assertFalse(self.x.setnx("bye"))
         self.assertEqual("hi", self.x.value)
 
+
 class TestInt(TestBase):
     def setUp(self):
         TestBase.setUp(self)
@@ -111,11 +116,19 @@ class TestInt(TestBase):
         self.assertEqual(5, self.x.value)
 
     def test_cachable(self):
-        self.conn.set(self.c.key, 42)
-        self.assertEqual(42, self.c.value)
+        c = rom.Int(connection=self.conn, key='/c', cacheable=True)
+        self.conn.set(c.key, 42)
+        self.assertEqual(42, c.value)
 
-        self.conn.set(self.c.key, 7)
-        self.assertEqual(42, self.c.value)
+        self.conn.set(c.key, 7)
+        self.assertEqual(42, c.value)
+
+    def test_immutable(self):
+        i = rom.Int(connection=self.conn, key='/i', immutable=True)
+        i._set_raw_value(7)
+        self.assertEqual(7, i.value)
+        self.assertRaises(ValueError, setattr, i, 'value', 42)
+        self.assertEqual(7, i.value)
 
 
 class TestFloat(TestBase):
@@ -146,6 +159,13 @@ class TestFloat(TestBase):
         self.conn.set(self.c.key, 7.8)
         self.assertEqual(42.3, self.c.value)
 
+    def test_immutable(self):
+        f = rom.Float(connection=self.conn, key='/f', immutable=True)
+        f._set_raw_value(2.1)
+        self.assertEqual(2.1, f.value)
+        self.assertRaises(ValueError, setattr, f, 'value', 12.3)
+        self.assertEqual(2.1, f.value)
+
 
 class TestString(TestBase):
     def setUp(self):
@@ -164,23 +184,32 @@ class TestString(TestBase):
         self.conn.set(self.c.key, "bye")
         self.assertEqual("hi", self.c.value)
 
+    def test_immutable(self):
+        s = rom.String(connection=self.conn, key='/s', immutable=True)
+        s._set_raw_value('hi')
+        self.assertEqual('hi', s.value)
+        self.assertRaises(ValueError, setattr, s, 'value', 'bye')
+        self.assertEqual('hi', s.value)
+
 
 class TestTimestamp(TestBase):
-    def test_timestamp(self):
-        ts = rom.Timestamp(connection=self.conn, key="ts")
-        self.assertRaises(KeyError, getattr, ts, "value")
+    def test_uninitialized(self):
+        ts = rom.Timestamp(self.conn, "ts")
+        self.assertRaises(NotInRedisError, getattr, ts, "value")
 
-        first = ts.setnx()
-        self.assertFalse(first is False)
-        self.assertTrue(float(first) >= 0)
-        self.assertEqual(first, ts.value)
+    def test_setnx_succeed(self):
+        ts = rom.Timestamp(self.conn, "ts")
+        rv = ts.setnx(1.23)
+        self.assertEqual(1.23, rv)
+        self.assertEqual(1.23, ts.value)
 
-        second = ts.set()
-        self.assertTrue(float(second) >= float(first))
-        self.assertEqual(second, ts.value)
+    def test_setnx_already_set(self):
+        ts = rom.Timestamp(self.conn, "ts")
+        ts.setnx(1.23)
 
-        self.assertFalse(ts.setnx())
-        self.assertEqual(second, ts.value)
+        rv = ts.setnx(4.56)
+        self.assertEqual(False, rv)
+        self.assertEqual(1.23, ts.value)
 
     def test_delete(self):
         ts = rom.Timestamp(connection=self.conn, key="ts")
@@ -192,17 +221,23 @@ class TestTimestamp(TestBase):
         self.assertTrue(float(val2) >= float(val))
 
     def test_setter(self):
-        ts = rom.Timestamp(connection=self.conn, key="ts")
-        def tester():
-            ts.value = 'something'
-        self.assertRaises(AttributeError, tester)
+        ts = rom.Timestamp(self.conn, "ts")
+        self.assertRaises(ValueError, setattr, ts, 'value', 'DUMMY')
 
     def test_cachable(self):
-        ts = rom.Timestamp(connection=self.conn, key="ts", cacheable=True)
-        ts.set()
+        ts = rom.Timestamp(connection=self.conn, key="ts")
+        ts.setnx()
         value = ts.value
 
-        ts.set()
+        self.conn.set(ts.key, str(0.0))
+        self.assertEqual(str(0.0), self.conn.get(ts.key))
+        self.assertEqual(value, ts.value)
+
+    def test_immutable(self):
+        ts = rom.Timestamp(connection=self.conn, key="ts")
+        value = ts.setnx()
+        self.assertEqual(value, ts.value)
+        self.assertRaises(ValueError, setattr, ts, 'value', 12.3)
         self.assertEqual(value, ts.value)
 
 
@@ -286,15 +321,6 @@ class TestList(TestBase):
         r1 = l[1]
         print type(r1), r1
         self.assertEqual(e1, r1)
-
-    def test_cachable(self):
-        l = rom.List(connection=self.conn, key="l", cacheable=True)
-        l.value = ['a', 'b', 'c']
-        value = l.value
-
-        self.conn.rpush(l.key, 'd')
-        self.assertEqual(value + ['d'], self.conn.lrange(l.key, 0, -1))
-        self.assertEqual(value, l.value)
 
 
 class TestSet(TestBase):
@@ -519,17 +545,6 @@ class TestHash(TestBase):
         h.update(upd)
         self.assertEqual(upd["one"], h["one"])
 
-    def test_cachable(self):
-        h = rom.Hash(connection=self.conn, key="h", cacheable=True)
-        h.value = {'a': 1, 'b': 2}
-        value = h.value
-
-        self.conn.hset(h.key, 'c', 3)
-        expected_hash = {'c': 3}
-        expected_hash.update(value)
-        self.assertEqual(expected_hash, self.conn.hgetall(h.key))
-        self.assertEqual(value, h.value)
-
 
 class TestObject(TestBase):
     def test_keygen(self):
@@ -715,6 +730,7 @@ class TestObject(TestBase):
 
         self.assertRaises(ImportError, rom.get_object, self.conn, '/y')
         self.assertRaises(ImportError, rom.Object.get_class, class_info)
+
 
 if __name__ == "__main__":
     unittest.main()

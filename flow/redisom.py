@@ -76,12 +76,20 @@ class Property(object):
 
 UNINITIALIZED = object()
 class Value(object):
-    def __init__(self, connection=None, key=None, cacheable=False):
+    def __init__(self, connection=None, key=None,
+            cacheable=False, immutable=False):
         if connection is None or key is None:
             raise TypeError("You must specify a connection and a key")
+
+        # Immutability implies cacheability
+        if immutable:
+            cacheable = True
+
         self.connection = connection
         self.key = key
         self.cacheable = cacheable
+        self.immutable = immutable
+
         self._cached_value = UNINITIALIZED
 
     @classmethod
@@ -98,11 +106,13 @@ class Value(object):
     def delete(self):
         return self.connection.delete(self.key)
 
+
     def _encode(self, value):
         return value
 
     def _decode(self, value):
         return value
+
 
     def _get_decoded_value(self):
         result = self._get_raw_value()
@@ -115,6 +125,16 @@ class Value(object):
     def _get_raw_value(self):
         return self.connection.get(self.key)
 
+    def _set_raw_value(self, new_value):
+        return self.connection.set(self.key, self._encode(new_value))
+
+
+    def _validate_immutable(self):
+        if self.immutable:
+            raise ValueError("Cannot modify immutable object %s(key=%s)"
+                    % (self.__class__, self.key))
+
+
     def _value_getter(self):
         if self.cacheable:
             if self._cached_value is UNINITIALIZED:
@@ -125,7 +145,9 @@ class Value(object):
             return self._get_decoded_value()
 
     def _value_setter(self, new_value):
-        return self.connection.set(self.key, self._encode(new_value))
+        self._validate_immutable()
+        return self._set_raw_value(new_value)
+
 
     def __int__(self):
         return int(self.value)
@@ -136,38 +158,41 @@ class Value(object):
     def __str__(self):
         return str(self.value)
 
+
     value = property(_value_getter, _value_setter)
 
 
 class Timestamp(Value):
-    def _value_setter(self, new_value):
-        raise AttributeError("You cannot set the .value of a Timestamp.")
+    # Force timestamps to be immutable
+    def __init__(self, *args, **kwargs):
+        immutable = kwargs.pop("immutable", False)
+        Value.__init__(self, *args, immutable=True, **kwargs)
 
-    value = property(Value._value_getter, _value_setter)
+    def _decode(self, value):
+        return float(value)
 
     @property
     def now(self):
         sec, usec = self.connection.time()
         return "%d.%d" % (sec, usec)
 
-    def set(self):
-        now = self.now
-        self.connection.set(self.key, now)
-        return now
-
     def setnx(self, value=None):
         if value is None:
             value = self.now
+
         if self.connection.setnx(self.key, value):
-            return value
-        return False
+            return self._decode(value)
+        else:
+            return False
 
 
 class Int(Value):
     def incr(self, *args, **kwargs):
+        self._validate_immutable()
         return self.connection.incr(self.key, *args, **kwargs)
 
     def decr(self, *args, **kwargs):
+        self._validate_immutable()
         return self.connection.decr(self.key, *args, **kwargs)
 
     def _encode(self, value):
@@ -194,14 +219,12 @@ class Set(Value):
     def _get_raw_value(self):
         return self.connection.smembers(self.key)
 
-    def _value_setter(self, val):
+    def _set_raw_value(self, val):
         pipe = self.connection.pipeline()
         pipe.delete(self.key)
         if val:
             pipe.sadd(self.key, *val)
         pipe.execute()
-
-    value = property(Value._value_getter, _value_setter)
 
     def add(self, val):
         return self.connection.sadd(self.key, val)
@@ -241,6 +264,17 @@ class EncodableContainer(Value):
     def __init__(self, *args, **kwargs):
         self._value_encoder = kwargs.pop("value_encoder", None)
         self._value_decoder = kwargs.pop("value_decoder", None)
+
+        cacheable = kwargs.pop("cacheable", False)
+        immutable = kwargs.pop("immutable", False)
+
+        if cacheable:
+            raise NotImplementedError(
+                    "Cacheable containers are not supported")
+        if immutable:
+            raise NotImplementedError(
+                    "Immutable containers are not supported")
+
         Value.__init__(self, *args, **kwargs)
 
     def copy(self, dst_key):
@@ -303,12 +337,10 @@ class List(EncodableContainer):
     def _get_raw_value(self):
         return self._decode_values(self.connection.lrange(self.key, 0, -1))
 
-    def _value_setter(self, val):
+    def _set_raw_value(self, val):
         self.connection.delete(self.key)
         if val:
             return self.connection.rpush(self.key, *self._encode_values(val))
-
-    value = property(Value._value_getter, _value_setter)
 
     def append(self, val):
         return self.extend([val])
@@ -336,6 +368,7 @@ class Hash(EncodableContainer):
             decoder = self._value_decoder
             return dict((k, decoder(v)) for k, v in d.iteritems())
 
+
     def _decode_values(self, values):
         if self._value_decoder is None:
             return values
@@ -343,13 +376,15 @@ class Hash(EncodableContainer):
             decoder = self._value_decoder
             return [decoder(v) for v in values]
 
+
     def incrby(self, key, n):
         return self.connection.hincrby(self.key, key, n)
+
 
     def _get_raw_value(self):
         return self.connection.hgetall(self.key)
 
-    def _value_setter(self, d):
+    def _set_raw_value(self, d):
         if d:
             pipe = self.connection.pipeline()
             pipe.delete(self.key)
@@ -358,13 +393,13 @@ class Hash(EncodableContainer):
         else:
             return self.connection.delete(self.key)
 
-    value = property(Value._value_getter, _value_setter)
 
     def __setitem__(self, hkey, val):
         return self.connection.hset(self.key, hkey, self._encode_value(val))
 
     def setnx(self, hkey, val):
         return self.connection.hsetnx(self.key, hkey, self._encode_value(val))
+
 
     def __getitem__(self, hkey):
         result = self._get_raw(hkey)
@@ -603,7 +638,8 @@ def create_object(cls, connection=None, key=None, **kwargs):
         if k not in obj._rom_properties:
             raise AttributeError("Unknown attribute %s" % k)
         if v is not None:
-            setattr(obj, k, v)
+            # Forcibly initialize immutable values at creation
+            getattr(obj, k)._set_raw_value(v)
 
     obj._on_create()
 
