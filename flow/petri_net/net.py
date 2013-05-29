@@ -76,7 +76,7 @@ class Net(rom.Object):
 
     counters = rom.Property(rom.Hash, value_encoder=int, value_decoder=int)
 
-    _put_token_script = rom.Script(lua.load('put_tokens'))
+    _put_token_script = rom.Script(lua.load('put_token'))
 
     @property
     def num_places(self):
