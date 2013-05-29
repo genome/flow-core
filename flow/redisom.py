@@ -628,7 +628,7 @@ def get_object(connection=None, key=None):
 
 def create_object(cls, connection=None, key=None, **kwargs):
     if key is None:
-        key = _make_key("/" + cls.__module__, cls.__name__,
+        key = _make_key(KEY_DELIM + cls.__module__, cls.__name__,
                         uuid4().hex)
 
     obj = cls(connection=connection, key=key)
