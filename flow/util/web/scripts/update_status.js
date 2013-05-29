@@ -1,5 +1,6 @@
 var NUM_DATA_PTS = 1000;
 var UPDATE_DELTA = 250; // ms
+var SERVER = 'http://localhost:8080';
 
 var ARRAY_FIELDS = [
     'cpu_percent',
@@ -33,7 +34,7 @@ var master_pid = 0;
 
 
 var initialize_process = function (url) {
-    $.getJSON(url, function (data) {
+    $.getJSON(SERVER + url, function (data) {
         if ('pid' in data) {
             var pid = data['pid'];
 
@@ -53,7 +54,7 @@ var initialize_process = function (url) {
 }
 
 var update_status = function() {
-    $.getJSON('/status', _update_process_from_data)
+    $.getJSON(SERVER + '/status', _update_process_from_data)
         .fail(function (data, textStatus, jqXHR) {
                 alert("Could not retrieve process status. " +
                       "The process has most likely completed. " +
