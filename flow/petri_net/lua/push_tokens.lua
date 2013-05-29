@@ -5,16 +5,16 @@ local group_marking_key = KEYS[4]
 
 local num_tokens = ARGV[1]
 
-local token_color_group_idx = function(idx)
-    return 2 + (idx-1)*3
+local get_token_color_group = function(idx)
+    return ARGV[2 + (idx-1)*3]
 end
 
-local token_color_idx = function(idx)
-    return 3 + (idx-1)*3
+local get_token_color = function(idx)
+    return ARGV[3 + (idx-1)*3]
 end
 
-local token_key_idx = function(idx)
-    return 4 + (idx-1)*3
+local get_token_key = function(idx)
+    return ARGV[4 + (idx-1)*3]
 end
 
 local n_active_tok = redis.call('SCARD', active_tokens_key)
@@ -26,9 +26,9 @@ local arcs_out = redis.call('LRANGE', arcs_out_key, 0, -1)
 
 for i, place_id in pairs(arcs_out) do
     for tok_idx = 1, num_tokens do
-        local color_group = ARGV[token_color_group_idx(tok_idx)]
-        local color = ARGV[token_color_idx(tok_idx)]
-        local token_key = ARGV[token_key_idx(tok_idx)]
+        local color_group = get_token_color_group(tok_idx)
+        local color = get_token_color(tok_idx)
+        local token_key = get_token_key(tok_idx)
         local color_key = string.format("%s:%s", color, place_id)
         local group_key = string.format("%s:%s", color_group, place_id)
 
