@@ -1,5 +1,8 @@
 from setuptools import setup, find_packages
 
+import glob
+import os.path
+
 entry_points = '''
 [console_scripts]
 flow = flow.main:main
@@ -27,6 +30,9 @@ fork = flow.shell_command.service_interface:ForkShellCommandServiceInterface
 lsf = flow.shell_command.service_interface:LSFShellCommandServiceInterface
 '''
 
+LUA_FILES = glob.glob(os.path.join(
+    os.path.dirname(__file__), 'flow', 'petri_net', 'lua', '*'))
+
 setup(
         name = 'flow',
         version = '0.1',
@@ -36,6 +42,10 @@ setup(
             'system_tests',
             'test_helpers'
         ]),
+        include_package_data=True,
+        package_data={
+            'flow/petri_net/lua': LUA_FILES,
+        },
         entry_points = entry_points,
         install_requires = [
             'blist',

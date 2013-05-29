@@ -1,8 +1,10 @@
-import flow.redisom as rom
-from place import Place
 from collections import namedtuple
-
+from flow.petri_net import lua
+from place import Place
 from twisted.internet import defer
+
+import flow.redisom as rom
+
 
 _TOKEN_KEY = "tok"
 _PLACE_KEY = "P"
@@ -10,31 +12,6 @@ _TRANSITION_KEY = "T"
 _COLOR_KEY = "C"
 _COLOR_GROUP_KEY = "CG"
 
-_PUT_TOKEN_SCRIPT = """
-local color_marking_key = KEYS[1]
-local group_marking_key = KEYS[2]
-
-local place_id = ARGV[1]
-local token_idx = ARGV[2]
-local color = ARGV[3]
-local color_group_idx = ARGV[4]
-
-local color_key = string.format("%s:%s", color, place_id)
-local group_key = string.format("%s:%s", color_group_idx, place_id)
-
-local set = redis.call('HSETNX', color_marking_key, color_key, token_idx)
-if set == 0 then
-    local existing_idx = redis.call('HGET', color_marking_key, color_key)
-    if existing_idx ~= token_idx then
-        return -1
-    else
-        return 0
-    end
-end
-
-redis.call('HINCRBY', group_marking_key, group_key, 1)
-return 0
-"""
 
 ColorGroup = namedtuple("ColorGroup", ["idx", "parent_color",
         "parent_color_group", "begin", "end"])
@@ -99,7 +76,7 @@ class Net(rom.Object):
 
     counters = rom.Property(rom.Hash, value_encoder=int, value_decoder=int)
 
-    _put_token_script = rom.Script(_PUT_TOKEN_SCRIPT)
+    _put_token_script = rom.Script(lua.load('put_tokens'))
 
     @property
     def num_places(self):
