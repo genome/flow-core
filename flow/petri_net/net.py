@@ -34,16 +34,9 @@ def tagged_marking_key(tag, place_idx):
     return "%s:%s" % (tag, place_idx)
 
 
-class PetriNetError(RuntimeError):
-    pass
-
-
-class PlaceNotFoundError(PetriNetError):
-    pass
-
-
-class ForeignTokenError(PetriNetError):
-    pass
+class PetriNetError(RuntimeError): pass
+class ForeignTokenError(PetriNetError): pass
+class PlaceNotFoundError(PetriNetError): pass
 
 
 class Token(rom.Object):
