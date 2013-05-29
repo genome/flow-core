@@ -18,13 +18,13 @@ class TestNet(NetTest):
     def test_put_token_place_not_found(self):
         token_idx = self.token.index.value
 
-        self.assertRaises(PlaceNotFoundError, self.net._put_token, 0,
+        self.assertRaises(PlaceNotFoundError, self.net.put_token, 0,
                 self.token)
 
     def test_put_foreign_token(self):
         othernet = Net.create(self.conn, "net2")
         place = othernet.add_place("home")
-        self.assertRaises(ForeignTokenError, othernet._put_token, 0,
+        self.assertRaises(ForeignTokenError, othernet.put_token, 0,
                 self.token)
 
     def test_put_token(self):
@@ -41,7 +41,7 @@ class TestNet(NetTest):
         color_key = tagged_marking_key(color, place_idx)
         group_key = tagged_marking_key(color_group_idx, place_idx)
 
-        rv = self.net._put_token(place_idx, self.token)
+        rv = self.net.put_token(place_idx, self.token)
 
         self.assertEqual(0, rv)
         expected_color_marking = {color_key: str(token_idx)}
@@ -49,7 +49,7 @@ class TestNet(NetTest):
         self.assertEqual({group_key: "1"}, self.net.group_marking.value)
 
         # make sure putting the same token is idempotent
-        rv = self.net._put_token(place_idx, self.token)
+        rv = self.net.put_token(place_idx, self.token)
         self.assertEqual(0, rv)
         self.assertEqual(expected_color_marking, self.net.color_marking.value)
         self.assertEqual({group_key: "1"}, self.net.group_marking.value)
@@ -58,7 +58,7 @@ class TestNet(NetTest):
         new_token = self.net.create_token(color=color,
                 color_group_idx=color_group_idx)
 
-        rv = self.net._put_token(place_idx, new_token)
+        rv = self.net.put_token(place_idx, new_token)
         self.assertEqual(-1, rv)
         self.assertEqual(expected_color_marking, self.net.color_marking.value)
         self.assertEqual({group_key: "1"}, self.net.group_marking.value)
@@ -79,7 +79,7 @@ class TestNet(NetTest):
         home = self.net.add_place("home")
         place_idx = home.index.value
 
-        self.net._put_token(place_idx, self.token)
+        self.net.put_token(place_idx, self.token)
         color = self.token.color.value
 
         svcs = MagicMock()
@@ -94,7 +94,7 @@ class TestNet(NetTest):
         place_idx = home.index.value
         home.arcs_out = [0, 1, 2]
 
-        self.net._put_token(place_idx, self.token)
+        self.net.put_token(place_idx, self.token)
         color = self.token.color.value
 
         orchestrator = Mock()

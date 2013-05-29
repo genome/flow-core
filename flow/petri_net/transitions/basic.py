@@ -33,7 +33,7 @@ if enabler_value and enabler_value ~= place_key then
     return {-1, "Transition enabled by a different place: " .. enabler_value}
 end
 
-local n_active_tok = redis.call('LLEN', active_tokens_key)
+local n_active_tok = redis.call('SCARD', active_tokens_key)
 if n_active_tok > 0 then
     return {0, "Transition already has tokens"}
 end
@@ -61,7 +61,7 @@ for place_id, token_key in pairs(token_keys) do
     local cp_key = marking_key(color, place_id)
     local gp_key = marking_key(cg_id, place_id)
 
-    redis.call('LPUSH', active_tokens_key, token_key)
+    redis.call('SADD', active_tokens_key, token_key)
     redis.call('HDEL', color_marking_key, cp_key)
     local res = redis.call('HINCRBY', group_marking_key, gp_key, -1)
     if res == 0 then
@@ -99,7 +99,3 @@ class BasicTransition(TransitionBase):
 
     def active_tokens_key(self, color_descriptor):
         return self.subkey("active_tokens", color_descriptor.color)
-
-    def active_tokens(self, color_descriptor):
-        return rom.List(connection=self.connection,
-                key=self.active_tokens_key(color_descriptor))

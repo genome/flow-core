@@ -16,9 +16,20 @@ class NetTest(RedisTest):
     def _put_tokens(self, place_ids, color_ids, cg_id, token_hash):
         for place_id in place_ids:
             for color_id in color_ids:
-                token_key = token_hash[color_id].key
-                key = "%s:%s" % (color_id, place_id)
-                self.net.color_marking[key] = token_key
+                token = token_hash[color_id]
+                token_key = token.index.value
+                self.net.put_token(place_id, token)
 
-            key = "%s:%s" % (cg_id, place_id)
-            self.net.group_marking[key] = len(color_ids)
+    def setup_transition(self, cls, n_input_places, n_output_places):
+        input_places = []
+        output_places = []
+        trans = self.net.add_transition(cls)
+        for i in xrange(n_input_places):
+            p = self.net.add_place("input place %d" % i)
+            trans.arcs_in.append(p.index.value)
+
+        for i in xrange(n_output_places):
+            p = self.net.add_place("output place %d" % i)
+            trans.arcs_out.append(p.index.value)
+
+        return trans

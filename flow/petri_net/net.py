@@ -118,10 +118,10 @@ class Net(rom.Object):
         return cls.create(self.connection, self.transition_key(idx),
                 *args, **kwargs)
 
-    def _put_token(self, place_idx, token):
+    def put_token(self, place_idx, token):
         if place_idx >= self.num_places:
-            raise PlaceNotFoundError("Attempted to put token into place %s" %
-                    place_idx)
+            raise PlaceNotFoundError("Attempted to put token into place %s "
+                    "(%d places exist)" % (place_idx, self.num_places))
 
         token_idx = token.index.value
         if token.key != self.token_key(token_idx):
@@ -200,7 +200,7 @@ class Net(rom.Object):
         return Place(self.connection, self.place_key(idx))
 
     def transition_key(self, idx):
-        return self.subkey(_TRANSITION_KEy, idx)
+        return self.subkey(_TRANSITION_KEY, idx)
 
     def transition(self, idx):
         return rom.get_object(self.connection, self.transition_key(idx))

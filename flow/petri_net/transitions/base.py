@@ -27,7 +27,7 @@ local token_key_idx = function(idx)
     return 4 + (idx-1)*3
 end
 
-local n_active_tok = redis.call('LLEN', active_tokens_key)
+local n_active_tok = redis.call('SCARD', active_tokens_key)
 if n_active_tok == 0 then
     return {-1, "No active tokens"}
 end
@@ -57,8 +57,8 @@ return {0, arcs_out}
 
 
 class TransitionBase(rom.Object):
-    arcs_in = rom.Property(rom.List)
-    arcs_out = rom.Property(rom.List)
+    arcs_in = rom.Property(rom.List, value_decoder=int, value_encoder=int)
+    arcs_out = rom.Property(rom.List, value_decoder=int, value_encoder=int)
 
     enablers = rom.Property(rom.Hash)
     action_key = rom.Property(rom.String)
@@ -116,4 +116,7 @@ class TransitionBase(rom.Object):
         raise NotImplementedError()
 
     def active_tokens(self, color_descriptor):
-        raise NotImplementedError()
+        return rom.Set(connection=self.connection,
+                key=self.active_tokens_key(color_descriptor))
+
+

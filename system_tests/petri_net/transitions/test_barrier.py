@@ -1,4 +1,4 @@
-import flow.petri_net.transitions.barrier as barrier
+from flow.petri_net.transitions.barrier import BarrierTransition
 from flow.petri_net.net import Net, Token, ColorDescriptor
 from flow.petri_net.transitions.action import TransitionAction
 from test_helpers import NetTest
@@ -24,35 +24,33 @@ class SimpleAction(TransitionAction):
 class TestBarrier(NetTest):
     def setUp(self):
         NetTest.setUp(self)
-        self.trans = barrier.BarrierTransition.create(self.conn)
 
     def test_consume_tokens_with_empty_marking(self):
         color_group = self.net.add_color_group(size=5)
         enabler = color_group.begin + 1
         color_descriptor = ColorDescriptor(enabler, color_group)
 
-        self.trans.arcs_in = range(10)
+        trans = self.setup_transition(BarrierTransition, 10, 0)
 
-        rv = self.trans.consume_tokens(enabler, color_descriptor,
+        rv = trans.consume_tokens(enabler, color_descriptor,
                 self.net.color_marking.key, self.net.group_marking.key)
 
         self.assertEqual(5, rv)
 
-        self.assertEqual(0, len(self.trans.enablers))
+        self.assertEqual(0, len(trans.enablers))
         self.assertEqual(0,
-                len(self.trans.active_tokens(color_descriptor).value))
+                len(trans.active_tokens(color_descriptor).value))
         self.assertEqual(0, len(self.net.color_marking))
         self.assertEqual(0, len(self.net.group_marking))
 
     def test_consume_tokens(self):
         color_group = self.net.add_color_group(size=5)
-        self.trans.arcs_in = range(3)
+        trans = self.setup_transition(BarrierTransition, 3, 0)
 
         tokens = self._make_colored_tokens(color_group)
-        num_places = len(self.trans.arcs_in)
 
         num_successes = 0
-        for i in self.trans.arcs_in:
+        for i in trans.arcs_in:
             enabler = int(i)
             place_ids = range(enabler+1)
             for j in xrange(len(color_group.colors)):
@@ -63,7 +61,7 @@ class TestBarrier(NetTest):
                 color_marking_copy = self.net.color_marking.value
                 group_marking_copy = self.net.group_marking.value
 
-                rv = self.trans.consume_tokens(enabler, color_descriptor,
+                rv = trans.consume_tokens(enabler, color_descriptor,
                         self.net.color_marking.key, self.net.group_marking.key)
 
                 if rv != 0:
@@ -71,16 +69,18 @@ class TestBarrier(NetTest):
                             self.net.color_marking.value)
                     self.assertEqual(group_marking_copy,
                             self.net.group_marking.value)
-                    self.assertEqual(0, len(self.trans.enablers))
+                    self.assertEqual(0, len(trans.enablers))
                 else:
                     num_successes += 1
                     self.assertEqual(0, len(self.net.color_marking.value))
                     self.assertEqual(0, len(self.net.group_marking.value))
-                    self.assertEqual(enabler, int(self.trans.enablers[color_group.idx]))
-                    expected_token_keys = [x.key for x in tokens.values()] * num_places
+                    self.assertEqual(enabler,
+                            int(trans.enablers[color_group.idx]))
+                    expected_token_keys = [str(x.index.value)
+                            for x in tokens.values()]
 
                     self.assertItemsEqual(expected_token_keys,
-                            self.trans.active_tokens(color_descriptor))
+                            trans.active_tokens(color_descriptor))
 
         self.assertEqual(1, num_successes)
 
@@ -88,29 +88,27 @@ class TestBarrier(NetTest):
         color_group = self.net.add_color_group(size=1)
         color_descriptor = ColorDescriptor(color_group.begin, color_group)
 
-        self.trans.arcs_in = range(4)
-        self.trans.arcs_out = range(4, 6)
+        trans = self.setup_transition(BarrierTransition, 4, 2)
 
         tokens = self._make_colored_tokens(color_group)
-        num_places = len(self.trans.arcs_in)
 
-        self._put_tokens(self.trans.arcs_in, color_group.colors,
+        self._put_tokens(trans.arcs_in, color_group.colors,
                 color_group.idx, tokens)
 
-        rv = self.trans.consume_tokens(0, color_descriptor,
+        rv = trans.consume_tokens(0, color_descriptor,
                 self.net.color_marking.key, self.net.group_marking.key)
 
         self.assertEqual(0, rv)
-        self.assertEqual(len(self.trans.arcs_in),
-                len(self.trans.active_tokens(color_descriptor).value))
+        self.assertEqual(1,
+                len(trans.active_tokens(color_descriptor).value))
 
-        rv = self.trans.push_tokens(self.net, color_descriptor, tokens.values())
+        rv = trans.push_tokens(self.net, color_descriptor, tokens.values())
 
         expected_color = {"0:4": "0", "0:5": "0"}
         expected_group = {"0:4": "1", "0:5": "1"}
 
         self.assertEqual(0,
-                len(self.trans.active_tokens(color_descriptor).value))
+                len(trans.active_tokens(color_descriptor).value))
         self.assertEqual(expected_color, self.net.color_marking.value)
         self.assertEqual(expected_group, self.net.group_marking.value)
 
@@ -118,26 +116,24 @@ class TestBarrier(NetTest):
         color_group = self.net.add_color_group(size=1)
         color_descriptor = ColorDescriptor(color_group.begin, color_group)
         action = SimpleAction.create(self.conn)
-        self.trans.action_key = action.key
 
-        self.trans.arcs_in = range(4)
-        self.trans.arcs_out = range(4, 6)
+        trans = self.setup_transition(BarrierTransition, 4, 2)
+        trans.action_key = action.key
 
         tokens = self._make_colored_tokens(color_group)
-        num_places = len(self.trans.arcs_in)
 
-        self._put_tokens(self.trans.arcs_in, color_group.colors,
+        self._put_tokens(trans.arcs_in, color_group.colors,
                 color_group.idx, tokens)
 
-        rv = self.trans.consume_tokens(0, color_descriptor,
+        rv = trans.consume_tokens(0, color_descriptor,
                 self.net.color_marking.key, self.net.group_marking.key)
 
         self.assertEqual(0, rv)
-        self.assertEqual(len(self.trans.arcs_in),
-                len(self.trans.active_tokens(color_descriptor).value))
+        self.assertEqual(1,
+                len(trans.active_tokens(color_descriptor).value))
 
         svcs = MagicMock()
-        new_tokens = self.trans.fire(self.net, color_descriptor, svcs)
+        new_tokens = trans.fire(self.net, color_descriptor, svcs)
         self.assertEqual(1, action.count.value)
         self.assertEqual(1, len(new_tokens))
         token = new_tokens[0]
