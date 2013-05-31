@@ -1,14 +1,14 @@
 class FutureNet(object):
     def __init__(self, name=''):
         self.name = name
-        self.places = []
-        self.subnets = []
-        self.transitions = []
+        self.places = set()
+        self.subnets = set()
+        self.transitions = set()
 
     def _add_transition(self, cls, name, action_class, action_args):
         action = FutureAction(action_class, action_args)
         trans = cls(name, action)
-        self.transitions.append(trans)
+        self.transitions.add(trans)
         return trans
 
     def add_barrier_transition(self, name='',
@@ -23,12 +23,12 @@ class FutureNet(object):
 
     def add_place(self, name=''):
         place = FuturePlace(name=name)
-        self.places.append(place)
+        self.places.add(place)
         return place
 
     def add_subnet(self, cls, **kwargs):
         subnet = cls(**kwargs)
-        self.subnets.append(subnet)
+        self.subnets.add(subnet)
         return subnet
 
 
@@ -44,7 +44,7 @@ class FutureNet(object):
 
 
 class FutureNode(object):
-    def __init__(self, name):
+    def __init__(self, name=''):
         self.name = name
         self.arcs_in = set()
         self.arcs_out = set()
@@ -68,7 +68,7 @@ class FuturePlace(FutureNode):
 
 
 class FutureTransition(FutureNode):
-    def __init__(self, name, action=None):
+    def __init__(self, name='', action=None):
         FutureNode.__init__(self, name)
         self.action = action
 
