@@ -14,6 +14,7 @@ class TransitionBase(rom.Object):
     arcs_out = rom.Property(rom.List, value_decoder=int, value_encoder=int)
 
     index = rom.Property(rom.Int)
+    name = rom.Property(rom.String)
 
     enablers = rom.Property(rom.Hash)
 

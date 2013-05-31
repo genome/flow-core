@@ -20,7 +20,6 @@ class TestFutureNet(TestCase):
 
         self.assertItemsEqual([trans], self.net.transitions)
         self.assertIsInstance(trans, future.FutureBarrierTransition)
-        self.assertIsInstance(trans.action, future.FutureAction)
 
     def test_add_basic_transition(self):
         action_class = Mock()
@@ -31,7 +30,6 @@ class TestFutureNet(TestCase):
 
         self.assertItemsEqual([trans], self.net.transitions)
         self.assertIsInstance(trans, future.FutureBasicTransition)
-        self.assertIsInstance(trans.action, future.FutureAction)
 
 
     def test_add_place(self):
