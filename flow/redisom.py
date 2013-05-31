@@ -580,6 +580,11 @@ class Object(object):
 
         return True
 
+    @classmethod
+    def make_default_key(cls):
+        return _make_key(KEY_DELIM + cls.__module__, cls.__name__,
+                        uuid4().hex)
+
     def _on_create(self):
         pass
 
@@ -628,8 +633,7 @@ def get_object(connection=None, key=None):
 
 def create_object(cls, connection=None, key=None, **kwargs):
     if key is None:
-        key = _make_key(KEY_DELIM + cls.__module__, cls.__name__,
-                        uuid4().hex)
+        key = cls.make_default_key()
 
     obj = cls(connection=connection, key=key)
     obj._class_info.value = cls._info
