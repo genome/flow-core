@@ -2,7 +2,9 @@ from collections import namedtuple
 from flow.petri_net import lua
 from place import Place
 from twisted.internet import defer
+from uuid import uuid4
 
+import base64
 import flow.redisom as rom
 
 
@@ -59,6 +61,10 @@ class Token(rom.Object):
 
 
 class Net(rom.Object):
+    # XXX Do we need to keep these around?
+    required_constants = ["environment", "user_id", "working_directory"]
+
+    name = rom.Property(rom.String)
     color_groups = rom.Property(rom.Hash, value_encoder=rom.json_enc,
             value_decoder=rom.json_dec)
 
@@ -69,15 +75,51 @@ class Net(rom.Object):
 
     counters = rom.Property(rom.Hash, value_encoder=int, value_decoder=int)
 
+    variables = rom.Property(rom.Hash, value_encoder=rom.json_enc,
+            value_decoder=rom.json_dec)
+    _constants = rom.Property(rom.Hash, value_encoder=rom.json_enc,
+            value_decoder=rom.json_dec)
+
     _put_token_script = rom.Script(lua.load('put_token'))
+
+
+    @classmethod
+    def make_default_key(cls):
+        return base64.b64encode(uuid4().bytes)[:-2]
 
     @property
     def num_places(self):
         return self.counters.get(_PLACE_KEY, 0)
 
+    @num_places.setter
+    def num_places(self, new_value):
+        if self.counters.setnx(_PLACE_KEY, new_value) == 0:
+            raise ValueError('Tried to overwrite num_places')
+
     @property
     def num_transitions(self):
         return self.counters.get(_TRANSITION_KEY, 0)
+
+    @num_transitions.setter
+    def num_transitions(self, new_value):
+        if self.counters.setnx(_TRANSITION_KEY, new_value) == 0:
+            raise ValueError('Tried to overwrite num_transitions')
+
+
+    def constant(self, key):
+        return self._constants.get(key)
+
+    def set_constant(self, key, value):
+        if self._constants.setnx(key, value) == 0:
+            raise TypeError("Tried to overwrite constant %s in net %s" %
+                    (key, self.key))
+
+    def set_variable(self, key, value):
+        self.variables[key] = value
+
+    def variable(self, key):
+        return self.variables.get(key)
+
 
     def add_place(self, name):
         idx = self._incr_counter(_PLACE_KEY) - 1

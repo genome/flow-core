@@ -115,10 +115,9 @@ class TestBarrier(NetTest):
     def test_fire_action(self):
         color_group = self.net.add_color_group(size=1)
         color_descriptor = ColorDescriptor(color_group.begin, color_group)
-        action = SimpleAction.create(self.conn)
 
         trans = self.setup_transition(BarrierTransition, 4, 2)
-        trans.action_key = action.key
+        action = trans.set_action(SimpleAction)
 
         tokens = self._make_colored_tokens(color_group)
 

@@ -13,25 +13,24 @@ class TransitionBase(rom.Object):
     arcs_in = rom.Property(rom.List, value_decoder=int, value_encoder=int)
     arcs_out = rom.Property(rom.List, value_decoder=int, value_encoder=int)
 
+    index = rom.Property(rom.Int)
+
     enablers = rom.Property(rom.Hash)
-    action_key = rom.Property(rom.String)
 
     tokens_pushed = rom.Property(rom.Int)
 
     _push_tokens_script = rom.Script(lua.load('push_tokens'))
 
     @property
-    def action(self):
-        action_key = None
-        try:
-            action_key = self.action_key.value
-        except rom.NotInRedisError:
-            return None
+    def action_key(self):
+        return self.subkey('action')
 
-        if action_key:
-            return rom.get_object(self.connection, action_key)
-        else:
-            return None
+    @property
+    def action(self):
+        try:
+            return rom.get_object(self.connection, self.action_key)
+        except NotInRedisError:
+            return
 
     def consume_tokens(self, enabler, color_descriptor, color_marking_key,
             group_marking_key):
@@ -73,3 +72,5 @@ class TransitionBase(rom.Object):
                 key=self.active_tokens_key(color_descriptor))
 
 
+    def set_action(self, cls, args=None):
+        return cls.create(self.connection, self.action_key, args=args)
