@@ -1,47 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-        <meta name="description" content=""/>
-        <meta name="viewport" content="width=device-width"/>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="description" content=""/>
+    <meta name="viewport" content="width=device-width"/>
 
-        <title>Flow Process Monitor</title>
-        <link rel="stylesheet"      type="text/css" href="styles/vendor/nv.d3.css"/>
+    <title>Flow Process Monitor!</title>
+    <link rel="stylesheet" type="text/css" href="styles/vendor/nv.d3.css"/>
 
-        <!-- VENDOR LIBS -->
-        <script type="text/javascript" src="scripts/vendor/jquery-2.0.0.min.js"></script>
+    <!-- VENDOR LIBS -->
+    <script type="text/javascript" src="scripts/vendor/jquery-2.0.0.min.js"></script>
 
-        <script type="text/javascript" src="scripts/vendor/angular.min.js"></script>
-        <script type="text/javascript" src="scripts/vendor/angular-resource.min.js"></script>
+    <script type="text/javascript" src="scripts/vendor/angular.min.js"></script>
+    <script type="text/javascript" src="scripts/vendor/angular-resource.min.js"></script>
 
-        <script type="text/javascript" src="scripts/vendor/d3.v2.min.js"></script>
-        <script type="text/javascript" src="scripts/vendor/nv.d3.js"></script>
+    <script type="text/javascript" src="scripts/vendor/d3.v2.min.js"></script>
+    <script type="text/javascript" src="scripts/vendor/nv.d3.js"></script>
 
-        <script type="text/javascript" src="scripts/vendor/angular.tree.js"></script>
-        <script type="text/javascript" src="scripts/vendor/sprintf.min.js"></script>
+    <script type="text/javascript" src="scripts/vendor/angular.tree.js"></script>
+    <script type="text/javascript" src="scripts/vendor/sprintf.min.js"></script>
 
-        <!-- APP SCRIPTS -->
-        <script type="text/javascript" src="scripts/update_status.js"></script>
-        <script type="text/javascript" src="scripts/angular.js"></script>
+    <!-- APP SCRIPTS -->
 
-    </head>
-    <body ng-app='processMonitorApp'>
-        <div ng-controller='MainController'>
-            <div ng-controller='ProcessTree'>
-                <ul ng-tree="process_tree">
-                    <li select='selected()'>
-                    <div style='background-color:{{colors[this.selected_pid == this.item.pid]}}'>
-                    <div style='width:40px;float:left;' ng-controller='CpuUpdate'>
-                        {{cpu_percent[item.pid]}}%
-                    </div>
-                    {{item.pid}} command: {{item.cmdline}}
-                    </div>
-                    </li>
-                </ul>
+    <script type="text/javascript" src="scripts/directives/directives.js"></script>
+    <script type="text/javascript" src="scripts/services/services.js"></script>
+    <script type="text/javascript" src="scripts/controllers/controllers.js"></script>
+
+    <script type="text/javascript" src="scripts/update_status.js"></script>
+    <script type="text/javascript" src="scripts/angular.js"></script>
+
+  </head>
+  <body data-ng-app='processMonitorApp'>
+    <div data-ng-controller='MainController'>
+      <div data-ng-controller='ProcessTree'>
+        <ul data-ng-tree="process_tree">
+          <li select='selected()'>
+            <div style='background-color:{{colors[this.selected_pid == this.item.pid]}}'>
+              <div style='width:40px;float:left;' data-ng-controller='CpuUpdate'>
+                {{cpu_percent[item.pid]}}%
+              </div>
+              {{item.pid}} command: {{item.cmdline}}
             </div>
-        </div>
-        <script>
-        </script>
-    </body>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <script>
+    </script>
+  </body>
 </html>
