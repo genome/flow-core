@@ -69,7 +69,7 @@ class Builder(object):
         else:
             raise RuntimeError('Unknown FutureTransition')
 
-        key = stored_net.place_key(index)
+        key = stored_net.transition_key(index)
         stored_transition = cls.create(self.connection, key,
                 name=future_transition.name, index=index)
 
