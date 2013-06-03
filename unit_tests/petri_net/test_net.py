@@ -1,12 +1,9 @@
 from flow.petri_net.net import Net, ColorGroup
+from test_helpers.fakeredistest import FakeRedisTest
 
-from unittest import TestCase, main
-import fakeredis
+from unittest import main
 
-class TestNet(TestCase):
-    def setUp(self):
-        self.conn = fakeredis.FakeRedis()
-
+class TestNet(FakeRedisTest):
     def test_color_group(self):
         net = Net.create(connection=self.conn)
         cg = net.add_color_group(parent_color=None, parent_color_group=None,

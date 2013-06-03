@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-import flow.redisom as rom
 from flow.redisom import NotInRedisError
+from test_helpers.fakeredistest import FakeRedisTest
 
+import flow.redisom as rom
 import os
 import unittest
-from redistest import RedisTest
 
 
 class SimpleObj(rom.Object):
@@ -28,13 +28,7 @@ class OtherObj(rom.Object):
     pass
 
 
-class TestBase(unittest.TestCase):
-    def setUp(self):
-        self.conn = RedisTest()
-        self.conn.flushall()
-
-
-class TestEncoders(TestBase):
+class TestEncoders(FakeRedisTest):
     def test_json_enc_dec(self):
         self.assertEqual('null', rom.json_enc(None))
         self.assertEqual(None, rom.json_dec('null'))
@@ -46,7 +40,7 @@ class TestEncoders(TestBase):
         self.assertEqual(val, rom.json_dec(enc))
 
 
-class TestProperty(TestBase):
+class TestProperty(FakeRedisTest):
     def test_property_class_validity(self):
         self.assertRaises(TypeError, rom.Property, basestring)
         self.assertRaises(TypeError, rom.Property, rom.Property)
@@ -61,9 +55,9 @@ class TestProperty(TestBase):
         rom.Property(rom.Set)
 
 
-class TestValue(TestBase):
+class TestValue(FakeRedisTest):
     def setUp(self):
-        TestBase.setUp(self)
+        FakeRedisTest.setUp(self)
         self.x = rom.Value(connection=self.conn, key='/x')
 
     def test_init(self):
@@ -86,9 +80,9 @@ class TestValue(TestBase):
         self.assertEqual("hi", self.x.value)
 
 
-class TestInt(TestBase):
+class TestInt(FakeRedisTest):
     def setUp(self):
-        TestBase.setUp(self)
+        FakeRedisTest.setUp(self)
         self.x = rom.Int(connection=self.conn, key='/x')
         self.c = rom.Int(connection=self.conn, key='/c', cacheable=True)
 
@@ -131,9 +125,9 @@ class TestInt(TestBase):
         self.assertEqual(7, i.value)
 
 
-class TestFloat(TestBase):
+class TestFloat(FakeRedisTest):
     def setUp(self):
-        TestBase.setUp(self)
+        FakeRedisTest.setUp(self)
         self.x = rom.Float(connection=self.conn, key='/x')
         self.c = rom.Float(connection=self.conn, key='/c', cacheable=True)
 
@@ -167,9 +161,9 @@ class TestFloat(TestBase):
         self.assertEqual(2.1, f.value)
 
 
-class TestString(TestBase):
+class TestString(FakeRedisTest):
     def setUp(self):
-        TestBase.setUp(self)
+        FakeRedisTest.setUp(self)
         self.x = rom.String(connection=self.conn, key='/x')
         self.c = rom.String(connection=self.conn, key='/c', cacheable=True)
 
@@ -192,7 +186,7 @@ class TestString(TestBase):
         self.assertEqual('hi', s.value)
 
 
-class TestTimestamp(TestBase):
+class TestTimestamp(FakeRedisTest):
     def test_uninitialized(self):
         ts = rom.Timestamp(self.conn, "ts")
         self.assertRaises(NotInRedisError, getattr, ts, "value")
@@ -241,7 +235,7 @@ class TestTimestamp(TestBase):
         self.assertEqual(value, ts.value)
 
 
-class TestList(TestBase):
+class TestList(FakeRedisTest):
     def test_value(self):
         l = rom.List(connection=self.conn, key="l")
         self.assertEqual([], l.value)
@@ -323,7 +317,7 @@ class TestList(TestBase):
         self.assertEqual(e1, r1)
 
 
-class TestSet(TestBase):
+class TestSet(FakeRedisTest):
     def test_value(self):
         s = rom.Set(connection=self.conn, key="s")
         self.assertEqual(set(), s.value)
@@ -412,9 +406,9 @@ class TestSet(TestBase):
         self.assertEqual(value, s.value)
 
 
-class TestHash(TestBase):
+class TestHash(FakeRedisTest):
     def setUp(self):
-        TestBase.setUp(self)
+        FakeRedisTest.setUp(self)
         self.h = rom.Hash(connection=self.conn, key="h")
 
     def test_contains(self):
@@ -546,7 +540,7 @@ class TestHash(TestBase):
         self.assertEqual(upd["one"], h["one"])
 
 
-class TestObject(TestBase):
+class TestObject(FakeRedisTest):
     def test_keygen(self):
         # If you are here because you just changed the key generation policy
         # to not include module/class name, then feel free to remove this
