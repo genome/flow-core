@@ -102,6 +102,9 @@ def gather_nodes(future_net, future_places, future_transitions):
 def convert_action_args(orig_args, substitutions):
     args = {}
     for name, value in orig_args.iteritems():
-        args[name] = substitutions.get(value, value)
+        try:
+            args[name] = substitutions.get(value, value)
+        except TypeError:
+            args[name] = value
 
     return args
