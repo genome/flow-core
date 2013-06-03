@@ -1,4 +1,5 @@
 from flow.petri_net import lua
+from flow.redisom import NotInRedisError
 from itertools import product
 from twisted.internet import defer
 
