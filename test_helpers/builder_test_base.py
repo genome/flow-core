@@ -2,28 +2,17 @@ from flow.petri_net import builder
 from flow.petri_net import future
 from mock import Mock
 
-import abc
 import itertools
 
 
 class BuilderTestBase(object):
-    __metclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def create_connection(self):
-        raise NotImplementedError()
-
     def setUp(self):
-        self.conn = self.create_connection()
         self.builder = builder.Builder(self.conn)
 
         self.stored_net = Mock()
         self.test_key = 'thing_under_test'
         self.stored_net.place_key.return_value = self.test_key
         self.stored_net.transition_key.return_value = self.test_key
-
-    def tearDown(self):
-        self.conn.flushall()
 
 
     def test_store(self):

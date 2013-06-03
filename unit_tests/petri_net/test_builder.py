@@ -2,14 +2,14 @@ from flow.petri_net import builder
 from flow.petri_net import future
 from mock import Mock
 from test_helpers.builder_test_base import BuilderTestBase
+from test_helpers.fakeredistest import FakeRedisTest
 from unittest import TestCase, main
 
-import fakeredis
 
-
-class TestBuilderUnitTests(BuilderTestBase, TestCase):
-    def create_connection(self):
-        return fakeredis.FakeRedis()
+class TestBuilderUnitTests(BuilderTestBase, FakeRedisTest):
+    def setUp(self):
+        FakeRedisTest.setUp(self)
+        BuilderTestBase.setUp(self)
 
 
 class TestBuilderNoConnection(TestCase):
