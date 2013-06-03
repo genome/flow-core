@@ -624,7 +624,7 @@ def get_object(connection=None, key=None):
 
     class_info = connection.get(key)
     if class_info is None:
-        raise KeyError("No object found in redis with key (%s)" % key)
+        raise NotInRedisError("No object found in redis with key (%s)" % key)
 
     cls = Object.get_class(class_info)
     obj = cls(connection=connection, key=key)
