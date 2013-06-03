@@ -1,5 +1,5 @@
-from flow.petri_net.builder import builder
-from flow.petri_net.builder import future
+from flow.petri_net import builder
+from flow.petri_net import future
 from mock import Mock
 from unittest import TestCase, main
 
