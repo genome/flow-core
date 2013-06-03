@@ -17,9 +17,7 @@ class Builder(object):
         self.connection = connection
 
     def store(self, future_net, variables, constants):
-        future_places = {}
-        future_transitions = {}
-        gather_nodes(future_net, future_places, future_transitions)
+        future_places, future_transitions = gather_nodes(future_net)
 
         stored_net = self.create_stored_net(future_net, variables, constants)
 
@@ -88,7 +86,15 @@ class Builder(object):
         return stored_transition
 
 
-def gather_nodes(future_net, future_places, future_transitions):
+def gather_nodes(future_net):
+    future_places = {}
+    future_transitions = {}
+
+    _gather_nodes_recursive(future_net, future_places, future_transitions)
+
+    return future_places, future_transitions
+
+def _gather_nodes_recursive(future_net, future_places, future_transitions):
     for p in future_net.places:
         future_places[p] = len(future_places)
 
@@ -96,7 +102,7 @@ def gather_nodes(future_net, future_places, future_transitions):
         future_transitions[t] = len(future_transitions)
 
     for subnet in future_net.subnets:
-        gather_nodes(subnet, future_places, future_transitions)
+        _gather_nodes_recursive(subnet, future_places, future_transitions)
 
 
 def convert_action_args(orig_args, substitutions):

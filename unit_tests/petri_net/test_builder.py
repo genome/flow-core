@@ -39,9 +39,7 @@ class TestBuilderNoConnection(TestCase):
         expected_transitions = (skynet.transitions
                 | fishnet.transitions | stuxnet.transitions)
 
-        places = {}
-        transitions = {}
-        builder.gather_nodes(skynet, places, transitions)
+        places, transitions = builder.gather_nodes(skynet)
 
         self.assertItemsEqual(expected_places, places.keys())
         self.assertItemsEqual(expected_transitions, transitions.keys())
