@@ -12,21 +12,13 @@ class TestFutureNet(TestCase):
         self.assertEqual(self.net.name, 'net')
 
     def test_add_barrier_transition(self):
-        action_class = Mock()
-        action_args = Mock()
-
-        trans = self.net.add_barrier_transition(name='t',
-                action_class=action_class, action_args=action_args)
+        trans = self.net.add_barrier_transition(name='t')
 
         self.assertItemsEqual([trans], self.net.transitions)
         self.assertIsInstance(trans, future.FutureBarrierTransition)
 
     def test_add_basic_transition(self):
-        action_class = Mock()
-        action_args = Mock()
-
-        trans = self.net.add_basic_transition(name='t',
-                action_class=action_class, action_args=action_args)
+        trans = self.net.add_basic_transition(name='t')
 
         self.assertItemsEqual([trans], self.net.transitions)
         self.assertIsInstance(trans, future.FutureBasicTransition)

@@ -5,20 +5,16 @@ class FutureNet(object):
         self.subnets = set()
         self.transitions = set()
 
-    def _add_transition(self, cls, name, action_class, action_args):
-        trans = cls(name, action_class, action_args)
+    def _add_transition(self, cls, name, action):
+        trans = cls(name, action)
         self.transitions.add(trans)
         return trans
 
-    def add_barrier_transition(self, name='',
-            action_class=None, action_args=None):
-        return self._add_transition(FutureBarrierTransition,
-                name, action_class, action_args)
+    def add_barrier_transition(self, name='', action=None):
+        return self._add_transition(FutureBarrierTransition, name, action)
 
-    def add_basic_transition(self, name='',
-            action_class=None, action_args=None):
-        return self._add_transition(FutureBasicTransition,
-                name, action_class, action_args)
+    def add_basic_transition(self, name='', action=None):
+        return self._add_transition(FutureBasicTransition, name, action)
 
     def add_place(self, name=''):
         place = FuturePlace(name=name)
@@ -67,14 +63,9 @@ class FuturePlace(FutureNode):
 
 
 class FutureTransition(FutureNode):
-    def __init__(self, name='', action_class=None, action_args=None):
+    def __init__(self, name='', action=None):
         FutureNode.__init__(self, name)
-
-        self.action_class = action_class
-        if action_args is None:
-            self.action_args = {}
-        else:
-            self.action_args = action_args
+        self.action = action
 
     def add_arc_in(self, place):
         assert isinstance(place, FuturePlace)
@@ -87,3 +78,9 @@ class FutureTransition(FutureNode):
 
 class FutureBasicTransition(FutureTransition): pass
 class FutureBarrierTransition(FutureTransition): pass
+
+
+class FutureAction(object):
+    def __init__(self, cls=None, **kwargs):
+        self.cls = cls
+        self.args = kwargs

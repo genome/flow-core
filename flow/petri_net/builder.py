@@ -73,9 +73,9 @@ class Builder(object):
         stored_transition = cls.create(self.connection, key,
                 name=future_transition.name, index=index)
 
-        if future_transition.action_class is not None:
-            stored_transition.set_action(future_transition.action_class,
-                    convert_action_args(future_transition.action_args,
+        if future_transition.action is not None:
+            stored_transition.set_action(future_transition.action.cls,
+                    convert_action_args(future_transition.action.args,
                         future_places))
 
 
