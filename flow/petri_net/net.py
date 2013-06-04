@@ -1,8 +1,10 @@
 from collections import namedtuple
 from flow.petri_net import lua
+from flow.petri_net.exceptions import *
 from place import Place
 from twisted.internet import defer
 from uuid import uuid4
+
 
 import base64
 import flow.redisom as rom
@@ -31,12 +33,6 @@ def _color_group_enc(value):
 
 def _color_group_dec(value):
     return ColorGroup(**rom.json_dec(value))
-
-
-
-class PetriNetError(RuntimeError): pass
-class ForeignTokenError(PetriNetError): pass
-class PlaceNotFoundError(PetriNetError): pass
 
 
 class Token(rom.Object):
