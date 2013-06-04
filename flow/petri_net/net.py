@@ -70,8 +70,8 @@ class Net(rom.Object):
     color_groups = rom.Property(rom.Hash, value_encoder=_color_group_enc,
             value_decoder=_color_group_dec)
 
-    color_marking = rom.Property(rom.Hash)
-    group_marking = rom.Property(rom.Hash)
+    color_marking = rom.Property(rom.Hash, value_encoder=int, value_decoder=int)
+    group_marking = rom.Property(rom.Hash, value_encoder=int, value_decoder=int)
 
     place_observer_keys = rom.Property(rom.Hash)
 

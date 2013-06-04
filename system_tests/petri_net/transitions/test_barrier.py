@@ -104,8 +104,8 @@ class TestBarrier(NetTest):
 
         rv = trans.push_tokens(self.net, color_descriptor, tokens.values())
 
-        expected_color = {"0:4": "0", "0:5": "0"}
-        expected_group = {"0:4": "1", "0:5": "1"}
+        expected_color = {"0:4": 0, "0:5": 0}
+        expected_group = {"0:4": 1, "0:5": 1}
 
         self.assertEqual(0,
                 len(trans.active_tokens(color_descriptor).value))

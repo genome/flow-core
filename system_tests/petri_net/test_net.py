@@ -44,15 +44,15 @@ class TestNet(NetTest):
         rv = self.net.put_token(place_idx, self.token)
 
         self.assertEqual(0, rv)
-        expected_color_marking = {color_key: str(token_idx)}
+        expected_color_marking = {color_key: token_idx}
         self.assertEqual(expected_color_marking, self.net.color_marking.value)
-        self.assertEqual({group_key: "1"}, self.net.group_marking.value)
+        self.assertEqual({group_key: 1}, self.net.group_marking.value)
 
         # make sure putting the same token is idempotent
         rv = self.net.put_token(place_idx, self.token)
         self.assertEqual(0, rv)
         self.assertEqual(expected_color_marking, self.net.color_marking.value)
-        self.assertEqual({group_key: "1"}, self.net.group_marking.value)
+        self.assertEqual({group_key: 1}, self.net.group_marking.value)
 
         # make sure putting a new token is an error
         new_token = self.net.create_token(color=color,
@@ -61,7 +61,7 @@ class TestNet(NetTest):
         rv = self.net.put_token(place_idx, new_token)
         self.assertEqual(-1, rv)
         self.assertEqual(expected_color_marking, self.net.color_marking.value)
-        self.assertEqual({group_key: "1"}, self.net.group_marking.value)
+        self.assertEqual({group_key: 1}, self.net.group_marking.value)
 
     def test_notify_place_no_token(self):
         home = self.net.add_place("home")
