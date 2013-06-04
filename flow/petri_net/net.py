@@ -179,10 +179,16 @@ class Net(rom.Object):
                 self.color_marking.key, self.group_marking.key)
 
         if consume_rv == 0:
-            new_tokens = trans.fire(self, color_descriptor, service_interfaces)
+            new_tokens, deferred = trans.fire(self,
+                    color_descriptor, service_interfaces)
             colors = [x.color.value for x in new_tokens]
-            trans.push_tokens(self, color_descriptor, tokens, service_interfaces)
+            trans.push_tokens(self, color_descriptor,
+                    tokens, service_interfaces)
             trans.notify_places(self.key, colors, service_interfaces)
+
+            return deferred
+        else:
+            return defer.succeed(None)
 
     def color_group(self, idx):
         return self.color_groups[idx]
