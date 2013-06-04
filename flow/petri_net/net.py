@@ -1,7 +1,9 @@
-from collections import namedtuple
 from flow.petri_net import lua
+from flow.petri_net.color import ColorGroup, ColorDescriptor
+from flow.petri_net.color import color_group_enc, color_group_dec
 from flow.petri_net.exceptions import *
 from place import Place
+from token import Token
 from twisted.internet import defer
 from uuid import uuid4
 
@@ -17,54 +19,13 @@ _COLOR_KEY = "C"
 _COLOR_GROUP_KEY = "G"
 
 
-ColorGroup = namedtuple("ColorGroup", ["idx", "parent_color",
-        "parent_color_group", "begin", "end"])
-
-ColorGroup.size = property(lambda self: self.end - self.begin)
-ColorGroup.colors = property(lambda self: range(self.begin, self.end))
-ColorGroup.color_iter = property(lambda self: xrange(self.begin, self.end))
-
-ColorDescriptor = namedtuple("ColorDescriptor", ["color", "group"])
-
-
-def _color_group_enc(value):
-    return rom.json_enc(value._asdict())
-
-
-def _color_group_dec(value):
-    return ColorGroup(**rom.json_dec(value))
-
-
-class Token(rom.Object):
-    data = rom.Property(rom.Hash, value_encoder=rom.json_enc,
-            value_decoder=rom.json_dec)
-
-    net_key = rom.Property(rom.String)
-
-    color = rom.Property(rom.Int)
-    color_group_idx = rom.Property(rom.Int)
-    index = rom.Property(rom.Int)
-
-    @property
-    def color_group(self):
-        return self.net.color_group(self.color_group_idx.value)
-
-    @property
-    def color_descriptor(self):
-        return ColorDescriptor(self.color.value, self.color_group)
-
-    @property
-    def net(self):
-        return rom.get_object(self.connection, self.net_key)
-
-
 class Net(rom.Object):
     # XXX Do we need to keep these around?
     required_constants = ["environment", "user_id", "working_directory"]
 
     name = rom.Property(rom.String)
-    color_groups = rom.Property(rom.Hash, value_encoder=_color_group_enc,
-            value_decoder=_color_group_dec)
+    color_groups = rom.Property(rom.Hash, value_encoder=color_group_enc,
+            value_decoder=color_group_dec)
 
     color_marking = rom.Property(rom.Hash, value_encoder=int, value_decoder=int)
     group_marking = rom.Property(rom.Hash, value_encoder=int, value_decoder=int)
