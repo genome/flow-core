@@ -8,11 +8,11 @@ import base64
 import flow.redisom as rom
 
 
-_TOKEN_KEY = "tok"
+_TOKEN_KEY = "t"
 _PLACE_KEY = "P"
 _TRANSITION_KEY = "T"
 _COLOR_KEY = "C"
-_COLOR_GROUP_KEY = "CG"
+_COLOR_GROUP_KEY = "G"
 
 
 ColorGroup = namedtuple("ColorGroup", ["idx", "parent_color",
