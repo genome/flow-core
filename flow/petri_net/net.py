@@ -20,6 +20,7 @@ ColorGroup = namedtuple("ColorGroup", ["idx", "parent_color",
 
 ColorGroup.size = property(lambda self: self.end - self.begin)
 ColorGroup.colors = property(lambda self: range(self.begin, self.end))
+ColorGroup.color_iter = property(lambda self: xrange(self.begin, self.end))
 
 ColorDescriptor = namedtuple("ColorDescriptor", ["color", "group"])
 
