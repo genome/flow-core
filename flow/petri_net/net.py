@@ -151,10 +151,9 @@ class Net(rom.Object):
 
     def notify_place(self, place_idx, color, service_interfaces):
         key = self.marking_key(color, place_idx)
-        token = self.color_marking.get(key)
-        if token is not None:
+        token_idx = self.color_marking.get(key)
+        if token_idx is not None:
             deferreds = []
-            token_idx = token.index
             place = self.place(place_idx)
             place.first_token_timestamp.setnx()
 
