@@ -227,6 +227,12 @@ class Net(rom.Object):
                 index=idx, data=data, color=color,
                 color_group_idx=color_group_idx)
 
+    def create_put_notify(self, place_idx, service_interfaces,
+            color, color_group_idx, data=None):
+        token = self.create_token(color, color_group_idx, data)
+        self.put_token(place_idx, token)
+        return self.notify_place(place_idx, color, service_interfaces)
+
     @staticmethod
     def marking_key(tag, place_idx):
         return "%s:%s" % (tag, place_idx)
