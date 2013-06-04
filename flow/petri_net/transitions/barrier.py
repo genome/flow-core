@@ -1,5 +1,7 @@
 from base import TransitionBase
 from flow.petri_net import lua
+from flow.petri_net.actions.base import BarrierActionBase
+from flow.petri_net.actions.merge import BarrierMergeAction
 
 import flow.redisom as rom
 import logging
@@ -9,6 +11,9 @@ LOG = logging.getLogger(__file__)
 
 
 class BarrierTransition(TransitionBase):
+    ACTION_BASE_CLASS = BarrierActionBase
+    DEFAULT_ACTION_CLASS = BarrierMergeAction
+
     _consume_tokens = rom.Script(lua.load('consume_tokens_barrier'))
 
     def consume_tokens(self, enabler, color_descriptor, color_marking_key,
@@ -36,13 +41,3 @@ class BarrierTransition(TransitionBase):
 
     def active_tokens_key(self, color_descriptor):
         return self.subkey("active_tokens", color_descriptor.group.idx)
-
-    def fire(self, net, color_descriptor, service_interfaces):
-        action = self.action
-        new_tokens = None
-        if action is not None:
-            act_toks_key = self.active_tokens_key(color_descriptor)
-            new_tokens = action.execute(color_descriptor, act_toks_key, net,
-                    service_interfaces)
-
-        return new_tokens

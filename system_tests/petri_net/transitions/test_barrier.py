@@ -1,18 +1,16 @@
 from flow.petri_net.transitions.barrier import BarrierTransition
 from flow.petri_net.net import Net, Token, ColorDescriptor
-from flow.petri_net.transitions.action import TransitionAction
+from flow.petri_net.actions.base import BarrierActionBase
 from test_helpers import NetTest
 import flow.redisom as rom
 
 from mock import MagicMock
 from unittest import main
 
-class SimpleAction(TransitionAction):
+class SimpleAction(BarrierActionBase):
     count = rom.Property(rom.Int)
 
-    def execute(self, color_descriptor, active_tokens_key, net,
-            service_interfaces):
-
+    def execute(self, color_descriptor, active_tokens, net, service_interfaces):
         self.count.incr(1)
         color = color_descriptor.color
         color_group_idx = color_descriptor.group.idx

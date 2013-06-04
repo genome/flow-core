@@ -1,4 +1,4 @@
-from flow.petri_net.transitions.action import TransitionAction
+from flow.petri_net.actions.base import BasicActionBase
 from twisted.internet import defer
 
 import logging
@@ -7,7 +7,7 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-class ShellCommandDispatchAction(TransitionAction):
+class ShellCommandDispatchAction(BasicActionBase):
     net_constants = ['user_id', 'working_directory', 'mail_user']
     place_refs = []
 

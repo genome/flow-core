@@ -1,5 +1,7 @@
 from base import TransitionBase
 from flow.petri_net import lua
+from flow.petri_net.actions.base import BasicActionBase
+from flow.petri_net.actions.merge import BasicMergeAction
 
 import flow.redisom as rom
 import logging
@@ -9,6 +11,9 @@ LOG = logging.getLogger(__file__)
 
 
 class BasicTransition(TransitionBase):
+    ACTION_BASE_CLASS = BasicActionBase
+    DEFAULT_ACTION_CLASS = BasicMergeAction
+
     _consume_tokens = rom.Script(lua.load('consume_tokens_basic'))
 
     def consume_tokens(self, enabler, color_descriptor, color_marking_key,

@@ -23,6 +23,18 @@ class TransitionBase(rom.Object):
 
     _push_tokens_script = rom.Script(lua.load('push_tokens'))
 
+
+    def consume_tokens(self, enabler, color_descriptor, color_marking_key,
+            group_marking_key):
+        raise NotImplementedError()
+
+    def state_key(self, color_descriptor):
+        raise NotImplementedError()
+
+    def active_tokens_key(self, color_descriptor):
+        raise NotImplementedError()
+
+
     @property
     def action_key(self):
         return self.subkey('action')
@@ -30,16 +42,22 @@ class TransitionBase(rom.Object):
     @property
     def action(self):
         try:
-            return rom.get_object(self.connection, self.action_key)
+            action = rom.get_object(self.connection, self.action_key)
+            assert isinstance(action, self.ACTION_BASE_CLASS)
+            return action
         except NotInRedisError:
             return
 
-    def consume_tokens(self, enabler, color_descriptor, color_marking_key,
-            group_marking_key):
-        raise NotImplementedError()
 
     def fire(self, net, color_descriptor, service_interfaces):
-        raise NotImplementedError()
+        active_tokens = self.active_tokens(color_descriptor)
+        action = self.action
+        if action is None:
+            action = self.DEFAULT_ACTION_CLASS(self.connection, self.action_key)
+
+        return action.execute(net=net, active_tokens=active_tokens,
+                color_descriptor=color_descriptor,
+                service_interfaces=service_interfaces)
 
     def push_tokens(self, net, color_descriptor, tokens):
         keys = [self.active_tokens(color_descriptor).key, self.arcs_out.key,
@@ -62,12 +80,6 @@ class TransitionBase(rom.Object):
             deferreds.append(deferred)
 
         return defer.DeferredList(deferreds)
-
-    def state_key(self, color_descriptor):
-        raise NotImplementedError()
-
-    def active_tokens_key(self, color_descriptor):
-        raise NotImplementedError()
 
     def active_tokens(self, color_descriptor):
         return rom.Set(connection=self.connection,
