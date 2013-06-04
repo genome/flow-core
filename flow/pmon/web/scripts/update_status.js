@@ -9,7 +9,7 @@ var ARRAY_FIELDS = [
 
     'memory_percent',
     'memory_rss',
-    'memory_vms',
+    'memory_vms'
 ];
 
 var SCALAR_FIELDS = [
@@ -39,7 +39,7 @@ var initialize_process = function (url) {
             var pid = data['pid'];
 
             if (url == '/basic') {
-                master_pid = pid
+                master_pid = pid;
             }
 
             if (!(pid in process_status)) {
@@ -60,24 +60,26 @@ var update_status = function() {
                       "The process has most likely completed. " +
                       "This monitor will continue to function but it will not recieve any more updates.");
         })
-        .success(function () {setTimeout(update_status, UPDATE_DELTA)});
+        .success(function () {
+            setTimeout(update_status, UPDATE_DELTA);
+        });
 }
 
 var _update_process_from_data = function(data) {
     for (var pid in data) {
-        var pinfo = data[pid]
+        var pinfo = data[pid];
         if (!(pid in process_status)) {
             process_status[pid] = {'is_running':true};
-            initialize_process( sprintf('/basic/%s', pid) )
+            initialize_process( sprintf('/basic/%s', pid) );
         }
 
-        _store_file_info(data, pid)
+        _store_file_info(data, pid);
         for (var field in pinfo) {
             if ($.inArray(field, ARRAY_FIELDS) != -1) {
                 if (!(field in process_status[pid])) {
                     process_status[pid][field] = {'values':[], 'key':field};
                 }
-                _store_array(pinfo[field], process_status[pid][field], pinfo['time'])
+                _store_array(pinfo[field], process_status[pid][field], pinfo['time']);
             } else if ($.inArray(field, SCALAR_FIELDS) != -1) {
                 process_status[pid][field] = pinfo[field];
             }
@@ -92,7 +94,7 @@ var _update_process_from_data = function(data) {
 }
 
 var _store_array = function(src, dest, time) {
-    values = dest['values']
+    values = dest['values'];
     values.push({x:time, y:src});
     if (values.length > NUM_DATA_PTS) {
         values.splice(0,1);
@@ -101,18 +103,18 @@ var _store_array = function(src, dest, time) {
 
 var _store_file_info = function(data, pid) {
     if (!('open_files' in process_status[pid])) {
-        process_status[pid]['open_files'] = {}
+        process_status[pid]['open_files'] = {};
     }
-    stored_finfo = process_status[pid]['open_files']
+    stored_finfo = process_status[pid]['open_files'];
 
     // note files that are no longer open
-    finfo = data[pid]['open_files'] || {}
+    finfo = data[pid]['open_files'] || {};
     for (var fname in stored_finfo) {
         for (var fd in stored_finfo[fname]) {
             if (!(fname in finfo)) {
-                stored_finfo[fname][fd].closed = true
+                stored_finfo[fname][fd].closed = true;
             } else if (!(fd in finfo[fname])) {
-                stored_finfo[fname][fd].closed = true
+                stored_finfo[fname][fd].closed = true;
             }
         }
     }
@@ -120,7 +122,7 @@ var _store_file_info = function(data, pid) {
     // store info about currently open files
     for (var fname in finfo) {
         if (!(fname in stored_finfo)) {
-            stored_finfo[fname] = {}
+            stored_finfo[fname] = {};
         }
         for (var fd in finfo[fname]) {
             if (!(fd in stored_finfo[fname])) {
@@ -129,22 +131,22 @@ var _store_file_info = function(data, pid) {
                     'read_only':finfo[fname][fd]['read_only'],
                     'flags':finfo[fname][fd]['flags'],
                     'closed':false,
-                }
-                stored_finfo[fname][fd] = stat_info
+                };
+                stored_finfo[fname][fd] = stat_info;
             }
-            this_stored_finfo = stored_finfo[fname][fd]
+            this_stored_finfo = stored_finfo[fname][fd];
 
             // size
             if (!('size' in this_stored_finfo)) {
-                this_stored_finfo['size'] = {'values':[], 'key':'size'}
+                this_stored_finfo['size'] = {'values':[], 'key':'size'};
             }
-            _store_array(finfo[fname][fd]['size'], this_stored_finfo['size'], finfo[fname][fd]['time_of_stat'])
+            _store_array(finfo[fname][fd]['size'], this_stored_finfo['size'], finfo[fname][fd]['time_of_stat']);
 
             // pos
             if (!('pos' in this_stored_finfo)) {
-                this_stored_finfo['pos'] = {'values':[], 'key':'pos'}
+                this_stored_finfo['pos'] = {'values':[], 'key':'pos'};
             }
-            _store_array(finfo[fname][fd]['pos'], this_stored_finfo['pos'], data[pid]['time'])
+            _store_array(finfo[fname][fd]['pos'], this_stored_finfo['pos'], data[pid]['time']);
         }
     }
 }
