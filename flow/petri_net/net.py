@@ -33,9 +33,6 @@ def _color_group_dec(value):
     return ColorGroup(**rom.json_dec(value))
 
 
-def tagged_marking_key(tag, place_idx):
-    return "%s:%s" % (tag, place_idx)
-
 
 class PetriNetError(RuntimeError): pass
 class ForeignTokenError(PetriNetError): pass
@@ -149,7 +146,7 @@ class Net(rom.Object):
         return rv
 
     def notify_place(self, place_idx, color, service_interfaces):
-        key = tagged_marking_key(color, place_idx)
+        key = self.marking_key(color, place_idx)
         token = self.color_marking.get(key)
         if token is not None:
             deferreds = []
@@ -230,3 +227,7 @@ class Net(rom.Object):
         return Token.create(self.connection, key, net_key=self.key,
                 index=idx, data=data, color=color,
                 color_group_idx=color_group_idx)
+
+    @staticmethod
+    def marking_key(tag, place_idx):
+        return "%s:%s" % (tag, place_idx)

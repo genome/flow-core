@@ -1,4 +1,4 @@
-from flow.petri_net.net import Net, ColorGroup, Token, tagged_marking_key
+from flow.petri_net.net import Net, ColorGroup, Token
 from flow.petri_net.net import PlaceNotFoundError, ForeignTokenError
 import flow.redisom as rom
 
@@ -38,8 +38,8 @@ class TestNet(NetTest):
         color_group_idx = self.token.color_group_idx.value
 
         place_idx = 0
-        color_key = tagged_marking_key(color, place_idx)
-        group_key = tagged_marking_key(color_group_idx, place_idx)
+        color_key = self.net.marking_key(color, place_idx)
+        group_key = self.net.marking_key(color_group_idx, place_idx)
 
         rv = self.net.put_token(place_idx, self.token)
 
