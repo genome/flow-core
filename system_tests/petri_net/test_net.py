@@ -106,9 +106,12 @@ class TestNet(NetTest):
         self.assertEqual(3, len(calls))
 
         fn = orchestrator.notify_transition
-        fn.assert_any_call('net', 0, 0, ANY)
-        fn.assert_any_call('net', 1, 0, ANY)
-        fn.assert_any_call('net', 2, 0, ANY)
+        fn.assert_any_call(net_key='net', transition_idx=0,
+                place_idx=place_idx, token_idx=ANY)
+        fn.assert_any_call(net_key='net', transition_idx=1,
+                place_idx=place_idx, token_idx=ANY)
+        fn.assert_any_call(net_key='net', transition_idx=2,
+                place_idx=place_idx, token_idx=ANY)
         self.assertEqual(123.0, home.first_token_timestamp.value)
 
 

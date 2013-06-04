@@ -160,8 +160,9 @@ class Net(rom.Object):
             arcs = place.arcs_out.value
             orchestrator = service_interfaces['orchestrator']
             for transition_idx in arcs:
-                df = orchestrator.notify_transition(self.key, transition_idx,
-                    place_idx, token_idx)
+                df = orchestrator.notify_transition(net_key=self.key,
+                        transition_idx=transition_idx, place_idx=place_idx,
+                        token_idx=token_idx)
                 deferreds.append(df)
 
             return defer.DeferredList(deferreds)
