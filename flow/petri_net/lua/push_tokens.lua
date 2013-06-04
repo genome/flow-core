@@ -33,7 +33,7 @@ for i, place_id in pairs(arcs_out) do
         local group_key = string.format("%s:%s", color_group, place_id)
 
         local result = redis.call('HSETNX', color_marking_key, color_key, token_key)
-        if result == false then
+        if result == 0 then
             return {-1, "Place " .. place_id .. "is full"}
         end
         redis.call('HINCRBY', group_marking_key, group_key, 1)
