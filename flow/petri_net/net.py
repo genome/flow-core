@@ -50,8 +50,12 @@ class Token(rom.Object):
     index = rom.Property(rom.Int)
 
     @property
+    def color_group(self):
+        return self.net.color_group(self.color_group_idx.value)
+
+    @property
     def color_descriptor(self):
-        return ColorDescriptor(self.color.value, self.net.color_group)
+        return ColorDescriptor(self.color.value, self.color_group)
 
     @property
     def net(self):
@@ -63,8 +67,8 @@ class Net(rom.Object):
     required_constants = ["environment", "user_id", "working_directory"]
 
     name = rom.Property(rom.String)
-    color_groups = rom.Property(rom.Hash, value_encoder=rom.json_enc,
-            value_decoder=rom.json_dec)
+    color_groups = rom.Property(rom.Hash, value_encoder=_color_group_enc,
+            value_decoder=_color_group_dec)
 
     color_marking = rom.Property(rom.Hash)
     group_marking = rom.Property(rom.Hash)
@@ -167,14 +171,9 @@ class Net(rom.Object):
 
     def notify_transition(self, transition_idx, place_idx, token_idx,
             service_interfaces):
-
         trans = self.transition(transition_idx)
         token = self.token(token_idx)
-        color = token.color.value
-        color_group_idx = token.color_group.value
-        color_group = self.color_groups[color_group_idx]
-
-        color_descriptor = ColorDescriptor(color, color_group)
+        color_descriptor = token.color_descriptor
 
         consume_rv = trans.consume_tokens(place_idx, color_descriptor,
                 self.color_marking.key, self.group_marking.key)
