@@ -8,7 +8,10 @@ LOG = logging.getLogger(__name__)
 
 class ShellCommandDispatchAction(BasicMergeAction):
     net_constants = ['user_id', 'working_directory', 'mail_user']
-    place_refs = []
+    place_refs = ["post_dispatch_success",
+            "post_dispatch_failure", "begin_execute",
+            "execute_success", "execute_failure"]
+    required_arguments = place_refs
 
     # Hooks that subclasses can override
     def command_line(self, token_data):
@@ -89,15 +92,7 @@ class ShellCommandDispatchAction(BasicMergeAction):
 
 class LSFDispatchAction(ShellCommandDispatchAction):
     service_name = "lsf"
-    place_refs = ["post_dispatch_success",
-            "post_dispatch_failure", "begin_execute",
-            "execute_success", "execute_failure"]
-    required_arguments = place_refs
 
 
 class ForkDispatchAction(ShellCommandDispatchAction):
     service_name = "fork"
-    place_refs = ["begin_execute", "execute_success",
-            "execute_failure"]
-
-    required_arguments = place_refs

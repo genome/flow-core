@@ -55,8 +55,8 @@ class ExecutorBase(IShellCommandExecutor):
                 child_socket.send(str(job_id))
                 child_socket.close()
                 return exit_codes.EXECUTE_SUCCESS
-
-            return exit_codes.EXECUTE_FAILURE
+            else:
+                return exit_codes.EXECUTE_FAILURE
 
         except:
             LOG.exception('Executor raised exception, exitting.')

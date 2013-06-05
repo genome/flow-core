@@ -80,7 +80,7 @@ class TestSystemFork(redistest.RedisTest):
         self.broker.listen()
 
         expected_color_keys = [net.marking_key(
-            cg.begin, future_places[future_net.dispatched])]
+            cg.begin, future_places[future_net.dispatching])]
 #        expected_color_keys = ['0:%d' % future_places[future_net.dispatched]]
 
         self.assertItemsEqual(expected_color_keys, net.color_marking.keys())

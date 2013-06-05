@@ -8,15 +8,6 @@ LOG = logging.getLogger(__name__)
 
 
 class ShellCommandNet(FutureNet):
-    def __init__(self, *args, **kwargs):
-        FutureNet.__init__(self, *args, **kwargs)
-
-        self.start = self.add_place('start')
-        self.success = self.add_place('success')
-        self.failure = self.add_place('failure')
-
-
-class LSFCommandNet(ShellCommandNet):
     def __init__(self, name,
             dispatch_success_action=None,
             dispatch_failure_action=None,
@@ -25,7 +16,11 @@ class LSFCommandNet(ShellCommandNet):
             failure_action=None,
             **action_args):
 
-        ShellCommandNet.__init__(self, name)
+        FutureNet.__init__(self, name)
+
+        self.start = self.add_place('start')
+        self.success = self.add_place('success')
+        self.failure = self.add_place('failure')
 
         self.dispatching = self.add_place("dispatching")
         self.pending = self.add_place("pending")
@@ -44,7 +39,8 @@ class LSFCommandNet(ShellCommandNet):
                 "execute_failure": self.execute_failure_place,
                 })
 
-        primary_action = FutureAction(LSFDispatchAction, **action_args)
+        primary_action = FutureAction(self.DISPATCH_ACTION, **action_args)
+
         self.dispatch = self.add_basic_transition(name="dispatch",
                 action=primary_action)
 
@@ -82,48 +78,9 @@ class LSFCommandNet(ShellCommandNet):
         self.execute_failure.add_arc_out(self.failure)
 
 
+class LSFCommandNet(ShellCommandNet):
+    DISPATCH_ACTION=LSFDispatchAction
+
+
 class ForkCommandNet(ShellCommandNet):
-    def __init__(self, name,
-            begin_execute_action=None,
-            success_action=None,
-            failure_action=None,
-            **action_args):
-        ShellCommandNet.__init__(self, name)
-
-        self.dispatched = self.add_place("dispatched")
-        self.running = self.add_place("running")
-
-        self.on_begin_execute = self.add_place("msg: begin_execute")
-        self.on_execute_success = self.add_place("msg: execute_success")
-        self.on_execute_failure = self.add_place("msg: execute_failure")
-
-        action_args.update({
-                "begin_execute": self.on_begin_execute,
-                "execute_success": self.on_execute_success,
-                "execute_failure": self.on_execute_failure
-                })
-
-        primary_action = FutureAction(ForkDispatchAction, **action_args)
-        self.dispatch = self.add_basic_transition(name="dispatch",
-                action=primary_action)
-
-        self.t_begin_execute = self.add_basic_transition("begin execute",
-                action=begin_execute_action)
-        self.execute_success = self.add_basic_transition("execute_success",
-                action=success_action)
-        self.execute_failure = self.add_basic_transition("execute_failure",
-                action=failure_action)
-
-        self.start.add_arc_out(self.dispatch)
-        self.dispatch.add_arc_out(self.dispatched)
-
-        self.dispatched.add_arc_out(self.t_begin_execute)
-        self.on_begin_execute.add_arc_out(self.t_begin_execute)
-        self.t_begin_execute.add_arc_out(self.running)
-
-        self.running.add_arc_out(self.execute_success)
-        self.running.add_arc_out(self.execute_failure)
-        self.on_execute_success.add_arc_out(self.execute_success)
-        self.on_execute_failure.add_arc_out(self.execute_failure)
-        self.execute_success.add_arc_out(self.success)
-        self.execute_failure.add_arc_out(self.failure)
+    DISPATCH_ACTION=ForkDispatchAction

@@ -91,9 +91,16 @@ class TestForkDispatchAction(TestBase, _TestDispatchActionMixIn):
 
     def test_response_places(self):
         expected = {
-            'begin_execute': self.future_places[self.net.on_begin_execute],
-            'execute_success': self.future_places[self.net.on_execute_success],
-            'execute_failure': self.future_places[self.net.on_execute_failure],
+            'post_dispatch_success': self.future_places[
+                self.net.dispatch_success_place],
+            'post_dispatch_failure': self.future_places[
+                self.net.dispatch_failure_place],
+            'begin_execute': self.future_places[
+                self.net.begin_execute_place],
+            'execute_success': self.future_places[
+                self.net.execute_success_place],
+            'execute_failure': self.future_places[
+                self.net.execute_failure_place],
         }
 
         self.assertEqual("dispatch", str(self.dispatch_transition.name))
