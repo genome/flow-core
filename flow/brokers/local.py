@@ -1,9 +1,10 @@
-import logging
 from collections import deque, defaultdict
 from flow.util import stats
 from twisted.internet import defer
 
 import flow.interfaces
+import logging
+
 
 LOG = logging.getLogger(__name__)
 
@@ -15,7 +16,8 @@ class LocalBroker(flow.interfaces.IBroker):
         self.handlers = {}
 
     def publish(self, exchange_name, routing_key, message):
-        timer = stats.create_timer('messages.publish.%s' % message.__class__.__name__)
+        timer = stats.create_timer('messages.publish.%s' %
+                message.__class__.__name__)
         timer.start()
 
         encoded_message = message.encode()
@@ -56,6 +58,7 @@ class LocalBroker(flow.interfaces.IBroker):
                     pass
         else:
             LOG.warning('No messages found in queue.')
+
 
 def _transform_bindings(source_bindings):
     result = defaultdict(lambda: defaultdict(list))
