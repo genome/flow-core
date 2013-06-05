@@ -1,4 +1,4 @@
-from flow.petri_net.actions.base import BasicActionBase
+from flow.petri_net.actions.merge import BasicMergeAction
 from twisted.internet import defer
 
 import logging
@@ -7,20 +7,26 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-class ShellCommandDispatchAction(BasicActionBase):
+class ShellCommandDispatchAction(BasicMergeAction):
     net_constants = ['user_id', 'working_directory', 'mail_user']
     place_refs = []
 
+    # Hooks that subclasses can override
+    def command_line(self, token_data):
+        return self.args['command_line']
+
+    def inputs_hash_key(self, token_data):
+        return
+
+
+    # Private methods
     def _environment(self, net):
         return net.constant('environment')
 
     def _response_places(self):
         return {x: self.args[x] for x in self.place_refs}
 
-    def _command_line(self, net, input_data_key):
-        return self.args['command_line']
-
-    def _executor_options(self, input_data_key, net):
+    def _executor_options(self, net):
         executor_options = {}
 
         name = self.args.get('name', None)
@@ -37,15 +43,6 @@ class ShellCommandDispatchAction(BasicActionBase):
             value = net.constant(opt)
             if value:
                 executor_options[opt] = value
-
-        # Collect job-specific variables
-        with_outputs = self.args.get('with_outputs')
-
-        if input_data_key:
-            executor_options['with_inputs'] = input_data_key
-
-        if with_outputs:
-            executor_options['with_outputs'] = with_outputs
 
         # Set logfiles
         stdout = self.args.get('stdout')
@@ -66,44 +63,29 @@ class ShellCommandDispatchAction(BasicActionBase):
 
         return executor_options
 
-    def execute(self, active_tokens_key, net, service_interfaces=None):
-        token = None
-        input_data_key = None
-        token_color = self.active_color(active_tokens_key)
-
-        input_data = self.input_data(active_tokens_key, net)
-
-        LOG.debug('Inputs for %s: %r', self.name, input_data)
-
-        if input_data:
-            token = net.create_token(data=input_data,
-                    data_type=self.output_token_type,
-                    token_color=token_color)
-            input_data_key = token.data.key
-            LOG.debug("Created data token %s", token.key)
-
-        executor_options = self._executor_options(input_data_key, net)
-        cmdline = self._command_line(net, input_data_key)
-
-        LOG.debug("Executor options: %r", executor_options)
-
-        env = executor_options.get("environment", {})
-        for k, v in env.iteritems():
-            if k.startswith("FLOW"):
-                LOG.debug("Flow environment variable set: %s=%s", k, v)
+    def execute(self, net, color_descriptor, active_tokens, service_interfaces):
+        tokens, deferred = BasicMergeAction.execute(self, net,
+                color_descriptor, active_tokens, service_interfaces)
 
         response_places = self._response_places()
-        deferred = service_interfaces[self.service_name].submit(
-                command_line=cmdline,
-                net_key=net.key,
-                response_places=response_places,
-                token_color=token_color,
-                **executor_options
-                )
 
-        execute_deferred = defer.Deferred()
-        deferred.addCallback(lambda _: execute_deferred.callback(token))
-        return execute_deferred
+        # BasicMergeAction returns exactly one token
+        token_data = tokens[0].data
+
+        command_line = self.command_line(token_data)
+        inputs_hash_key = self.inputs_hash_key(token_data)
+        executor_options = self._executor_options(net)
+
+        with_outputs = self.args.get('with_outputs')
+
+        service = service_interfaces[self.service_name]
+        deferred.add_callback(service.submit, net_key=net.key,
+                response_places=response_places, color=color_descriptor.color,
+                color_group_idx=color_descriptor.group.idx,
+                command_line=command_line, inputs_hash_key=inputs_hash_key,
+                with_outputs=with_outputs, **executor_options)
+
+        return tokens, deferred
 
 
 class LSFDispatchAction(ShellCommandDispatchAction):

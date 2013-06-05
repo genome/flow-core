@@ -28,43 +28,35 @@ class TestBase(test_helpers.RedisTest):
 
 class _TestDispatchActionMixIn(object):
     def test_command_line(self):
-        self.assertEqual(self.cmdline, self.action._command_line(net=None,
-                input_data_key=None))
+        self.assertEqual(self.cmdline, self.action.command_line(None))
+
+    def test_inputs_hash_key(self):
+        self.assertIs(None, self.action.inputs_hash_key(None))
 
     def test_executor_options(self):
-        executor_options = self.action._executor_options(input_data_key=None,
-                net=self.stored_net)
+        executor_options = self.action._executor_options(self.stored_net)
         self.assertEqual({}, executor_options)
-
-        executor_options = self.action._executor_options(
-                input_data_key='inputs', net=self.stored_net)
-        expected = {'with_inputs': 'inputs'}
-        self.assertEqual(expected, executor_options)
 
         env = os.environ.data
         self.stored_net.set_constant('environment', env)
 
         expected = {'environment': env}
-        executor_options = self.action._executor_options(input_data_key=None,
-                net=self.stored_net)
+        executor_options = self.action._executor_options(self.stored_net)
         self.assertEqual(expected, executor_options)
 
         self.stored_net.set_constant("user_id", 123)
         expected["user_id"] = 123
-        executor_options = self.action._executor_options(input_data_key=None,
-                net=self.stored_net)
+        executor_options = self.action._executor_options(self.stored_net)
         self.assertEqual(expected, executor_options)
 
         self.stored_net.set_constant("working_directory", "/tmp")
         expected["working_directory"] = "/tmp"
-        executor_options = self.action._executor_options(input_data_key=None,
-                net=self.stored_net)
+        executor_options = self.action._executor_options(self.stored_net)
         self.assertEqual(expected, executor_options)
 
         self.stored_net.set_constant("mail_user", "foo@bar.com")
         expected["mail_user"] = "foo@bar.com"
-        executor_options = self.action._executor_options(input_data_key=None,
-                net=self.stored_net)
+        executor_options = self.action._executor_options(self.stored_net)
         self.assertEqual(expected, executor_options)
 
 
