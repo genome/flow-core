@@ -1,6 +1,5 @@
 from flow.configuration.inject.settings import InjectedSettings
 
-import copy
 import injector
 
 
@@ -13,12 +12,12 @@ def initialize_injector(settings, command_class):
 
     return INJECTOR
 
-def add_modules(injector, *modules):
+def add_modules(inj, *modules):
     for module in modules:
         if isinstance(module, type):
             module = module()
 
-        module(injector.binder)
+        module(inj.binder)
 
 def reset_injector():
     global INJECTOR
