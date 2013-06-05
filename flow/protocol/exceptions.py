@@ -1,2 +1,6 @@
-class ProtocolError(Exception): pass
-class InvalidMessageException(ProtocolError): pass
+class ProtocolError(Exception):
+    pass
+
+
+class InvalidMessageException(ProtocolError):
+    pass
