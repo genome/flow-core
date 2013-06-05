@@ -4,17 +4,17 @@ from flow.protocol import exceptions
 
 class ShellCommandSubmitMessage(Message):
     required_fields = {
+            'color': (int, long),
+            'color_group_idx': (int, long),
             'command_line': list,
             'net_key': basestring,
             'response_places': dict,
-            'color': (int, long),
-            'color_group_idx': (int, long),
     }
 
     optional_fields = {
+            'executor_options': dict,
             'inputs_hash_key': basestring,
             'with_outputs': bool,
-            'executor_options': dict,
     }
 
     def validate(self):
