@@ -1,4 +1,4 @@
-from flow.shell_command.executors import fork
+from flow.shell_command.fork import executor
 
 import mock
 import sys
@@ -11,7 +11,7 @@ failure_script = "import sys; sys.exit(1)"
 
 class ForkExecutorTest(unittest.TestCase):
     def setUp(self):
-        self.dispatcher = fork.ForkExecutor(wrapper=[],
+        self.dispatcher = executor.ForkExecutor(wrapper=[],
                 default_environment={}, mandatory_environment={})
         self.response_places = {
             'begin_execute': '0',

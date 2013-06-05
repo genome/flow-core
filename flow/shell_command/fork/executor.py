@@ -1,5 +1,5 @@
 from flow.shell_command import util
-from flow.shell_command.executors.base import ExecutorBase
+from flow.shell_command.executor_base import ExecutorBase
 
 import logging
 import os

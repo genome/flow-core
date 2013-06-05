@@ -5,17 +5,17 @@ try:
 except:
     import mock
 
-from flow.shell_command.executors import lsf
+from flow.shell_command.lsf import executor
 from flow.shell_command.resource import ResourceException
-from pythonlsf import lsf as lsf_driver
+from pythonlsf import lsf
 from twisted.python.procutils import which
 
 def _create_expected_limits():
-    return [lsf_driver.DEFAULT_RLIMIT] * lsf_driver.LSF_RLIM_NLIMITS
+    return [lsf.DEFAULT_RLIMIT] * lsf.LSF_RLIM_NLIMITS
 
 class CreatePostExecCmdTest(unittest.TestCase):
     def test_basic(self):
-        result = lsf.create_post_exec_cmd(executable='e', args='args',
+        result = executor.create_post_exec_cmd(executable='e', args='args',
                 net_key='nk', failure_place=1, stdout='a', stderr='b')
 
         self.assertEqual(result,
@@ -24,13 +24,13 @@ class CreatePostExecCmdTest(unittest.TestCase):
 
 class MakeRusageTest(unittest.TestCase):
     def test_empty(self):
-        self.assertEqual("", lsf._make_rusage_string(require={}, reserve={}))
+        self.assertEqual("", executor._make_rusage_string(require={}, reserve={}))
 
     def test_select(self):
         require = {"memory": 150, "temp_space": 3, "min_proc": 4}
         reserve = {}
 
-        rsrc = lsf._make_rusage_string(require=require, reserve=reserve)
+        rsrc = executor._make_rusage_string(require=require, reserve=reserve)
         select = re.match("^select\[([^]]*)\]$", rsrc)
         self.assertTrue(select)
         items = sorted(select.group(1).split(" && "))
@@ -40,7 +40,7 @@ class MakeRusageTest(unittest.TestCase):
         require = {}
         reserve = {"memory": 150, "temp_space": 3}
 
-        rsrc = lsf._make_rusage_string(require=require, reserve=reserve)
+        rsrc = executor._make_rusage_string(require=require, reserve=reserve)
         select = re.search("select\[([^]]*)\]", rsrc)
         self.assertTrue(select)
         items = sorted(select.group(1).split(" && "))
@@ -54,35 +54,35 @@ class MakeRusageTest(unittest.TestCase):
     def test_reserve_non_reservable(self):
         require = {}
         reserve = {"min_proc": 4}
-        self.assertRaises(ResourceException, lsf._make_rusage_string,
+        self.assertRaises(ResourceException, executor._make_rusage_string,
                 require=require, reserve=reserve)
 
 
 class GetRlimitsTest(unittest.TestCase):
     AVAILABLE_RLIMITS = [
-            #('max_resident_memory', lsf_driver.LSF_RLIMIT_RSS),
-            ('max_virtual_memory', lsf_driver.LSF_RLIMIT_VMEM),
-            ('max_processes', lsf_driver.LSF_RLIMIT_PROCESS),
-            ('max_threads', lsf_driver.LSF_RLIMIT_THREAD),
-            ('max_open_files', lsf_driver.LSF_RLIMIT_NOFILE),
-            ('max_stack_size', lsf_driver.LSF_RLIMIT_STACK)
+            #('max_resident_memory', lsf.LSF_RLIMIT_RSS),
+            ('max_virtual_memory', lsf.LSF_RLIMIT_VMEM),
+            ('max_processes', lsf.LSF_RLIMIT_PROCESS),
+            ('max_threads', lsf.LSF_RLIMIT_THREAD),
+            ('max_open_files', lsf.LSF_RLIMIT_NOFILE),
+            ('max_stack_size', lsf.LSF_RLIMIT_STACK)
     ]
 
     def simple_rlim_success(self, name, index, value=42):
         kwargs = {name: value}
         expected_limits = _create_expected_limits()
         expected_limits[index] = value
-        limits = lsf.get_rlimits(**kwargs)
+        limits = executor.get_rlimits(**kwargs)
         self.assertEqual(limits, expected_limits)
 
     def simple_rlim_failure(self, name):
         kwargs = {name: mock.Mock()}
-        self.assertRaises(TypeError, lsf.get_rlimits, **kwargs)
+        self.assertRaises(TypeError, executor.get_rlimits, **kwargs)
 
 
     def test_defaults(self):
         expected_limits = _create_expected_limits()
-        limits = lsf.get_rlimits()
+        limits = executor.get_rlimits()
         self.assertEqual(limits, expected_limits)
 
 
@@ -100,7 +100,7 @@ class CreateRequestTest(unittest.TestCase):
         self.default_queue = 'serious queue'
         self.post_exec_cmd = None
         def test_fn(**kwargs):
-            return lsf.create_request(self.post_exec_cmd, self.default_queue,
+            return executor.create_request(self.post_exec_cmd, self.default_queue,
                     **kwargs)
         self.test_fn = test_fn
 
@@ -113,7 +113,7 @@ class CreateRequestTest(unittest.TestCase):
         request = self.test_fn(name=name)
         self.assertEqual(request.jobName, name)
         self.assertEqual(request.options,
-                lsf_driver.SUB_JOB_NAME + lsf_driver.SUB_QUEUE)
+                lsf.SUB_JOB_NAME + lsf.SUB_QUEUE)
 
     def test_name_failure(self):
         self.assertRaises(TypeError,
@@ -124,7 +124,7 @@ class CreateRequestTest(unittest.TestCase):
         request = self.test_fn(mail_user=mail_user)
         self.assertEqual(request.mailUser, mail_user)
         self.assertEqual(request.options,
-                lsf_driver.SUB_MAIL_USER + lsf_driver.SUB_QUEUE)
+                lsf.SUB_MAIL_USER + lsf.SUB_QUEUE)
 
     def test_mail_user_failure(self):
         self.assertRaises(TypeError,
@@ -135,7 +135,7 @@ class CreateRequestTest(unittest.TestCase):
         queue = 'different queue'
         request = self.test_fn(queue=queue)
         self.assertEqual(request.queue, queue)
-        self.assertEqual(request.options, lsf_driver.SUB_QUEUE)
+        self.assertEqual(request.options, lsf.SUB_QUEUE)
 
     def test_queue_failure(self):
         self.assertRaises(TypeError,
@@ -148,7 +148,7 @@ class CreateRequestTest(unittest.TestCase):
         self.assertEqual(request.queue, self.default_queue)
         self.assertEqual(request.outFile, stdout)
         self.assertEqual(request.options,
-                lsf_driver.SUB_QUEUE + lsf_driver.SUB_OUT_FILE)
+                lsf.SUB_QUEUE + lsf.SUB_OUT_FILE)
 
     def test_stdout_failure(self):
         self.assertRaises(TypeError,
@@ -161,7 +161,7 @@ class CreateRequestTest(unittest.TestCase):
         self.assertEqual(request.queue, self.default_queue)
         self.assertEqual(request.errFile, stderr)
         self.assertEqual(request.options,
-                lsf_driver.SUB_QUEUE + lsf_driver.SUB_ERR_FILE)
+                lsf.SUB_QUEUE + lsf.SUB_ERR_FILE)
 
     def test_stderr_failure(self):
         self.assertRaises(TypeError,
@@ -176,13 +176,13 @@ class CreateRequestTest(unittest.TestCase):
         resources = {"limit": limit, "reserve": reserve, "require": require}
         request = self.test_fn(resources=resources)
         expected_limits = _create_expected_limits()
-        expected_limits[lsf_driver.LSF_RLIMIT_VMEM] = value
+        expected_limits[lsf.LSF_RLIMIT_VMEM] = value
         self.assertEqual(request.queue, self.default_queue)
 
         for i, x in enumerate(expected_limits):
             self.assertEqual(request.rLimits[i], x)
 
-        self.assertTrue(request.options | lsf_driver.SUB_RES_REQ)
+        self.assertTrue(request.options | lsf.SUB_RES_REQ)
         select = re.search("select\[([^]]*)]", request.resReq)
         rusage = re.search("rusage\[([^]]*)]", request.resReq)
         self.assertTrue(select)
@@ -195,17 +195,17 @@ class CreateRequestTest(unittest.TestCase):
         self.assertEqual(["gtmp=10", "mem=4096"], ritems)
 
     def test_post_exec_cmd(self):
-        request = lsf.create_request(post_exec_cmd=None,
+        request = executor.create_request(post_exec_cmd=None,
                 default_queue=self.default_queue)
 
         self.assertEqual(request.options3, 0)
         self.assertEqual(request.postExecCmd, None)
 
         post_exec_cmd = 'echo "something"'
-        request = lsf.create_request(post_exec_cmd=post_exec_cmd,
+        request = executor.create_request(post_exec_cmd=post_exec_cmd,
                 default_queue=self.default_queue)
 
-        self.assertEqual(request.options3, lsf_driver.SUB3_POST_EXEC)
+        self.assertEqual(request.options3, lsf.SUB3_POST_EXEC)
         self.assertEqual(request.postExecCmd, post_exec_cmd)
 
 

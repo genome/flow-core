@@ -1,6 +1,6 @@
 from flow.configuration.settings.injector import setting
 from flow.shell_command import util
-from flow.shell_command.executors.base import ExecutorBase
+from flow.shell_command.executor_base import ExecutorBase
 from flow.shell_command.resource import Resource, ResourceException
 from injector import inject
 from pythonlsf import lsf

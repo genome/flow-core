@@ -1,4 +1,4 @@
-from flow.shell_command.executors.base import ExecutorBase
+from flow.shell_command.executor_base import ExecutorBase
 
 import mock
 import unittest

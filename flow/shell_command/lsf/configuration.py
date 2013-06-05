@@ -1,5 +1,5 @@
-from flow.shell_command.executors.lsf import LSFExecutor
 from flow.shell_command.interfaces import IShellCommandExecutor
+from flow.shell_command.lsf.executor import LSFExecutor
 
 import injector
 
