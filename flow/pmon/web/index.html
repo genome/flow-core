@@ -7,29 +7,7 @@
     <meta name="viewport" content="width=device-width"/>
 
     <title>Flow Process Monitor!</title>
-    <link rel="stylesheet" type="text/css" href="styles/vendor/nv.d3.css"/>
-
-    <!-- VENDOR LIBS -->
-    <script type="text/javascript" src="scripts/vendor/jquery-2.0.0.min.js"></script>
-
-    <script type="text/javascript" src="scripts/vendor/angular.min.js"></script>
-    <script type="text/javascript" src="scripts/vendor/angular-resource.min.js"></script>
-
-    <script type="text/javascript" src="scripts/vendor/d3.v2.min.js"></script>
-    <script type="text/javascript" src="scripts/vendor/nv.d3.js"></script>
-
-    <script type="text/javascript" src="scripts/vendor/angular.tree.js"></script>
-    <script type="text/javascript" src="scripts/vendor/sprintf.min.js"></script>
-
-    <!-- APP SCRIPTS -->
-
-    <script type="text/javascript" src="scripts/directives/directives.js"></script>
-    <script type="text/javascript" src="scripts/services/services.js"></script>
-    <script type="text/javascript" src="scripts/controllers/controllers.js"></script>
-
-    <script type="text/javascript" src="scripts/update_status.js"></script>
-    <script type="text/javascript" src="scripts/angular.js"></script>
-
+    <link rel="stylesheet" type="text/css" href="lib/nv.d3.css"/>
   </head>
   <body data-ng-app='processMonitorApp'>
     <div data-ng-controller='MainController'>
@@ -46,7 +24,29 @@
         </ul>
       </div>
     </div>
-    <script>
-    </script>
+
+    <!-- VENDOR LIBS -->
+    <script type="text/javascript" src="lib/jquery-2.0.0.min.js"></script>
+
+    <script type="text/javascript" src="lib/angular.min.js"></script>
+    <script type="text/javascript" src="lib/angular-resource.min.js"></script>
+
+    <script type="text/javascript" src="lib/d3.v2.min.js"></script>
+    <script type="text/javascript" src="lib/nv.d3.js"></script>
+
+    <script type="text/javascript" src="lib/angular.tree.js"></script>
+    <script type="text/javascript" src="lib/sprintf.min.js"></script>
+
+    <!-- APP SCRIPTS -->
+
+    <script type="text/javascript" src="js/app.js"></script>
+    <script type="text/javascript" src="js/services.js"></script>
+    <script type="text/javascript" src="js/controllers.js"></script>
+    <script type="text/javascript" src="js/filters.js"></script>
+    <script type="text/javascript" src="js/directives.js"></script>
+
+    <script type="text/javascript" src="js/update_status.js"></script>
+    <script type="text/javascript" src="js/angular.js"></script>
+
   </body>
 </html>
