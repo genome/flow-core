@@ -1,5 +1,7 @@
 from flow.petri_net.actions.base import BarrierActionBase, BasicActionBase
 from flow.petri_net import lua
+from flow.util.containers import head
+from twisted.internet import defer
 
 import flow.redisom as rom
 
@@ -17,12 +19,13 @@ class BasicMergeAction(BasicActionBase, MergeMixin):
     def execute(self, net, color_descriptor,
             active_tokens, service_interfaces):
         if len(active_tokens) == 1:
-            return iter(active_tokens).next()
+            new_token = head(active_tokens)
         else:
             new_token = net.create_token(color=color_descriptor.color,
                     color_group_idx=color_descriptor.color_group.idx)
             self.merge_data(new_token, active_tokens)
-            return new_token
+
+        return [new_token], defer.succeed(None)
 
 
 class BarrierMergeAction(BarrierActionBase, MergeMixin):
