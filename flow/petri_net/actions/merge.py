@@ -1,4 +1,4 @@
-from base import BarrierActionBase, BasicActionBase
+from flow.petri_net.actions.base import BarrierActionBase, BasicActionBase
 from flow.petri_net import lua
 
 import flow.redisom as rom
@@ -6,7 +6,9 @@ import flow.redisom as rom
 
 class MergeMixin(object):
     def merge_data(self, dest_token, active_tokens):
-        raise NotImplementedError("Work, work.")
+        keys = [dest_token.data.key]
+        keys.extend(t.data.key for t in active_tokens)
+        self._merge_hashes_script(keys=keys)
 
 
 class BasicMergeAction(BasicActionBase, MergeMixin):
