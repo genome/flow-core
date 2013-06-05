@@ -9,7 +9,8 @@ DEFAULT_LOGGING_CONFIG = {
 
     'formatters': {
         'plain': {
-            'format': '%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d: %(message)s',
+            'format': '%(asctime)s %(levelname)s %(name)s %(funcName)s '
+                        '%(lineno)d: %(message)s',
         },
     },
 
