@@ -1,11 +1,12 @@
 import logging
 import os
-import sys
 
 from flow.commands.token_sender import TokenSenderCommand
 from twisted.internet import defer
 
+
 LOG = logging.getLogger(__name__)
+
 
 class LsfPostExecCommand(TokenSenderCommand):
     @staticmethod
@@ -20,7 +21,8 @@ class LsfPostExecCommand(TokenSenderCommand):
         info = os.environ.get('LSB_JOBEXIT_INFO', None)
         stat = os.environ.get('LSB_JOBEXIT_STAT', None)
         if stat is None:
-            LOG.critical("LSB_JOBEXIT_STAT environment variable wasn't set... exiting!")
+            LOG.critical("LSB_JOBEXIT_STAT environment variable wasn't "
+                    "set... exiting!")
             os._exit(1)
         else:
             stat = int(stat)
