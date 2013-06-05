@@ -57,7 +57,6 @@ class EnvironmentContextManagerTest(unittest.TestCase):
             pass
 
         self.assertEqual(old_env, os.environ.data)
-        print os.environ.data
 
 
 if '__main__' == __name__:

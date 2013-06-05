@@ -309,11 +309,9 @@ class TestList(FakeRedisTest):
         l.extend([e0, e1])
 
         r0 = l[0]
-        print type(r0), r0
         self.assertEqual(e0, r0)
 
         r1 = l[1]
-        print type(r1), r1
         self.assertEqual(e1, r1)
 
 
