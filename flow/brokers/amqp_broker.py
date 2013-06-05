@@ -1,5 +1,6 @@
 from flow import exit_codes
 from flow.configuration.settings.injector import setting
+from flow.protocol.exceptions import InvalidMessageException
 from flow.util import stats
 from injector import inject
 from pika.adapters import twisted_connection
