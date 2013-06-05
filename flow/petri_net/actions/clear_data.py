@@ -1,6 +1,4 @@
-from base import BarrierActionBase, BasicActionBase
-
-import flow.redisom as rom
+from flow.petri_net.actions.base import BarrierActionBase, BasicActionBase
 
 
 class BasicClearDataAction(BasicActionBase):
