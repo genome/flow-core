@@ -1,6 +1,5 @@
 from flow.commands.token_sender import TokenSenderCommand
 from twisted.internet import defer
-from flow.configuration.settings.injector import setting
 from flow.configuration.inject.redis_conf import RedisConfiguration
 from flow.configuration.inject.broker import BrokerConfiguration
 from injector import inject
