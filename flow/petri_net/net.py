@@ -65,8 +65,8 @@ class Net(rom.Object):
             raise ValueError('Tried to overwrite num_transitions')
 
 
-    def constant(self, key):
-        return self._constants.get(key)
+    def constant(self, key, default=None):
+        return self._constants.get(key, default)
 
     def set_constant(self, key, value):
         if self._constants.setnx(key, value) == 0:
@@ -76,8 +76,8 @@ class Net(rom.Object):
     def set_variable(self, key, value):
         self.variables[key] = value
 
-    def variable(self, key):
-        return self.variables.get(key)
+    def variable(self, key, default=None):
+        return self.variables.get(key, default)
 
 
     def add_place(self, name):
