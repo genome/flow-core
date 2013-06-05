@@ -1,6 +1,5 @@
 from flow.petri_net.future import FutureBarrierTransition
 from flow.petri_net.future import FutureBasicTransition
-from flow.petri_net.future import FuturePlace
 from flow.petri_net.net import Net
 from flow.petri_net.place import Place
 from flow.petri_net.transitions.barrier import BarrierTransition
