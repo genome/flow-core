@@ -126,9 +126,59 @@ class MoreAmqpBrokerTest(unittest.TestCase):
     def setUp(self):
         self.broker = AmqpBroker(connection_params=mock.Mock(), prefetch_count=None,
                 retry_delay=0.01, connection_attempts=3)
-        self.broker._get_pika_connection_params = mock.Mock()
+
+    def test_add_remove_confirm_deferred(self):
+        self.assertEqual(len(self.broker._confirm_tags), 0)
+        self.assertEqual(len(self.broker._confirm_deferreds), 0)
+
+        # add 1
+        publish_tag = object()
+        deferred = object()
+        self.broker.add_confirm_deferred(publish_tag=publish_tag,
+                deferred=deferred)
+
+        self.assertItemsEqual(self.broker._confirm_tags, [publish_tag])
+        self.assertItemsEqual(self.broker._confirm_deferreds, {publish_tag:deferred})
+
+        # add 2
+        publish_tag2 = object()
+        deferred2 = object()
+        self.broker.add_confirm_deferred(publish_tag=publish_tag2,
+                deferred=deferred2)
+
+        self.assertItemsEqual(self.broker._confirm_tags, [publish_tag, publish_tag2])
+        self.assertItemsEqual(self.broker._confirm_deferreds,
+                {publish_tag:deferred, publish_tag2:deferred2})
+
+        # remove 2
+        self.broker.remove_confirm_deferred(publish_tag2)
+        self.assertItemsEqual(self.broker._confirm_tags, [publish_tag])
+        self.assertItemsEqual(self.broker._confirm_deferreds, {publish_tag:deferred})
+
+
+    def test_raw_publish(self):
+        self.broker.channel = mock.Mock()
+        self.broker.channel.basic_publish = mock.Mock()
+        self.broker.add_confirm_deferred = mock.Mock()
+
+        self.assertEqual(self.broker._last_publish_tag, 0)
+        exchange_name = object()
+        routing_key = object()
+        encoded_message = object()
+
+        return_value = self.broker.raw_publish(exchange_name=exchange_name,
+                routing_key=routing_key, encoded_message=encoded_message)
+        self.assertEqual(self.broker._last_publish_tag, 1)
+        self.broker.channel.basic_publish.assertCalledOnceWith(exchange=exchange_name,
+                routing_key=1, body=encoded_message, properties=self.broker._publish_properties)
+        self.assertTrue(isinstance(return_value, defer.Deferred))
+        self.assertFalse(return_value.called)
+
+        self.broker.add_confirm_deferred.assertCalledOnceWith(1, return_value)
+
 
     def test_reconnect(self):
+        self.broker._get_pika_connection_params = mock.Mock()
         self._connect_deferreds = []
         def make_deferred(*args):
             deferred = defer.Deferred()
