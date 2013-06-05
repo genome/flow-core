@@ -1,9 +1,9 @@
 from flow.petri_net import lua
-from flow.petri_net.color import ColorGroup, ColorDescriptor
+from flow.petri_net.color import ColorGroup
 from flow.petri_net.color import color_group_enc, color_group_dec
-from flow.petri_net.exceptions import *
-from place import Place
-from token import Token
+from flow.petri_net.exceptions import ForeignTokenError, PlaceNotFoundError
+from flow.petri_net.place import Place
+from flow.petri_net.token import Token
 from twisted.internet import defer
 from uuid import uuid4
 
@@ -82,7 +82,8 @@ class Net(rom.Object):
 
     def add_place(self, name):
         idx = self._incr_counter(_PLACE_KEY) - 1
-        return Place.create(self.connection, self.place_key(idx), index=idx)
+        return Place.create(self.connection, self.place_key(idx),
+                index=idx, name=name)
 
     def add_transition(self, cls, *args, **kwargs):
         idx = self._incr_counter(_TRANSITION_KEY) - 1

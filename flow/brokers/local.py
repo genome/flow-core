@@ -1,5 +1,4 @@
 from collections import deque, defaultdict
-from flow.util import stats
 from twisted.internet import defer
 
 import flow.interfaces
@@ -16,17 +15,8 @@ class LocalBroker(flow.interfaces.IBroker):
         self.handlers = {}
 
     def publish(self, exchange_name, routing_key, message):
-        timer = stats.create_timer('messages.publish.%s' %
-                message.__class__.__name__)
-        timer.start()
-
         encoded_message = message.encode()
-        timer.split('encode')
-
-        deferred = self.raw_publish(exchange_name, routing_key, encoded_message)
-        timer.split('publish')
-        timer.stop()
-        return deferred
+        return self.raw_publish(exchange_name, routing_key, encoded_message)
 
     def register_handler(self, handler):
         self.handlers[handler.queue_name] = handler

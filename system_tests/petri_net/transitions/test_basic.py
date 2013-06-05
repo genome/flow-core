@@ -1,9 +1,9 @@
+from flow.petri_net.color import ColorDescriptor
 from flow.petri_net.transitions.basic import BasicTransition
-import flow.redisom as rom
-from flow.petri_net.net import Net, Token, ColorDescriptor
-
 from test_helpers import NetTest
 from unittest import main
+
+import flow.redisom as rom
 
 
 class TestBasic(NetTest):
