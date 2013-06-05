@@ -8,6 +8,7 @@ import logging
 import os
 import socket
 
+
 LOG = logging.getLogger(__name__)
 
 
@@ -111,6 +112,7 @@ def wait_for_child(parent_socket, pid):
 
     return job_id, exit_code
 
+
 def socketpair_or_exit():
     try:
         parent_socket, child_socket = socket.socketpair()
@@ -120,6 +122,7 @@ def socketpair_or_exit():
 
     return parent_socket, child_socket
 
+
 def fork_or_exit():
     try:
         pid = os.fork()
@@ -128,6 +131,7 @@ def fork_or_exit():
         os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     return pid
+
 
 def set_gid_and_uid_or_exit(group_id, user_id):
     if group_id is not None:
