@@ -10,6 +10,32 @@ from twisted.internet import defer
 from flow.brokers.amqp_broker import AmqpBroker
 from flow.brokers import amqp_broker
 
+class AmqpBrokerStaticMethodTests(unittest.TestCase):
+    def test_private_get_pika_connection_params(self):
+        pika = mock.Mock()
+        expected_return_value = object()
+        pika_connection_parameters = mock.Mock()
+        pika_connection_parameters.return_value = expected_return_value
+
+        broker_connection_params=mock.Mock()
+        broker_connection_params.hostname = object()
+        broker_connection_params.port = object()
+        broker_connection_params.virtual_host = object()
+
+
+        with mock.patch('pika.ConnectionParameters',
+                new=pika_connection_parameters):
+            broker = AmqpBroker(connection_params=None, prefetch_count=None,
+                    retry_delay=0.01, connection_attempts=1)
+            return_value = broker._get_pika_connection_params(
+                    connection_params=broker_connection_params)
+
+        self.assertTrue(return_value is expected_return_value)
+        pika_connection_parameters.assertCalledOnceWith(
+                host=broker_connection_params.hostname,
+                port=broker_connection_params.port,
+                virtual_host=broker_connection_params.virtual_host)
+
 class AmqpBrokerTest(unittest.TestCase):
     def setUp(self):
         self.broker = AmqpBroker(connection_params=None, prefetch_count=None,
@@ -100,7 +126,7 @@ class MoreAmqpBrokerTest(unittest.TestCase):
     def setUp(self):
         self.broker = AmqpBroker(connection_params=mock.Mock(), prefetch_count=None,
                 retry_delay=0.01, connection_attempts=3)
-        self.broker._get_connection_params = mock.Mock()
+        self.broker._get_pika_connection_params = mock.Mock()
 
     def test_reconnect(self):
         self._connect_deferreds = []

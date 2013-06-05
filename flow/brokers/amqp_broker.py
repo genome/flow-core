@@ -56,11 +56,12 @@ class AmqpBroker(flow.interfaces.IBroker):
 
         self._last_publish_tag = 0
 
-    def _get_connection_params(self):
+    @staticmethod
+    def _get_pika_connection_params(connection_params):
         params = pika.ConnectionParameters(
-                host=self.connection_params.hostname,
-                port=self.connection_params.port,
-                virtual_host=self.connection_params.virtual_host)
+                host=connection_params.hostname,
+                port=connection_params.port,
+                virtual_host=connection_params.virtual_host)
         return params
 
     def register_handler(self, handler):
@@ -124,7 +125,7 @@ class AmqpBroker(flow.interfaces.IBroker):
                 self._connect_deferred = defer.Deferred()
             LOG.debug('Connecting to AMQP')
 
-            params = self._get_connection_params()
+            params = self._get_pika_connection_params(self.connection_params)
             connection = protocol.ClientCreator(reactor,
                     twisted_connection.TwistedProtocolConnection,
                     params)
