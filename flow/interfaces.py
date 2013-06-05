@@ -52,7 +52,8 @@ class IOrchestrator(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def create_token(self, net_key, place_idx, **create_token_kwargs):
+    def create_token(self, net_key, place_idx,
+            color, color_group_index, data=None):
         pass
 
     @abstractmethod

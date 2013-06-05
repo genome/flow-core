@@ -139,8 +139,7 @@ class Net(rom.Object):
             new_tokens, deferred = trans.fire(self,
                     color_descriptor, service_interfaces)
             colors = [x.color.value for x in new_tokens]
-            trans.push_tokens(self, color_descriptor,
-                    tokens, service_interfaces)
+            trans.push_tokens(self, color_descriptor, new_tokens)
             trans.notify_places(self.key, colors, service_interfaces)
 
             return deferred

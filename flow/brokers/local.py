@@ -52,7 +52,6 @@ class LocalBroker(flow.interfaces.IBroker):
                     h = self.handlers[q]
                     message_class = h.message_class
                     message = message_class.decode(encoded_message)
-                    print h
                     h(message)
                 except KeyError:
                     pass

@@ -7,9 +7,9 @@ import flow.redisom as rom
 
 
 class MergeMixin(object):
-    def merge_data(self, dest_token, active_tokens):
+    def merge_data(self, net, dest_token, active_tokens):
         keys = [dest_token.data.key]
-        keys.extend(t.data.key for t in active_tokens)
+        keys.extend(net.token(t).data.key for t in active_tokens)
         self._merge_hashes_script(keys=keys)
 
 
@@ -19,11 +19,12 @@ class BasicMergeAction(BasicActionBase, MergeMixin):
     def execute(self, net, color_descriptor,
             active_tokens, service_interfaces):
         if len(active_tokens) == 1:
-            new_token = head(active_tokens)
+            new_token_idx = head(active_tokens)
+            new_token = net.token(new_token_idx)
         else:
             new_token = net.create_token(color=color_descriptor.color,
                     color_group_idx=color_descriptor.color_group.idx)
-            self.merge_data(new_token, active_tokens)
+            self.merge_data(net, new_token, active_tokens)
 
         return [new_token], defer.succeed(None)
 

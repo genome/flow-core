@@ -79,11 +79,11 @@ class ShellCommandDispatchAction(BasicMergeAction):
         with_outputs = self.args.get('with_outputs')
 
         service = service_interfaces[self.service_name]
-        deferred.add_callback(service.submit, net_key=net.key,
+        deferred.addCallback(lambda x: service.submit(net_key=net.key,
                 response_places=response_places, color=color_descriptor.color,
                 color_group_idx=color_descriptor.group.idx,
                 command_line=command_line, inputs_hash_key=inputs_hash_key,
-                with_outputs=with_outputs, **executor_options)
+                with_outputs=with_outputs, executor_options=executor_options))
 
         return tokens, deferred
 

@@ -10,9 +10,10 @@ from flow.shell_command.service_interface import ForkShellCommandServiceInterfac
 from flow.shell_command.handler import ForkShellCommandMessageHandler
 from flow.shell_command.executors.fork import ForkExecutor
 
-from flow import petri
-from flow.petri.netbuilder import NetBuilder
-from flow.shell_command.executors import nets
+from flow.petri_net import builder
+from flow.shell_command.future_nets import ForkCommandNet
+
+#import time
 
 
 class TestSystemFork(redistest.RedisTest):
@@ -58,24 +59,31 @@ class TestSystemFork(redistest.RedisTest):
         self.broker.register_handler(
                 ForkShellCommandMessageHandler(
                     executor=fork_executor, queue_name='fork_submit_q',
-                    exchange='create_token_x', response_routing_key='create_token_rk'))
+                    exchange='create_token_x',
+                    response_routing_key='create_token_rk'))
 
     def test_system_fork(self):
         # XXX This test is quite weak, because we rely on the wrapper to talk to
         # the broker even for the fork executor.
-        builder = NetBuilder()
-        building_net = nets.ForkCommandNet(builder, 'net name',
-                nets.ForkDispatchAction,
-                action_args={'command_line': ['non', 'sense', 'command'],
-                    'stdout': '/dev/null'})
+        future_net = ForkCommandNet('net name',
+                command_line=['non', 'sense', 'command'], stdout='/dev/null')
+        future_places, future_transitions = builder.gather_nodes(future_net)
 
-        net = builder.store(self.conn)
+        b = builder.Builder(self.conn)
+        net = b.store(future_net, {}, {})
 
-        self.service_interfaces['orchestrator'].create_token(net.key, 0)
+        # XXX OMG, color group
+        cg = net.add_color_group(1)
+
+        self.service_interfaces['orchestrator'].create_token(net.key,
+                future_places[future_net.start], cg.begin, cg.idx)
         self.broker.listen()
 
-        # XXX This is the marking for dispatched, not success/failure
-        self.assertEqual(['3'], net.marking.keys())
+        expected_color_keys = [net.marking_key(
+            cg.begin, future_places[future_net.dispatched])]
+#        expected_color_keys = ['0:%d' % future_places[future_net.dispatched]]
+
+        self.assertItemsEqual(expected_color_keys, net.color_marking.keys())
 
 if __name__ == "__main__":
     unittest.main()

@@ -23,7 +23,10 @@ class PetriCreateTokenHandler(Handler):
         create_token_kwargs = getattr(message, 'create_token_kwargs', {})
 
         return net.create_put_notify(message.place_idx,
-                self.service_interfaces, **create_token_kwargs)
+                self.service_interfaces,
+                color=message.color,
+                color_group_idx=message.color_group_idx,
+                data=getattr(message, 'data', {}))
 
 
 @inject(redis=flow.interfaces.IStorage,
@@ -34,8 +37,7 @@ class PetriNotifyPlaceHandler(Handler):
 
     def _handle_message(self, message):
         net = get_object(self.redis, message.net_key)
-        color = getattr(message, "token_color", None)
-        return net.notify_place(message.place_idx, token_color=color,
+        return net.notify_place(message.place_idx, color=message.color,
                 service_interfaces=self.service_interfaces)
 
 
@@ -47,7 +49,6 @@ class PetriNotifyTransitionHandler(Handler):
 
     def _handle_message(self, message):
         net = get_object(self.redis, message.net_key)
-        color = getattr(message, "token_color", None)
-        return net.notify_transition(message.transition_idx, message.place_idx,
-                service_interfaces=self.service_interfaces,
-                token_color=color)
+        return net.notify_transition(message.transition_idx,
+                message.place_idx, token_idx=message.token_idx,
+                service_interfaces=self.service_interfaces)

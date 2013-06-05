@@ -7,17 +7,14 @@ class ShellCommandSubmitMessage(Message):
             'command_line': list,
             'net_key': basestring,
             'response_places': dict,
+            'color': (int, long),
+            'color_group_idx': (int, long),
     }
 
     optional_fields = {
-            'token_color': int,
+            'inputs_hash_key': basestring,
+            'with_outputs': bool,
             'executor_options': dict,
-
-            # The following options are deprecated
-            'success_routing_key': basestring,
-            'failure_routing_key': basestring,
-            'error_routing_key': basestring,
-            'return_identifier': object,
     }
 
     def validate(self):
