@@ -1,11 +1,11 @@
 from flow.petri_net.future import FutureAction, FutureNet
 from flow.shell_command.actions import ForkDispatchAction, LSFDispatchAction
-from twisted.internet import defer
 
 import logging
 
 
 LOG = logging.getLogger(__name__)
+
 
 class ShellCommandNet(FutureNet):
     def __init__(self, *args, **kwargs):
