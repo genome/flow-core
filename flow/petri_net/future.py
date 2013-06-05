@@ -76,8 +76,12 @@ class FutureTransition(FutureNode):
         FutureNode.add_arc_out(self, place)
 
 
-class FutureBasicTransition(FutureTransition): pass
-class FutureBarrierTransition(FutureTransition): pass
+class FutureBasicTransition(FutureTransition):
+    pass
+
+
+class FutureBarrierTransition(FutureTransition):
+    pass
 
 
 class FutureAction(object):
