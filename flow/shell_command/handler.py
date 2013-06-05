@@ -1,6 +1,6 @@
 from flow.configuration.settings.injector import setting
 from flow.handler import Handler
-from flow.interfaces import IShellCommandExecutor, IBroker, IStorage
+from flow.interfaces import IShellCommandExecutor
 from flow.service_locator import ServiceLocator
 from flow.shell_command.messages import ShellCommandSubmitMessage
 from injector import inject
@@ -29,7 +29,7 @@ class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
         net_key = message.net_key
         token_color = getattr(message, "token_color", None)
 
-        job_id, success = self.executor(message.command_line,
+        self.executor(message.command_line,
                 net_key=net_key, response_places=response_places,
                 token_color=token_color, **executor_options)
         return defer.succeed(True)
@@ -57,5 +57,6 @@ class LSFShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
             response_place = response_places.get('post_dispatch_failure')
 
         orchestrator = self.service_locator['orchestrator']
-        return orchestrator.create_token(net_key=net_key, place_idx=response_place,
-                data={"pid": str(job_id)}, token_color=token_color)
+        return orchestrator.create_token(net_key=net_key,
+                place_idx=response_place, data={"pid": str(job_id)},
+                token_color=token_color)
