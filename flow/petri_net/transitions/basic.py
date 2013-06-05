@@ -1,7 +1,7 @@
-from base import TransitionBase
 from flow.petri_net import lua
 from flow.petri_net.actions.base import BasicActionBase
 from flow.petri_net.actions.merge import BasicMergeAction
+from flow.petri_net.transitions.base import TransitionBase
 
 import flow.redisom as rom
 import logging
