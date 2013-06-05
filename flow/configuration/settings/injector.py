@@ -1,4 +1,3 @@
-from flow.configuration.inject import settings
 from flow.configuration.inject import initialize
 
 import abc
