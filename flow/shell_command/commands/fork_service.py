@@ -1,8 +1,8 @@
 from flow.commands.service import ServiceCommand
 from flow.configuration.inject.broker import BrokerConfiguration
-from flow.configuration.inject.fork_executor import ForkExecutorConfiguration
 from flow.configuration.inject.redis_conf import RedisConfiguration
 from flow.configuration.inject.service_locator import ServiceLocatorConfiguration
+from flow.shell_command.configuration.fork_executor import ForkExecutorConfiguration
 from flow.shell_command.handler import ForkShellCommandMessageHandler
 
 import logging

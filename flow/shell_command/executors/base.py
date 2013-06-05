@@ -1,9 +1,9 @@
 from flow import exit_codes
 from flow.configuration.settings.injector import setting
+from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.util import environment as env_util
 from injector import inject
 
-import flow.interfaces
 import logging
 import os
 import socket
@@ -16,7 +16,7 @@ LOG = logging.getLogger(__name__)
         default_environment=setting('shell_command.default_environment', {}),
         mandatory_environment=
             setting('shell_command.mandatory_environment', {}))
-class ExecutorBase(flow.interfaces.IShellCommandExecutor):
+class ExecutorBase(IShellCommandExecutor):
     def __call__(self, command_line, group_id=None, user_id=None,
             environment={}, **kwargs):
         parent_socket, child_socket = socketpair_or_exit()

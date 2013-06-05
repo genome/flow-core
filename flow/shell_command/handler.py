@@ -1,6 +1,6 @@
 from flow.configuration.settings.injector import setting
 from flow.handler import Handler
-from flow.interfaces import IShellCommandExecutor
+from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.service_locator import ServiceLocator
 from flow.shell_command.messages import ShellCommandSubmitMessage
 from injector import inject

@@ -1,4 +1,5 @@
 from flow.configuration.settings.injector import setting
+from flow.shell_command.interfaces import IShellCommand
 from flow.shell_command.messages import ShellCommandSubmitMessage
 from injector import inject
 
@@ -10,7 +11,7 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(broker=flow.interfaces.IBroker)
-class ShellCommandServiceInterface(flow.interfaces.IShellCommand):
+class ShellCommandServiceInterface(IShellCommand):
     def submit(self, **kwargs):
         message = ShellCommandSubmitMessage(**kwargs)
 
