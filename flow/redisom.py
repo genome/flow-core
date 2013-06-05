@@ -1,15 +1,13 @@
-#!/usr/bin/env python
-
 # pylint: disable=W0212
 
 from uuid import uuid4
+
 import functools
 import hashlib
 import redis
 import json
 import re
 
-from flow.util import stats
 
 KEY_DELIM = '/'
 
