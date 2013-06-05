@@ -27,5 +27,9 @@ class ActionBase(rom.Object):
                 % self.__class__.__name__)
 
 
-class BarrierActionBase(ActionBase): pass
-class BasicActionBase(ActionBase): pass
+class BarrierActionBase(ActionBase):
+    pass
+
+
+class BasicActionBase(ActionBase):
+    pass
