@@ -4,7 +4,6 @@ from flow.configuration.settings.injector import setting
 from flow.service_locator import ServiceLocator
 from injector import inject
 
-import flow.interfaces
 import logging
 
 
@@ -23,6 +22,8 @@ class TokenSenderCommand(CommandBase):
         orchestrator = self.service_locator['orchestrator']
         LOG.info("Sending command response token to net %s, place %r",
                 net_key, place_idx)
-        return orchestrator.create_token(net_key=net_key, place_idx=int(place_idx),
-                data=data, data_type="output", token_color=color)
 
+        # XXX This interface has changed
+        return orchestrator.create_token(net_key=net_key,
+                place_idx=int(place_idx), data=data,
+                data_type="output", token_color=color)
