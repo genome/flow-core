@@ -57,11 +57,11 @@ class IOrchestrator(object):
         pass
 
     @abstractmethod
-    def notify_place(self, net_key, place_idx):
+    def notify_place(self, net_key, place_idx, color):
         pass
 
     @abstractmethod
-    def notify_transition(self, net_key, transition_idx, place_idx):
+    def notify_transition(self, net_key, transition_idx, place_idx, token_idx):
         pass
 
     @abstractmethod
