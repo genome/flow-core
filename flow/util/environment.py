@@ -28,4 +28,3 @@ def set_environment(*environment_dicts):
         except UnicodeEncodeError:
             LOG.warn('Failed to update environment variable %s=%s... skipping',
                     key, value)
-            pass
