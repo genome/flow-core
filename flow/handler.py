@@ -15,9 +15,6 @@ class Handler(IHandler):
         """
         try:
             deferred = self._handle_message(encoded_message)
-        except InvalidMessageException:
-            LOG.exception('Invalid message.  message = %s', encoded_message)
-            deferred = defer.fail(None)
         except:
             LOG.exception('Unexpected error handling message. message = %s',
                     encoded_message)

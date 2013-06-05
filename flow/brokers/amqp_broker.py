@@ -262,11 +262,16 @@ class AmqpBroker(flow.interfaces.IBroker):
                 message_class.__name__)
         timer.start()
 
-        encoded_message = message_class.decode(encoded_message)
-        timer.split('decode')
+        try:
+            message = message_class.decode(encoded_message)
+            timer.split('decode')
 
-        deferred = handler(encoded_message)
-        timer.split('handle')
+            deferred = handler(message)
+            timer.split('handle')
+        except InvalidMessageException:
+            timer.split('decode')
+            LOG.exception('Invalid message.  message = %s', encoded_message)
+            deferred = defer.fail()
 
         receive_tag = basic_deliver.delivery_tag
         deferred.addCallbacks(self._ack, self._reject,
