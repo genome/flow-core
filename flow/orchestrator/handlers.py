@@ -4,7 +4,6 @@ from flow.orchestrator.messages import CreateTokenMessage, NotifyPlaceMessage
 from flow.orchestrator.messages import NotifyTransitionMessage
 from flow.redisom import get_object
 from injector import inject
-from twisted.internet import defer
 
 import flow.interfaces
 import logging
