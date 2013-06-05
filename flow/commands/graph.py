@@ -1,6 +1,5 @@
 from flow.commands.base import CommandBase
 from flow.configuration.inject.redis_conf import RedisConfiguration
-from flow.configuration.settings.injector import setting
 from twisted.internet import defer
 from injector import inject
 
