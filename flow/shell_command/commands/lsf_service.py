@@ -1,12 +1,12 @@
-from flow.shell_command.handler import LSFShellCommandMessageHandler
 from flow.commands.service import ServiceCommand
 from flow.configuration.inject.broker import BrokerConfiguration
 from flow.configuration.inject.lsf_executor import LSFExecutorConfiguration
 from flow.configuration.inject.redis_conf import RedisConfiguration
 from flow.configuration.inject.service_locator import ServiceLocatorConfiguration
-from injector import inject
+from flow.shell_command.handler import LSFShellCommandMessageHandler
 
 import logging
+
 
 LOG = logging.getLogger(__name__)
 
