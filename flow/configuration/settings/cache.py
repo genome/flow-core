@@ -28,7 +28,7 @@ class CacheSettings(SettingsBase):
 
         current_dict = self._settings
 
-        for i, step in enumerate(split_path[:-1]):
+        for step in split_path[:-1]:
             try:
                 current_dict = current_dict[step]
             except KeyError:
