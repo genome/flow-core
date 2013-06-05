@@ -1,5 +1,4 @@
 from flow.petri_net.actions.merge import BasicMergeAction
-from twisted.internet import defer
 
 import logging
 
