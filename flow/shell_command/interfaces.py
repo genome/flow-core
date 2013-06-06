@@ -14,10 +14,6 @@ class IShellCommandExecutor(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def execute(self, command_line, **kwargs):
-        pass
-
-    @abstractmethod
-    def __call__(self, command_line, group_id=None, user_id=None,
-            environment={}, **kwargs):
+    def execute(self, group_id, user_id, environment, working_directory,
+            command_line, executor_data, callback_data, service_interfaces):
         pass

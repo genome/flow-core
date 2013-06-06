@@ -12,6 +12,31 @@ import os
 
 LOG = logging.getLogger(__name__)
 
+#    def _make_command_line(self, command_line, net_key=None,
+#            response_places=None, with_inputs=None, with_outputs=None,
+#            token_color=None):
+#
+#        cmdline = self.wrapper + [
+#            '-n', net_key,
+#            '-r', response_places['begin_execute'],
+#            '-s', response_places['execute_success'],
+#        ]
+#        if 'execute_failure' in response_places.keys():
+#            cmdline += ['-f', response_places['execute_failure']]
+#
+#        if token_color is not None:
+#            cmdline += ["--token-color", str(token_color)]
+#
+#        if with_inputs:
+#            cmdline += ["--with-inputs", with_inputs]
+#
+#        if with_outputs:
+#            cmdline.append("--with-outputs")
+#
+#        cmdline.append('--')
+#        cmdline += command_line
+#
+#        return [str(x) for x in cmdline]
 
 _RESOURCE_MAP = {
         "min_proc": Resource(name="ncpus", type="int", units=None,

@@ -3,7 +3,9 @@ from flow.configuration.settings.injector import setting
 from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.util import environment as env_util
 from injector import inject
+from twisted.internet import defer
 
+import abc
 import logging
 import os
 import socket
@@ -12,105 +14,107 @@ import socket
 LOG = logging.getLogger(__name__)
 
 
-@inject(wrapper=setting('shell_command.wrapper'),
-        default_environment=setting('shell_command.default_environment', {}),
+
+@inject(default_environment=setting('shell_command.default_environment', {}),
         mandatory_environment=
             setting('shell_command.mandatory_environment', {}))
 class ExecutorBase(IShellCommandExecutor):
-    def __call__(self, command_line, group_id=None, user_id=None,
-            environment={}, **kwargs):
+    @abc.abstractmethod
+    def execute_command_line(self, job_id_callback, command_line,
+            executor_data):
+        pass
+
+    def on_job_id(self, job_id, callback_data, service_interfaces):
+        return defer.succeed(None)
+        # (lsf) send dispatch succeeded message
+
+    def on_failure(self, exit_code, callback_data, service_interfaces):
+        return defer.succeed(None)
+        # (lsf)  send disptach fail message
+
+    def on_signal(self, signal_number, callback_data, service_interfaces):
+        raise RuntimeError('Child received signal (%d)' % signal_number)
+
+    def on_success(self, **kwargs):
+        return defer.succeed(None)
+
+
+    def execute(self, group_id, user_id, environment, working_directory,
+            command_line, executor_data, callback_data, service_interfaces):
+        deferreds = []
+
         parent_socket, child_socket = socketpair_or_exit()
 
-        pid = fork_or_exit()
-        if pid:  # Parent
-            child_socket.close()
-            job_id, exit_code = wait_for_child(parent_socket, pid)
-
-            if exit_code == exit_codes.EXECUTE_SUCCESS:
-                return job_id, True
-            elif exit_code == exit_codes.EXECUTE_FAILURE:
-                return job_id, False
-            else:
-                raise RuntimeError('Unknown exit code (%d) from child!'
-                        % exit_code)
-
-        else:  # Child
+        child_pid = fork_or_exit()
+        if child_pid == 0:
             parent_socket.close()
+            child_exit_code = self._child(child_socket, group_id, user_id,
+                    environment, working_directory, command_line, executor_data)
+            os._exit(child_exit_code)
 
-            set_gid_and_uid_or_exit(group_id, user_id)
+        else:
+            child_socket.close()
+            try:
+                job_id = get_job_id(parent_socket)
+                if job_id is not None:
+                    deferreds.append(self.on_job_id(
+                        job_id, callback_data, service_interfaces))
 
-            exit_code = self._child_execute(child_socket,
-                    command_line, environment, kwargs)
+            except:
+                LOG.exception('Error in parent, killing child')
+                os.kill(child_pid, 9)
+                raise
+            finally:
+                parent_socket.close()
 
-            os._exit(exit_code)
+        exit_code, signal_number = wait_for_pid(child_pid)
 
-    def _child_execute(self, child_socket, command_line, environment, kwargs):
+        if signal_number > 0:
+            deferreds.append(self.on_signal(
+                signal_number, callback_data, service_interfaces))
+        elif exit_code > 0:
+            deferreds.append(self.on_failure(
+                exit_code, callback_data, service_interfaces))
+        else:
+            deferreds.append(self.on_success(callback_data, service_interfaces))
+
+        return defer.gatherResults(deferreds, consumeErrors=True)
+
+    def _child(self, send_socket, group_id, user_id, environment,
+            working_directory, command_line, executor_data):
+        def send_job_id(job_id):
+            send_socket.send(str(job_id))
+            send_socket.close()
+
+        set_gid_and_uid_or_exit(group_id, user_id)
+        env_util.set_environment(self.default_environment,
+                environment, self.mandatory_environment)
+        os.chdir(working_directory)
+
         try:
-            env_util.set_environment(self.default_environment,
-                    environment, self.mandatory_environment)
-
-            success, job_id = self.execute(command_line, **kwargs)
-
-            if success:
-                child_socket.send(str(job_id))
-                child_socket.close()
-                return exit_codes.EXECUTE_SUCCESS
-            else:
-                return exit_codes.EXECUTE_FAILURE
-
+            exit_code = self.execute_command_line(command_line=command_line,
+                    job_id_callback=send_job_id, executor_data=executor_data)
         except:
-            LOG.exception('Executor raised exception, exitting.')
-            return exit_codes.EXECUTE_ERROR
+            LOG.exception('Exception caught in ShellCommand service child')
+            os.kill(os.getpid(), 9)
 
-    def _make_command_line(self, command_line, net_key=None,
-            response_places=None, with_inputs=None, with_outputs=None,
-            token_color=None):
-
-        cmdline = self.wrapper + [
-            '-n', net_key,
-            '-r', response_places['begin_execute'],
-            '-s', response_places['execute_success'],
-        ]
-        if 'execute_failure' in response_places.keys():
-            cmdline += ['-f', response_places['execute_failure']]
-
-        if token_color is not None:
-            cmdline += ["--token-color", str(token_color)]
-
-        if with_inputs:
-            cmdline += ["--with-inputs", with_inputs]
-
-        if with_outputs:
-            cmdline.append("--with-outputs")
-
-        cmdline.append('--')
-        cmdline += command_line
-
-        return [str(x) for x in cmdline]
+        return exit_code
 
 
-def wait_for_child(parent_socket, pid):
-    child_pid, exit_status = os.waitpid(pid, 0)
+def get_job_id(recv_socket):
+    data = recv_socket.recv(64)
+    if data != '':
+        return data
+    else:
+        return None
+
+
+def wait_for_pid(pid):
+    _, exit_status = os.waitpid(pid, 0)
     signal_number = 255 & exit_status
     exit_code = exit_status >> 8
 
-    if signal_number:
-        raise RuntimeError('Executor child got signal (%d), '
-                'rejecting message' % signal_number)
-
-    if exit_code == exit_codes.EXECUTE_SYSTEM_FAILURE:
-        os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
-    elif exit_code == exit_codes.EXECUTE_ERROR:
-        raise RuntimeError('Error in executor child process '
-                '(exit code %d).  Rejecting message.' % exit_code)
-
-    job_id = -1
-    if not signal_number and exit_code == exit_codes.EXECUTE_SUCCESS:
-        job_id = int(parent_socket.recv(64))
-
-    parent_socket.close()
-
-    return job_id, exit_code
+    return exit_code, signal_number
 
 
 def socketpair_or_exit():
@@ -151,3 +155,14 @@ def set_gid_and_uid_or_exit(group_id, user_id):
             LOG.exception('Failed to setuid from %d to %d',
                     os.getuid(), user_id)
             os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+
+
+def send_message(place_name, callback_data, service_interfaces, data=None):
+    net_key = callback_data['net_key']
+    color = callback_data['color']
+    color_group_idx = callback_data['color_group_idx']
+    place_idx = callback_data[place_name]
+
+    return service_interfaces['orchestrator'].create_token(
+            net_key=net_key, place_idx=place_idx, color=color,
+            color_group_idx=color_group_idx, data=data)

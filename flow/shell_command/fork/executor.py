@@ -1,8 +1,11 @@
 from flow.shell_command import util
-from flow.shell_command.executor_base import ExecutorBase
+from flow.shell_command.executor_base import ExecutorBase, send_message
+from twisted.internet import defer
 
+import flow.interfaces
 import logging
 import os
+import socket
 import subprocess
 
 
@@ -10,33 +13,49 @@ LOG = logging.getLogger(__name__)
 
 
 class ForkExecutor(ExecutorBase):
-    def execute(self, command_line, net_key=None, response_places=None,
-            working_directory=None, stdout=None, stderr=None,
-            with_inputs=None, with_outputs=False, token_color=None,
-            **kwargs):
+    def on_job_id(self, job_id, callback_data, service_interfaces):
+        deferreds = []
+        dispatch_data = {'job_id': job_id}
+        deferreds.append(send_message(
+            'msg: dispatch_success', data=dispatch_data))
 
-        full_command_line = self._make_command_line(command_line,
-                net_key=net_key, response_places=response_places,
-                with_inputs=with_inputs, with_outputs=with_outputs,
-                token_color=token_color)
+        execute_data = {'hostname': socket.gethostname()}
+        deferreds.append(send_message(
+            'msg: execute_begin', data=execute_data))
 
-        LOG.debug('working_directory = %s', working_directory)
-        LOG.debug('PATH = %s', os.getenv('PATH'))
+        return defer.gatherResults(deferreds, consumeErrors=True)
+
+    def on_failure(self, exit_code, callback_data, service_interfaces):
+        return send_message('msg: execute_failure')
+
+    def on_success(self, callback_data, service_interfaces):
+        return send_message('msg: execute_success')
+
+
+    def execute_command_line(self, job_id_callback,
+            command_line, executor_data):
+        stdout = executor_data.get('stdout')
+        stderr = executor_data.get('stderr')
 
         stdout_fh = None
         stderr_fh = None
         try:
             if stdout:
-                stdout_fh = open(util.join_path_if_rel(
-                    working_directory, stdout), 'a')
+                stdout_fh = open(stdout, 'a')
             if stderr:
-                stderr_fh = open(util.join_path_if_rel(
-                    working_directory, stderr), 'a')
+                stderr_fh = open(stderr, 'a')
 
-            LOG.debug('executing command %s', " ".join(full_command_line))
-            exit_code = subprocess.call(full_command_line,
-                    stdout=stdout_fh, stderr=stderr_fh,
-                    cwd=working_directory)
+            LOG.debug('executing command %s', " ".join(command_line))
+            p = subprocess.Popen(command_line, close_fds=True,
+                    stdout=stdout_fh, stderr=stderr_fh)
+            job_id_callback(p.pid)
+
+            returncode = p.wait()
+
+            if returncode < 0:
+                exit_code = exit_codes.EXECUTE_ERROR
+            else:
+                exit_code = returncode
 
         except OSError:
             LOG.exception('Executor got OSError')
@@ -47,11 +66,4 @@ class ForkExecutor(ExecutorBase):
             if stderr_fh:
                 stderr_fh.close()
 
-        if exit_code > 0:
-            # XXX get error message
-            LOG.debug('failed to execute subprocess job, exit_code = %d',
-                    exit_code)
-            return False, exit_code
-        else:
-            LOG.debug('succesfully executed subprocess job')
-            return True, exit_code
+        return exit_code

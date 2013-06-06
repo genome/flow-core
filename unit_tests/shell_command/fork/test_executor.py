@@ -1,45 +1,31 @@
 from flow.shell_command.fork import executor
 
 import mock
-import sys
 import unittest
-
-
-success_script = "import sys; sys.exit(0)"
-failure_script = "import sys; sys.exit(1)"
 
 
 class ForkExecutorTest(unittest.TestCase):
     def setUp(self):
-        self.dispatcher = executor.ForkExecutor(wrapper=[],
+        self.executor = executor.ForkExecutor(
                 default_environment={}, mandatory_environment={})
-        self.response_places = {
-            'begin_execute': '0',
-            'execute_success': '1',
-            'execute_failure': '2',
-        }
 
     def test_succeeded_job(self):
-        self.dispatcher.wrapper = [sys.executable, '-c', success_script, '--']
+        job_id_callback = mock.Mock()
 
-        success, result = self.dispatcher.execute(['/bin/true'],
-                net_key="x",
-                response_places=self.response_places)
-        self.assertTrue(success)
-        self.assertEqual(result, 0)
+        rv = self.executor.execute_command_line(
+                job_id_callback, ['/bin/true'], {})
+
+        self.assertEqual(0, rv)
+        job_id_callback.assert_called_once_with(mock.ANY)
 
     def test_failed_job(self):
-        self.dispatcher.wrapper = [sys.executable, '-c', failure_script, '--']
+        job_id_callback = mock.Mock()
 
-        success, result = self.dispatcher.execute(['/bin/false'],
-                net_key="x",
-                response_places=self.response_places)
-        self.assertFalse(success)
-        self.assertEqual(result, 1)
+        rv = self.executor.execute_command_line(
+                job_id_callback, ['/bin/false'], {})
 
-    def test_missing_response_places(self):
-        self.assertRaises(TypeError,
-                self.dispatcher.execute, [mock.Mock()])
+        self.assertEqual(1, rv)
+        job_id_callback.assert_called_once_with(mock.ANY)
 
 
 if '__main__' == __name__:
