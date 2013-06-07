@@ -8,10 +8,14 @@ LOG = logging.getLogger(__name__)
 
 class ShellCommandDispatchAction(BasicMergeAction):
     net_constants = ['user_id', 'working_directory', 'mail_user']
-    place_refs = ["post_dispatch_success",
-            "post_dispatch_failure", "begin_execute",
-            "execute_success", "execute_failure"]
-    required_arguments = place_refs
+    place_refs = [
+            "msg: dispatch_success",
+            "msg: dispatch_failure",
+            "msg: execute_begin",
+            "msg: execute_success",
+            "msg: execute_failure",
+    ]
+    required_arguments = place_refs + ['command_line']
 
     # Hooks that subclasses can override
     def command_line(self, token_data):
@@ -77,15 +81,23 @@ class ShellCommandDispatchAction(BasicMergeAction):
         command_line = self.command_line(token_data)
         inputs_hash_key = self.inputs_hash_key(token_data)
         executor_options = self._executor_options(net)
+        callback_data = {
+                'net_key': net.key,
+                'color': color_descriptor.color,
+                'color_group_idx': color_descriptor.group.idx,
+        }
+        callback_data.update(response_places)
+
+        user_id = int(net.constant('user_id'))
+        group_id = int(net.constant('group_id'))
 
         with_outputs = self.args.get('with_outputs')
 
         service = service_interfaces[self.service_name]
-        deferred.addCallback(lambda x: service.submit(net_key=net.key,
-                response_places=response_places, color=color_descriptor.color,
-                color_group_idx=color_descriptor.group.idx,
-                command_line=command_line, inputs_hash_key=inputs_hash_key,
-                with_outputs=with_outputs, executor_options=executor_options))
+        deferred.addCallback(lambda x: service.submit(
+            user_id=user_id, group_id=group_id,
+            callback_data=callback_data, command_line=command_line,
+            executor_data=executor_options))
 
         return tokens, deferred
 

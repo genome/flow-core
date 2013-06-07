@@ -11,7 +11,7 @@ class ShellCommandNet(FutureNet):
     def __init__(self, name,
             dispatch_success_action=None,
             dispatch_failure_action=None,
-            begin_execute_action=None,
+            execute_begin_action=None,
             success_action=None,
             failure_action=None,
             **action_args):
@@ -27,17 +27,17 @@ class ShellCommandNet(FutureNet):
         self.running = self.add_place("running")
         self.dispatch_success_place = self.add_place("msg: dispatch_success")
         self.dispatch_failure_place = self.add_place("msg: dispatch_failure")
-        self.begin_execute_place = self.add_place("msg: begin_execute")
+        self.execute_begin_place = self.add_place("msg: execute_begin")
         self.execute_success_place = self.add_place("msg: execute_success")
         self.execute_failure_place = self.add_place("msg: execute_failure")
 
         action_args.update({
-                "post_dispatch_success": self.dispatch_success_place,
-                "post_dispatch_failure": self.dispatch_failure_place,
-                "begin_execute": self.begin_execute_place,
-                "execute_success": self.execute_success_place,
-                "execute_failure": self.execute_failure_place,
-                })
+            "msg: dispatch_success": self.dispatch_success_place,
+            "msg: dispatch_failure": self.dispatch_failure_place,
+            "msg: execute_begin": self.execute_begin_place,
+            "msg: execute_success": self.execute_success_place,
+            "msg: execute_failure": self.execute_failure_place,
+        })
 
         primary_action = FutureAction(self.DISPATCH_ACTION, **action_args)
 
@@ -48,8 +48,8 @@ class ShellCommandNet(FutureNet):
                 action=dispatch_success_action)
         self.dispatch_failure = self.add_basic_transition("dispatch_failure",
                 action=dispatch_failure_action)
-        self.begin_execute = self.add_basic_transition("begin_execute",
-                action=begin_execute_action)
+        self.execute_begin = self.add_basic_transition("execute_begin",
+                action=execute_begin_action)
         self.execute_success = self.add_basic_transition("execute_success",
                 action=success_action)
         self.execute_failure = self.add_basic_transition("execute_failure",
@@ -65,9 +65,9 @@ class ShellCommandNet(FutureNet):
         self.dispatch_success.add_arc_out(self.pending)
         self.dispatch_failure.add_arc_out(self.failure)
 
-        self.pending.add_arc_out(self.begin_execute)
-        self.begin_execute_place.add_arc_out(self.begin_execute)
-        self.begin_execute.add_arc_out(self.running)
+        self.pending.add_arc_out(self.execute_begin)
+        self.execute_begin_place.add_arc_out(self.execute_begin)
+        self.execute_begin.add_arc_out(self.running)
 
         self.running.add_arc_out(self.execute_success)
         self.running.add_arc_out(self.execute_failure)

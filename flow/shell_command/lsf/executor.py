@@ -1,10 +1,11 @@
 from flow.configuration.settings.injector import setting
 from flow.shell_command import util
-from flow.shell_command.executor_base import ExecutorBase
-from flow.shell_command.resource import Resource, ResourceException
+from flow.shell_command.executor_base import ExecutorBase, send_message
 from injector import inject
 from pythonlsf import lsf
 from twisted.python.procutils import which
+
+from flow.shell_command.lsf.resource import make_rusage_string
 
 import logging
 import os
@@ -12,76 +13,24 @@ import os
 
 LOG = logging.getLogger(__name__)
 
-#    def _make_command_line(self, command_line, net_key=None,
-#            response_places=None, with_inputs=None, with_outputs=None,
-#            token_color=None):
-#
-#        cmdline = self.wrapper + [
-#            '-n', net_key,
-#            '-r', response_places['begin_execute'],
-#            '-s', response_places['execute_success'],
-#        ]
-#        if 'execute_failure' in response_places.keys():
-#            cmdline += ['-f', response_places['execute_failure']]
-#
-#        if token_color is not None:
-#            cmdline += ["--token-color", str(token_color)]
-#
-#        if with_inputs:
-#            cmdline += ["--with-inputs", with_inputs]
-#
-#        if with_outputs:
-#            cmdline.append("--with-outputs")
-#
-#        cmdline.append('--')
-#        cmdline += command_line
-#
-#        return [str(x) for x in cmdline]
 
-_RESOURCE_MAP = {
-        "min_proc": Resource(name="ncpus", type="int", units=None,
-                operator=">=", reservable=False),
+@inject(post_exec=setting('shell_command.lsf.post_exec'),
+        default_queue=setting('shell_command.lsf.default_queue'))
+class LSFExecutor(ExecutorBase):
+    def on_job_id(self, job_id, callback_data, service_interfaces):
+        data = {'job_id': job_id}
+        return send_message('msg: dispatch_success', data=data)
 
-        "memory": Resource(name="mem", type="memory", units="MiB",
-                operator=">=", reservable=True),
+    def on_failure(self, exit_code, callback_data, service_interfaces):
+        return send_message('msg: dispatch_failure')
 
-        "temp_space": Resource(name="gtmp", type="memory", units="GiB",
-                operator=">=", reservable=True),
-        }
+    def on_success(self, callback_data, service_interfaces):
+        return send_message('msg: dispatch_success')
 
 
-def _select_item(name, value):
-    resource = _RESOURCE_MAP[name]
-    return "%s%s%s" % (resource.name, resource.operator, value)
-
-def _rusage_item(name, value):
-    resource = _RESOURCE_MAP[name]
-    if not resource.reservable:
-        raise ResourceException(
-                "Attempted to reserve non-reservable resource %s" %
-                resource.name)
-    return "%s=%s" % (resource.name, value)
-
-def _make_rusage_string(require, reserve):
-    select = []
-    for k, v in require.iteritems():
-        select.append(_select_item(k, v))
-
-    rusage = []
-    for k, v in reserve.iteritems():
-        if k not in require:
-            select.append(_select_item(k, v))
-        rusage.append(_rusage_item(k, v))
-
-    rv = []
-    if select:
-        rv.append("select[%s]" % " && ".join(select))
-
-    if rusage:
-        rv.append("rusage[%s]" % ":".join(rusage))
-
-    # we do not want this to be unicode (LSF will crash)
-    return str(" ".join(rv))
+    def execute_command_line(self, job_id_callback,
+            command_line, executor_data):
+        pass
 
 
 @inject(post_exec=setting('shell_command.lsf.post_exec'),
@@ -140,6 +89,32 @@ class LSFExecutor(ExecutorBase):
         request.command = command_string
 
         return request
+
+    def _make_command_line(self, command_line, net_key=None,
+            response_places=None, with_inputs=None, with_outputs=None,
+            token_color=None):
+
+        cmdline = self.wrapper + [
+            '-n', net_key,
+            '-r', response_places['execute_begin'],
+            '-s', response_places['execute_success'],
+        ]
+        if 'execute_failure' in response_places.keys():
+            cmdline += ['-f', response_places['execute_failure']]
+
+        if token_color is not None:
+            cmdline += ["--token-color", str(token_color)]
+
+        if with_inputs:
+            cmdline += ["--with-inputs", with_inputs]
+
+        if with_outputs:
+            cmdline.append("--with-outputs")
+
+        cmdline.append('--')
+        cmdline += command_line
+
+        return [str(x) for x in cmdline]
 
 
 def create_request(post_exec_cmd, default_queue,
@@ -212,7 +187,7 @@ def create_request(post_exec_cmd, default_queue,
     request.termTime = int(termTime)
 
     if require or reserve:
-        rusage = _make_rusage_string(require=require, reserve=reserve)
+        rusage = make_rusage_string(require=require, reserve=reserve)
         LOG.debug('setting resource request string = %r', rusage)
         request.options |= lsf.SUB_RES_REQ
         request.resReq = rusage

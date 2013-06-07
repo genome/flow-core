@@ -1,19 +1,16 @@
-import unittest
-from test_helpers import redistest
-
 from flow.brokers.local import LocalBroker
-from flow.orchestrator.service_interface import OrchestratorServiceInterface
 from flow.orchestrator.handlers import PetriCreateTokenHandler, PetriNotifyPlaceHandler
 from flow.orchestrator.handlers import PetriNotifyTransitionHandler
-
-from flow.shell_command.service_interface import ForkShellCommandServiceInterface
-from flow.shell_command.handler import ForkShellCommandMessageHandler
-from flow.shell_command.fork.executor import ForkExecutor
-
+from flow.orchestrator.service_interface import OrchestratorServiceInterface
 from flow.petri_net import builder
+from flow.shell_command.fork.executor import ForkExecutor
 from flow.shell_command.future_nets import ForkCommandNet
+from flow.shell_command.handler import ForkShellCommandMessageHandler
+from flow.shell_command.service_interface import ForkShellCommandServiceInterface
+from test_helpers import redistest
 
-#import time
+import os
+import unittest
 
 
 class TestSystemFork(redistest.RedisTest):
@@ -59,20 +56,22 @@ class TestSystemFork(redistest.RedisTest):
         self.broker.register_handler(
                 ForkShellCommandMessageHandler(
                     executor=fork_executor, queue_name='fork_submit_q',
+                    service_interfaces=self.service_interfaces,
                     exchange='create_token_x',
                     response_routing_key='create_token_rk'))
 
-    def test_system_fork(self):
-        # XXX This test is quite weak, because we rely on the wrapper to talk to
-        # the broker even for the fork executor.
+    def test_simple_succeeding_command(self):
         future_net = ForkCommandNet('net name',
-                command_line=['non', 'sense', 'command'], stdout='/dev/null')
+                command_line=['ls'], stdout='/dev/null')
         future_places, future_transitions = builder.gather_nodes(future_net)
 
         b = builder.Builder(self.conn)
-        net = b.store(future_net, {}, {})
+        constants = {
+            'user_id': os.getuid(),
+            'group_id': os.getgid(),
+        }
+        net = b.store(future_net, {}, constants)
 
-        # XXX OMG, color group
         cg = net.add_color_group(1)
 
         self.service_interfaces['orchestrator'].create_token(net.key,
@@ -80,8 +79,7 @@ class TestSystemFork(redistest.RedisTest):
         self.broker.listen()
 
         expected_color_keys = [net.marking_key(
-            cg.begin, future_places[future_net.dispatching])]
-#        expected_color_keys = ['0:%d' % future_places[future_net.dispatched]]
+            cg.begin, future_places[future_net.success])]
 
         self.assertItemsEqual(expected_color_keys, net.color_marking.keys())
 

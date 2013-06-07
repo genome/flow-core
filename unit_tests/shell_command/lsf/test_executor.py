@@ -24,13 +24,13 @@ class CreatePostExecCmdTest(unittest.TestCase):
 
 class MakeRusageTest(unittest.TestCase):
     def test_empty(self):
-        self.assertEqual("", executor._make_rusage_string(require={}, reserve={}))
+        self.assertEqual("", executor.make_rusage_string(require={}, reserve={}))
 
     def test_select(self):
         require = {"memory": 150, "temp_space": 3, "min_proc": 4}
         reserve = {}
 
-        rsrc = executor._make_rusage_string(require=require, reserve=reserve)
+        rsrc = executor.make_rusage_string(require=require, reserve=reserve)
         select = re.match("^select\[([^]]*)\]$", rsrc)
         self.assertTrue(select)
         items = sorted(select.group(1).split(" && "))
@@ -40,7 +40,7 @@ class MakeRusageTest(unittest.TestCase):
         require = {}
         reserve = {"memory": 150, "temp_space": 3}
 
-        rsrc = executor._make_rusage_string(require=require, reserve=reserve)
+        rsrc = executor.make_rusage_string(require=require, reserve=reserve)
         select = re.search("select\[([^]]*)\]", rsrc)
         self.assertTrue(select)
         items = sorted(select.group(1).split(" && "))
@@ -54,7 +54,7 @@ class MakeRusageTest(unittest.TestCase):
     def test_reserve_non_reservable(self):
         require = {}
         reserve = {"min_proc": 4}
-        self.assertRaises(ResourceException, executor._make_rusage_string,
+        self.assertRaises(ResourceException, executor.make_rusage_string,
                 require=require, reserve=reserve)
 
 

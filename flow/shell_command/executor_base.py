@@ -157,7 +157,8 @@ def set_gid_and_uid_or_exit(group_id, user_id):
             os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
 
-def send_message(place_name, callback_data, service_interfaces, data=None):
+def send_message(place_name, callback_data,
+        service_interfaces, token_data=None):
     net_key = callback_data['net_key']
     color = callback_data['color']
     color_group_idx = callback_data['color_group_idx']
@@ -165,4 +166,4 @@ def send_message(place_name, callback_data, service_interfaces, data=None):
 
     return service_interfaces['orchestrator'].create_token(
             net_key=net_key, place_idx=place_idx, color=color,
-            color_group_idx=color_group_idx, data=data)
+            color_group_idx=color_group_idx, data=token_data)

@@ -64,3 +64,9 @@ class Message(object):
 
     def __repr__(self):
         return '%s(**%s)' % (self.__class__.__name__, self.__dict__)
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def get(self, key, default=None):
+        return self.__dict__.get(key, default)

@@ -17,19 +17,23 @@ class ForkExecutor(ExecutorBase):
         deferreds = []
         dispatch_data = {'job_id': job_id}
         deferreds.append(send_message(
-            'msg: dispatch_success', data=dispatch_data))
+            'msg: dispatch_success', callback_data, service_interfaces,
+            token_data=dispatch_data))
 
         execute_data = {'hostname': socket.gethostname()}
         deferreds.append(send_message(
-            'msg: execute_begin', data=execute_data))
+            'msg: execute_begin', callback_data, service_interfaces,
+            token_data=execute_data))
 
         return defer.gatherResults(deferreds, consumeErrors=True)
 
     def on_failure(self, exit_code, callback_data, service_interfaces):
-        return send_message('msg: execute_failure')
+        return send_message('msg: execute_failure',
+                callback_data, service_interfaces)
 
     def on_success(self, callback_data, service_interfaces):
-        return send_message('msg: execute_success')
+        return send_message('msg: execute_success',
+                callback_data, service_interfaces)
 
 
     def execute_command_line(self, job_id_callback,

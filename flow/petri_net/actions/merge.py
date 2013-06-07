@@ -23,7 +23,7 @@ class BasicMergeAction(BasicActionBase, MergeMixin):
             new_token = net.token(new_token_idx)
         else:
             new_token = net.create_token(color=color_descriptor.color,
-                    color_group_idx=color_descriptor.color_group.idx)
+                    color_group_idx=color_descriptor.group.idx)
             self.merge_data(net, new_token, active_tokens)
 
         return [new_token], defer.succeed(None)
