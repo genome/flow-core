@@ -25,6 +25,7 @@ class ShellCommandNet(FutureNet):
         self.dispatching = self.add_place("dispatching")
         self.pending = self.add_place("pending")
         self.running = self.add_place("running")
+
         self.dispatch_success_place = self.add_place("msg: dispatch_success")
         self.dispatch_failure_place = self.add_place("msg: dispatch_failure")
         self.execute_begin_place = self.add_place("msg: execute_begin")

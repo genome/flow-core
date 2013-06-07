@@ -10,6 +10,8 @@ from flow.shell_command.service_interface import ForkShellCommandServiceInterfac
 from test_helpers import redistest
 
 import os
+import os.path
+import tempfile
 import unittest
 
 
@@ -61,8 +63,46 @@ class TestSystemFork(redistest.RedisTest):
                     response_routing_key='create_token_rk'))
 
     def test_simple_succeeding_command(self):
+        output_file = tempfile.NamedTemporaryFile('r')
         future_net = ForkCommandNet('net name',
-                command_line=['ls'], stdout='/dev/null')
+                command_line=['ls'], stdout=output_file.name,
+                stderr='/dev/null')
+        future_places, future_transitions = builder.gather_nodes(future_net)
+
+        b = builder.Builder(self.conn)
+        constants = {
+            'user_id': os.getuid(),
+            'group_id': os.getgid(),
+            'working_directory': os.path.dirname(__file__),
+        }
+        net = b.store(future_net, {}, constants)
+
+        cg = net.add_color_group(1)
+
+        self.service_interfaces['orchestrator'].create_token(net.key,
+                future_places[future_net.start], cg.begin, cg.idx)
+        self.broker.listen()
+
+        expected_color_keys = [net.marking_key(
+            cg.begin, future_places[future_net.success])]
+
+        self.assertItemsEqual(expected_color_keys, net.color_marking.keys())
+        expected_output = '''__init__.py
+__init__.pyc
+petri_net
+shell_command
+test_local_fork_system.py
+test_local_fork_system.pyc
+test_redisom.py
+test_redisom.pyc
+'''
+        self.assertEqual(expected_output, output_file.read())
+
+
+    def test_simple_failing_command(self):
+        future_net = ForkCommandNet('net name',
+                command_line=['ls', '/doesnotexist/fool'], stdout='/dev/null',
+                stderr='/dev/null')
         future_places, future_transitions = builder.gather_nodes(future_net)
 
         b = builder.Builder(self.conn)
@@ -79,9 +119,10 @@ class TestSystemFork(redistest.RedisTest):
         self.broker.listen()
 
         expected_color_keys = [net.marking_key(
-            cg.begin, future_places[future_net.success])]
+            cg.begin, future_places[future_net.failure])]
 
         self.assertItemsEqual(expected_color_keys, net.color_marking.keys())
+
 
 if __name__ == "__main__":
     unittest.main()

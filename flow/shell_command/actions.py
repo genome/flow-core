@@ -90,12 +90,13 @@ class ShellCommandDispatchAction(BasicMergeAction):
 
         user_id = int(net.constant('user_id'))
         group_id = int(net.constant('group_id'))
+        working_directory = net.constant('working_directory', '/tmp')
 
         with_outputs = self.args.get('with_outputs')
 
         service = service_interfaces[self.service_name]
-        deferred.addCallback(lambda x: service.submit(
-            user_id=user_id, group_id=group_id,
+        deferred.addCallback(lambda x: service.submit(user_id=user_id,
+            group_id=group_id, working_directory=working_directory,
             callback_data=callback_data, command_line=command_line,
             executor_data=executor_options))
 
