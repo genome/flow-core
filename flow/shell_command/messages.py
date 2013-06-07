@@ -20,12 +20,12 @@ class ShellCommandSubmitMessage(Message):
     }
 
     def validate(self):
+        if not self.command_line:
+            raise exceptions.InvalidMessageException('Empty command_line.')
         for word in self.command_line:
             if not isinstance(word, basestring):
                 raise exceptions.InvalidMessageException(
                         'Invalid type in command_line: %s' % word)
-#        else:
-#            raise exceptions.InvalidMessageException('Empty command_line.')
 
         environment = getattr(self, 'environment', {})
         for k, v in environment.iteritems():
