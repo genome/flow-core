@@ -35,7 +35,7 @@ class ExecutorBase(IShellCommandExecutor):
     def on_signal(self, signal_number, callback_data, service_interfaces):
         raise RuntimeError('Child received signal (%d)' % signal_number)
 
-    def on_success(self, **kwargs):
+    def on_success(self, callback_data, service_interfaces):
         return defer.succeed(None)
 
 
