@@ -3,16 +3,15 @@ from injector import inject
 from pika.adapters import twisted_connection
 from twisted.internet import reactor, defer, protocol
 from twisted.internet.error import ReactorNotRunning
+from flow.exit_codes import (EXECUTE_SYSTEM_FAILURE,
+        EXECUTE_SERVICE_UNAVAILABLE)
 
 import logging
 import pika
+import os
 
 
 LOG = logging.getLogger(__name__)
-
-_EXIT_REPLY_CODES = set([
-    320,  # Connection closed via management plugin
-])
 
 @inject(
     hostname=setting('amqp.hostname'),
@@ -30,12 +29,9 @@ CONNECTED = 'connected'
 
 @inject(connection_params=ConnectionParams)
 class ConnectionManager(object):
-    def __init__(self, on_connection_closed_callback=None):
-        self._on_connection_closed_callback = on_connection_closed_callback
-        reactor.addSystemEventTrigger('before', 'shutdown', self.disconnect)
-        self._reset()
+    def __init__(self):
+        reactor.addSystemEventTrigger('before', 'shutdown', self._disconnect)
 
-    def _reset(self):
         self.state = DISCONNECTED
         self._channel = None
         self._connection = None
@@ -46,8 +42,9 @@ class ConnectionManager(object):
     def connect(self):
         """
         Returns a deferred that will callback with a pika channel object once
-        the connection to AMQP has been established.  It may also errback if
-        the number of connection attempts has been exceeded.
+        the connection to AMQP has been established.  os._exit will be called
+        in the event that no connection could be made or if the connection
+        is lost after it has been established.
         """
         if self.state is DISCONNECTED:
             self._connect_deferred = defer.Deferred()
@@ -108,8 +105,7 @@ class ConnectionManager(object):
             self.state = DISCONNECTED
             LOG.critical('Maximum number of connection attempts (%d) '
                     'reached... shutting down', max_attempts)
-            self._connect_deferred.errback(reason)
-            self._stop_reactor()
+            os._exit(EXECUTE_SERVICE_UNAVAILABLE)
         else:
             LOG.info("Attempting to reconnect to the AMQP "
                     "server in %s seconds", self.connection_params.retry_delay)
@@ -119,21 +115,9 @@ class ConnectionManager(object):
     def _on_pika_connection_closed(self, connection, reply_code, reply_text):
         LOG.info('Connection closed with code %s: %s', reply_code, reply_text)
         self.state = DISCONNECTED
-        if reply_code in _EXIT_REPLY_CODES:
-            self._stop_reactor()
-        else:
-            if self._on_connection_closed_callback is not None:
-                self._on_connection_closed_callback(reply_code, reply_text)
+        os._exit(EXECUTE_SYSTEM_FAILURE)
 
-    def _stop_reactor(self):
-        try:
-            reactor.stop()
-            LOG.info('Stopped twisted reactor')
-        except ReactorNotRunning:
-            LOG.warning("Tried to stop twisted reactor, but it's not running")
-
-    def disconnect(self):
+    def _disconnect(self):
         LOG.info("Closing AMQP connection")
         if hasattr(self._connection, 'transport'):
             self._connection.transport.loseConnection()
-        self._reset()

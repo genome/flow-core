@@ -6,9 +6,12 @@ except:
 
 from twisted.internet import defer, reactor
 
-from flow.brokers.amqp.connection_manager import ConnectionManager, ConnectionParams
-from flow.brokers.amqp.connection_manager import DISCONNECTED, CONNECTING, CONNECTED
-from flow.brokers.amqp.connection_manager import _EXIT_REPLY_CODES
+from flow.brokers.amqp.connection_manager import (ConnectionManager,
+        ConnectionParams)
+from flow.brokers.amqp.connection_manager import (DISCONNECTED, CONNECTING,
+        CONNECTED)
+from flow.exit_codes import (EXECUTE_SYSTEM_FAILURE,
+        EXECUTE_SERVICE_UNAVAILABLE)
 
 connection_params = ConnectionParams(
         hostname=object(),
@@ -22,14 +25,13 @@ connection_params = ConnectionParams(
 class ConnectionManagerTests(unittest.TestCase):
     def setUp(self):
         self.fake_fn = mock.Mock()
-        self.callback = mock.Mock()
-        with mock.patch('twisted.internet.reactor.addSystemEventTrigger', new=self.fake_fn):
-            self.cm = ConnectionManager(connection_params=connection_params,
-                    on_connection_closed_callback=self.callback)
+        with mock.patch('twisted.internet.reactor.addSystemEventTrigger',
+                new=self.fake_fn):
+            self.cm = ConnectionManager(connection_params=connection_params)
 
     def test_init(self):
-        self.assertTrue(self.cm._on_connection_closed_callback is self.callback)
-        self.fake_fn.assert_called_once_with('before', 'shutdown', self.cm.disconnect)
+        self.fake_fn.assert_called_once_with('before', 'shutdown',
+                self.cm._disconnect)
         self.assertEqual(self.cm.state, DISCONNECTED)
 
     def test_connect(self):
@@ -54,20 +56,15 @@ class ConnectionManagerTests(unittest.TestCase):
         # wasn't attempting to connect again
         self.assertEqual(self.cm._attempt_to_connect.call_count, 1)
 
-    def test_disconnect(self):
+    def test_private_disconnect(self):
         # can call without being connected just fine.
-        self.cm._reset = mock.Mock()
-        self.cm.disconnect()
-        self.assertTrue(self.cm._reset.called)
+        self.cm._disconnect()
 
-        self.cm._reset = mock.Mock()
         self.cm._connection = mock.Mock()
         self.cm._connection.transport = mock.Mock()
         self.cm._connection.transport.loseConnection = mock.Mock()
-        self.cm.disconnect()
+        self.cm._disconnect()
         self.assertTrue(self.cm._connection.transport.loseConnection.called)
-        self.assertTrue(self.cm._reset.called)
-
 
     def _help_with_attempt_to_connect(self):
         self._connect_deferreds = []
@@ -95,7 +92,8 @@ class ConnectionManagerTests(unittest.TestCase):
         self.assertEqual(self.cm._connection_attempts, 1)
 
         self.assertTrue(self.cm._connection is self.fake_pika_connection)
-        self.cm._create_pika_connection.assert_called_once_with(connection_params)
+        self.cm._create_pika_connection.assert_called_once_with(
+                connection_params)
 
         self.cm._connection.ready.addCallback.assert_called_once_with(
                 self.cm._on_ready)
@@ -113,7 +111,8 @@ class ConnectionManagerTests(unittest.TestCase):
             fake_client_creator.return_value = expected_return_value
             with mock.patch('twisted.internet.protocol.ClientCreator',
                     new=fake_client_creator):
-                return_value = self.cm._create_pika_connection(connection_params)
+                return_value = self.cm._create_pika_connection(
+                        connection_params)
                 self.assertTrue(return_value is expected_return_value)
                 self.assertEqual(fake_pika_cp.call_count, 1)
                 self.assertEqual(fake_client_creator.call_count, 1)
@@ -138,7 +137,8 @@ class ConnectionManagerTests(unittest.TestCase):
         ch_d.callback(channel) # releases first yield
         self.assertTrue(self.cm._channel is channel)
         self.assertEquals(self.cm.state, DISCONNECTED)
-        channel.basic_qos.assert_called_once_with(prefetch_count=connection_params.prefetch_count)
+        channel.basic_qos.assert_called_once_with(
+                prefetch_count=connection_params.prefetch_count)
 
         bq_d.callback(None) # releases second yield
         self.assertEquals(self.cm.state, CONNECTED)
@@ -150,7 +150,6 @@ class ConnectionManagerTests(unittest.TestCase):
         self.cm.state = CONNECTING
         self.cm._connect_deferred = mock.Mock()
         self.cm._connect_deferred.errback = mock.Mock()
-        self.cm._stop_reactor = mock.Mock()
 
         callLater = mock.Mock()
         reason = object()
@@ -161,29 +160,25 @@ class ConnectionManagerTests(unittest.TestCase):
                     self.cm._attempt_to_connect)
             self.assertEquals(self.cm.state, CONNECTING)
 
-            # reached reconnect limit
-            self.cm._connection_attempts = 3
+        # reached reconnect limit
+        self.cm._connection_attempts = 3
+        fake_exit = mock.Mock()
+        with mock.patch('os._exit', new=fake_exit):
             self.cm._on_connectTCP_failed(reason)
             self.assertEquals(self.cm.state, DISCONNECTED)
-            self.cm._connect_deferred.errback.assert_called_once_with(reason)
-            self.assertEqual(self.cm._stop_reactor.call_count, 1)
+            fake_exit.assert_called_once_with(EXECUTE_SERVICE_UNAVAILABLE)
 
 
     def test_private_on_pika_connection_closed(self):
         self.cm.state = CONNECTING
-        connection = mock.Mock()
 
-        self.cm._stop_reactor = None
-        self.cm._on_connection_closed_callback = mock.Mock()
-        reply_code = object()
-        self.cm._on_pika_connection_closed(connection, reply_code, 'test')
-        self.cm._on_connection_closed_callback.assert_called_once_with(reply_code, 'test')
+        fake_exit = mock.Mock()
+        with mock.patch('os._exit', new=fake_exit):
+            self.cm._on_pika_connection_closed(None,
+                    reply_code='test_code', reply_text='test_text')
 
-        self.cm._stop_reactor = mock.Mock()
-        self.cm._on_connection_closed_callback = None
-        reply_code = list(_EXIT_REPLY_CODES)[0]
-        self.cm._on_pika_connection_closed(connection, reply_code, 'test')
-        self.assertEqual(self.cm._stop_reactor.call_count, 1)
+            self.assertIs(self.cm.state, DISCONNECTED)
+            fake_exit.assert_called_once_with(EXECUTE_SYSTEM_FAILURE)
 
 
     def test_retry(self):
@@ -225,11 +220,11 @@ class ConnectionManagerTests(unittest.TestCase):
             self.assertFalse(connect_deferred.called)
 
             # reached retry limit
-            errback = mock.Mock()
-            connect_deferred.addErrback(errback)
-            errback.assertNotCalled()
+            fake_exit = mock.Mock()
+            with mock.patch('os._exit', new=fake_exit):
+                errback = mock.Mock()
 
-            error = RuntimeError('bad')
-            self._connect_deferreds[2].errback(error)
-            self.assertEqual(len(self._connect_deferreds), 3)
-            self.assertEqual(errback.call_count, 1)
+                error = RuntimeError('bad')
+                self._connect_deferreds[2].errback(error)
+                self.assertEqual(len(self._connect_deferreds), 3)
+                fake_exit.assert_called_once_with(EXECUTE_SERVICE_UNAVAILABLE)
