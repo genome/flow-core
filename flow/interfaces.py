@@ -7,20 +7,9 @@ class IBroker(object):
     @abstractmethod
     def publish(self, exchange_name, routing_key, message):
         """
-        Publish an unencoded message to the amqp server and submit timing info.
-
-        Returns the deferred from IBroker.raw_publish
-        """
-
-    # XXX This should be removed.  It's only used by place observers.
-    @abstractmethod
-    def raw_publish(self, exchange_name, routing_key, encoded_message):
-        """
-        Publish an encoded message to the amqp server.
-
-        Returns a deferred that will callback when amqp server confirms and
-        will errback when amqp server rejects published message.  Both are
-        called with the publish_tag
+        Returns a deferred that will callback once the message has been
+        confirmed.  If the AMQP server rejects the message then the deferred
+        will not callback (nor errback) and the program will exit.
         """
 
     @abstractmethod
