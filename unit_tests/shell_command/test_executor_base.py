@@ -33,18 +33,18 @@ class TestExecutorBase(ExecutorBase):
 
 class SucceedingExecutor(TestExecutorBase):
     def execute_command_line(self, job_id_callback, command_line,
-            executor_data):
+            executor_data, resources):
         job_id_callback(executor_data['set_job_id'])
         return exit_codes.EXECUTE_SUCCESS
 
 class FailingExecutor(TestExecutorBase):
     def execute_command_line(self, job_id_callback, command_line,
-            executor_data):
+            executor_data, resources):
         return exit_codes.EXECUTE_FAILURE
 
 class ErrorExecutor(TestExecutorBase):
     def execute_command_line(self, job_id_callback, command_line,
-            executor_data):
+            executor_data, resources):
         raise RuntimeError('Always raise exception')
 
 
@@ -55,7 +55,7 @@ class ExecutorBaseTest(unittest.TestCase):
         deferred = e.execute(group_id=None, user_id=None, environment={},
                 working_directory='/tmp', command_line=['a', 'b', 'c'],
                 executor_data={'set_job_id': set_job_id}, callback_data={},
-                service_interfaces={})
+                resources={}, service_interfaces={})
 
         self.assertEqual(set_job_id, e.job_id)
         self.assertTrue(e.success)
@@ -64,7 +64,8 @@ class ExecutorBaseTest(unittest.TestCase):
         e = FailingExecutor(default_environment={}, mandatory_environment={})
         deferred = e.execute(group_id=None, user_id=None, environment={},
                 working_directory='/tmp', command_line=['a', 'b', 'c'],
-                executor_data={}, callback_data={}, service_interfaces={})
+                executor_data={}, callback_data={}, resources={},
+                service_interfaces={})
 
         self.assertEqual(exit_codes.EXECUTE_FAILURE, e.failure_exit_code)
 
@@ -73,9 +74,45 @@ class ExecutorBaseTest(unittest.TestCase):
 
         deferred = e.execute(group_id=None, user_id=None, environment={},
                 working_directory='/tmp', command_line=['a', 'b', 'c'],
-                executor_data={}, callback_data={}, service_interfaces={})
+                executor_data={}, callback_data={}, resources={},
+                service_interfaces={})
 
         self.assertEqual(9, e.signal_number)
+
+
+    def test_child(self):
+        e = SucceedingExecutor(default_environment={}, mandatory_environment={})
+
+        socket = mock.Mock()
+        group_id = mock.Mock()
+        user_id = mock.Mock()
+        working_directory = mock.Mock()
+        command_line = mock.Mock()
+        executor_data = {
+            'set_job_id': 'awesome job id',
+        }
+        resources = mock.Mock()
+
+        environment = {
+            'sample': 'env',
+        }
+
+        chdir = mock.Mock()
+        set_gid_and_uid_or_exit = mock.Mock()
+        with mock.patch(
+                'flow.shell_command.executor_base.set_gid_and_uid_or_exit',
+                new=set_gid_and_uid_or_exit):
+            with mock.patch('os.chdir', new=chdir):
+                exit_code = e._child(socket, group_id, user_id, environment,
+                        working_directory, command_line,
+                        executor_data, resources)
+
+        set_gid_and_uid_or_exit.assert_called_once_with(group_id, user_id)
+        chdir.assert_called_once_with(working_directory)
+
+        socket.send.assert_called_once_with(executor_data['set_job_id'])
+        socket.close.assert_called_once_with()
+
 
 
 if '__main__' == __name__:

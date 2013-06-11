@@ -26,11 +26,9 @@ class ExecutorBase(IShellCommandExecutor):
 
     def on_job_id(self, job_id, callback_data, service_interfaces):
         return defer.succeed(None)
-        # (lsf) send dispatch succeeded message
 
     def on_failure(self, exit_code, callback_data, service_interfaces):
         return defer.succeed(None)
-        # (lsf)  send disptach fail message
 
     def on_signal(self, signal_number, callback_data, service_interfaces):
         raise RuntimeError('Child received signal (%d)' % signal_number)
@@ -40,7 +38,8 @@ class ExecutorBase(IShellCommandExecutor):
 
 
     def execute(self, group_id, user_id, environment, working_directory,
-            command_line, executor_data, callback_data, service_interfaces):
+            command_line, executor_data, callback_data,
+            resources, service_interfaces):
         deferreds = []
 
         parent_socket, child_socket = socketpair_or_exit()
@@ -49,7 +48,8 @@ class ExecutorBase(IShellCommandExecutor):
         if child_pid == 0:
             parent_socket.close()
             child_exit_code = self._child(child_socket, group_id, user_id,
-                    environment, working_directory, command_line, executor_data)
+                    environment, working_directory, command_line,
+                    executor_data, resources)
             os._exit(child_exit_code)
 
         else:
@@ -81,7 +81,7 @@ class ExecutorBase(IShellCommandExecutor):
         return defer.gatherResults(deferreds, consumeErrors=True)
 
     def _child(self, send_socket, group_id, user_id, environment,
-            working_directory, command_line, executor_data):
+            working_directory, command_line, executor_data, resources):
         def send_job_id(job_id):
             send_socket.send(str(job_id))
             send_socket.close()
@@ -89,11 +89,15 @@ class ExecutorBase(IShellCommandExecutor):
         set_gid_and_uid_or_exit(group_id, user_id)
         env_util.set_environment(self.default_environment,
                 environment, self.mandatory_environment)
-        os.chdir(working_directory)
+        try:
+            os.chdir(working_directory)
+        except OSError:
+            os.kill(os.getpid(), 9)
 
         try:
             exit_code = self.execute_command_line(command_line=command_line,
-                    job_id_callback=send_job_id, executor_data=executor_data)
+                    job_id_callback=send_job_id, executor_data=executor_data,
+                    resources=resources)
         except:
             LOG.exception('Exception caught in ShellCommand service child')
             os.kill(os.getpid(), 9)
