@@ -1,11 +1,8 @@
 from flow import exit_codes
-from flow.shell_command import util
 from flow.shell_command.executor_base import ExecutorBase, send_message
 from twisted.internet import defer
 
-import flow.interfaces
 import logging
-import os
 import socket
 import subprocess
 

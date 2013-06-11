@@ -1,13 +1,10 @@
 from flow.commands.base import CommandBase
-from flow import exit_codes
 from flow.configuration.inject.broker import BrokerConfiguration
 from flow.configuration.inject.orchestrator import OrchestratorConfiguration
-from flow.configuration.settings.injector import setting
 from injector import inject
 
 import flow.interfaces
 import logging
-import os
 import socket
 
 

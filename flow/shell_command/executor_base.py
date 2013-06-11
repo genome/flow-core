@@ -1,4 +1,3 @@
-from flow import exit_codes
 from flow.configuration.settings.injector import setting
 from flow.shell_command import util
 from flow.shell_command.interfaces import IShellCommandExecutor
@@ -21,7 +20,7 @@ LOG = logging.getLogger(__name__)
 class ExecutorBase(IShellCommandExecutor):
     @abc.abstractmethod
     def execute_command_line(self, job_id_callback, command_line,
-            executor_data):
+            executor_data, resources):
         pass
 
     def on_job_id(self, job_id, callback_data, service_interfaces):

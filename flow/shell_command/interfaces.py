@@ -15,5 +15,6 @@ class IShellCommandExecutor(object):
 
     @abstractmethod
     def execute(self, group_id, user_id, environment, working_directory,
-            command_line, executor_data, callback_data, service_interfaces):
+            command_line, executor_data, callback_data,
+            resources, service_interfaces):
         pass

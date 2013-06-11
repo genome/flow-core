@@ -5,7 +5,6 @@ from injector import inject
 
 import flow.interfaces
 import logging
-import os
 
 
 LOG = logging.getLogger(__name__)
