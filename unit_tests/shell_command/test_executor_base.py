@@ -52,30 +52,33 @@ class ExecutorBaseTest(unittest.TestCase):
     def test_success(self):
         e = SucceedingExecutor(default_environment={}, mandatory_environment={})
         set_job_id = '42'
-        deferred = e.execute(group_id=None, user_id=None, environment={},
-                working_directory='/tmp', command_line=['a', 'b', 'c'],
-                executor_data={'set_job_id': set_job_id}, callback_data={},
-                resources={}, service_interfaces={})
+        with mock.patch('flow.shell_command.util.set_gid_and_uid_or_exit'):
+            deferred = e.execute(group_id=None, user_id=None, environment={},
+                    working_directory='/tmp', command_line=['a', 'b', 'c'],
+                    executor_data={'set_job_id': set_job_id}, callback_data={},
+                    resources={}, service_interfaces={})
 
         self.assertEqual(set_job_id, e.job_id)
         self.assertTrue(e.success)
 
     def test_failure(self):
         e = FailingExecutor(default_environment={}, mandatory_environment={})
-        deferred = e.execute(group_id=None, user_id=None, environment={},
-                working_directory='/tmp', command_line=['a', 'b', 'c'],
-                executor_data={}, callback_data={}, resources={},
-                service_interfaces={})
+        with mock.patch('flow.shell_command.util.set_gid_and_uid_or_exit'):
+            deferred = e.execute(group_id=None, user_id=None, environment={},
+                    working_directory='/tmp', command_line=['a', 'b', 'c'],
+                    executor_data={}, callback_data={}, resources={},
+                    service_interfaces={})
 
         self.assertEqual(exit_codes.EXECUTE_FAILURE, e.failure_exit_code)
 
     def test_error(self):
         e = ErrorExecutor(default_environment={}, mandatory_environment={})
 
-        deferred = e.execute(group_id=None, user_id=None, environment={},
-                working_directory='/tmp', command_line=['a', 'b', 'c'],
-                executor_data={}, callback_data={}, resources={},
-                service_interfaces={})
+        with mock.patch('flow.shell_command.util.set_gid_and_uid_or_exit'):
+            deferred = e.execute(group_id=None, user_id=None, environment={},
+                    working_directory='/tmp', command_line=['a', 'b', 'c'],
+                    executor_data={}, callback_data={}, resources={},
+                    service_interfaces={})
 
         self.assertEqual(9, e.signal_number)
 
