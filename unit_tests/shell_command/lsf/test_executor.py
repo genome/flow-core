@@ -1,212 +1,166 @@
-import unittest
-import re
-try:
-    from unittest import mock
-except:
-    import mock
-
 from flow.shell_command.lsf import executor
 from flow.shell_command.resource import ResourceException
 from pythonlsf import lsf
-from twisted.python.procutils import which
 
-def _create_expected_limits():
-    return [lsf.DEFAULT_RLIMIT] * lsf.LSF_RLIM_NLIMITS
-
-class CreatePostExecCmdTest(unittest.TestCase):
-    def test_basic(self):
-        result = executor.create_post_exec_cmd(executable='e', args='args',
-                net_key='nk', failure_place=1, stdout='a', stderr='b')
-
-        self.assertEqual(result,
-                'bash -c "\'e\' args -n \'nk\' -f 1" 1>> \'a\' 2>> \'b\'')
+import mock
+import re
+import unittest
 
 
-class MakeRusageTest(unittest.TestCase):
-    def test_empty(self):
-        self.assertEqual("", executor.make_rusage_string(require={}, reserve={}))
+class LSFExecutorInitTest(unittest.TestCase):
+    def test_no_path_to_pre_exec(self):
+        with self.assertRaises(RuntimeError):
+            executor.LSFExecutor(pre_exec='DOESNOTEXIST',
+                    post_exec='true', default_queue='long')
 
-    def test_select(self):
-        require = {"memory": 150, "temp_space": 3, "min_proc": 4}
-        reserve = {}
-
-        rsrc = executor.make_rusage_string(require=require, reserve=reserve)
-        select = re.match("^select\[([^]]*)\]$", rsrc)
-        self.assertTrue(select)
-        items = sorted(select.group(1).split(" && "))
-        self.assertEqual(["gtmp>=3", "mem>=150", "ncpus>=4"], items)
-
-    def test_implied_select(self):
-        require = {}
-        reserve = {"memory": 150, "temp_space": 3}
-
-        rsrc = executor.make_rusage_string(require=require, reserve=reserve)
-        select = re.search("select\[([^]]*)\]", rsrc)
-        self.assertTrue(select)
-        items = sorted(select.group(1).split(" && "))
-        self.assertEqual(["gtmp>=3", "mem>=150"], items)
-
-        rusage = re.search("rusage\[([^]]*)\]", rsrc)
-        self.assertTrue(rusage)
-        items = sorted(rusage.group(1).split(":"))
-        self.assertEqual(["gtmp=3", "mem=150"], items)
-
-    def test_reserve_non_reservable(self):
-        require = {}
-        reserve = {"min_proc": 4}
-        self.assertRaises(ResourceException, executor.make_rusage_string,
-                require=require, reserve=reserve)
+    def test_no_path_to_post_exec(self):
+        with self.assertRaises(RuntimeError):
+            executor.LSFExecutor(pre_exec='true',
+                    post_exec='DOESNOTEXIST', default_queue='long')
 
 
-class GetRlimitsTest(unittest.TestCase):
-    AVAILABLE_RLIMITS = [
-            #('max_resident_memory', lsf.LSF_RLIMIT_RSS),
-            ('max_virtual_memory', lsf.LSF_RLIMIT_VMEM),
-            ('max_processes', lsf.LSF_RLIMIT_PROCESS),
-            ('max_threads', lsf.LSF_RLIMIT_THREAD),
-            ('max_open_files', lsf.LSF_RLIMIT_NOFILE),
-            ('max_stack_size', lsf.LSF_RLIMIT_STACK)
-    ]
-
-    def simple_rlim_success(self, name, index, value=42):
-        kwargs = {name: value}
-        expected_limits = _create_expected_limits()
-        expected_limits[index] = value
-        limits = executor.get_rlimits(**kwargs)
-        self.assertEqual(limits, expected_limits)
-
-    def simple_rlim_failure(self, name):
-        kwargs = {name: mock.Mock()}
-        self.assertRaises(TypeError, executor.get_rlimits, **kwargs)
-
-
-    def test_defaults(self):
-        expected_limits = _create_expected_limits()
-        limits = executor.get_rlimits()
-        self.assertEqual(limits, expected_limits)
-
-
-    def test_all_success(self):
-        for name, index in self.AVAILABLE_RLIMITS:
-            self.simple_rlim_success(name, index)
-
-    def test_all_failure(self):
-        for name, index in self.AVAILABLE_RLIMITS:
-            self.simple_rlim_failure(name)
-
-
-class CreateRequestTest(unittest.TestCase):
+class LSFExecutorSetRequestPrePost(unittest.TestCase):
     def setUp(self):
-        self.default_queue = 'serious queue'
-        self.post_exec_cmd = None
-        def test_fn(**kwargs):
-            return executor.create_request(self.post_exec_cmd, self.default_queue,
-                    **kwargs)
-        self.test_fn = test_fn
+        self.executor = executor.LSFExecutor(pre_exec='true',
+                post_exec='true', default_queue='long')
 
-        self.bad_type = mock.Mock()
-        self.bad_type.__str__ = lambda x: None
+    def test_pre_exec(self):
+        request = mock.Mock()
+        request.options = 0
 
+        executor_data = mock.Mock()
 
-    def test_name_success(self):
-        name = 'different name'
-        request = self.test_fn(name=name)
-        self.assertEqual(request.jobName, name)
-        self.assertEqual(request.options,
-                lsf.SUB_JOB_NAME + lsf.SUB_QUEUE)
+        pre_exec_string = 'exciting pre exec string'
+        make_pre_post_command_string = mock.Mock()
+        make_pre_post_command_string.return_value = pre_exec_string
+        with mock.patch(
+                'flow.shell_command.lsf.executor.make_pre_post_command_string',
+                new=make_pre_post_command_string):
+            self.executor.set_pre_exec(request, executor_data)
 
-    def test_name_failure(self):
-        self.assertRaises(TypeError,
-                self.test_fn, name=self.bad_type)
+        response_places = {
+                'msg: execute_begin': '--execute-begin',
+        }
+        make_pre_post_command_string.assert_called_once_with(
+                self.executor.pre_exec_command,
+                executor_data, response_places)
+        self.assertEqual(pre_exec_string, request.preExecCmd)
+        self.assertEqual(lsf.SUB_PRE_EXEC, request.options)
 
-    def test_mail_user_success(self):
-        mail_user = 'someone@some.whe.re'
-        request = self.test_fn(mail_user=mail_user)
-        self.assertEqual(request.mailUser, mail_user)
-        self.assertEqual(request.options,
-                lsf.SUB_MAIL_USER + lsf.SUB_QUEUE)
+    def test_post_exec(self):
+        request = mock.Mock()
+        request.options3 = 0
 
-    def test_mail_user_failure(self):
-        self.assertRaises(TypeError,
-                self.test_fn, mail_user=self.bad_type)
+        executor_data = mock.Mock()
 
+        post_exec_string = 'exciting post exec string'
+        make_pre_post_command_string = mock.Mock()
+        make_pre_post_command_string.return_value = post_exec_string
+        with mock.patch(
+                'flow.shell_command.lsf.executor.make_pre_post_command_string',
+                new=make_pre_post_command_string):
+            self.executor.set_post_exec(request, executor_data)
 
-    def test_queue_success(self):
-        queue = 'different queue'
-        request = self.test_fn(queue=queue)
-        self.assertEqual(request.queue, queue)
-        self.assertEqual(request.options, lsf.SUB_QUEUE)
-
-    def test_queue_failure(self):
-        self.assertRaises(TypeError,
-                self.test_fn, queue=self.bad_type)
-
-
-    def test_stdout_success(self):
-        stdout = '/tmp/stdout/path'
-        request = self.test_fn(stdout=stdout)
-        self.assertEqual(request.queue, self.default_queue)
-        self.assertEqual(request.outFile, stdout)
-        self.assertEqual(request.options,
-                lsf.SUB_QUEUE + lsf.SUB_OUT_FILE)
-
-    def test_stdout_failure(self):
-        self.assertRaises(TypeError,
-                self.test_fn, stdout=self.bad_type)
+        response_places = {
+                'msg: execute_success': '--execute-success',
+                'msg: execute_failure': '--execute-failure',
+        }
+        make_pre_post_command_string.assert_called_once_with(
+                self.executor.post_exec_command,
+                executor_data, response_places)
+        self.assertEqual(post_exec_string, request.postExecCmd)
+        self.assertEqual(lsf.SUB3_POST_EXEC, request.options3)
 
 
-    def test_stderr_success(self):
-        stderr = '/tmp/stderr/path'
-        request = self.test_fn(stderr=stderr)
-        self.assertEqual(request.queue, self.default_queue)
-        self.assertEqual(request.errFile, stderr)
-        self.assertEqual(request.options,
-                lsf.SUB_QUEUE + lsf.SUB_ERR_FILE)
 
-    def test_stderr_failure(self):
-        self.assertRaises(TypeError,
-                self.test_fn, stderr=self.bad_type)
+class LSFExecutorCallbackTest(unittest.TestCase):
+    def setUp(self):
+        self.executor = executor.LSFExecutor(pre_exec='true',
+                post_exec='true', default_queue='long')
 
-    def test_resources(self):
-        value = 4000
-        limit = {"max_virtual_memory": value}
-        reserve = {"memory": 4096, "temp_space": 10}
-        require = {"min_proc": 8}
+    def test_on_job_id(self):
+        job_id = mock.Mock()
+        callback_data = mock.Mock()
+        service_interfaces = mock.Mock()
 
-        resources = {"limit": limit, "reserve": reserve, "require": require}
-        request = self.test_fn(resources=resources)
-        expected_limits = _create_expected_limits()
-        expected_limits[lsf.LSF_RLIMIT_VMEM] = value
-        self.assertEqual(request.queue, self.default_queue)
+        send_message = mock.Mock()
+        with mock.patch('flow.shell_command.lsf.executor.send_message',
+                new=send_message):
+            self.executor.on_job_id(job_id, callback_data, service_interfaces)
 
-        for i, x in enumerate(expected_limits):
-            self.assertEqual(request.rLimits[i], x)
+        send_message.assert_any_call(
+                'msg: dispatch_success', callback_data, service_interfaces,
+                token_data={'job_id': job_id})
 
-        self.assertTrue(request.options | lsf.SUB_RES_REQ)
-        select = re.search("select\[([^]]*)]", request.resReq)
-        rusage = re.search("rusage\[([^]]*)]", request.resReq)
-        self.assertTrue(select)
-        self.assertTrue(rusage)
+    def test_on_failure(self):
+        exit_code = mock.Mock()
+        callback_data = mock.Mock()
+        service_interfaces = mock.Mock()
 
-        sitems = sorted(select.group(1).split(" && "))
-        ritems = sorted(rusage.group(1).split(":"))
+        send_message = mock.Mock()
+        with mock.patch('flow.shell_command.lsf.executor.send_message',
+                new=send_message):
+            self.executor.on_failure(exit_code,
+                    callback_data, service_interfaces)
 
-        self.assertEqual(["gtmp>=10", "mem>=4096", "ncpus>=8"], sitems)
-        self.assertEqual(["gtmp=10", "mem=4096"], ritems)
+        send_message.assert_any_call(
+                'msg: dispatch_failure', callback_data, service_interfaces,
+                token_data={'exit_code': exit_code})
 
-    def test_post_exec_cmd(self):
-        request = executor.create_request(post_exec_cmd=None,
-                default_queue=self.default_queue)
 
-        self.assertEqual(request.options3, 0)
-        self.assertEqual(request.postExecCmd, None)
 
-        post_exec_cmd = 'echo "something"'
-        request = executor.create_request(post_exec_cmd=post_exec_cmd,
-                default_queue=self.default_queue)
+class PrePostCommandStringTest(unittest.TestCase):
+    def test_simple(self):
+        executor_data = {
+            'net_key': '<NK>',
+            'color': '<C>',
+            'color_group_idx': '<G>',
+        }
+        response_places = { }
 
-        self.assertEqual(request.options3, lsf.SUB3_POST_EXEC)
-        self.assertEqual(request.postExecCmd, post_exec_cmd)
+        expected_result = ('bash -c "\'EXE\' --net-key \'<NK>\' --color <C> '
+                '--color-group-idx <G>"')
+        self.assertEqual(expected_result,
+                executor.make_pre_post_command_string('EXE',
+                    executor_data, response_places))
+
+
+    def test_outputs(self):
+        executor_data = {
+            'net_key': '<NK>',
+            'color': '<C>',
+            'color_group_idx': '<G>',
+            'lsf_options': {
+                'stdout': 'STDOUT',
+                'stderr': 'STDERR',
+            },
+        }
+        response_places = { }
+
+        expected_result = ('bash -c "\'EXE\' --net-key \'<NK>\' --color <C> '
+                '--color-group-idx <G> 1>> \'STDOUT\' 2>> \'STDERR\'"')
+        self.assertEqual(expected_result,
+                executor.make_pre_post_command_string('EXE',
+                    executor_data, response_places))
+
+    def test_response_places(self):
+        executor_data = {
+            'net_key': '<NK>',
+            'color': '<C>',
+            'color_group_idx': '<G>',
+            'place_one': 1,
+            'place_two': 2,
+        }
+        response_places = {
+            'place_one': '--place-one',
+            'place_two': '--place-two',
+        }
+
+        expected_result = ('bash -c "\'EXE\' --net-key \'<NK>\' --color <C> '
+                '--color-group-idx <G> --place-one 1 --place-two 2"')
+        self.assertEqual(expected_result,
+                executor.make_pre_post_command_string('EXE',
+                    executor_data, response_places))
 
 
 if '__main__' == __name__:

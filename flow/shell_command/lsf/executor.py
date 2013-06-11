@@ -1,11 +1,10 @@
 from flow.configuration.settings.injector import setting
-from flow.shell_command import util
 from flow.shell_command.executor_base import ExecutorBase, send_message
+from flow.shell_command.lsf.resource import set_request_resources
+from flow.shell_command.lsf.options import AVAILABLE_OPTIONS, LSFOption
 from injector import inject
 from pythonlsf import lsf
 from twisted.python.procutils import which
-
-from flow.shell_command.lsf.resource import make_rusage_string
 
 import logging
 import os
@@ -14,228 +13,117 @@ import os
 LOG = logging.getLogger(__name__)
 
 
-@inject(post_exec=setting('shell_command.lsf.post_exec'),
+@inject(pre_exec=setting('shell_command.lsf.pre_exec'),
+        post_exec=setting('shell_command.lsf.post_exec'),
         default_queue=setting('shell_command.lsf.default_queue'))
 class LSFExecutor(ExecutorBase):
+    def __init__(self):
+        self.pre_exec_command = _find_executable(self.pre_exec)
+        self.post_exec_command = _find_executable(self.post_exec)
+
+        self.default_options = {
+            LSFOption(name='beginTime'): 0,
+            LSFOption(name='termTime'): 0,
+            LSFOption(name='queue', flag=lsf.SUB_QUEUE): self.default_queue,
+        }
+
+
     def on_job_id(self, job_id, callback_data, service_interfaces):
         data = {'job_id': job_id}
-        return send_message('msg: dispatch_success', data=data)
+        return send_message('msg: dispatch_success', callback_data,
+                service_interfaces, token_data=data)
 
     def on_failure(self, exit_code, callback_data, service_interfaces):
-        return send_message('msg: dispatch_failure')
-
-    def on_success(self, callback_data, service_interfaces):
-        return send_message('msg: dispatch_success')
-
-
-    def execute_command_line(self, job_id_callback,
-            command_line, executor_data):
-        pass
+        data = {'exit_code': exit_code}
+        return send_message('msg: dispatch_failure', callback_data,
+                service_interfaces, token_data=data)
 
 
-@inject(post_exec=setting('shell_command.lsf.post_exec'),
-        default_queue=setting('shell_command.lsf.default_queue'))
-class LSFExecutor(ExecutorBase):
-    def execute(self, command_line, **kwargs):
-        request = self.construct_request(command_line, **kwargs)
+    def execute_command_line(self, job_id_callback, command_line,
+            executor_data, resource):
+        request = self.construct_request(command_line, executor_data, resources)
 
-        reply = _create_reply()
+        reply = create_reply()
 
         try:
             submit_result = lsf.lsb_submit(request, reply)
         except:
-            LOG.exception("lsb_submit failed for command string: '%s'",
-                    command_line)
+            LOG.exception("lsb_submit failed for command line: %s "
+                    "-- with executor_data: %s -- with resources: %s",
+                    command_line, executor_data, resources)
             raise
 
         if submit_result > 0:
+            job_id_callback(submit_result)
             LOG.debug('successfully submitted lsf job: %s', submit_result)
-            return True, submit_result
+            return exit_codes.EXECUTE_SUCCESS
+
         else:
             lsf.lsb_perror("lsb_submit")
             LOG.error('failed to submit lsf job, return value = (%s), err = %s',
                     submit_result, lsf.lsb_sperror("lsb_submit"))
-            return False, submit_result
+            return exit_codes.EXECUTE_FAILURE
 
-    def construct_request(self, command_line,
-            net_key=None, response_places=None, with_inputs=None,
-            with_outputs=None, token_color=None, **lsf_kwargs):
-        LOG.debug("lsf kwargs: %r", lsf_kwargs)
+
+    def construct_request(self, command_line, executor_data, resources):
+        request = create_empty_request()
 
         if self.post_exec is not None:
-            executable_name = self.post_exec[0]
-            args = " ".join(self.post_exec[1:])
+            self.set_post_exec(request, executor_data)
 
-            executable = _find_executable(executable_name)
-            failure_place = response_places.pop('execute_failure')
+        if self.pre_exec is not None:
+            self.set_pre_exec(request, executor_data)
 
-            post_exec_cmd = create_post_exec_cmd(executable=executable,
-                    args=args, net_key=net_key, failure_place=failure_place,
-                    token_color=token_color, **lsf_kwargs)
+        set_request_resources(request, resources)
+        self.set_options(request, executor_data)
 
-            LOG.debug("lsf post_exec_cmd = '%s'", post_exec_cmd)
-        else:
-            post_exec_cmd = None
-
-        request = create_request(post_exec_cmd=post_exec_cmd,
-                default_queue=self.default_queue, **lsf_kwargs)
-
-        full_command_line = self._make_command_line(command_line,
-                net_key=net_key, response_places=response_places,
-                with_inputs=with_inputs, with_outputs=with_outputs,
-                token_color=token_color)
-        command_string = ' '.join(map(str, full_command_line))
-        LOG.debug("lsf command_string = '%s'", command_string)
-        request.command = command_string
+        request.command = ' '.join(command_line)
 
         return request
 
-    def _make_command_line(self, command_line, net_key=None,
-            response_places=None, with_inputs=None, with_outputs=None,
-            token_color=None):
 
-        cmdline = self.wrapper + [
-            '-n', net_key,
-            '-r', response_places['execute_begin'],
-            '-s', response_places['execute_success'],
-        ]
-        if 'execute_failure' in response_places.keys():
-            cmdline += ['-f', response_places['execute_failure']]
+    def set_pre_exec(self, request, executor_data):
+        response_places = {
+                'msg: execute_begin': '--execute-begin',
+        }
+        pre_exec_command = make_pre_post_command_string(self.pre_exec_command,
+                executor_data, response_places)
 
-        if token_color is not None:
-            cmdline += ["--token-color", str(token_color)]
+        request.preExecCmd = str(pre_exec_command)
+        request.options |= lsf.SUB_PRE_EXEC
 
-        if with_inputs:
-            cmdline += ["--with-inputs", with_inputs]
+    def set_post_exec(self, request, executor_data):
+        response_places = {
+                'msg: execute_success': '--execute-success',
+                'msg: execute_failure': '--execute-failure',
+        }
+        post_exec_command = make_pre_post_command_string(self.post_exec_command,
+                executor_data, response_places)
 
-        if with_outputs:
-            cmdline.append("--with-outputs")
-
-        cmdline.append('--')
-        cmdline += command_line
-
-        return [str(x) for x in cmdline]
+        request.postExecCmd = str(post_exec_command)
+        request.options3 |= lsf.SUB3_POST_EXEC
 
 
-def create_request(post_exec_cmd, default_queue,
-        name=None, queue=None, group=None, stdout=None, stderr=None,
-        beginTime=0, mail_user=None, working_directory=None, project=None,
-        resources={}, **other_lsf_kwargs):
+    def set_options(self, request, executor_data):
+        for option, value in self.default_options.iteritems():
+            option.set_option(request, value)
 
+        lsf_options = executor_data.get('lsf_options', {})
+
+        for name, value in lsf_options.iteritems():
+            AVAILABLE_OPTIONS[name].set_option(request, value)
+
+
+def create_empty_request():
     request = lsf.submit()
     request.options = 0
     request.options2 = 0
     request.options3 = 0
 
-    if name:
-        request.jobName = str(name)
-        request.options |= lsf.SUB_JOB_NAME
-
-    if mail_user:
-        request.mailUser = str(mail_user)
-        request.options |= lsf.SUB_MAIL_USER
-        LOG.debug('setting mail_user = %s', mail_user)
-
-    if queue:
-        request.queue = str(queue)
-    else:
-        request.queue = default_queue
-    request.options |= lsf.SUB_QUEUE
-    LOG.debug("request.queue = %s", request.queue)
-
-    #if group:
-        #request.jobGroup = str(group)
-        #request.options2 |= lsf.SUB_JOB_GROUP
-
-    if project:
-        request.projectName = str(project)
-        request.options |= lsf.SUB_PROJECT_NAME
-
-    if stdout:
-        request.outFile = str(util.join_path_if_rel(
-            working_directory, stdout))
-        request.options |= lsf.SUB_OUT_FILE
-        LOG.debug('setting job stdout = %s', stdout)
-    if stderr:
-        request.errFile = str(util.join_path_if_rel(
-            working_directory, stderr))
-        request.options |= lsf.SUB_ERR_FILE
-        LOG.debug('setting job stderr = %s', stderr)
-
-    if working_directory:
-        request.cwd = str(working_directory)
-        request.options3 |= lsf.SUB3_CWD
-        LOG.debug('setting cwd = %s', working_directory)
-
-    reserve = resources.get("reserve", {})
-    require = resources.get("require", {})
-    limit = resources.get("limit", {})
-
-    if post_exec_cmd:
-        request.postExecCmd = str(post_exec_cmd)
-        request.options3 |= lsf.SUB3_POST_EXEC
-
-    numProcessors = require.get("min_proc", 1)
-    maxNumProcessors = require.get("max_proc", numProcessors)
-
-    termTime = limit.get("cpu_time", 0)
-
-    request.numProcessors = int(numProcessors)
-    request.maxNumProcessors = int(maxNumProcessors)
-
-    request.beginTime = int(beginTime)
-    request.termTime = int(termTime)
-
-    if require or reserve:
-        rusage = make_rusage_string(require=require, reserve=reserve)
-        LOG.debug('setting resource request string = %r', rusage)
-        request.options |= lsf.SUB_RES_REQ
-        request.resReq = rusage
-
-    rlimits = resources.get("limit", {})
-    LOG.debug("Setting rlimits: %r", rlimits)
-    request.rLimits = get_rlimits(**rlimits)
-
     return request
 
 
-def get_rlimits(max_resident_memory=None, max_virtual_memory=None,
-        max_processes=None, max_threads=None, max_open_files=None,
-        max_stack_size=None):
-    # Initialize unused limits
-    limits = [lsf.DEFAULT_RLIMIT] * lsf.LSF_RLIM_NLIMITS
-
-    if max_resident_memory:
-        max_resident_memory = int(max_resident_memory)
-        limits[lsf.LSF_RLIMIT_RSS] = max_resident_memory
-        LOG.debug('setting rLimit for max_resident_memory to %r',
-                max_resident_memory)
-
-    if max_virtual_memory:
-        limits[lsf.LSF_RLIMIT_VMEM] = int(max_virtual_memory)
-        LOG.debug('setting rLimit for max_virtual_memory to %r',
-                max_virtual_memory)
-
-    if max_processes:
-        limits[lsf.LSF_RLIMIT_PROCESS] = int(max_processes)
-        LOG.debug('setting rLimit for max_processes to %r', max_processes)
-
-    if max_threads:
-        limits[lsf.LSF_RLIMIT_THREAD] = int(max_threads)
-        LOG.debug('setting rLimit for max_threads to %r', max_threads)
-
-    if max_open_files:
-        limits[lsf.LSF_RLIMIT_NOFILE] = int(max_open_files)
-        LOG.debug('setting rLimit for max_open_files to %r', max_open_files)
-
-    if max_stack_size:
-        limits[lsf.LSF_RLIMIT_STACK] = int(max_stack_size)
-        LOG.debug('setting rLimit for max_stack_size to %r', max_stack_size)
-
-    return limits
-
-
-def _create_reply():
+def create_reply():
     reply = lsf.submitReply()
 
     init_code = lsf.lsb_init('')
@@ -244,26 +132,33 @@ def _create_reply():
 
     return reply
 
-def create_post_exec_cmd(executable, args, net_key, failure_place,
-        stderr=None, stdout=None, token_color=None, **other_lsf_kwargs):
 
-    cmd_string = "'%s' %s -n '%s' -f %s" % (
-            executable, args, net_key, failure_place)
+def make_pre_post_command_string(executable, executor_data, response_places):
+    base_arguments = ("--net-key '%(net_key)s' --color %(color)s "
+            "--color-group-idx %(color_group_idx)s" % executor_data)
 
-    if token_color is not None:
-        cmd_string += " -c %s" % token_color
+    base_command_line = ["'%s'" % executable, base_arguments]
 
-    result = "bash -c \"%s\" 1>> '%s' 2>> '%s'" % (cmd_string, stdout, stderr)
+    for place_name, command_line_flag in response_places.iteritems():
+        base_command_line.extend([
+            command_line_flag,
+            "%s" % str(executor_data[place_name]),
+        ])
 
-    return result
+    lsf_options = executor_data.get('lsf_options', {})
+    if 'stdout' in lsf_options:
+        base_command_line.append("1>> '%s'" % lsf_options['stdout'])
+
+    if 'stderr' in lsf_options:
+        base_command_line.append("2>> '%s'" % lsf_options['stderr'])
+
+    return 'bash -c "%s"' % ' '.join(base_command_line)
+
 
 def _find_executable(name):
     executables = which(name)
     if executables:
         return executables[0]
     else:
-        msg = "Couldn't find the executable by name when" +\
-                " looking in PATH=%s for %s" % (os.environ.get('PATH', None),
-                name)
-        LOG.warning(msg)
-        raise RuntimeError(msg)
+        raise RuntimeError("Couldn't find the executable (%s) in PATH: %s"
+                % (name, os.environ.get('PATH', None)))
