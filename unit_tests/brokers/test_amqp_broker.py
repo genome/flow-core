@@ -6,224 +6,152 @@ except:
 
 from twisted.python.failure import Failure
 from twisted.internet import defer
+from flow.protocol.exceptions import InvalidMessageException
 
-from flow.brokers.amqp_broker import AmqpBroker, AmqpConnectionManager
-from flow.brokers import amqp_broker
+from flow.brokers.amqp_broker import AmqpBroker
 
-class AmqpConnectionManagerTests(unittest.TestCase):
-    def test_private_get_pika_connection_params(self):
-        pika = mock.Mock()
-        expected_return_value = object()
-        pika_connection_parameters = mock.Mock()
-        pika_connection_parameters.return_value = expected_return_value
-
-        hostname, port, virtual_host = (object(), object(), object())
-        connection_params = mock.Mock()
-        connection_params.hostname = hostname
-        connection_params.port = port
-        connection_params.virtual_host = virtual_host
-
-        with mock.patch('pika.ConnectionParameters',
-                new=pika_connection_parameters):
-            cm = AmqpConnectionManager(broker=None, connection_params=connection_params)
-            return_value = cm._get_pika_connection_params(
-                    connection_params=connection_params)
-
-        self.assertTrue(return_value is expected_return_value)
-        pika_connection_parameters.assertCalledOnceWith(
-                host=hostname, port=port, virtual_host=virtual_host)
-
-    def test_reconnect(self):
-        hostname, port, virtual_host = (object(), object(), object())
-        connection_params = mock.Mock()
-        connection_params.hostname = hostname
-        connection_params.port = port
-        connection_params.virtual_host = virtual_host
-        connection_params.connection_attempts = 3
-
-        broker = mock.Mock()
-        cm = AmqpConnectionManager(broker=broker, connection_params=connection_params)
-        cm._get_pika_connection_params = mock.Mock()
-
-        self._connect_deferreds = []
-        def make_deferred(*args):
-            deferred = defer.Deferred()
-            self._connect_deferreds.append(deferred)
-            return deferred
-
-        def fake_client_creator(*args, **kwargs):
-            m = mock.Mock()
-            m.connectTCP = make_deferred
-            return m
-
-        self.assertFalse(amqp_broker.protocol.ClientCreator is fake_client_creator)
-        with mock.patch('twisted.internet.protocol.ClientCreator',
-                new=fake_client_creator):
-            self.assertTrue(amqp_broker.protocol.ClientCreator is fake_client_creator)
-            connect_deferred = cm.connect()
-            self.assertEqual(len(self._connect_deferreds), 1)
-
-            # only one connection attempt at a time.
-            same_connect_deferred = cm.connect()
-            self.assertTrue(connect_deferred is same_connect_deferred)
-            self.assertEqual(len(self._connect_deferreds), 1)
-            self.assertFalse(connect_deferred.called)
-
-            def call_now(time, fn, *args, **kwargs):
-                fn(*args, **kwargs)
-
-            with mock.patch('twisted.internet.reactor.callLater',
-                    new=call_now):
-
-                self._connect_deferreds[0].errback(RuntimeError('bad'))
-                self.assertEqual(len(self._connect_deferreds), 2)
-                self.assertFalse(connect_deferred.called)
-
-                self._connect_deferreds[1].errback(RuntimeError('bad'))
-                self.assertEqual(len(self._connect_deferreds), 3)
-                self.assertFalse(connect_deferred.called)
-
-                # reached retry limit
-                self._connect_deferreds[2].errback(RuntimeError('bad'))
-                self.assertEqual(len(self._connect_deferreds), 3)
-                self.assertFalse(connect_deferred.called)
-
-class AmqpBrokerTest(unittest.TestCase):
+class AmqpBrokerTests(unittest.TestCase):
     def setUp(self):
-        connection_manager = mock.Mock()
-        connection_manager._connect = mock.Mock()
-        self.connect_deferred = defer.Deferred()
-        connection_manager._connect.return_value = self.connect_deferred
+        self.channel = mock.Mock()
 
-        self.broker = AmqpBroker(connection_manager=connection_manager)
+        self.b = AmqpBroker(channel=self.channel)
 
-        self.confirm_deferreds = []
-        def make_deferred(*args):
-            deferred = defer.Deferred()
-            self.confirm_deferreds.append(deferred)
-            return deferred
-        self.broker.raw_publish = make_deferred
+    def test_publish(self):
+        exchange_name = mock.Mock()
+        routing_key = mock.Mock()
+        message = mock.Mock()
+        encoded_message = mock.Mock()
+        message.encode = mock.Mock(return_value=encoded_message)
 
-        self.message = mock.Mock()
+        expected_return_value = mock.Mock()
+        self.channel.basic_publish = mock.Mock(
+                return_value=expected_return_value)
+        return_value = self.b.publish(exchange_name=exchange_name,
+                routing_key=routing_key, message=message)
+        self.assertIs(return_value, expected_return_value)
+        self.channel.basic_publish.assert_called_once_with(
+                exchange_name=exchange_name,
+                routing_key=routing_key,
+                encoded_message=encoded_message)
 
-    def test_publisher_confirms(self):
-        publish_deferred = self.broker.publish(exchange_name=None,
-                routing_key=None, message=self.message)
-        self.assertFalse(publish_deferred.called)
+    def test_register_handler(self):
+        handler = mock.Mock()
+        deferred = mock.Mock()
+        self.channel.connect = mock.Mock(return_value=deferred)
 
-        self.connect_deferred.callback(None)
-        self.assertFalse(publish_deferred.called)
-        self.assertEqual(len(self.confirm_deferreds), 1)
+        return_value = self.b.register_handler(handler)
+        self.assertIs(return_value, deferred)
 
-        self.confirm_deferreds[0].callback(None)
-        self.assertTrue(publish_deferred.called)
+        deferred.addCallback.assert_called_once_with(self.b._start_handler,
+                handler)
 
-    def test_publisher_denial(self):
-        publish_deferred = self.broker.publish(exchange_name=None,
-                routing_key=None, message=self.message)
-        self.connect_deferred.callback(None)
+    def test_private_start_handler(self):
+        channel = mock.Mock()
+        deferred = mock.Mock()
+        channel.basic_consume = mock.Mock(return_value=deferred)
+        handler = mock.Mock()
+        handler.queue_name = 'fake_queue_name'
 
-        self.assertFalse(publish_deferred.called)
-        self.assertEqual(len(self.confirm_deferreds), 1)
+        return_value = self.b._start_handler(channel, handler=handler)
+        self.assertIs(return_value, channel)
 
-        self.confirm_deferreds[0].errback(RuntimeError)
-        self.assertTrue(publish_deferred.called)
+        channel.basic_consume.assert_called_once_with(queue='fake_queue_name')
+        deferred.addCallback.assert_called_once_with(self.b._begin_get_loop,
+                handler)
 
-        self.assertTrue(isinstance(publish_deferred.result, Failure))
+    def test_private_begin_get_loop(self):
+        queue = mock.Mock()
+        consumer_tag = mock.Mock()
+        consume_info = (queue, consumer_tag)
+        handler = mock.Mock()
 
-        # add Errbacks so twisted doesn't get the exceptions
-        self.confirm_deferreds[0].addErrback(lambda _: None)
-        publish_deferred.addErrback(lambda _: None)
+        self.b._get_message_from_queue = mock.Mock()
 
-    def test_multiple_confirms(self):
-        publish_deferreds = []
-        publish_deferreds.append(self.broker.publish(exchange_name=None,
-            routing_key=None, message=self.message))
-        publish_deferreds.append(self.broker.publish(exchange_name=None,
-            routing_key=None, message=self.message))
-        self.connect_deferred.callback(None)
+        return_value = self.b._begin_get_loop(consume_info, handler)
+        self.assertIs(return_value, consume_info)
+        self.b._get_message_from_queue.assert_called_once_with(
+                queue=queue, handler=handler)
 
-        self.assertFalse(publish_deferreds[0].called)
-        self.assertFalse(publish_deferreds[1].called)
-        self.assertEqual(len(self.confirm_deferreds), 2)
+    def test_private_get_message_from_queue(self):
+        deferred = mock.Mock()
+        queue = mock.Mock()
+        queue.get = mock.Mock(return_value=deferred)
+        handler = mock.Mock()
 
-        self.confirm_deferreds[0].callback(None)
-        self.assertTrue(publish_deferreds[0].called)
-        self.assertFalse(publish_deferreds[1].called)
+        return_value = self.b._get_message_from_queue(queue, handler)
+        self.assertIs(return_value, deferred)
 
-        self.confirm_deferreds[1].callback(None)
-        self.assertTrue(publish_deferreds[0].called)
-        self.assertTrue(publish_deferreds[1].called)
+        deferred.addCallbacks.assert_called_once_with(self.b._on_message_recieved, self.b._on_get_failed,
+                callbackArgs=(queue, handler),
+                errbackArgs=(handler,))
 
-    def test_multiple_confirms_single_connect(self):
-        publish_deferreds = []
-        publish_deferreds.append(self.broker.publish(exchange_name=None,
-            routing_key=None, message=self.message))
-        self.connect_deferred.callback(None)
+    def test_private_on_get_failed(self):
+        reason = mock.Mock()
+        handler = mock.Mock()
 
-        self.confirm_deferreds[0].callback(None)
-        self.assertTrue(publish_deferreds[0].called)
-        self.assertEqual(len(self.confirm_deferreds), 1)
+        return_value = self.b._on_get_failed(reason, handler=handler)
+        self.assertIs(return_value, reason)
 
-        publish_deferreds.append(self.broker.publish(exchange_name=None,
-            routing_key=None, message=self.message))
-        self.assertEqual(len(self.confirm_deferreds), 2)
+    def test_private_on_message_recieved(self):
+        channel = mock.Mock()
+        basic_deliver = mock.Mock()
+        recieve_tag = mock.Mock()
+        basic_deliver.delivery_tag = recieve_tag
+        properties = mock.Mock()
+        encoded_message = mock.Mock()
+        get_info = (channel, basic_deliver, properties, encoded_message)
 
-        self.confirm_deferreds[1].callback(None)
-        self.assertTrue(publish_deferreds[0].called)
-        self.assertTrue(publish_deferreds[1].called)
+        queue = mock.Mock()
+        deferred = mock.Mock()
+        handler = mock.Mock(return_value=deferred)
+        handler.message_class = mock.Mock()
+        message = mock.Mock()
+        handler.message_class.decode = mock.Mock(return_value=message)
 
+        self.b._get_message_from_queue = mock.Mock()
 
-class MoreAmqpBrokerTest(unittest.TestCase):
-    def setUp(self):
-        self.broker = AmqpBroker(connection_manager=mock.Mock())
+        # without raising exception
+        return_value = self.b._on_message_recieved(get_info, queue, handler)
+        self.assertIs(return_value, get_info)
 
-    def test_add_remove_confirm_deferred(self):
-        self.assertEqual(len(self.broker._confirm_tags), 0)
-        self.assertEqual(len(self.broker._confirm_deferreds), 0)
+        handler.assert_called_once_with(message)
+        deferred.addCallbacks.assert_called_once_with(
+                self.b._ack, self.b._reject,
+                callbackArgs=(recieve_tag,),
+                errbackArgs=(recieve_tag,))
+        self.b._get_message_from_queue.assert_called_once_with(queue, handler)
 
-        # add 1
-        publish_tag = object()
-        deferred = object()
-        self.broker.add_confirm_deferred(publish_tag=publish_tag,
-                deferred=deferred)
+        # raising InvalidMessageException
+        handler.message_class.decode.side_effect = InvalidMessageException
+        failed_deferred = mock.Mock()
+        fake_fail = mock.Mock(return_value=failed_deferred)
+        with mock.patch('twisted.internet.defer.fail', new=fake_fail):
+            return_value = self.b._on_message_recieved(get_info, queue, handler)
+            self.assertIs(return_value, get_info)
 
-        self.assertItemsEqual(self.broker._confirm_tags, [publish_tag])
-        self.assertItemsEqual(self.broker._confirm_deferreds, {publish_tag:deferred})
-
-        # add 2
-        publish_tag2 = object()
-        deferred2 = object()
-        self.broker.add_confirm_deferred(publish_tag=publish_tag2,
-                deferred=deferred2)
-
-        self.assertItemsEqual(self.broker._confirm_tags, [publish_tag, publish_tag2])
-        self.assertItemsEqual(self.broker._confirm_deferreds,
-                {publish_tag:deferred, publish_tag2:deferred2})
-
-        # remove 2
-        self.broker.remove_confirm_deferred(publish_tag2)
-        self.assertItemsEqual(self.broker._confirm_tags, [publish_tag])
-        self.assertItemsEqual(self.broker._confirm_deferreds, {publish_tag:deferred})
+            handler.assert_called__with(message)
+            failed_deferred.addCallbacks.assert_called_with(
+                    self.b._ack, self.b._reject,
+                    callbackArgs=(recieve_tag,),
+                    errbackArgs=(recieve_tag,))
+            self.b._get_message_from_queue.assert_called_with(queue, handler)
 
 
-    def test_raw_publish(self):
-        self.broker.connection_manager.channel = mock.Mock()
-        self.broker.connection_manager.channel.basic_publish = mock.Mock()
-        self.broker.add_confirm_deferred = mock.Mock()
+    def test_private_ack(self):
+        confirm_info = mock.Mock()
+        recieve_tag = mock.Mock()
+        self.b.channel = mock.Mock()
 
-        self.assertEqual(self.broker._last_publish_tag, 0)
-        exchange_name = object()
-        routing_key = object()
-        encoded_message = object()
+        return_value = self.b._ack(confirm_info, recieve_tag)
+        self.assertIs(return_value, confirm_info)
+        self.b.channel.basic_ack.assert_called_once_with(recieve_tag)
 
-        return_value = self.broker.raw_publish(exchange_name=exchange_name,
-                routing_key=routing_key, encoded_message=encoded_message)
-        self.assertEqual(self.broker._last_publish_tag, 1)
-        self.broker.connection_manager.channel.basic_publish.assertCalledOnceWith(exchange=exchange_name,
-                routing_key=1, body=encoded_message, properties=self.broker._publish_properties)
-        self.assertTrue(isinstance(return_value, defer.Deferred))
-        self.assertFalse(return_value.called)
+    def test_private_reject(self):
+        reason = mock.Mock()
+        recieve_tag = mock.Mock()
+        self.b.channel = mock.Mock()
 
-        self.broker.add_confirm_deferred.assertCalledOnceWith(1, return_value)
+        return_value = self.b._reject(reason, recieve_tag)
+        self.assertIs(return_value, reason)
+        self.b.channel.basic_reject.assert_called_once_with(recieve_tag)
 
