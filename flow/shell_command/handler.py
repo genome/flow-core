@@ -1,9 +1,10 @@
 from flow.configuration.settings.injector import setting
 from flow.handler import Handler
 from flow.interfaces import IServiceLocator
-from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.service_locator import ServiceLocator
+from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.shell_command.messages import ShellCommandSubmitMessage
+from flow.shell_command.resource import make_all_resource_objects
 from injector import inject
 from twisted.internet import defer
 
@@ -18,6 +19,8 @@ class ShellCommandSubmitMessageHandler(Handler):
     message_class = ShellCommandSubmitMessage
 
     def _handle_message(self, message):
+        resources = make_all_resource_objects(message.get('resources', {}))
+
         return self.executor.execute(
                 command_line=message['command_line'],
                 group_id=message['group_id'],
@@ -26,6 +29,7 @@ class ShellCommandSubmitMessageHandler(Handler):
                 environment=message.get('environment', {}),
                 executor_data=message.get('executor_data', {}),
                 working_directory=message.get('working_directory', '/tmp'),
+                resources=resources,
                 service_interfaces=self.service_interfaces)
 
 
