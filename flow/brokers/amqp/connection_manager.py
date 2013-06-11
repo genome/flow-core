@@ -1,6 +1,6 @@
 from flow import exit_codes
 from flow.configuration.settings.injector import setting
-from flow.util.exit import exit
+from flow.util.exit import exit_process
 from injector import inject
 from pika.adapters import twisted_connection
 from twisted.internet import reactor, defer, protocol
@@ -8,7 +8,6 @@ from twisted.internet.error import ReactorNotRunning
 
 import logging
 import pika
-import os
 
 
 LOG = logging.getLogger(__name__)
@@ -105,7 +104,7 @@ class ConnectionManager(object):
             self.state = DISCONNECTED
             LOG.critical('Maximum number of connection attempts (%d) '
                     'reached... shutting down', max_attempts)
-            exit(exit_codes.EXECUTE_SERVICE_UNAVAILABLE)
+            exit_process(exit_codes.EXECUTE_SERVICE_UNAVAILABLE)
         else:
             LOG.info("Attempting to reconnect to the AMQP "
                     "server in %s seconds", self.connection_params.retry_delay)
@@ -115,7 +114,7 @@ class ConnectionManager(object):
     def _on_pika_connection_closed(self, connection, reply_code, reply_text):
         LOG.info('Connection closed with code %s: %s', reply_code, reply_text)
         self.state = DISCONNECTED
-        exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+        exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     def _disconnect(self):
         LOG.info("Closing AMQP connection")

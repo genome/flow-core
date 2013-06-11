@@ -1,5 +1,5 @@
 from flow import exit_codes
-from flow.util.exit import exit
+from flow.util.exit import exit_process
 
 import logging
 import os
@@ -46,7 +46,7 @@ def socketpair_or_exit():
         parent_socket, child_socket = socket.socketpair()
     except socket.error:
         LOG.exception('Failed to create socket pair, exitting')
-        exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+        exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     return parent_socket, child_socket
 
@@ -56,7 +56,7 @@ def fork_or_exit():
         pid = os.fork()
     except OSError:
         LOG.exception('Failed to fork, exitting')
-        exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+        exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     return pid
 
@@ -69,7 +69,7 @@ def set_gid_and_uid_or_exit(group_id, user_id):
         except OSError:
             LOG.exception('Failed to setgid from %d to %d',
                     os.getgid(), group_id)
-            exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+            exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     if user_id is not None:
         try:
@@ -78,4 +78,4 @@ def set_gid_and_uid_or_exit(group_id, user_id):
         except OSError:
             LOG.exception('Failed to setuid from %d to %d',
                     os.getuid(), user_id)
-            exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+            exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)

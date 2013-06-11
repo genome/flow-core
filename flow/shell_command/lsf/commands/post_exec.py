@@ -3,7 +3,7 @@ from flow.commands.base import CommandBase
 from flow.configuration.inject.broker import BrokerConfiguration
 from flow.configuration.inject.orchestrator import OrchestratorConfiguration
 from flow.configuration.settings.injector import setting
-from flow.util.exit import exit
+from flow.util.exit import exit_process
 from injector import inject
 
 import flow.interfaces
@@ -37,7 +37,7 @@ class LsfPostExecCommand(CommandBase):
         if stat is None:
             LOG.critical("LSB_JOBEXIT_STAT environment variable wasn't "
                     "set... exiting!")
-            exit(exit_codes.EXECUTE_ERROR)
+            exit_process(exit_codes.EXECUTE_ERROR)
         else:
             stat = int(stat)
 
