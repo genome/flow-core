@@ -100,7 +100,7 @@ class ExecutorBaseTest(unittest.TestCase):
         chdir = mock.Mock()
         set_gid_and_uid_or_exit = mock.Mock()
         with mock.patch(
-                'flow.shell_command.executor_base.set_gid_and_uid_or_exit',
+                'flow.shell_command.util.set_gid_and_uid_or_exit',
                 new=set_gid_and_uid_or_exit):
             with mock.patch('os.chdir', new=chdir):
                 exit_code = e._child(socket, group_id, user_id, environment,

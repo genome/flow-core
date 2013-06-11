@@ -1,5 +1,6 @@
 from flow import exit_codes
 from flow.configuration.settings.injector import setting
+from flow.shell_command import util
 from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.util import environment as env_util
 from injector import inject
@@ -8,7 +9,6 @@ from twisted.internet import defer
 import abc
 import logging
 import os
-import socket
 
 
 LOG = logging.getLogger(__name__)
@@ -42,9 +42,9 @@ class ExecutorBase(IShellCommandExecutor):
             resources, service_interfaces):
         deferreds = []
 
-        parent_socket, child_socket = socketpair_or_exit()
+        parent_socket, child_socket = util.socketpair_or_exit()
 
-        child_pid = fork_or_exit()
+        child_pid = util.fork_or_exit()
         if child_pid == 0:
             parent_socket.close()
             child_exit_code = self._child(child_socket, group_id, user_id,
@@ -67,7 +67,7 @@ class ExecutorBase(IShellCommandExecutor):
             finally:
                 parent_socket.close()
 
-        exit_code, signal_number = wait_for_pid(child_pid)
+        exit_code, signal_number = util.wait_for_pid(child_pid)
 
         if signal_number > 0:
             deferreds.append(self.on_signal(
@@ -86,7 +86,7 @@ class ExecutorBase(IShellCommandExecutor):
             send_socket.send(str(job_id))
             send_socket.close()
 
-        set_gid_and_uid_or_exit(group_id, user_id)
+        util.set_gid_and_uid_or_exit(group_id, user_id)
         env_util.set_environment(self.default_environment,
                 environment, self.mandatory_environment)
         try:
@@ -111,54 +111,6 @@ def get_job_id(recv_socket):
         return data
     else:
         return None
-
-
-def wait_for_pid(pid):
-    _, exit_status = os.waitpid(pid, 0)
-    signal_number = 255 & exit_status
-    exit_code = exit_status >> 8
-
-    return exit_code, signal_number
-
-
-def socketpair_or_exit():
-    try:
-        parent_socket, child_socket = socket.socketpair()
-    except socket.error:
-        LOG.exception('Failed to create socket pair, exitting')
-        os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
-
-    return parent_socket, child_socket
-
-
-def fork_or_exit():
-    try:
-        pid = os.fork()
-    except OSError:
-        LOG.exception('Failed to fork, exitting')
-        os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
-
-    return pid
-
-
-def set_gid_and_uid_or_exit(group_id, user_id):
-    if group_id is not None:
-        try:
-            LOG.debug('Setting group id to %d', group_id)
-            os.setgid(group_id)
-        except OSError:
-            LOG.exception('Failed to setgid from %d to %d',
-                    os.getgid(), group_id)
-            os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
-
-    if user_id is not None:
-        try:
-            LOG.debug('Setting user id to %d', user_id)
-            os.setuid(user_id)
-        except OSError:
-            LOG.exception('Failed to setuid from %d to %d',
-                    os.getuid(), user_id)
-            os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
 
 def send_message(place_name, callback_data,
