@@ -1,5 +1,5 @@
 from flow.petri_net.future import FutureAction, FutureNet
-from flow.shell_command.actions import ForkDispatchAction, LSFDispatchAction
+from flow.shell_command.petri_net import actions
 
 import logging
 
@@ -80,8 +80,8 @@ class ShellCommandNet(FutureNet):
 
 
 class LSFCommandNet(ShellCommandNet):
-    DISPATCH_ACTION = LSFDispatchAction
+    DISPATCH_ACTION = actions.LSFDispatchAction
 
 
 class ForkCommandNet(ShellCommandNet):
-    DISPATCH_ACTION = ForkDispatchAction
+    DISPATCH_ACTION = actions.ForkDispatchAction

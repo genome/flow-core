@@ -1,7 +1,7 @@
 from flow.petri_net import builder
 from flow.petri_net.future import FutureAction
-from flow.shell_command.future_nets import ForkCommandNet, LSFCommandNet
-from flow.shell_command.actions import ForkDispatchAction, LSFDispatchAction
+from flow.shell_command.petri_net import actions
+from flow.shell_command.petri_net import future_nets
 
 import os
 import test_helpers
@@ -61,8 +61,8 @@ class _TestDispatchActionMixIn(object):
 
 
 class TestLsfDispatchAction(TestBase, _TestDispatchActionMixIn):
-    net_class = LSFCommandNet
-    action_class = LSFDispatchAction
+    net_class = future_nets.LSFCommandNet
+    action_class = actions.LSFDispatchAction
 
     def test_response_places(self):
         self.assertEqual("dispatch", str(self.dispatch_transition.name))
@@ -86,8 +86,8 @@ class TestLsfDispatchAction(TestBase, _TestDispatchActionMixIn):
 
 
 class TestForkDispatchAction(TestBase, _TestDispatchActionMixIn):
-    net_class = ForkCommandNet
-    action_class = ForkDispatchAction
+    net_class = future_nets.ForkCommandNet
+    action_class = actions.ForkDispatchAction
 
     def test_response_places(self):
         expected = {
@@ -104,7 +104,7 @@ class TestForkDispatchAction(TestBase, _TestDispatchActionMixIn):
         }
 
         self.assertEqual("dispatch", str(self.dispatch_transition.name))
-        self.assertIsInstance(self.action, ForkDispatchAction)
+        self.assertIsInstance(self.action, actions.ForkDispatchAction)
 
         response_places = self.action._response_places()
         self.assertEqual(expected, response_places)

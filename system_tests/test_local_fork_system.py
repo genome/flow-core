@@ -1,10 +1,11 @@
 from flow.brokers.local import LocalBroker
-from flow.orchestrator.handlers import PetriCreateTokenHandler, PetriNotifyPlaceHandler
+from flow.orchestrator.handlers import PetriCreateTokenHandler
+from flow.orchestrator.handlers import PetriNotifyPlaceHandler
 from flow.orchestrator.handlers import PetriNotifyTransitionHandler
 from flow.orchestrator.service_interface import OrchestratorServiceInterface
 from flow.petri_net import builder
 from flow.shell_command.fork.executor import ForkExecutor
-from flow.shell_command.future_nets import ForkCommandNet
+from flow.shell_command.petri_net.future_nets import ForkCommandNet
 from flow.shell_command.handler import ForkShellCommandMessageHandler
 from flow.shell_command.service_interface import ForkShellCommandServiceInterface
 from test_helpers import redistest
