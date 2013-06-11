@@ -1,3 +1,4 @@
+from flow import exit_codes
 from flow.configuration.settings.injector import setting
 from flow.shell_command.executor_base import ExecutorBase, send_message
 from flow.shell_command.lsf.resource import set_request_resources
@@ -18,12 +19,19 @@ LOG = logging.getLogger(__name__)
         default_queue=setting('shell_command.lsf.default_queue'))
 class LSFExecutor(ExecutorBase):
     def __init__(self):
-        self.pre_exec_command = _find_executable(self.pre_exec)
-        self.post_exec_command = _find_executable(self.post_exec)
+        if self.pre_exec:
+            self.pre_exec_command = _find_executable(self.pre_exec)
+        else:
+            self.pre_exec_command = None
+
+        if self.post_exec:
+            self.post_exec_command = _find_executable(self.post_exec)
+        else:
+            self.post_exec_command = None
 
         self.default_options = {
-            LSFOption(name='beginTime'): 0,
-            LSFOption(name='termTime'): 0,
+            LSFOption(name='beginTime', type=int): 0,
+            LSFOption(name='termTime', type=int): 0,
             LSFOption(name='queue', flag=lsf.SUB_QUEUE): self.default_queue,
         }
 
@@ -40,7 +48,7 @@ class LSFExecutor(ExecutorBase):
 
 
     def execute_command_line(self, job_id_callback, command_line,
-            executor_data, resource):
+            executor_data, resources):
         request = self.construct_request(command_line, executor_data, resources)
 
         reply = create_reply()

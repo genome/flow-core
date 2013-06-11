@@ -9,7 +9,8 @@ class LSFOption(object):
         self.options_name = 'options%s' % option_set
 
     def set_option(self, request, value):
-        setattr(request, self.name, self.type(value))
+        cast_value = self.type(value)
+        setattr(request, self.name, cast_value)
 
         if self.flag is not None:
             options = getattr(request, self.options_name)
@@ -23,6 +24,7 @@ AVAILABLE_OPTIONS = {
     'lsf_job_name': LSFOption(name='name', flag=lsf.SUB_JOB_NAME),
     'lsf_project': LSFOption(name='projectName', flag=lsf.SUB_PROJECT_NAME),
     'mail_user': LSFOption(name='mail_user', flag=lsf.SUB_MAIL_USER),
+    'queue': LSFOption(name='queue', flag=lsf.SUB_QUEUE),
     'stderr': LSFOption(name='errFile', flag=lsf.SUB_ERR_FILE),
     'stdin': LSFOption(name='inFile', flag=lsf.SUB_IN_FILE),
     'stdout': LSFOption(name='outFile', flag=lsf.SUB_OUT_FILE),
