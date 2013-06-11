@@ -41,6 +41,25 @@ class ExecutorBase(IShellCommandExecutor):
             resources, service_interfaces):
         deferreds = []
 
+        child_pid = self.fork_child(deferreds, group_id, user_id, environment,
+                working_directory, command_line, executor_data, callback_data,
+                resources, service_interfaces)
+        exit_code, signal_number = util.wait_for_pid(child_pid)
+
+        if signal_number > 0:
+            deferreds.append(self.on_signal(
+                signal_number, callback_data, service_interfaces))
+        elif exit_code > 0:
+            deferreds.append(self.on_failure(
+                exit_code, callback_data, service_interfaces))
+        else:
+            deferreds.append(self.on_success(callback_data, service_interfaces))
+
+        return defer.gatherResults(deferreds, consumeErrors=True)
+
+    def fork_child(self, deferreds, group_id, user_id, environment,
+            working_directory, command_line, executor_data, callback_data,
+            resources, service_interfaces):
         parent_socket, child_socket = util.socketpair_or_exit()
 
         child_pid = util.fork_or_exit()
@@ -66,18 +85,7 @@ class ExecutorBase(IShellCommandExecutor):
             finally:
                 parent_socket.close()
 
-        exit_code, signal_number = util.wait_for_pid(child_pid)
-
-        if signal_number > 0:
-            deferreds.append(self.on_signal(
-                signal_number, callback_data, service_interfaces))
-        elif exit_code > 0:
-            deferreds.append(self.on_failure(
-                exit_code, callback_data, service_interfaces))
-        else:
-            deferreds.append(self.on_success(callback_data, service_interfaces))
-
-        return defer.gatherResults(deferreds, consumeErrors=True)
+        return child_pid
 
     def _child(self, send_socket, group_id, user_id, environment,
             working_directory, command_line, executor_data, resources):
