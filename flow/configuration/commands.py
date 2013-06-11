@@ -12,7 +12,7 @@ def determine_command():
     namespace, remaining_args = parser.parse_known_args()
 
     command = get_command_class(namespace.command)
-    command._name = namespace.command
+    command.name = namespace.command
 
     return command
 

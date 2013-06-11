@@ -34,7 +34,7 @@ def naked_main():
     command_class = determine_command()
     parsed_args = parse_arguments(command_class)
 
-    settings = load_settings(command_class._name, parsed_args)
+    settings = load_settings(command_class.name, parsed_args)
 
     logging.config.dictConfig(settings.get('logging',
         defaults.DEFAULT_LOGGING_CONFIG))
@@ -42,13 +42,13 @@ def naked_main():
 
     injector = initialize_injector(settings, command_class)
 
-    flow.util.stats.increment_as_user('command', command_class._name)
+    flow.util.stats.increment_as_user('command', command_class.name)
 
     # XXX Hack to get the command to show up in the rabbitmq admin interface
-    pika.connection.PRODUCT = command_class._name
+    pika.connection.PRODUCT = command_class.name
 
     try:
-        LOG.info('Loading command (%s)', command_class._name)
+        LOG.info('Loading command (%s)', command_class.name)
         command = injector.get(command_class)
     except:
         LOG.exception('Could not instantiate command object.')
