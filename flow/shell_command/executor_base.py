@@ -2,6 +2,7 @@ from flow.configuration.settings.injector import setting
 from flow.shell_command import util
 from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.util import environment as env_util
+from flow.util.exit import exit
 from injector import inject
 from twisted.internet import defer
 
@@ -68,7 +69,7 @@ class ExecutorBase(IShellCommandExecutor):
             child_exit_code = self._child(child_socket, group_id, user_id,
                     environment, working_directory, command_line,
                     executor_data, resources)
-            os._exit(child_exit_code)
+            exit(child_exit_code)
 
         else:
             child_socket.close()

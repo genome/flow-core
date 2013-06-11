@@ -1,11 +1,14 @@
 from flow import exit_codes
+from flow.util.exit import exit
 from pika.spec import Basic
 
 import blist
 import logging
 import os
 
+
 LOG = logging.getLogger(__name__)
+
 
 class PublisherConfirmManager(object):
     def __init__(self, channel):
@@ -35,7 +38,7 @@ class PublisherConfirmManager(object):
         multiple = method_frame.method.multiple
         LOG.critical('Got publisher rejection for message (%d), multiple = %s',
                 publish_tag, multiple)
-        os._exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
+        exit(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     def _fire_confirm_deferreds(self, publish_tag, multiple):
         confirm_deferreds = self.get_confirm_deferreds(publish_tag=publish_tag,
