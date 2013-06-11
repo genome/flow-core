@@ -21,6 +21,11 @@ class ShellCommandSubmitMessage(Message):
     }
 
     def validate(self):
+        self.validate_command_line()
+        self.validate_environment()
+        self.validate_resources()
+
+    def validate_command_line(self):
         if not self.command_line:
             raise exceptions.InvalidMessageException('Empty command_line.')
         for word in self.command_line:
@@ -28,6 +33,7 @@ class ShellCommandSubmitMessage(Message):
                 raise exceptions.InvalidMessageException(
                         'Invalid type in command_line: %s' % word)
 
+    def validate_environment(self):
         environment = self.get('environment', {})
         for k, v in environment.iteritems():
             if not isinstance(k, basestring):
@@ -39,6 +45,7 @@ class ShellCommandSubmitMessage(Message):
                         'Invalid type for environment value (key = %s): "%s"'
                         % (k, v))
 
+    def validate_resources(self):
         resources = self.get('resources', {})
         for k, v in resources.iteritems():
             if k not in ALLOWED_RESOURCE_TYPES:
