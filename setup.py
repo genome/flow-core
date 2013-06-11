@@ -12,7 +12,7 @@ set-token = flow.commands.set_token:SetTokenCommand
 orchestrator = flow.orchestrator.command:OrchestratorCommand
 
 fork-shell-command-service = flow.shell_command.commands.fork_service:ForkShellCommand
-lsf-shell-command-service = flow.shell_command.commands.lsf_service:LSFShellCommand
+lsf-shell-command-service = flow.shell_command.lsf.commands.service:LSFShellCommand
 lsf-post-exec = flow.shell_command.lsf.commands.post_exec:LsfPostExecCommand
 lsf-pre-exec = flow.shell_command.lsf.commands.pre_exec:LsfPostExecCommand
 shell-command-wrapper = flow.shell_command.commands.wrapper:WrapperCommand
