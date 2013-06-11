@@ -80,8 +80,8 @@ class ShellCommandNet(FutureNet):
 
 
 class LSFCommandNet(ShellCommandNet):
-    DISPATCH_ACTION=LSFDispatchAction
+    DISPATCH_ACTION = LSFDispatchAction
 
 
 class ForkCommandNet(ShellCommandNet):
-    DISPATCH_ACTION=ForkDispatchAction
+    DISPATCH_ACTION = ForkDispatchAction
