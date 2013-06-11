@@ -4,7 +4,8 @@ from flow.util.exit import exit_process
 from injector import inject
 from pika.adapters import twisted_connection
 from twisted.internet import reactor, defer, protocol
-from twisted.internet.error import ReactorNotRunning
+from flow.exit_codes import (EXECUTE_SYSTEM_FAILURE,
+        EXECUTE_SERVICE_UNAVAILABLE)
 
 import logging
 import pika
