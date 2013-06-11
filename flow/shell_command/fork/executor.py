@@ -30,7 +30,8 @@ class ForkExecutor(ExecutorBase):
 
     def on_failure(self, exit_code, callback_data, service_interfaces):
         return send_message('msg: execute_failure',
-                callback_data, service_interfaces)
+                callback_data, service_interfaces,
+                token_data={'exit_code': exit_code})
 
     def on_success(self, callback_data, service_interfaces):
         return send_message('msg: execute_success',

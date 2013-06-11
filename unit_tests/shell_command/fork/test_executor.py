@@ -83,6 +83,50 @@ class ForkExecutorTest(unittest.TestCase):
 
         self.assertEqual(text, stderr.read())
 
+    def test_on_job_id(self):
+        job_id = mock.Mock()
+        callback_data = mock.Mock()
+        service_interfaces = mock.Mock()
+
+        send_message = mock.Mock()
+        with mock.patch('flow.shell_command.fork.executor.send_message',
+                new=send_message):
+            self.executor.on_job_id(job_id, callback_data, service_interfaces)
+
+        send_message.assert_any_call(
+                'msg: dispatch_success', callback_data, service_interfaces,
+                token_data={'job_id': job_id})
+
+        send_message.assert_any_call(
+                'msg: execute_begin', callback_data, service_interfaces,
+                token_data={'hostname': mock.ANY})
+
+    def test_on_failure(self):
+        exit_code = mock.Mock()
+        callback_data = mock.Mock()
+        service_interfaces = mock.Mock()
+
+        send_message = mock.Mock()
+        with mock.patch('flow.shell_command.fork.executor.send_message',
+                new=send_message):
+            self.executor.on_failure(exit_code, callback_data, service_interfaces)
+
+        send_message.assert_any_call(
+                'msg: execute_failure', callback_data, service_interfaces,
+                token_data={'exit_code': exit_code})
+
+    def test_on_failure(self):
+        callback_data = mock.Mock()
+        service_interfaces = mock.Mock()
+
+        send_message = mock.Mock()
+        with mock.patch('flow.shell_command.fork.executor.send_message',
+                new=send_message):
+            self.executor.on_success(callback_data, service_interfaces)
+
+        send_message.assert_any_call(
+                'msg: execute_success', callback_data, service_interfaces)
+
 
 if '__main__' == __name__:
     unittest.main()
