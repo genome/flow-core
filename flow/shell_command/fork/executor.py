@@ -1,3 +1,4 @@
+from flow import exit_codes
 from flow.shell_command import util
 from flow.shell_command.executor_base import ExecutorBase, send_message
 from twisted.internet import defer
@@ -36,22 +37,26 @@ class ForkExecutor(ExecutorBase):
                 callback_data, service_interfaces)
 
 
-    def execute_command_line(self, job_id_callback,
-            command_line, executor_data):
-        stdout = executor_data.get('stdout')
+    def execute_command_line(self, job_id_callback, command_line,
+            executor_data, resources):
         stderr = executor_data.get('stderr')
+        stdin = executor_data.get('stdin')
+        stdout = executor_data.get('stdout')
 
-        stdout_fh = None
         stderr_fh = None
+        stdin_fh = None
+        stdout_fh = None
         try:
-            if stdout:
-                stdout_fh = open(stdout, 'a')
             if stderr:
                 stderr_fh = open(stderr, 'a')
+            if stdin:
+                stdin_fh = open(stdin, 'r')
+            if stdout:
+                stdout_fh = open(stdout, 'a')
 
             LOG.debug('executing command %s', " ".join(command_line))
             p = subprocess.Popen(command_line, close_fds=True,
-                    stdout=stdout_fh, stderr=stderr_fh)
+                    stderr=stderr_fh, stdin=stdin_fh, stdout=stdout_fh)
             job_id_callback(p.pid)
 
             returncode = p.wait()
@@ -65,9 +70,11 @@ class ForkExecutor(ExecutorBase):
             LOG.exception('Executor got OSError')
             raise
         finally:
-            if stdout_fh:
-                stdout_fh.close()
             if stderr_fh:
                 stderr_fh.close()
+            if stdin_fh:
+                stdin_fh.close()
+            if stdout_fh:
+                stdout_fh.close()
 
         return exit_code
