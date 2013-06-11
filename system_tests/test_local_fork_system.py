@@ -65,7 +65,7 @@ class TestSystemFork(redistest.RedisTest):
     def test_simple_succeeding_command(self):
         output_file = tempfile.NamedTemporaryFile('r')
         future_net = ForkCommandNet('net name',
-                command_line=['ls'], stdout=output_file.name,
+                command_line=['echo', 'hi'], stdout=output_file.name,
                 stderr='/dev/null')
         future_places, future_transitions = builder.gather_nodes(future_net)
 
@@ -87,15 +87,7 @@ class TestSystemFork(redistest.RedisTest):
             cg.begin, future_places[future_net.success])]
 
         self.assertItemsEqual(expected_color_keys, net.color_marking.keys())
-        expected_output = '''__init__.py
-__init__.pyc
-petri_net
-shell_command
-test_local_fork_system.py
-test_local_fork_system.pyc
-test_redisom.py
-test_redisom.pyc
-'''
+        expected_output = 'hi\n'
         self.assertEqual(expected_output, output_file.read())
 
 
