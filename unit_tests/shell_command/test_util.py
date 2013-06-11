@@ -1,12 +1,9 @@
-import unittest
-try:
-    from unittest import mock
-except:
-    import mock
-
-import os
-from uuid import uuid4
 from flow.shell_command import util
+from uuid import uuid4
+
+import mock
+import os
+import unittest
 
 
 class JoinPathIfRelTest(unittest.TestCase):
