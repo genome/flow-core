@@ -8,6 +8,7 @@ from injector import inject
 import flow.interfaces
 import logging
 import os
+import socket
 
 
 LOG = logging.getLogger(__name__)
@@ -30,11 +31,14 @@ class LsfPostExecCommand(CommandBase):
     def _execute(self, parsed_arguments):
         LOG.info("Begin LSF pre exec")
 
+        hostname = socket.gethostname()
+
         deferred = self.orchestrator.create_token(
                 net_key=parsed_arguments.net_key,
                 place_idx=parsed_arguments.execute_begin,
                 color=parsed_arguments.color,
-                color_group_idx=parsed_arguments.color_group_idx)
+                color_group_idx=parsed_arguments.color_group_idx,
+                data={'hostname': hostname})
 
         return deferred
 
