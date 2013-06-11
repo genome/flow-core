@@ -56,7 +56,7 @@ class ShellCommandSubmitMessage(Message):
                             'Invalid type for resource name.  '
                             'Expected string, but got %s: %s'
                             % (type(subkey), subkey))
-                if not isinstance(subval, (int, long, basestring)):
+                if not isinstance(subval, (basestring, float, int, long)):
                     raise exceptions.InvalidMessageException(
                             'Expected scalar type for resource value.  '
                             'Got %s instead: %s' % (type(subval), subval))
