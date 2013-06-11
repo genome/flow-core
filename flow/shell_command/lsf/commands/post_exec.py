@@ -46,15 +46,20 @@ class LsfPostExecCommand(CommandBase):
         # the job has failed.
         if info is not None or stat != 0:
             exit_code = stat >> 8
-            signal = stat & 255
+            signal_number = stat & 255
+            token_data = {
+                'exit_code': exit_code,
+                'signal_number': signal_number,
+            }
 
             LOG.debug('Job exitted with code (%s) and signal (%s)',
-                    exit_code, signal)
+                    exit_code, signal_number)
             deferred = self.orchestrator.create_token(
                     net_key=parsed_arguments.net_key,
                     place_idx=parsed_arguments.execute_failure,
                     color=parsed_arguments.color,
-                    color_group_idx=parsed_arguments.color_group_idx)
+                    color_group_idx=parsed_arguments.color_group_idx,
+                    data=token_data)
 
         else:
             LOG.debug("Process exited normally")
