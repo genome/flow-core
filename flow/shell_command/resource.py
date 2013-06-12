@@ -9,7 +9,7 @@ import sys
 LOG = logging.getLogger(__name__)
 
 
-__module__ = sys.modules[__name__]
+MODULE = sys.modules[__name__]
 
 
 class ResourceException(Exception):
@@ -24,7 +24,7 @@ class ResourceType(object):
     def __call__(self, value):
         d = copy.copy(self.base_dict)
         d['value'] = value
-        return factory.build_object(d, module=__module__)
+        return factory.build_object(d, module=MODULE)
 
 
 class Resource(object):
@@ -137,5 +137,5 @@ def make_resource_objects(src_dict, resource_types):
 
 
 def make_resource_types(resource_definitions):
-    return factory.build_objects(resource_definitions, __module__,
+    return factory.build_objects(resource_definitions, MODULE,
             'ResourceType')
