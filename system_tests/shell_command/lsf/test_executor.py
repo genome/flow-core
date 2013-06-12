@@ -14,8 +14,15 @@ def lsf_available():
 @unittest.skipIf(not lsf_available(), 'LSF not available')
 class LSFExecutorSubmitTest(unittest.TestCase):
     def setUp(self):
+        opt_defs = {
+            'queue': {
+                'name': 'queue',
+                'flag': 'SUB_QUEUE',
+            },
+        }
+
         self.e = executor.LSFExecutor(pre_exec=None, post_exec=None,
-                default_queue='long')
+                    option_definitions=opt_defs, default_options={})
 
         self.job_id_callback = mock.Mock()
 

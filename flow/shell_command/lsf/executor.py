@@ -1,8 +1,9 @@
 from flow import exit_codes
 from flow.configuration.settings.injector import setting
+from flow.shell_command import factory
 from flow.shell_command.executor_base import ExecutorBase, send_message
+from flow.shell_command.lsf import options
 from flow.shell_command.lsf.resource import set_request_resources
-from flow.shell_command.lsf.options import AVAILABLE_OPTIONS, LSFOption
 from injector import inject
 from pythonlsf import lsf
 from twisted.python.procutils import which
@@ -16,7 +17,8 @@ LOG = logging.getLogger(__name__)
 
 @inject(pre_exec=setting('shell_command.lsf.pre_exec'),
         post_exec=setting('shell_command.lsf.post_exec'),
-        default_queue=setting('shell_command.lsf.default_queue'))
+        option_definitions=setting('shell_command.lsf.available_options'),
+        default_options=setting('shell_command.lsf.default_options'))
 class LSFExecutor(ExecutorBase):
     def __init__(self):
         if self.pre_exec:
@@ -29,11 +31,8 @@ class LSFExecutor(ExecutorBase):
         else:
             self.post_exec_command = None
 
-        self.default_options = {
-            LSFOption(name='beginTime', type=int): 0,
-            LSFOption(name='termTime', type=int): 0,
-            LSFOption(name='queue', flag=lsf.SUB_QUEUE): self.default_queue,
-        }
+        self.available_options = factory.build_objects(
+                self.option_definitions, options, 'LSFOption')
 
 
     def on_job_id(self, job_id, callback_data, service_interfaces):
@@ -114,12 +113,12 @@ class LSFExecutor(ExecutorBase):
 
     def set_options(self, request, executor_data):
         for option, value in self.default_options.iteritems():
-            option.set_option(request, value)
+            self.available_options[option].set_option(request, value)
 
         lsf_options = executor_data.get('lsf_options', {})
 
         for name, value in lsf_options.iteritems():
-            AVAILABLE_OPTIONS[name].set_option(request, value)
+            self.available_options[name].set_option(request, value)
 
 
 def create_empty_request():

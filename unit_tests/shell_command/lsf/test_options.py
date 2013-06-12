@@ -25,28 +25,28 @@ class LSFOptionTest(unittest.TestCase):
     def test_flag(self):
         name = 'sample_name'
         value = 'sample_value'
-        flag = 8
+        flag = 'SUB_QUEUE'
 
         o = options.LSFOption(name=name, flag=flag)
         o.set_option(self.request, value)
 
-        self.assertEqual(flag, self.request.options)
+        self.assertEqual(lsf.SUB_QUEUE, self.request.options)
 
     def test_option_suffix(self):
         name = 'sample_name'
         value = 'sample_value'
-        flag = 8
+        flag = 'SUB3_POST_EXEC'
 
         o = options.LSFOption(name=name, flag=flag, option_set=3)
         o.set_option(self.request, value)
 
-        self.assertEqual(flag, self.request.options3)
+        self.assertEqual(lsf.SUB3_POST_EXEC, self.request.options3)
 
     def test_type(self):
         name = 'sample_name'
         value = 12.1
 
-        o = options.LSFOption(name=name, type=float)
+        o = options.LSFOption(name=name, type='float')
         o.set_option(self.request, value)
 
         self.assertEqual(value, getattr(self.request, name))
