@@ -6,7 +6,7 @@ from twisted.internet import defer
 
 import flow.interfaces
 import logging
-import time
+#import time
 
 
 LOG = logging.getLogger(__name__)
