@@ -140,62 +140,47 @@ class LSFrlimitTest(unittest.TestCase):
 
 
 class SetResourcesTest(unittest.TestCase):
-    def test_request_resources_reserve(self):
+    def test_set_request(self):
         request = mock.MagicMock()
-        resources = {
-            'reserve': {
-                'memory': mock.MagicMock(),
-            },
-        }
-        reserve_map = {
-            'memory': mock.MagicMock(),
-        }
-        with mock.patch('flow.shell_command.lsf.resource.RESERVE_MAP',
-                new=reserve_map):
-            resource.set_request_resources(request, resources)
 
-        reserve_map['memory'].set_reserve_component.assert_called_once_with(
-                request, mock.ANY, resources['reserve']['memory'])
+        available = { 'memory': mock.MagicMock() }
+        resources = { 'memory': mock.MagicMock() }
 
-    def test_request_resources_request(self):
+        resource.set_request(request, resources, available)
+
+        available['memory'].set_select_component.assert_called_once_with(
+                request, mock.ANY, resources['memory'])
+
+    def test_set_request_missing(self):
         request = mock.MagicMock()
-        resources = {
-            'request': {
-                'memory': mock.MagicMock(),
-            },
-        }
-        request_map = {
-            'memory': mock.MagicMock(),
-        }
-        with mock.patch('flow.shell_command.lsf.resource.SELECT_MAP',
-                new=request_map):
-            resource.set_request_resources(request, resources)
 
-        request_map['memory'].set_select_component.assert_called_once_with(
-                request, mock.ANY, resources['request']['memory'])
+        available = { }
+        resources = { 'memory': mock.MagicMock() }
 
-    def test_request_resources_illegal_reserve(self):
-        request = mock.MagicMock()
-        resources = {
-            'reserve': {
-                'MISSING_VALUE': mock.Mock(),
-            },
-        }
         with self.assertRaises(resource.ResourceException):
-            resource.set_request_resources(request, resources)
+            resource.set_request(request, resources, available)
 
-    def test_request_resources_illegal_request(self):
+    def test_set_reserve(self):
         request = mock.MagicMock()
-        resources = {
-            'request': {
-                'MISSING_VALUE': mock.Mock(),
-            },
-        }
+
+        available = { 'memory': mock.MagicMock() }
+        resources = { 'memory': mock.MagicMock() }
+
+        resource.set_reserve(request, resources, available)
+
+        available['memory'].set_reserve_component.assert_called_once_with(
+                request, mock.ANY, resources['memory'])
+
+    def test_set_reserve_missing(self):
+        request = mock.MagicMock()
+
+        available = { }
+        resources = { 'memory': mock.MagicMock() }
+
         with self.assertRaises(resource.ResourceException):
-            resource.set_request_resources(request, resources)
+            resource.set_reserve(request, resources, available)
 
 
-class MakeRlimitsTest(unittest.TestCase):
     def test_make_rLimits_normal(self):
         request = mock.MagicMock()
         specs = {
@@ -205,9 +190,7 @@ class MakeRlimitsTest(unittest.TestCase):
         limit_map = {
             'mock': mock.MagicMock(),
         }
-        with mock.patch('flow.shell_command.lsf.resource.LIMIT_MAP',
-                new=limit_map):
-            rlimits = resource.make_rLimits(request, specs)
+        rlimits = resource.set_rlimits(request, specs, limit_map)
 
         limit_map['mock'].set_limit.assert_called_once_with(
                 request, mock.ANY, specs['mock'])
@@ -217,8 +200,44 @@ class MakeRlimitsTest(unittest.TestCase):
 
         specs = {'MISSING_VALUE': mock.MagicMock()}
         with self.assertRaises(resource.ResourceException):
-            resource.make_rLimits(request, specs)
+            resource.set_rlimits(request, specs, {})
 
+    def test_set_all_resources(self):
+        request = mock.MagicMock()
+
+        available = {
+            'limit': {
+                'memory': mock.Mock(),
+            },
+            'request': {
+                'memory': mock.Mock(),
+            },
+            'reserve': {
+                'memory': mock.Mock(),
+            },
+        }
+
+        resources = {
+            'limit': {
+                'memory': mock.Mock(),
+            },
+            'request': {
+                'memory': mock.Mock(),
+            },
+            'reserve': {
+                'memory': mock.Mock(),
+            },
+        }
+
+        resource.set_all_resources(request, resources, available)
+        available['limit']['memory'].set_limit.assert_called_once_with(
+                request, mock.ANY, resources['limit']['memory'])
+        available['request']['memory'
+                ].set_select_component.assert_called_once_with(
+                request, mock.ANY, resources['request']['memory'])
+        available['reserve']['memory'
+                ].set_reserve_component.assert_called_once_with(
+                request, mock.ANY, resources['reserve']['memory'])
 
 class RusageStringTest(unittest.TestCase):
     def test_make_rusage_string(self):

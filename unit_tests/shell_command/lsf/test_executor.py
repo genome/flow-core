@@ -11,18 +11,21 @@ class LSFExecutorInitTest(unittest.TestCase):
     def test_no_path_to_pre_exec(self):
         with self.assertRaises(RuntimeError):
             executor.LSFExecutor(pre_exec='DOESNOTEXIST', post_exec='true',
-                    option_definitions={}, default_options={})
+                    option_definitions={}, default_options={},
+                    resource_definitions={})
 
     def test_no_path_to_post_exec(self):
         with self.assertRaises(RuntimeError):
             executor.LSFExecutor(pre_exec='true', post_exec='DOESNOTEXIST',
-                    option_definitions={}, default_options={})
+                    option_definitions={}, default_options={},
+                    resource_definitions={})
 
 
 class LSFExecutorSetRequestPrePost(unittest.TestCase):
     def setUp(self):
         self.executor = executor.LSFExecutor(pre_exec='true', post_exec='true',
-                option_definitions={}, default_options={})
+                option_definitions={}, default_options={},
+                resource_definitions={})
 
     def test_pre_exec(self):
         request = mock.Mock()
@@ -76,7 +79,8 @@ class LSFExecutorSetRequestPrePost(unittest.TestCase):
 class LSFExecutorCallbackTest(unittest.TestCase):
     def setUp(self):
         self.executor = executor.LSFExecutor(pre_exec='true', post_exec='true',
-                option_definitions={}, default_options={})
+                option_definitions={}, default_options={},
+                resource_definitions={})
 
     def test_on_job_id(self):
         job_id = mock.Mock()

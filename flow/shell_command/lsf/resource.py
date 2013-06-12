@@ -69,66 +69,55 @@ class LSFrlimit(LSFLimit):
         rlimits[self.option_index] = value
 
 
-SELECT_MAP = {
-    'cores': LSFResourceDirectRequest('maxNumProcessors'),
-    'memory': LSFResourceViaString(name='mem', units='MiB'),
-    'temp_space': LSFResourceViaString(name='gtmp', units='GiB'),
-}
+def set_all_resources(request, resources, available_resources):
+    rusage_strings = set_reserve(request, resources.get('reserve', {}),
+            available_resources.get('reserve', {}))
 
-RESERVE_MAP = {
-    'cores': LSFResourceDirectRequest(name='numProcessors'),
-    'memory': LSFResourceViaString(name='mem', units='MiB'),
-    'temp_space': LSFResourceViaString(name='gtmp', units='GiB'),
-}
+    select_strings = set_request(request, resources.get('request', {}),
+            available_resources.get('request', {}))
 
-LIMIT_MAP = {
-    'cpu_time': LSFrlimit(option_index=lsf.LSF_RLIMIT_CPU, units='s'),
-    'memory': LSFrlimit(option_index=lsf.LSF_RLIMIT_RSS, units='MiB'),
-    'open_files': LSFrlimit(option_index=lsf.LSF_RLIMIT_NOFILE),
-    'processes': LSFrlimit(option_index=lsf.LSF_RLIMIT_PROCESS),
-    'stack_size': LSFrlimit(
-        option_index=lsf.LSF_RLIMIT_STACK, units='KiB'),
-    'threads': LSFrlimit(option_index=lsf.LSF_RLIMIT_THREAD),
-    'virtual_memory': LSFrlimit(
-        option_index=lsf.LSF_RLIMIT_VMEM, units='MiB'),
-}
+    if select_strings or rusage_strings:
+        request.options |= lsf.SUB_RES_REQ
+        request.resReq = make_rusage_string(select_strings, rusage_strings)
+
+    set_rlimits(request, resources.get('limit', {}),
+            available_resources.get('limit', {}))
 
 
-def set_request_resources(request, resources):
-    select_strings = {}
+def set_reserve(request, resources, available_for_reserve):
     rusage_strings = {}
-    for name, spec in resources.get('reserve', {}).iteritems():
+    for name, spec in resources.iteritems():
         try:
-            RESERVE_MAP[name].set_reserve_component(
+            available_for_reserve[name].set_reserve_component(
                     request, rusage_strings, spec)
         except KeyError:
             raise ResourceException('Could not map rusage resource "%s"' % name)
 
-    for name, spec in resources.get('request', {}).iteritems():
+    return rusage_strings.values()
+
+
+def set_request(request, resources, available_for_request):
+    select_strings = {}
+    for name, spec in resources.iteritems():
         try:
-            SELECT_MAP[name].set_select_component(
+            available_for_request[name].set_select_component(
                     request, select_strings, spec)
         except KeyError:
             raise ResourceException('Could not map select resource "%s"' % name)
 
-    if select_strings or rusage_strings:
-        request.options |= lsf.SUB_RES_REQ
-        request.resReq = make_rusage_string(select_strings.values(),
-                rusage_strings.values())
-
-    request.rLimits = make_rLimits(request, resources.get('limit', {}))
+    return select_strings.values()
 
 
-def make_rLimits(request, limits):
+def set_rlimits(request, limits, available_limits):
     rlimits = [lsf.DEFAULT_RLIMIT] * lsf.LSF_RLIM_NLIMITS
 
     for name, spec in limits.iteritems():
         try:
-            LIMIT_MAP[name].set_limit(request, rlimits, spec)
+            available_limits[name].set_limit(request, rlimits, spec)
         except KeyError:
             raise ResourceException('Could not map rlimit resource "%s"' % name)
 
-    return rlimits
+    request.rlimits = rlimits
 
 
 def make_rusage_string(select_strings, rusage_strings):

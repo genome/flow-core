@@ -22,7 +22,8 @@ class LSFExecutorSubmitTest(unittest.TestCase):
         }
 
         self.e = executor.LSFExecutor(pre_exec=None, post_exec=None,
-                    option_definitions=opt_defs, default_options={})
+                    option_definitions=opt_defs, default_options={},
+                    resource_definitions={})
 
         self.job_id_callback = mock.Mock()
 

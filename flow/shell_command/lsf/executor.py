@@ -3,7 +3,7 @@ from flow.configuration.settings.injector import setting
 from flow.shell_command import factory
 from flow.shell_command.executor_base import ExecutorBase, send_message
 from flow.shell_command.lsf import options
-from flow.shell_command.lsf.resource import set_request_resources
+from flow.shell_command.lsf import resource
 from injector import inject
 from pythonlsf import lsf
 from twisted.python.procutils import which
@@ -17,6 +17,7 @@ LOG = logging.getLogger(__name__)
 
 @inject(pre_exec=setting('shell_command.lsf.pre_exec'),
         post_exec=setting('shell_command.lsf.post_exec'),
+        resource_definitions=setting('shell_command.lsf.resources'),
         option_definitions=setting('shell_command.lsf.available_options'),
         default_options=setting('shell_command.lsf.default_options'))
 class LSFExecutor(ExecutorBase):
@@ -33,6 +34,9 @@ class LSFExecutor(ExecutorBase):
 
         self.available_options = factory.build_objects(
                 self.option_definitions, options, 'LSFOption')
+
+        self.available_resources = factory.build_objects(
+                self.resource_definitions, resource, 'ResourceType')
 
 
     def on_job_id(self, job_id, callback_data, service_interfaces):
@@ -81,7 +85,7 @@ class LSFExecutor(ExecutorBase):
         if self.pre_exec is not None:
             self.set_pre_exec(request, executor_data)
 
-        set_request_resources(request, resources)
+        resource.set_all_resources(request, resources, self.available_resources)
         self.set_options(request, executor_data)
 
         request.command = ' '.join(command_line)
