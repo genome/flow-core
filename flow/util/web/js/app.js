@@ -5,6 +5,10 @@ angular.module('processMonitor', ['processMonitor.controllers','processMonitor.s
     .config([function() {
         console.log("processMonitor configured.");
     }])
-    .run(function(processStatusService, getBasicService) {
-        console.log("processMonitor run.")
+    .run(function(configService, statusService, basicService) {
+        console.log("processMonitor run.");
+        var basicNode = basicService.getBasic();
+        configService.MASTER_PID = basicNode.pid;
+        console.log("basicNode =-=-=-=-=-=-=-=-");
+        console.log(basicNode);
     });

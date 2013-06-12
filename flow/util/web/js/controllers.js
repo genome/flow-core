@@ -1,5 +1,5 @@
 angular.module('processMonitor.controllers', ['processMonitor.services'])
-    .controller('MainController', ['$scope', '$timeout', 'configService', 'processStatusService', 'getBasicService',
+    .controller('MainController', ['$scope', '$timeout', 'configService', 'statusService', 'basicService',
         function($scope, $timeout, configService, processStatusService) {
             console.log("MainController instantiated.");
             $scope.update_delta = configService.update_delta;

@@ -11,7 +11,7 @@ angular
             update_delta: 5000,
             num_data_pts: 1000,
 
-            master_pid: Number(),
+            MASTER_PID: Number(),
 
             array_fields: [
                 'cpu_percent',
@@ -27,11 +27,12 @@ angular
 
     })
 
-    .factory('processStatusService', function($http, $timeout, configService, getBasicService) {
+    .factory('statusService', function($http, $timeout, configService, basicService) {
         // polls /status and updates process data node
         console.log("processStartupService initialized.");
         var currentStatus = { response: {} };
-        var allStatus = { processes: {}, calls: 0 };
+
+        var allStatus = { calls: Number(), master_parent_pid: Number(), master_pid: Number(), processes: {} };
 
         var poller = function() {
             $http.get('/status').then(
@@ -53,47 +54,44 @@ angular
         poller();
 
         var updateAllStatus = function(data) {
+            if (0 === allStatus.calls) {
+                // set master_pids
+                var basic = basicService
+                    .getBasic()
+                    .then(function(data) {
+                        allStatus.master_pid = data.pid;
+                        allStatus.master_parent_pid = data.parent_pid;
+                });
+
+            }
+
             allStatus.calls++;
 
             for (var pid in data) {
-                getBasicService
+                basicService
                     .getBasic(pid)
                     .then(
                         function(data) {
-                            //this will execute when the
-                            //AJAX call completes.
-                            //$scope.foo2 = data;
-                            console.log("basic data ---------");
-                            console.log(data);
+                            integrateNode(data);
                         });
 
-                var pinfo = data[pid];
-
-
-                if (!(pid in allStatus)) {
-                    allStatus[pid] = {'is_running':true};
-                    //initialize_process( sprintf('/basic/%s', pid) );
-                }
-
-                _store_file_info(data, pid);
-
-                for (var field in pinfo) {
-                    if ($.inArray(field, configService.array_fields) != -1) {
-                        if (!(field in allStatus[pid])) {
-                            allStatus[pid][field] = {'values':[], 'key':field};
-                        }
-                        _store_array(pinfo[field], allStatus[pid][field], pinfo['time']);
-                    } else if ($.inArray(field, configService.scalar_fields) != -1) {
-                        allStatus[pid][field] = pinfo[field];
+                var integrateNode = function(data) {
+                    console.log("integrateNode() called");
+                    // if pid is not in allStatus, set its is_running to true
+                    var pid = data.pid;
+                    if (!(pid in allStatus)) {
+                        console.log("PID not in allStatus");
+                        allStatus[pid] = { 'is_running':true };
                     }
-                }
+
+                    // transfer fields from data to allStatus
+                    for (var field in data) {
+                        allStatus[pid][field] = data[field];
+                    }
+
+                };
             }
 
-            for (var pid in allStatus) {
-                if (!(pid in data)) {
-                    allStatus[pid]['is_running'] = false;
-                }
-            }
         };
 
         var _store_array = function(src, dest, time) {
@@ -164,21 +162,15 @@ angular
 
     })
 
-    .factory('getBasicService', function($http, $q) {
+    .factory('basicService', function($http, $q, configService) {
         // returns basic info about a process
         var basicData = {};
         return {
             getBasic: function(pid) {
-                var url = pid ? '/basic/' + pid : '/basic';
-                // console.log("url: " + url);
-
                 var deferred = $q.defer();
-
+                var url = pid ? '/basic/' + pid : '/basic';
                 $http.get(url)
                     .success(function(data, status, headers, config) { // Do something successful.
-                        // console.log("$http.get success! data:");
-                        // console.log(data);
-
                         deferred.resolve(data);
                     })
                     .error(function(data, status, headers, config) { // Handle the error
