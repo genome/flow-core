@@ -1,10 +1,46 @@
+from flow.shell_command import factory
+
+import abc
+import copy
+import logging
+import sys
+
+
+LOG = logging.getLogger(__name__)
+
+
+__module__ = sys.modules[__name__]
+
+
 class ResourceException(Exception):
     pass
 
 
-class Resource(object):
-    UNITS = None
+class ResourceType(object):
+    def __init__(self, resource_class, **resource_args):
+        self.base_dict = resource_args
+        self.base_dict['class'] = resource_class
 
+    def __call__(self, value):
+        d = copy.copy(self.base_dict)
+        d['value'] = value
+        return factory.build_object(d, module=__module__)
+
+
+class Resource(object):
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def value_in_units(self, units):
+        raise NotImplementedError('Class %s does not implement value_in_units'
+                % self.__class__)
+
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__
+                ) and (self.value == other.value_in_units(self.units))
+
+
+class IntegerResource(Resource):
     def __init__(self, value):
         self.value = value
 
@@ -15,46 +51,30 @@ class Resource(object):
             raise ResourceException('Cannot convert None units to %s'
                     % units)
 
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__
-                ) and (self.value == other.value)
-
-
-class IntegerResource(Resource):
-    pass
 
 
 class StorageResource(Resource):
-    UNITS = 'GiB'
+    def __init__(self, value, units):
+        self.value = value
+        self.units = units
 
     def value_in_units(self, units):
-        if units == self.UNITS:
+        if units == self.units:
             return self.value
         else:
-            return convert_memory_value(self.value, self.UNITS, units)
+            return convert_memory_value(self.value, self.units, units)
 
 
 class TimeResource(Resource):
-    UNITS = 's'
+    def __init__(self, value, units):
+        self.value = value
+        self.units = units
 
     def value_in_units(self, units):
-        if units == self.UNITS:
+        if units == self.units:
             return self.value
         else:
-            return convert_time_value(self.value, self.UNITS, units)
-
-
-RESOURCE_CLASSES = {
-        'cores': IntegerResource,
-        'cpu_time': TimeResource,
-        'open_files': IntegerResource,
-        'memory': StorageResource,
-        'processes': IntegerResource,
-        'stack_size': IntegerResource,
-        'temp_space': StorageResource,
-        'threads': IntegerResource,
-        'virtual_memory': StorageResource,
-}
+            return convert_time_value(self.value, self.units, units)
 
 
 MEMORY_UNITS = [
@@ -97,16 +117,25 @@ def convert_time_value(src_value, src_units, dest_units):
     return int(src_value)
 
 
-def make_all_resource_objects(resource_strings):
+def make_all_resource_objects(resource_strings, resource_types):
     result = {
-        'limit': make_resource_objects(resource_strings.get('limit', {})),
-        'request': make_resource_objects(resource_strings.get('request', {})),
-        'reserve': make_resource_objects(resource_strings.get('reserve', {})),
+        'limit': make_resource_objects(
+            resource_strings.get('limit', {}), resource_types),
+        'request': make_resource_objects(
+            resource_strings.get('request', {}), resource_types),
+        'reserve': make_resource_objects(
+            resource_strings.get('reserve', {}), resource_types),
     }
     return result
 
-def make_resource_objects(src_dict):
+
+def make_resource_objects(src_dict, resource_types):
     result = {}
     for name, value in src_dict.iteritems():
-        result[name] = RESOURCE_CLASSES[name](value)
+        result[name] = resource_types[name](value)
     return result
+
+
+def make_resource_types(resource_definitions):
+    return factory.build_objects(resource_definitions, __module__,
+            'ResourceType')

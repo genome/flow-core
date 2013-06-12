@@ -4,7 +4,7 @@ from flow.interfaces import IServiceLocator
 from flow.service_locator import ServiceLocator
 from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.shell_command.messages import ShellCommandSubmitMessage
-from flow.shell_command.resource import make_all_resource_objects
+from flow.shell_command import resource
 from injector import inject
 from twisted.internet import defer
 
@@ -14,12 +14,18 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-@inject(executor=IShellCommandExecutor, service_interfaces=IServiceLocator)
+@inject(executor=IShellCommandExecutor, service_interfaces=IServiceLocator,
+        resource_definitions=setting('shell_command.resources'))
 class ShellCommandSubmitMessageHandler(Handler):
     message_class = ShellCommandSubmitMessage
 
+    def __init__(self):
+        self.resource_types = resource.make_resource_types(
+                self.resource_definitions)
+
     def _handle_message(self, message):
-        resources = make_all_resource_objects(message.get('resources', {}))
+        resources = resource.make_all_resource_objects(
+                message.get('resources', {}), self.resource_types)
 
         return self.executor.execute(
                 command_line=message['command_line'],
