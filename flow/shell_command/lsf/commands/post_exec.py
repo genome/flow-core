@@ -32,7 +32,6 @@ class LsfPostExecCommand(CommandBase):
     def _execute(self, parsed_arguments):
         LOG.info("Begin LSF post exec")
 
-        info = os.environ.get('LSB_JOBEXIT_INFO', None)
         stat = os.environ.get('LSB_JOBEXIT_STAT', None)
         if stat is None:
             LOG.critical("LSB_JOBEXIT_STAT environment variable wasn't "
@@ -44,7 +43,7 @@ class LsfPostExecCommand(CommandBase):
         # we don't currently do migrating/checkpointing/requing so we're not
         # going to check for those posibilities.  Instead we will assume that
         # the job has failed.
-        if info is not None or stat != 0:
+        if stat != 0:
             exit_code = stat >> 8
             signal_number = stat & 255
             token_data = {
@@ -54,6 +53,11 @@ class LsfPostExecCommand(CommandBase):
 
             LOG.debug('Job exitted with code (%s) and signal (%s)',
                     exit_code, signal_number)
+
+            info = os.environ.get('LSB_JOBEXIT_INFO', None)
+            if info:
+                LOG.info('Job exitted with LSF info: %s', info)
+
             deferred = self.orchestrator.create_token(
                     net_key=parsed_arguments.net_key,
                     place_idx=parsed_arguments.execute_failure,
