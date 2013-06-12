@@ -38,12 +38,12 @@ class ChannelFacade(object):
                 exchange=exchange_name, routing_key=topic, **properties)
 
     def declare_queue(self, queue_name, durable=True, **other_properties):
-        return self._connect_and_do('declare_queue', queue=queue_name,
+        return self._connect_and_do('queue_declare', queue=queue_name,
                 durable=durable, **other_properties)
 
     def declare_exchange(self, exchange_name, exchange_type='topic',
             durable=True, **other_properties):
-        return self._connect_and_do('declare_exchange', exchange=exchange_name,
+        return self._connect_and_do('exchange_declare', exchange=exchange_name,
                 durable=durable, exchange_type=exchange_type,
                 **other_properties)
 
@@ -81,7 +81,8 @@ class ChannelFacade(object):
 
     @staticmethod
     def _do_on_channel(pika_channel, fn_name, args, kwargs, deferred):
+        LOG.debug("Executing %s", fn_name)
         channel_fn = getattr(pika_channel, fn_name)
         this_things_deferred = channel_fn(*args, **kwargs)
-        this_things_deferred.chainDeferreds(deferred)
+        this_things_deferred.chainDeferred(deferred)
         return pika_channel

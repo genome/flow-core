@@ -74,7 +74,7 @@ class ChannelFacadeTests(unittest.TestCase):
                 durable=durable,
                 **properties)
 
-        self.cf._connect_and_do.assert_called_once_with('declare_queue',
+        self.cf._connect_and_do.assert_called_once_with('queue_declare',
                 queue=queue_name,
                 durable=durable,
                 **properties)
@@ -90,7 +90,7 @@ class ChannelFacadeTests(unittest.TestCase):
                 durable=durable,
                 **properties)
 
-        self.cf._connect_and_do.assert_called_once_with('declare_exchange',
+        self.cf._connect_and_do.assert_called_once_with('exchange_declare',
                 exchange=exchange_name,
                 exchange_type=exchange_type,
                 durable=durable,
@@ -209,5 +209,5 @@ class ChannelFacadeTests(unittest.TestCase):
 
         fake_pika_channel.fake_fn_name.assert_called_once_with(arg1, arg2,
                 kwarg1=kwarg1, kwarg2=kwarg2)
-        this_things_deferred.chainDeferreds.assert_called_once_with(deferred)
+        this_things_deferred.chainDeferred.assert_called_once_with(deferred)
 
