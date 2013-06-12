@@ -7,7 +7,7 @@ import unittest
 class PreExecCommandTest(unittest.TestCase):
     def test_annotate_parser(self):
         orchestrator = mock.Mock()
-        command = pre_exec.LsfPostExecCommand(orchestrator=orchestrator)
+        command = pre_exec.LsfPreExecCommand(orchestrator=orchestrator)
 
         parser = mock.Mock()
 
@@ -22,7 +22,7 @@ class PreExecCommandTest(unittest.TestCase):
 
     def test_execute(self):
         orchestrator = mock.Mock()
-        command = pre_exec.LsfPostExecCommand(orchestrator=orchestrator)
+        command = pre_exec.LsfPreExecCommand(orchestrator=orchestrator)
 
         parsed_arguments = mock.Mock()
 

@@ -14,7 +14,7 @@ orchestrator = flow.orchestrator.command:OrchestratorCommand
 fork-shell-command-service = flow.shell_command.fork.commands.service:ForkShellCommand
 lsf-shell-command-service = flow.shell_command.lsf.commands.service:LSFShellCommand
 lsf-post-exec = flow.shell_command.lsf.commands.post_exec:LsfPostExecCommand
-lsf-pre-exec = flow.shell_command.lsf.commands.pre_exec:LsfPostExecCommand
+lsf-pre-exec = flow.shell_command.lsf.commands.pre_exec:LsfPreExecCommand
 shell-command-wrapper = flow.shell_command.commands.wrapper:WrapperCommand
 
 configure-rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand

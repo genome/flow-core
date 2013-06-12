@@ -12,7 +12,7 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(orchestrator=flow.interfaces.IOrchestrator)
-class LsfPostExecCommand(CommandBase):
+class LsfPreExecCommand(CommandBase):
     injector_modules = [
             BrokerConfiguration,
             OrchestratorConfiguration,
