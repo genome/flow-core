@@ -7,13 +7,13 @@ LOG = logging.getLogger(__name__)
 
 
 class ShellCommandDispatchAction(BasicMergeAction):
-    net_constants = ['user_id', 'working_directory', 'mail_user']
+    net_constants = ['group_id', 'user_id', 'working_directory']
     place_refs = [
-            "msg: dispatch_success",
             "msg: dispatch_failure",
+            "msg: dispatch_success",
             "msg: execute_begin",
-            "msg: execute_success",
             "msg: execute_failure",
+            "msg: execute_success",
     ]
     required_arguments = place_refs + ['command_line']
 
@@ -21,53 +21,45 @@ class ShellCommandDispatchAction(BasicMergeAction):
     def command_line(self, token_data):
         return self.args['command_line']
 
-    def inputs_hash_key(self, token_data):
-        return
-
 
     # Private methods
-    def _environment(self, net):
-        return net.constant('environment')
-
     def _response_places(self):
         return {x: self.args[x] for x in self.place_refs}
 
-    def _executor_options(self, net):
-        executor_options = {}
+    def _executor_data(self, net):
+        executor_data = {}
 
-        name = self.args.get('name', None)
-        if name:
-            executor_options['name'] = str(name)
+        self._set_environment(net, executor_data)
+        self._set_constants(net, executor_data)
+        self._set_io_files(executor_data)
 
-        # Collect environment variables for this command
-        environment = self._environment(net)
+        if 'resources' in self.args:
+            executor_data['resources'] = self.args['resources']
+
+        if 'lsf_options' in self.args:
+            executor_data['lsf_options'] = self.args['lsf_options']
+
+        return executor_data
+
+    def _set_environment(self, net, executor_data):
+        environment = net.constant('environment')
         if environment:
-            executor_options['environment'] = environment
+            executor_data['environment'] = environment
 
-        # Collect other net-wide constants
+    def _set_constants(self, net, executor_data):
         for opt in self.net_constants:
             value = net.constant(opt)
             if value:
-                executor_options[opt] = value
+                executor_data[opt] = value
 
-        # Set logfiles
-        stdout = self.args.get('stdout')
-        if stdout:
-            executor_options['stdout'] = stdout
-        stderr = self.args.get('stderr')
-        if stderr:
-            executor_options['stderr'] = stderr
+    def _set_io_files(self, executor_data):
+        if 'stderr' in self.args:
+            executor_data['stderr'] = self.args['stderr']
+        if 'stdin' in self.args:
+            executor_data['stdin'] = self.args['stdin']
+        if 'stdout' in self.args:
+            executor_data['stdout'] = self.args['stdout']
 
-        # Collect resource requirements
-        resources = self.args.get('resources', {})
-        if resources:
-            executor_options['resources'] = resources
-
-        queue = self.args.get('queue')
-        if queue:
-            executor_options['queue'] = queue
-
-        return executor_options
 
     def execute(self, net, color_descriptor, active_tokens, service_interfaces):
         tokens, deferred = BasicMergeAction.execute(self, net,
@@ -79,8 +71,7 @@ class ShellCommandDispatchAction(BasicMergeAction):
         token_data = tokens[0].data
 
         command_line = self.command_line(token_data)
-        inputs_hash_key = self.inputs_hash_key(token_data)
-        executor_options = self._executor_options(net)
+        executor_data = self._executor_data(net)
         callback_data = {
                 'net_key': net.key,
                 'color': color_descriptor.color,
@@ -92,13 +83,11 @@ class ShellCommandDispatchAction(BasicMergeAction):
         group_id = int(net.constant('group_id'))
         working_directory = net.constant('working_directory', '/tmp')
 
-        with_outputs = self.args.get('with_outputs')
-
         service = service_interfaces[self.service_name]
         deferred.addCallback(lambda x: service.submit(user_id=user_id,
             group_id=group_id, working_directory=working_directory,
             callback_data=callback_data, command_line=command_line,
-            executor_data=executor_options))
+            executor_data=executor_data))
 
         return tokens, deferred
 
