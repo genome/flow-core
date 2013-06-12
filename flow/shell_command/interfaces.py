@@ -5,8 +5,9 @@ class IShellCommand(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def submit(self, command_line, net_key=None, response_places=None,
-            **executor_options):
+    def submit(self, command_line, group_id, user_id, callback_data=None,
+            environment=None, executor_data=None, resources=None,
+            working_directory=None):
         pass
 
 
