@@ -89,5 +89,7 @@ class ShellCommandMessagesTest(unittest.TestCase):
                     group_id=100, user_id=100,
                     resources={'limit': {'badnews': object()}},
             )
+
+
 if '__main__' == __name__:
     unittest.main()
