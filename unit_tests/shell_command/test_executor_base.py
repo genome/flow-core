@@ -1,13 +1,13 @@
 from flow import exit_codes
-from flow.shell_command.executor_base import ExecutorBase
+from flow.shell_command import executor_base
 from twisted.internet import defer
 
 import mock
 import unittest
 
-class TestExecutorBase(ExecutorBase):
+class TestExecutorBase(executor_base.ExecutorBase):
     def __init__(self, *args, **kwargs):
-        ExecutorBase.__init__(self, *args, **kwargs)
+        executor_base.ExecutorBase.__init__(self, *args, **kwargs)
 
         self.job_id = None
         self.success = None
@@ -115,6 +115,31 @@ class ExecutorBaseTest(unittest.TestCase):
 
         socket.send.assert_called_once_with(executor_data['set_job_id'])
         socket.close.assert_called_once_with()
+
+
+class SendMessageTest(unittest.TestCase):
+    def test_send_message(self):
+        service_interfaces = {
+            'orchestrator': mock.Mock(),
+        }
+        args = {
+            'net_key': mock.Mock(),
+            'color': mock.Mock(),
+            'color_group_idx': mock.Mock(),
+        }
+        callback_data = {
+            'my_place_name': mock.Mock(),
+        }
+        callback_data.update(args)
+
+        token_data = mock.Mock()
+
+        executor_base.send_message('my_place_name', callback_data=callback_data,
+                service_interfaces=service_interfaces, token_data=token_data)
+
+        service_interfaces['orchestrator'].create_token.assert_called_once_with(
+                place_idx=callback_data['my_place_name'], data=token_data,
+                **args)
 
 
 
