@@ -27,34 +27,36 @@ class ConfigureRabbitMQCommand(CommandBase):
 
     @defer.inlineCallbacks
     def _execute(self, parsed_arguments):
-        self._parse_config()
+        exchanges, queues, bindings = self._parse_config()
 
         yield self.broker.connect()
 
-        yield self._declare_exchanges()
-        yield self._declare_queues()
-        yield self._declare_bindings()
+        yield self._declare_exchanges(exchanges)
+        yield self._declare_queues(queues)
+        yield self._declare_bindings(bindings)
 
         # XXX Dirty workaround.  I can't tell why the bindings aren't declared
         # by the time we get here.
-        time.sleep(2)
+        #time.sleep(2)
 
 
     def _parse_config(self):
-        self.exchanges = set()
-        self.queues = set()
-        self.bindings = set()
+        exchanges = set()
+        queues = set()
+        bindings = set()
 
         for exchange_name, queue_bindings in self.binding_config.iteritems():
-            self.exchanges.add(exchange_name)
+            exchanges.add(exchange_name)
 
             for queue_name, topics in queue_bindings.iteritems():
-                self.queues.add(queue_name)
+                queues.add(queue_name)
 
                 for topic in topics:
-                    self.bindings.add( (queue_name, exchange_name, topic) )
+                    bindings.add( (queue_name, exchange_name, topic) )
 
-    def _declare_exchanges(self):
+        return exchanges, queues, bindings
+
+    def _declare_exchanges(self, exchanges):
         deferreds = []
         deferreds.append(self.broker.declare_exchange('alt'))
 
@@ -62,30 +64,30 @@ class ConfigureRabbitMQCommand(CommandBase):
         deferreds.append(self.broker.declare_exchange(
             'dead', arguments=arguments))
 
-        for exchange_name in self.exchanges:
+        for exchange_name in exchanges:
             deferreds.append(self.broker.declare_exchange(
                 exchange_name, arguments=arguments))
 
         return defer.DeferredList(deferreds)
 
-    def _declare_queues(self):
+    def _declare_queues(self, queues):
         deferreds = []
         deferreds.append(self.broker.declare_queue('missing_routing_key'))
 
         arguments = {'x-dead-letter-exchange': 'dead'}
-        for queue in self.queues:
+        for queue in queues:
             deferreds.append(self.broker.declare_queue(
                 queue, arguments=arguments))
             deferreds.append(self.broker.declare_queue('dead_' + queue))
 
         return defer.DeferredList(deferreds)
 
-    def _declare_bindings(self):
+    def _declare_bindings(self, bindings):
         deferreds = []
         deferreds.append(self.broker.bind_queue(
             'missing_routing_key', 'alt', '#'))
 
-        for queue, exchange, topic in self.bindings:
+        for queue, exchange, topic in bindings:
             deferreds.append(self.broker.bind_queue(queue, exchange, topic))
             deferreds.append(self.broker.bind_queue(
                 'dead_' + queue, 'dead', topic))
