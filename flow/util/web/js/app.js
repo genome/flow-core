@@ -5,6 +5,6 @@ angular.module('processMonitor', ['processMonitor.controllers','processMonitor.s
     .config([function() {
         console.log("processMonitor configured.");
     }])
-    .run(function(processStatusService, processBasicService) {
+    .run(function(processStatusService, getBasicService) {
         console.log("processMonitor run.")
     });

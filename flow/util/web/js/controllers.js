@@ -1,9 +1,8 @@
 angular.module('processMonitor.controllers', ['processMonitor.services'])
-    .controller('MainController', ['$scope', '$timeout', 'configService', 'processStatusService', 'processBasicService',
-        function($scope, $timeout, configService, processStatusService, processBasicService) {
+    .controller('MainController', ['$scope', '$timeout', 'configService', 'processStatusService', 'getBasicService',
+        function($scope, $timeout, configService, processStatusService) {
             console.log("MainController instantiated.");
             $scope.update_delta = configService.update_delta;
-            $scope.processBasic = processBasicService.basic;
             $scope.currentStatus = processStatusService.currentStatus;
             $scope.allStatus = processStatusService.allStatus;
         }])
