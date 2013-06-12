@@ -53,7 +53,7 @@ angular
 
         poller();
 
-        var updateAllStatus = function(data) {
+        var updateAllStatus = function(status_data) {
             if (0 === allStatus.calls) {
                 // set master_pids
                 var basic = basicService
@@ -67,30 +67,71 @@ angular
 
             allStatus.calls++;
 
-            for (var pid in data) {
+            for (var pid in status_data) {
                 basicService
                     .getBasic(pid)
                     .then(
-                        function(data) {
-                            integrateNode(data);
+                        function(basic_data) {
+                            integrateNode(basic_data, status_data);
                         });
 
-                var integrateNode = function(data) {
-                    console.log("integrateNode() called");
+
+
+                var integrateNode = function(basic_data, status_data) {
+                    var pid = basic_data.pid;
+                    console.log('integrating node: ' + pid);
+
                     // if pid is not in allStatus, set its is_running to true
-                    var pid = data.pid;
+                    // then copy its fields over to allStatus
                     if (!(pid in allStatus)) {
-                        console.log("PID not in allStatus");
-                        allStatus[pid] = { 'is_running':true };
+                        allStatus.processes[pid] = { 'is_running':true };
                     }
 
-                    // transfer fields from data to allStatus
-                    for (var field in data) {
-                        allStatus[pid][field] = data[field];
+                    // copy basic node data
+                    for (var field in basic_data) {
+                        allStatus.processes[pid][field] = basic_data[field];
                     }
+
+                    // copy status node data
+                    for (var field in status_data) {
+                        allStatus.processes[pid][field] = status_data[field];
+                    }
+
+                    // storeFileInfo(status_data, pid);
 
                 };
             }
+
+        };
+
+        var storeFileInfo = function(data, pid) {
+            // check for existence of open_files for this process
+            if(!_.has(allStatus.processes.pid, 'open_files')) {
+                console.log("process " + pid + " has no open_files key.");
+            }
+
+            if(!_.has(allStatus.proccess.pid, 'memory_percent')) {
+                console.log("process " + pid + " has no memory_percent key.");
+            }
+
+            // if (!('open_files' in allStatus[pid])) {
+            //     allStatus[pid]['open_files'] = {};
+            // }
+
+            // note files that are no longer open
+            // var file_info = data[pid]['open_files'] || {};
+            // var stored_file_info = allStatus[pid]['open_files'];
+
+            // for (var fname in stored_file_info) {
+            //     console.log("updating file " + fname);
+            //     for (var fd in stored_file_info[fname]) {
+            //         if (!(fname in file_info)) {
+            //             stored_file_info[fname][fd].closed = true;
+            //         } else if (!(fd in file_info[fname])) {
+            //             stored_file_info[fname][fd].closed = true;
+            //         }
+            //     }
+            // }
 
         };
 
