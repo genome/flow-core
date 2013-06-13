@@ -10,7 +10,11 @@ class MergeMixin(object):
     def merge_data(self, net, dest_token, active_tokens):
         keys = [dest_token.data.key]
         keys.extend(net.token(t).data.key for t in active_tokens)
-        self._merge_hashes_script(keys=keys)
+        rv = self._merge_hashes_script(keys=keys)
+        if rv[0] != 0:
+            raise RuntimeError('Failed to merge token data for tokens: %s'
+                    % [t for t in active_tokens])
+
 
 
 class BasicMergeAction(BasicActionBase, MergeMixin):
