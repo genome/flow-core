@@ -22,7 +22,7 @@ class ShellCommandDispatchAction(BasicMergeAction):
         return self.args['command_line']
 
     def environment(self, net):
-        return net.constant('environment')
+        return net.constant('environment', {})
 
 
     # Private methods
