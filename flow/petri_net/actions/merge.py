@@ -13,7 +13,7 @@ class MergeMixin(object):
         keys.extend(net.token(t).data.key for t in active_tokens)
         rv = self._merge_hashes_script(keys=keys)
         if rv[0] != 0:
-            raise excpetions.BadTokenDataError(
+            raise exceptions.BadTokenDataError(
                     'Failed to merge token data for tokens: %s'
                     % [t for t in active_tokens])
 
