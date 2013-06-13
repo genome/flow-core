@@ -8,7 +8,7 @@ angular
         return {
             process_tree_update_delay: 1000,
             cpu_update_delay: 300,
-            update_delta: 5000,
+            update_delta: 500,
             num_data_pts: 1000,
 
             MASTER_PID: Number(),
@@ -57,11 +57,11 @@ angular
             if (0 === allStatus.calls) {
                 // set master_pids
                 var basic = basicService
-                    .getBasic()
-                    .then(function(data) {
-                        allStatus.master_pid = data.pid;
-                        allStatus.master_parent_pid = data.parent_pid;
-                });
+                        .getBasic()
+                        .then(function(data) {
+                            allStatus.master_pid = data.pid;
+                            allStatus.master_parent_pid = data.parent_pid;
+                        });
 
             }
 
@@ -79,25 +79,21 @@ angular
 
                 var integrateNode = function(basic_data, status_data) {
                     var pid = basic_data.pid;
-                    console.log('integrating node: ' + pid);
 
-                    // if pid is not in allStatus, set its is_running to true
-                    // then copy its fields over to allStatus
                     if (!(pid in allStatus)) {
-                        allStatus.processes[pid] = { 'is_running':true };
+                        allStatus.processes[pid] = {};
+                        allStatus.processes[pid]['is_running'] = true;
                     }
 
-                    // copy basic node data
                     for (var field in basic_data) {
                         allStatus.processes[pid][field] = basic_data[field];
                     }
 
-                    // copy status node data
-                    for (var field in status_data) {
-                        allStatus.processes[pid][field] = status_data[field];
+                    for (var field in status_data[pid]) {
+                        allStatus.processes[pid][field] = status_data[pid][field];
                     }
 
-                    // storeFileInfo(status_data, pid);
+                    storeFileInfo(status_data, pid);
 
                 };
             }
@@ -106,32 +102,41 @@ angular
 
         var storeFileInfo = function(data, pid) {
             // check for existence of open_files for this process
-            if(!_.has(allStatus.processes.pid, 'open_files')) {
-                console.log("process " + pid + " has no open_files key.");
+            if(!_.has(allStatus.processes[pid], 'open_files')) {
+                console.log("allStatus.processes[pid]['open_files'] does not exist");
+                allStatus[pid]['open_files'] = {};
             }
-
-            if(!_.has(allStatus.proccess.pid, 'memory_percent')) {
-                console.log("process " + pid + " has no memory_percent key.");
-            }
-
-            // if (!('open_files' in allStatus[pid])) {
-            //     allStatus[pid]['open_files'] = {};
-            // }
 
             // note files that are no longer open
-            // var file_info = data[pid]['open_files'] || {};
-            // var stored_file_info = allStatus[pid]['open_files'];
+            var file_info = data[pid]['open_files'] || {};
 
-            // for (var fname in stored_file_info) {
-            //     console.log("updating file " + fname);
-            //     for (var fd in stored_file_info[fname]) {
-            //         if (!(fname in file_info)) {
-            //             stored_file_info[fname][fd].closed = true;
-            //         } else if (!(fd in file_info[fname])) {
-            //             stored_file_info[fname][fd].closed = true;
-            //         }
-            //     }
-            // }
+            // console.log("allStatus.processes[pid]");
+            // console.log(allStatus.processes[pid]);
+
+            var stored_file_info = allStatus.processes[pid]['open_files'];
+
+            // note files that are no longer open
+            for (var fname in stored_file_info) {
+                console.log("updating file " + fname);
+                for (var fd in stored_file_info[fname]) {
+                    if (!(fname in file_info)) {
+                        console.log("file " + fname + " closed.");
+                        stored_file_info[fname][fd].is_open = false;
+                    } else if (!(fd in file_info[fname])) {
+                        console.log("file " + fname + " closed (checked fname).");
+                        stored_file_info[fname][fd].is_open = false;
+                    } else {
+                        console.log("file " + fname + " open.");
+                        stored_file_info[fname][fd].is_open = true;
+                    }
+                }
+            }
+
+            var asLen = Object.keys(allStatus.processes).length;
+            // var firstChildNodes = _.map(allStatus.processes, function(node) {
+            //     console.log("mapping node ID " + node.pid);
+            //     return node.parent_id = allStatus.master_pid ? node : null
+            // });
 
         };
 
@@ -215,7 +220,7 @@ angular
                         deferred.resolve(data);
                     })
                     .error(function(data, status, headers, config) { // Handle the error
-                        alert("Could not retrieve basic data node.");
+                        console.error("Could not retrieve basic data node.");
 
                         deferred.reject();
                     });

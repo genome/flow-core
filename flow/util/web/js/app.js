@@ -7,8 +7,4 @@ angular.module('processMonitor', ['processMonitor.controllers','processMonitor.s
     }])
     .run(function(configService, statusService, basicService) {
         console.log("processMonitor run.");
-        var basicNode = basicService.getBasic();
-        configService.MASTER_PID = basicNode.pid;
-        console.log("basicNode =-=-=-=-=-=-=-=-");
-        console.log(basicNode);
     });
