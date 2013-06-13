@@ -49,9 +49,9 @@ class ConfigureRabbitMQCommandTest(unittest.TestCase):
 
         exchanges, queues, bindings = self.command._parse_config()
 
-        self.assertItemsEqual(expected_exchanges, exchanges)
-        self.assertItemsEqual(expected_queues, queues)
-        self.assertItemsEqual(expected_bindings, bindings)
+        self.assertEqual(expected_exchanges, exchanges)
+        self.assertEqual(expected_queues, queues)
+        self.assertEqual(expected_bindings, bindings)
 
     def test_declare_exchanges(self):
         exchanges = {'X-NAMES'}

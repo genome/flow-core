@@ -63,7 +63,7 @@ class TestBuilderNoConnection(TestCase):
                 'nosub': fixed
         }
 
-        self.assertItemsEqual(expected_args, args)
+        self.assertEqual(expected_args, args)
 
 
 if __name__ == "__main__":

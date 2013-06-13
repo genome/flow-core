@@ -82,7 +82,7 @@ class ResourceObjectTest(unittest.TestCase):
             'memory': resource.StorageResource(2, 'GiB'),
         }
         result = resource.make_resource_objects(source, self.resource_types)
-        self.assertItemsEqual(expected_result, result)
+        self.assertEqual(expected_result, result)
 
     def test_make_all_resource_objects(self):
         source = {
@@ -110,7 +110,7 @@ class ResourceObjectTest(unittest.TestCase):
         }
 
         result = resource.make_all_resource_objects(source, self.resource_types)
-        self.assertItemsEqual(expected_result, result)
+        self.assertEqual(expected_result, result)
 
 
 if '__main__' == __name__:

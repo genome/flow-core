@@ -29,7 +29,7 @@ class ShellCommandNetTest(unittest.TestCase):
             self.net.execute_failure_place,
             self.net.execute_success_place,
         }
-        self.assertItemsEqual(expected_unreachable_places, unreachable_places)
+        self.assertEqual(expected_unreachable_places, unreachable_places)
 
     def test_dead_end_places(self):
         dead_end_places = {p for p in self.net.places if not p.arcs_out}
@@ -38,7 +38,7 @@ class ShellCommandNetTest(unittest.TestCase):
             self.net.success,
             self.net.failure,
         }
-        self.assertItemsEqual(expected_dead_end_places, dead_end_places)
+        self.assertEqual(expected_dead_end_places, dead_end_places)
 
 
     def test_action_set(self):
@@ -54,7 +54,7 @@ class ShellCommandNetTest(unittest.TestCase):
             "msg: execute_failure": self.net.execute_failure_place,
         }
 
-        self.assertItemsEqual(expected_args,
+        self.assertEqual(expected_args,
                 self.net.dispatch.action.args)
 
 

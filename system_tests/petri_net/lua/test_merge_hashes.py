@@ -22,7 +22,7 @@ class TestMergeHashesScript(RedisTest, ScriptTest):
 
         rv = self.script(keys=[dest_key, src_key])
         self.assertEqual(0, rv[0])
-        self.assertItemsEqual(data, self.conn.hgetall(dest_key))
+        self.assertEqual(data, self.conn.hgetall(dest_key))
 
     def test_multiple_sources_no_conflicts(self):
         dest_key = 'd'
@@ -39,7 +39,7 @@ class TestMergeHashesScript(RedisTest, ScriptTest):
         expected_result = copy.copy(data_0)
         expected_result.update(data_1)
         self.assertEqual(0, rv[0])
-        self.assertItemsEqual(expected_result, self.conn.hgetall(dest_key))
+        self.assertEqual(expected_result, self.conn.hgetall(dest_key))
 
     def test_multiple_sources_with_confliect(self):
         dest_key = 'd'

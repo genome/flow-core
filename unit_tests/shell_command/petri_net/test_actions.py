@@ -35,7 +35,7 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
 
 
     def test_correct_net_constants(self):
-        self.assertItemsEqual(self.net_constants,
+        self.assertEqual(self.net_constants,
                 self.action.net_constants)
 
     def test_correct_place_refs(self):
@@ -44,7 +44,7 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
 
 
     def test_response_places(self):
-        self.assertItemsEqual(self.response_places,
+        self.assertEqual(self.response_places,
                 self.action._response_places())
 
     def test_executor_data_no_extras(self):
@@ -62,7 +62,7 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         self.assertItemsEqual(self.net_constants + ['environment',
             'resources'], executor_data.keys())
 
-        self.assertItemsEqual(resources, executor_data['resources'])
+        self.assertEqual(resources, executor_data['resources'])
 
 
     def test_set_environment(self):
@@ -89,7 +89,7 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
     def test_set_io_files_unset(self):
         executor_data = {}
         self.action._set_io_files(executor_data)
-        self.assertItemsEqual({}, executor_data)
+        self.assertEqual({}, executor_data)
 
     def test_set_io_files_set(self):
         expected_iofiles = {
@@ -102,7 +102,7 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
 
         executor_data = {}
         self.action._set_io_files(executor_data)
-        self.assertItemsEqual(expected_iofiles, executor_data)
+        self.assertEqual(expected_iofiles, executor_data)
 
 
     def test_execute(self):
@@ -178,8 +178,8 @@ class LSFDispatchActionTest(unittest.TestCase):
         self.assertItemsEqual(self.net_constants + ['environment',
             'resources', 'lsf_options'], executor_data.keys())
 
-        self.assertItemsEqual(resources, executor_data['resources'])
-        self.assertItemsEqual(lsf_options, executor_data['lsf_options'])
+        self.assertEqual(resources, executor_data['resources'])
+        self.assertEqual(lsf_options, executor_data['lsf_options'])
 
 
 if '__main__' == __name__:

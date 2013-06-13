@@ -37,7 +37,8 @@ class Resource(object):
 
     def __eq__(self, other):
         return (self.__class__ == other.__class__
-                ) and (self.value == other.value_in_units(self.units))
+                ) and (self.value == other.value_in_units(
+                    getattr(self, 'units', None)))
 
 
 class IntegerResource(Resource):
