@@ -15,11 +15,14 @@ class ShellCommandDispatchAction(BasicMergeAction):
             "msg: execute_failure",
             "msg: execute_success",
     ]
-    required_arguments = place_refs + ['command_line']
+    required_arguments = place_refs
 
     # Hooks that subclasses can override
     def command_line(self, token_data):
         return self.args['command_line']
+
+    def environment(self, net):
+        return net.constant('environment')
 
 
     # Private methods
@@ -36,13 +39,10 @@ class ShellCommandDispatchAction(BasicMergeAction):
         if 'resources' in self.args:
             executor_data['resources'] = self.args['resources']
 
-        if 'lsf_options' in self.args:
-            executor_data['lsf_options'] = self.args['lsf_options']
-
         return executor_data
 
     def _set_environment(self, net, executor_data):
-        environment = net.constant('environment')
+        environment = self.environment(net)
         if environment:
             executor_data['environment'] = environment
 
@@ -94,6 +94,14 @@ class ShellCommandDispatchAction(BasicMergeAction):
 
 class LSFDispatchAction(ShellCommandDispatchAction):
     service_name = "lsf"
+
+    def _executor_data(self, net):
+        executor_data = ShellCommandDispatchAction._executor_data(self, net)
+
+        if 'lsf_options' in self.args:
+            executor_data['lsf_options'] = self.args['lsf_options']
+
+        return executor_data
 
 
 class ForkDispatchAction(ShellCommandDispatchAction):

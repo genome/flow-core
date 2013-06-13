@@ -53,20 +53,16 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         self.assertItemsEqual(self.net_constants + ['environment'],
                 executor_data.keys())
 
-    def test_executor_data_all(self):
+    def test_executor_data_resources(self):
         resources = {'limit': {'one': 2}}
         self.action.args['resources'] = resources
-
-        lsf_options = {'queue': 'long'}
-        self.action.args['lsf_options'] = lsf_options
 
         net = mock.Mock()
         executor_data = self.action._executor_data(net)
         self.assertItemsEqual(self.net_constants + ['environment',
-            'resources', 'lsf_options'], executor_data.keys())
+            'resources'], executor_data.keys())
 
         self.assertItemsEqual(resources, executor_data['resources'])
-        self.assertItemsEqual(lsf_options, executor_data['lsf_options'])
 
 
     def test_set_environment(self):
@@ -143,6 +139,47 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
 
     def test_lsf_dispatch_service_name(self):
         self.assertEqual('lsf', actions.LSFDispatchAction.service_name)
+
+
+class LSFDispatchActionTest(unittest.TestCase):
+    def setUp(self):
+        self.net_constants = ['group_id', 'user_id', 'working_directory']
+
+        self.response_places = {
+            'msg: dispatch_failure': 'dfplace',
+            'msg: dispatch_success': 'dsplace',
+            'msg: execute_begin': 'ebplace',
+            'msg: execute_failure': 'efplace',
+            'msg: execute_success': 'esplace',
+        }
+        self.command_line =  ['my', 'command', 'line'],
+
+        self.args = {
+            'command_line': self.command_line,
+        }
+        self.args.update(self.response_places)
+
+        self.connection = fakeredis.FakeRedis()
+        self.connection.flushall()
+
+        self.key = 'test_action_key'
+        self.action = actions.LSFDispatchAction.create(
+                self.connection, self.key, args=self.args)
+
+    def test_executor_data_all(self):
+        resources = {'limit': {'one': 2}}
+        self.action.args['resources'] = resources
+
+        lsf_options = {'queue': 'long'}
+        self.action.args['lsf_options'] = lsf_options
+
+        net = mock.Mock()
+        executor_data = self.action._executor_data(net)
+        self.assertItemsEqual(self.net_constants + ['environment',
+            'resources', 'lsf_options'], executor_data.keys())
+
+        self.assertItemsEqual(resources, executor_data['resources'])
+        self.assertItemsEqual(lsf_options, executor_data['lsf_options'])
 
 
 if '__main__' == __name__:
