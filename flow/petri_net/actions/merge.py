@@ -1,4 +1,5 @@
 from flow.petri_net.actions.base import BarrierActionBase, BasicActionBase
+from flow.petri_net import exceptions
 from flow.petri_net import lua
 from flow.util.containers import head
 from twisted.internet import defer
@@ -12,7 +13,8 @@ class MergeMixin(object):
         keys.extend(net.token(t).data.key for t in active_tokens)
         rv = self._merge_hashes_script(keys=keys)
         if rv[0] != 0:
-            raise RuntimeError('Failed to merge token data for tokens: %s'
+            raise excpetions.BadTokenDataError(
+                    'Failed to merge token data for tokens: %s'
                     % [t for t in active_tokens])
 
 
