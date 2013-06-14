@@ -8,8 +8,8 @@ angular
         return {
             process_tree_update_delay: 1000,
             cpu_update_delay: 300,
-            update_delta: 500,
-            num_data_pts: 1000,
+            UPDATE_DELTA: 5000,
+            NUM_DATA_PTS: 1000,
 
             MASTER_PID: Number(),
 
@@ -29,17 +29,20 @@ angular
 
     .factory('statusService', function($http, $timeout, configService, basicService) {
         // polls /status and updates process data node
-        console.log("processStartupService initialized.");
-        var currentStatus = { response: {} };
+        console.log("statusService initialized. *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-");
 
-        var allStatus = { calls: Number(), master_parent_pid: Number(), master_pid: Number(), processes: {} };
+        var UPDATE_DELTA = configService.UPDATE_DELTA;
 
-        var poller = function() {
+        var current_status = { };
+        var all_status = { calls: Number(), master_parent_pid: Number(), master_pid: Number(), processes: {} };
+        var all_status_nested = { };
+
+        var _poller = function() {
             $http.get('/status').then(
                 function(r) { // success
-                    currentStatus.response = r.data;
-                    updateAllStatus(r.data);
-                    $timeout(poller, configService.update_delta);
+                    // current_status.response = r.data;
+                    _update_all_status(r.data);
+                    $timeout(_poller, configService.UPDATE_DELTA);
                 },
                 function(r) { // fail
                     alert("Could not retrieve process status. " +
@@ -51,112 +54,79 @@ angular
 
         };
 
-        poller();
+        _poller();
 
-        var updateAllStatus = function(status_data) {
-            if (0 === allStatus.calls) {
+        var _update_all_status = function(status_data) {
+            // status_data: current status straight from /status
+            // all_status: contains all status updates (initialized)
+            // all_status_nested: status updates nested according to parent/child relationships
+
+            // console.log("_update_all_status called.");
+            // console.log("status_data:");
+            // console.log(status_data);
+
+            // if all_status hasn't been called, initialize it
+            if (0 === all_status.calls) {
                 // set master_pids
                 var basic = basicService
                         .getBasic()
                         .then(function(data) {
-                            allStatus.master_pid = data.pid;
-                            allStatus.master_parent_pid = data.parent_pid;
+                            all_status.master_pid = data.pid;
+                            all_status.master_parent_pid = data.parent_pid;
+                            all_status.processes[data.pid] = {}; // set master_pid as root process
                         });
 
             }
 
-            allStatus.calls++;
+            // console.log("all_status:");
+            // console.log(all_status);
 
-            for (var pid in status_data) {
-                basicService
-                    .getBasic(pid)
-                    .then(
-                        function(basic_data) {
-                            integrateNode(basic_data, status_data);
+            // console.log("current_status (before addint status_data):");
+            // console.log(current_status);
+
+            _.each(status_data, function(process_data) {
+
+                console.log("process_data:");
+                console.log(process_data);
+
+                // get process' basic info, copy to current_status and initialize
+                var basic = basicService
+                        .getBasic()
+                        .then(function(data) {
+                            var cPid = data.parent_pid;
+                            current_status[cPid] = {};
+                            current_status[cPid] = _.deepClone(process_data);
+
+                            // console.log("current_status[cPid]:-:-:-:-:-:-:-:-:");
+                            // console.log(current_status[cPid]);
+
+                            _init_process(current_status[cPid]);
                         });
 
 
+            });
 
-                var integrateNode = function(basic_data, status_data) {
-                    var pid = basic_data.pid;
-
-                    if (!(pid in allStatus)) {
-                        allStatus.processes[pid] = {};
-                        allStatus.processes[pid]['is_running'] = true;
-                    }
-
-                    for (var field in basic_data) {
-                        allStatus.processes[pid][field] = basic_data[field];
-                    }
-
-                    for (var field in status_data[pid]) {
-                        allStatus.processes[pid][field] = status_data[pid][field];
-                    }
-
-                    storeFileInfo(status_data, pid);
-
-                };
-            }
-
+            all_status.calls++;
         };
 
-        var storeFileInfo = function(data, pid) {
-            // check for existence of open_files for this process
-            if(!_.has(allStatus.processes[pid], 'open_files')) {
-                console.log("allStatus.processes[pid]['open_files'] does not exist");
-                allStatus[pid]['open_files'] = {};
-            }
+        var _init_process = function(process) {
+            process['is_running'] = true;
 
-            // note files that are no longer open
-            var file_info = data[pid]['open_files'] || {};
-
-            // console.log("allStatus.processes[pid]");
-            // console.log(allStatus.processes[pid]);
-
-            var stored_file_info = allStatus.processes[pid]['open_files'];
-
-            // note files that are no longer open
-            for (var fname in stored_file_info) {
-                console.log("updating file " + fname);
-                for (var fd in stored_file_info[fname]) {
-                    if (!(fname in file_info)) {
-                        console.log("file " + fname + " closed.");
-                        stored_file_info[fname][fd].is_open = false;
-                    } else if (!(fd in file_info[fname])) {
-                        console.log("file " + fname + " closed (checked fname).");
-                        stored_file_info[fname][fd].is_open = false;
-                    } else {
-                        console.log("file " + fname + " open.");
-                        stored_file_info[fname][fd].is_open = true;
-                    }
-                }
-            }
-
-            var asLen = Object.keys(allStatus.processes).length;
-            // var firstChildNodes = _.map(allStatus.processes, function(node) {
-            //     console.log("mapping node ID " + node.pid);
-            //     return node.parent_id = allStatus.master_pid ? node : null
-            // });
-
+            _init_open_files(process);
+            _init_chart_data(process);
+            _nest_all_status();
         };
 
-        var _store_array = function(src, dest, time) {
-            var values = dest['values'];
-            values.push({x:time, y:src});
-            if (values.length > configService.num_data_pts) {
-                values.splice(0,1);
-            }
-        };
+        var _init_open_files = function(process) {
+            console.log("_init_process_open_files called. -- -- -- -- -- -- -- --");
+            console.log(process);
 
-        var _store_file_info = function(data, pid) {
-            if (!('open_files' in allStatus[pid])) {
-                allStatus[pid]['open_files'] = {};
-            }
+            if (!('open_files' in process)) { process['open_files'] = { }; }
 
-            var stored_finfo = allStatus[pid]['open_files'];
+            var stored_finfo = process['open_files'];
 
             // note files that are no longer open
-            var finfo = data[pid]['open_files'] || {};
+            var finfo = process['open_files'] || {};
             for (var fname in stored_finfo) {
                 for (var fd in stored_finfo[fname]) {
                     if (!(fname in finfo)) {
@@ -182,27 +152,48 @@ angular
                         };
                         stored_finfo[fname][fd] = stat_info;
                     }
-
                     var this_stored_finfo = stored_finfo[fname][fd];
 
                     // size
                     if (!('size' in this_stored_finfo)) {
                         this_stored_finfo['size'] = {'values':[], 'key':'size'};
                     }
-                    _store_array(finfo[fname][fd]['size'], this_stored_finfo['size'], finfo[fname][fd]['time_of_stat']);
+                    // _store_array(finfo[fname][fd]['size'], this_stored_finfo['size'], finfo[fname][fd]['time_of_stat']);
 
                     // pos
                     if (!('pos' in this_stored_finfo)) {
                         this_stored_finfo['pos'] = {'values':[], 'key':'pos'};
                     }
-                    _store_array(finfo[fname][fd]['pos'], this_stored_finfo['pos'], data[pid]['time']);
+                    // _store_array(finfo[fname][fd]['pos'], this_stored_finfo['pos'], data[pid]['time']);
                 }
             }
         };
 
+        var _init_chart_data = function(src, desc, time) {
+            console.log("_init_process_chart_data called.");
+        };
+
+        var _nest_all_status = function() {
+            console.log("_nest_all_status called.");
+            all_status_nested = _.nest(all_status, ["parent_pid","id"]);
+        };
+
+        //
+        // UTILITES
+        //
+
+        var _quick_clone = function(obj) { return JSON.parse(JSON.stringify(obj)); };
+
+        var _store_array = function(src, dest, time) {
+            var values = dest['values'];
+            values.push( { x:time, y:src } );
+            if ( values.length > configService.NUM_DATA_PTS ) { values.splice(0,1); }
+        };
+
         return {
-            currentStatus: currentStatus,
-            allStatus: allStatus
+            current_status: current_status,
+            all_status: all_status,
+            all_status_nested: all_status_nested
         };
 
 

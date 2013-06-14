@@ -7,6 +7,7 @@
         <meta name="viewport" content="width=device-width"/>
 
         <title>Flow Process Monitor!</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="lib/nv.d3.css"/>
     </head>
     <body>
@@ -29,22 +30,38 @@
 
         <div data-ng-app="processMonitor">
             <div data-ng-controller="MainController">
-                <p>Update Delta: {{update_delta}}</p>
+                <div class="row">
+                    <div class="span12">
+                        Update Delta: {{UPDATE_DELTA}}
+                    </div>
+                </div>
+                <div class="content">
+                    <div class="row">
+                        <div class="span4">
+                            <p>Current Status: <br /> {{current_status | json}</p>
 
-                <!-- <p> -->
-                <!--     Current Status:<br/> -->
-                <!--     <pre>{{currentStatus | json}}</pre> -->
-                <!-- </p> -->
-                <p>
-                    All Status:<br/>
-                    <pre>{{allStatus | json}}</pre>
-                </p>
+                        </div> <!-- /div span4 -->
+                        <div class="span4">
+                            <p>All Status: <br /> {{all_status | json}</p>
+
+                        </div> <!-- /div span4 -->
+                        <div class="span4">
+                            <p>All Status Nested: <br /> {{all_status_nested | json}</p>
+
+
+                            </p>
+                        </div> <!-- /div span4 -->
+                    </div>
+                </div><!-- /content -->
             </div>
         </div>
 
         <!-- VENDOR LIBS -->
         <script type="text/javascript" src="lib/underscore-min.js"></script>
         <script type="text/javascript" src="lib/underscore-data.js"></script>
+        <script type="text/javascript" src="lib/underscore-deepExtend.js"></script>
+        <script type="text/javascript" src="lib/underscore-nest.min.js"></script>
+
 
         <script type="text/javascript" src="lib/angular.min.js"></script>
         <script type="text/javascript" src="lib/angular-resource.min.js"></script>
