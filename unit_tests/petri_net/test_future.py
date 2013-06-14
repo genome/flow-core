@@ -1,4 +1,5 @@
 from flow.petri_net import future
+from net_helpers import get_unique_arc_in, get_unique_arc_out
 from unittest import TestCase, main
 
 from mock import Mock
@@ -45,12 +46,6 @@ class TestFutureNet(TestCase):
         subnet_class.assert_called_once_with(**kwargs)
 
 
-    def get_unique_arc_out(self, source):
-        return list(source.arcs_out)[0]
-
-    def get_unique_arc_in(self, source):
-        return list(source.arcs_in)[0]
-
     def test_bridge_places(self):
         p1 = self.net.add_place()
         p2 = self.net.add_place()
@@ -59,10 +54,10 @@ class TestFutureNet(TestCase):
 
         self.assertEqual(1, len(self.net.transitions))
 
-        t = self.get_unique_arc_out(p1)
+        t = get_unique_arc_out(p1)
         self.assertIsInstance(t, future.FutureBasicTransition)
 
-        final_p = self.get_unique_arc_out(t)
+        final_p = get_unique_arc_out(t)
         self.assertIs(p2, final_p)
 
     def test_bridge_transitions(self):
@@ -72,10 +67,10 @@ class TestFutureNet(TestCase):
         self.net.bridge_transitions(t1, t2)
 
         self.assertEqual(1, len(self.net.places))
-        p = self.get_unique_arc_out(t1)
+        p = get_unique_arc_out(t1)
         self.assertIsInstance(p, future.FuturePlace)
 
-        final_t = self.get_unique_arc_out(p)
+        final_t = get_unique_arc_out(p)
         self.assertIs(t2, final_t)
 
     def test_observe_transition(self):
@@ -85,8 +80,8 @@ class TestFutureNet(TestCase):
         self.net.observe_transition(t, a)
         self.assertEqual(1, len(self.net.places))
         self.assertEqual(2, len(self.net.transitions))
-        place = self.get_unique_arc_out(t)
-        observer = self.get_unique_arc_out(place)
+        place = get_unique_arc_out(t)
+        observer = get_unique_arc_out(place)
         self.assertEqual(a, observer.action)
 
     def test_split_place(self):
@@ -102,8 +97,8 @@ class TestFutureNet(TestCase):
         self.assertEqual(1, len(self.net.transitions))
 
         for op in out_places:
-            t = self.get_unique_arc_in(op)
-            self.assertEqual(p_in, self.get_unique_arc_in(t))
+            t = get_unique_arc_in(op)
+            self.assertEqual(p_in, get_unique_arc_in(t))
 
 
 class TestFutureNode(TestCase):
