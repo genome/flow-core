@@ -48,6 +48,9 @@ class TestFutureNet(TestCase):
     def get_unique_arc_out(self, source):
         return list(source.arcs_out)[0]
 
+    def get_unique_arc_in(self, source):
+        return list(source.arcs_in)[0]
+
     def test_bridge_places(self):
         p1 = self.net.add_place()
         p2 = self.net.add_place()
@@ -74,6 +77,33 @@ class TestFutureNet(TestCase):
 
         final_t = self.get_unique_arc_out(p)
         self.assertIs(t2, final_t)
+
+    def test_observe_transition(self):
+        t = self.net.add_basic_transition()
+        a = future.FutureAction(cls=Mock(), args=Mock())
+
+        self.net.observe_transition(t, a)
+        self.assertEqual(1, len(self.net.places))
+        self.assertEqual(2, len(self.net.transitions))
+        place = self.get_unique_arc_out(t)
+        observer = self.get_unique_arc_out(place)
+        self.assertEqual(a, observer.action)
+
+    def test_split_place(self):
+        num_out_places = 3
+
+        p_in = self.net.add_place()
+
+        out_places = [self.net.add_place() for x in xrange(num_out_places)]
+
+        self.net.split_place(p_in, out_places)
+
+        self.assertEqual(num_out_places + 1, len(self.net.places))
+        self.assertEqual(1, len(self.net.transitions))
+
+        for op in out_places:
+            t = self.get_unique_arc_in(op)
+            self.assertEqual(p_in, self.get_unique_arc_in(t))
 
 
 class TestFutureNode(TestCase):
