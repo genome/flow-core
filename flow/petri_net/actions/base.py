@@ -7,6 +7,10 @@ class ActionBase(rom.Object):
     args = rom.Property(rom.Hash, value_encoder=rom.json_enc,
             value_decoder=rom.json_dec)
 
+    @property
+    def name(self):
+        return '%s (%s)' % (self.__class__, self.key)
+
     def _on_create(self):
         for argname in self.required_arguments:
             if not argname in self.args:
