@@ -66,9 +66,10 @@ class TestSystemFork(redistest.RedisTest):
                     resource_definitions=resource_definitions))
 
     def test_simple_succeeding_command(self):
+        test_data = 'hi'
         output_file = tempfile.NamedTemporaryFile('r')
         future_net = ForkCommandNet('net name',
-                command_line=['echo', 'hi'], stdout=output_file.name,
+                command_line=['echo', test_data], stdout=output_file.name,
                 stderr='/dev/null')
         future_places, future_transitions = builder.gather_nodes(future_net)
 
@@ -83,15 +84,16 @@ class TestSystemFork(redistest.RedisTest):
         cg = net.add_color_group(1)
 
         self.service_interfaces['orchestrator'].create_token(net.key,
-                future_places[future_net.start], cg.begin, cg.idx)
+                future_places[future_net.start_place], cg.begin, cg.idx)
         self.broker.listen()
 
         expected_color_keys = [net.marking_key(
-            cg.begin, future_places[future_net.success])]
+            cg.begin, future_places[future_net.success_place]),
+            net.marking_key(cg.begin, future_places[future_net.done_place])]
 
-        self.assertItemsEqual(expected_color_keys, net.color_marking.keys())
-        expected_output = 'hi\n'
+        expected_output = '%s\n' % test_data
         self.assertEqual(expected_output, output_file.read())
+        self.assertItemsEqual(expected_color_keys, net.color_marking.keys())
 
 
     def test_simple_failing_command(self):
@@ -110,11 +112,12 @@ class TestSystemFork(redistest.RedisTest):
         cg = net.add_color_group(1)
 
         self.service_interfaces['orchestrator'].create_token(net.key,
-                future_places[future_net.start], cg.begin, cg.idx)
+                future_places[future_net.start_place], cg.begin, cg.idx)
         self.broker.listen()
 
         expected_color_keys = [net.marking_key(
-            cg.begin, future_places[future_net.failure])]
+            cg.begin, future_places[future_net.failure_place]),
+            net.marking_key(cg.begin, future_places[future_net.done_place])]
 
         self.assertItemsEqual(expected_color_keys, net.color_marking.keys())
 

@@ -1,4 +1,5 @@
-from flow.petri_net.future import FutureAction, FutureNet
+from flow.petri_net.future import FutureAction
+from flow.petri_net.success_failure_net import SuccessFailureNet
 from flow.shell_command.petri_net import actions
 
 import logging
@@ -7,24 +8,13 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-class ShellCommandNet(FutureNet):
-    def __init__(self, name,
-            dispatch_success_action=None,
-            dispatch_failure_action=None,
-            execute_begin_action=None,
-            success_action=None,
-            failure_action=None,
-            **action_args):
+class ShellCommandNet(SuccessFailureNet):
+    def __init__(self, name, **action_args):
+        SuccessFailureNet.__init__(self, name)
 
-        FutureNet.__init__(self, name)
-
-        self.start = self.add_place('start')
-        self.success = self.add_place('success')
-        self.failure = self.add_place('failure')
-
-        self.dispatching = self.add_place("dispatching")
-        self.pending = self.add_place("pending")
-        self.running = self.add_place("running")
+        self.dispatching_place = self.add_place("dispatching")
+        self.pending_place = self.add_place("pending")
+        self.running_place = self.add_place("running")
 
         self.dispatch_success_place = self.add_place("msg: dispatch_success")
         self.dispatch_failure_place = self.add_place("msg: dispatch_failure")
@@ -42,41 +32,44 @@ class ShellCommandNet(FutureNet):
 
         primary_action = FutureAction(self.DISPATCH_ACTION, **action_args)
 
-        self.dispatch = self.add_basic_transition(name="dispatch",
-                action=primary_action)
+        self.dispatch_transition = self.add_basic_transition(
+                name="dispatch", action=primary_action)
 
-        self.dispatch_success = self.add_basic_transition("dispatch_success",
-                action=dispatch_success_action)
-        self.dispatch_failure = self.add_basic_transition("dispatch_failure",
-                action=dispatch_failure_action)
-        self.execute_begin = self.add_basic_transition("execute_begin",
-                action=execute_begin_action)
-        self.execute_success = self.add_basic_transition("execute_success",
-                action=success_action)
-        self.execute_failure = self.add_basic_transition("execute_failure",
-                action=failure_action)
+        self.dispatch_success_transition = self.add_basic_transition(
+                "dispatch_success")
+        self.dispatch_failure_transition = self.add_basic_transition(
+                "dispatch_failure")
+        self.execute_begin_transition = self.add_basic_transition(
+                "execute_begin")
+        self.execute_success_transition = self.add_basic_transition(
+                "execute_success")
+        self.execute_failure_transition = self.add_basic_transition(
+                "execute_failure")
 
-        self.start.add_arc_out(self.dispatch)
-        self.dispatch.add_arc_out(self.dispatching)
-        self.dispatching.add_arc_out(self.dispatch_success)
-        self.dispatching.add_arc_out(self.dispatch_failure)
-        self.dispatch_success_place.add_arc_out(self.dispatch_success)
-        self.dispatch_failure_place.add_arc_out(self.dispatch_failure)
+        self.internal_start_place.add_arc_out(self.dispatch_transition)
+        self.dispatch_transition.add_arc_out(self.dispatching_place)
+        self.dispatching_place.add_arc_out(self.dispatch_success_transition)
+        self.dispatching_place.add_arc_out(self.dispatch_failure_transition)
+        self.dispatch_success_place.add_arc_out(
+                self.dispatch_success_transition)
+        self.dispatch_failure_place.add_arc_out(
+                self.dispatch_failure_transition)
 
-        self.dispatch_success.add_arc_out(self.pending)
-        self.dispatch_failure.add_arc_out(self.failure)
+        self.dispatch_success_transition.add_arc_out(self.pending_place)
+        self.dispatch_failure_transition.add_arc_out(
+                self.internal_failure_place)
 
-        self.pending.add_arc_out(self.execute_begin)
-        self.execute_begin_place.add_arc_out(self.execute_begin)
-        self.execute_begin.add_arc_out(self.running)
+        self.pending_place.add_arc_out(self.execute_begin_transition)
+        self.execute_begin_place.add_arc_out(self.execute_begin_transition)
+        self.execute_begin_transition.add_arc_out(self.running_place)
 
-        self.running.add_arc_out(self.execute_success)
-        self.running.add_arc_out(self.execute_failure)
-        self.execute_success_place.add_arc_out(self.execute_success)
-        self.execute_failure_place.add_arc_out(self.execute_failure)
+        self.running_place.add_arc_out(self.execute_success_transition)
+        self.running_place.add_arc_out(self.execute_failure_transition)
+        self.execute_success_place.add_arc_out(self.execute_success_transition)
+        self.execute_failure_place.add_arc_out(self.execute_failure_transition)
 
-        self.execute_success.add_arc_out(self.success)
-        self.execute_failure.add_arc_out(self.failure)
+        self.execute_success_transition.add_arc_out(self.internal_success_place)
+        self.execute_failure_transition.add_arc_out(self.internal_failure_place)
 
 
 class LSFCommandNet(ShellCommandNet):
