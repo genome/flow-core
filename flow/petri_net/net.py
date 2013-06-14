@@ -150,13 +150,15 @@ class Net(rom.Object):
     def color_group(self, idx):
         return self.color_groups[idx]
 
-    def add_color_group(self, size, parent_color=None, parent_color_group=None):
+    def add_color_group(self, size, parent_color=None,
+            parent_color_group_idx=None):
         group_id = self._incr_counter(_COLOR_GROUP_KEY) - 1
         end = self._incr_counter(_COLOR_KEY, size)
         begin = end - size
 
         cg = ColorGroup(idx=group_id, parent_color=parent_color,
-                parent_color_group=parent_color_group, begin=begin, end=end)
+                parent_color_group_idx=parent_color_group_idx,
+                begin=begin, end=end)
 
         self.color_groups[group_id] = cg
 

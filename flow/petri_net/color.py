@@ -7,7 +7,7 @@ Color = int
 
 
 ColorGroup = namedtuple("ColorGroup", ["idx", "parent_color",
-        "parent_color_group", "begin", "end"])
+        "parent_color_group_idx", "begin", "end"])
 
 ColorGroup.size = property(lambda self: self.end - self.begin)
 ColorGroup.colors = property(lambda self: range(self.begin, self.end))
