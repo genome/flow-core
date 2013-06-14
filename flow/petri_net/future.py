@@ -32,10 +32,14 @@ class FutureNet(object):
         trans.add_arc_in(src)
         trans.add_arc_out(dest)
 
+        return trans
+
     def bridge_transitions(self, src, dest, name=''):
         place = self.add_place(name)
         place.add_arc_in(src)
         place.add_arc_out(dest)
+
+        return place
 
 
 class FutureNode(object):
