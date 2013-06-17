@@ -29,8 +29,6 @@ class ConfigureRabbitMQCommand(CommandBase):
     def _execute(self, parsed_arguments):
         exchanges, queues, bindings = self._parse_config()
 
-        yield self.broker.connect()
-
         yield self._declare_exchanges(exchanges)
         yield self._declare_queues(queues)
         yield self._declare_bindings(bindings)
@@ -58,38 +56,38 @@ class ConfigureRabbitMQCommand(CommandBase):
 
     def _declare_exchanges(self, exchanges):
         deferreds = []
-        deferreds.append(self.broker.declare_exchange('alt'))
+        deferreds.append(self.broker.channel.declare_exchange('alt'))
 
         arguments = {'alternate-exchange': 'alt'}
-        deferreds.append(self.broker.declare_exchange(
+        deferreds.append(self.broker.channel.declare_exchange(
             'dead', arguments=arguments))
 
         for exchange_name in exchanges:
-            deferreds.append(self.broker.declare_exchange(
+            deferreds.append(self.broker.channel.declare_exchange(
                 exchange_name, arguments=arguments))
 
         return defer.DeferredList(deferreds)
 
     def _declare_queues(self, queues):
         deferreds = []
-        deferreds.append(self.broker.declare_queue('missing_routing_key'))
+        deferreds.append(self.broker.channel.declare_queue('missing_routing_key'))
 
         arguments = {'x-dead-letter-exchange': 'dead'}
         for queue in queues:
-            deferreds.append(self.broker.declare_queue(
+            deferreds.append(self.broker.channel.declare_queue(
                 queue, arguments=arguments))
-            deferreds.append(self.broker.declare_queue('dead_' + queue))
+            deferreds.append(self.broker.channel.declare_queue('dead_' + queue))
 
         return defer.DeferredList(deferreds)
 
     def _declare_bindings(self, bindings):
         deferreds = []
-        deferreds.append(self.broker.bind_queue(
+        deferreds.append(self.broker.channel.bind_queue(
             'missing_routing_key', 'alt', '#'))
 
         for queue, exchange, topic in bindings:
-            deferreds.append(self.broker.bind_queue(queue, exchange, topic))
-            deferreds.append(self.broker.bind_queue(
+            deferreds.append(self.broker.channel.bind_queue(queue, exchange, topic))
+            deferreds.append(self.broker.channel.bind_queue(
                 'dead_' + queue, 'dead', topic))
 
         return defer.DeferredList(deferreds)
