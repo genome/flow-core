@@ -3,6 +3,7 @@ from flow.protocol.exceptions import InvalidMessageException
 from flow import interfaces
 from injector import inject
 from twisted.internet import defer
+from flow.defer_utils import add_callback_and_default_errback
 
 
 import logging
@@ -27,13 +28,13 @@ class AmqpBroker(interfaces.IBroker):
     def register_handler(self, handler):
         LOG.debug("Registering handler on queue '%s'.", handler.queue_name)
         connect_deferred = self.channel.connect()
-        connect_deferred.addCallback(self._start_handler, handler)
+        add_callback_and_default_errback(connect_deferred, self._start_handler, handler)
         return connect_deferred
 
     def _start_handler(self, channel, handler):
         queue_name = handler.queue_name
         consume_deferred = channel.basic_consume(queue=queue_name)
-        consume_deferred.addCallback(self._begin_get_loop, handler)
+        add_callback_and_default_errback(consume_deferred, self._begin_get_loop, handler)
         return channel
 
     def _begin_get_loop(self, consume_info, handler):

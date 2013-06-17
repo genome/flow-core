@@ -2,6 +2,8 @@ from injector import inject
 from twisted.internet import defer
 from flow.brokers.amqp.connection_manager import ConnectionManager
 from flow.brokers.amqp.publisher_confirm_manager import PublisherConfirmManager
+from flow.exit_codes import EXECUTE_ERROR
+from flow.defer_utils import add_callback_and_default_errback
 
 import logging
 import pika
@@ -22,15 +24,14 @@ class ChannelFacade(object):
     def connect(self):
         connect_deferred = self.connection_manager.connect()
 
-        # only do _on_connected once
-        if not connect_deferred.called:
-            connect_deferred.addCallback(self._on_connected)
+        add_callback_and_default_errback(connect_deferred, self._on_connected)
         return connect_deferred
 
     def _on_connected(self, pika_channel):
-        self._pika_channel = pika_channel
-        self._publisher_confirm_manager = PublisherConfirmManager(
-                self._pika_channel)
+        if self._pika_channel is None:
+            self._pika_channel = pika_channel
+            self._publisher_confirm_manager = PublisherConfirmManager(
+                    self._pika_channel)
         return pika_channel
 
     def bind_queue(self, queue_name, exchange_name, topic, **properties):
@@ -72,12 +73,14 @@ class ChannelFacade(object):
             connect_deferred = self.connect()
 
             deferred = defer.Deferred()
-            connect_deferred.addCallback(self._do_on_channel, fn_name=fn_name,
-                    args=args, kwargs=kwargs, deferred=deferred)
-            return deferred
+            LOG.debug("Setting deferred to callback %s", fn_name)
+            add_callback_and_default_errback(connect_deferred, self._do_on_channel,
+                    fn_name=fn_name, args=args, kwargs=kwargs, deferred=deferred)
         else:
             channel_fn = getattr(self._pika_channel, fn_name)
-            return channel_fn(*args, **kwargs)
+            LOG.debug("Immediately Executing %s", fn_name)
+            deferred = channel_fn(*args, **kwargs)
+        return deferred
 
     @staticmethod
     def _do_on_channel(pika_channel, fn_name, args, kwargs, deferred):

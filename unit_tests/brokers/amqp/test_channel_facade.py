@@ -31,11 +31,8 @@ class ChannelFacadeTests(unittest.TestCase):
         connect_deferred.callback(channel)
         self.cf._on_connected.assert_called_once_with(channel)
 
-        # another call to connect gets same deferred but does not
-        # add _on_connected as a callback
         same_connect_deferred = self.cf.connect()
         self.assertIs(same_connect_deferred, connect_deferred)
-        self.cf._on_connected.assert_called_once_with(channel)
 
     def test_private_on_connected(self):
         fake_pcm = mock.Mock()

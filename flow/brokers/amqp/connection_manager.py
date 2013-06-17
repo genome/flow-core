@@ -5,7 +5,9 @@ from injector import inject
 from pika.adapters import twisted_connection
 from twisted.internet import reactor, defer, protocol
 from flow.exit_codes import (EXECUTE_SYSTEM_FAILURE,
+        EXECUTE_ERROR,
         EXECUTE_SERVICE_UNAVAILABLE)
+from flow.defer_utils import add_callback_and_default_errback
 
 import logging
 import pika
@@ -72,7 +74,7 @@ class ConnectionManager(object):
 
     def _on_connectTCP(self, connection):
         self._connection = connection
-        connection.ready.addCallback(self._on_ready)
+        add_callback_and_default_errback(connection.ready, self._on_ready)
         connection.add_on_close_callback(self._on_pika_connection_closed)
         return connection
 
