@@ -1,4 +1,3 @@
-from flow import exit_codes
 from flow.configuration.settings.injector import setting
 from flow.util.exit import exit_process
 from injector import inject
@@ -7,7 +6,7 @@ from twisted.internet import reactor, defer, protocol
 from flow.exit_codes import (EXECUTE_SYSTEM_FAILURE,
         EXECUTE_ERROR,
         EXECUTE_SERVICE_UNAVAILABLE)
-from flow.defer_utils import add_callback_and_default_errback
+from flow.util.defer import add_callback_and_default_errback
 
 import logging
 import pika
@@ -94,18 +93,20 @@ class ConnectionManager(object):
         LOG.debug('Established connection to AMQP')
         try:
             self._channel = yield connection.channel()
-        except:
-            LOG.exception("Unexpected Exception raised while creating connection channel.")
-            os._exit(EXECUTE_ERROR)
+        except Exception:
+            LOG.exception("Unexpected Exception raised while creating "
+            "connection channel.")
+            exit_process(EXECUTE_ERROR)
         LOG.debug('Channel is open')
 
         if self.connection_params.prefetch_count:
             try:
                 yield self._channel.basic_qos(
                     prefetch_count=self.connection_params.prefetch_count)
-            except:
-                LOG.exception("Unexpected Exception raised while setting prefetch_count")
-                os._exit(EXECUTE_ERROR)
+            except Exception:
+                LOG.exception("Unexpected Exception raised while setting "
+                "prefetch_count")
+                exit_process(EXECUTE_ERROR)
 
 
         self.state = CONNECTED

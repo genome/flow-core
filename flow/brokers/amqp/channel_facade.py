@@ -2,8 +2,7 @@ from injector import inject
 from twisted.internet import defer
 from flow.brokers.amqp.connection_manager import ConnectionManager
 from flow.brokers.amqp.publisher_confirm_manager import PublisherConfirmManager
-from flow.exit_codes import EXECUTE_ERROR
-from flow.defer_utils import add_callback_and_default_errback
+from flow.util.defer import add_callback_and_default_errback
 
 import logging
 import pika
@@ -74,8 +73,9 @@ class ChannelFacade(object):
 
             deferred = defer.Deferred()
             LOG.debug("Setting deferred to callback %s", fn_name)
-            add_callback_and_default_errback(connect_deferred, self._do_on_channel,
-                    fn_name=fn_name, args=args, kwargs=kwargs, deferred=deferred)
+            add_callback_and_default_errback(connect_deferred,
+                    self._do_on_channel, fn_name=fn_name, args=args,
+                    kwargs=kwargs, deferred=deferred)
         else:
             channel_fn = getattr(self._pika_channel, fn_name)
             LOG.debug("Immediately Executing %s", fn_name)
