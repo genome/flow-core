@@ -8,7 +8,6 @@ import unittest
 class ConfigureRabbitMQCommandTest(unittest.TestCase):
     def setUp(self):
         self.broker = mock.MagicMock()
-        self.broker.connect.return_value = defer.succeed(None)
 
         self.bindings = {
             'X-NAMES': {
@@ -59,10 +58,10 @@ class ConfigureRabbitMQCommandTest(unittest.TestCase):
 
         arguments = {'alternate-exchange': 'alt'}
 
-        self.broker.declare_exchange.assert_any_call('alt')
-        self.broker.declare_exchange.assert_any_call(
+        self.broker.channel.declare_exchange.assert_any_call('alt')
+        self.broker.channel.declare_exchange.assert_any_call(
                 'dead', arguments=arguments)
-        self.broker.declare_exchange.assert_any_call(
+        self.broker.channel.declare_exchange.assert_any_call(
                 'X-NAMES', arguments=arguments)
 
     def test_declare_queues(self):
@@ -70,12 +69,12 @@ class ConfigureRabbitMQCommandTest(unittest.TestCase):
 
         self.command._declare_queues(queues)
 
-        self.broker.declare_queue.assert_any_call('missing_routing_key')
+        self.broker.channel.declare_queue.assert_any_call('missing_routing_key')
 
         arguments = {'x-dead-letter-exchange': 'dead'}
         for q in queues:
-            self.broker.declare_queue.assert_any_call(q, arguments=arguments)
-            self.broker.declare_queue.assert_any_call('dead_%s' % q)
+            self.broker.channel.declare_queue.assert_any_call(q, arguments=arguments)
+            self.broker.channel.declare_queue.assert_any_call('dead_%s' % q)
 
 
     def test_declare_bindings(self):
@@ -86,11 +85,11 @@ class ConfigureRabbitMQCommandTest(unittest.TestCase):
 
         self.command._declare_bindings(bindings)
 
-        self.broker.bind_queue.assert_any_call(
+        self.broker.channel.bind_queue.assert_any_call(
                 'missing_routing_key', 'alt', '#')
         for q, x, k in bindings:
-            self.broker.bind_queue.assert_any_call(q, x, k)
-            self.broker.bind_queue.assert_any_call('dead_%s' % q, 'dead', k)
+            self.broker.channel.bind_queue.assert_any_call(q, x, k)
+            self.broker.channel.bind_queue.assert_any_call('dead_%s' % q, 'dead', k)
 
 
 if '__main__' == __name__:
