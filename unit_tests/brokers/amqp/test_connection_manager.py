@@ -82,6 +82,7 @@ class ConnectionManagerTests(unittest.TestCase):
 
         self.cm._create_pika_connection = mock.Mock()
         self.cm._create_pika_connection.return_value = fake_pika_connection
+        return fake_pika_connection
 
     def test_private_attempt_to_connect(self):
         self._help_with_attempt_to_connect()
@@ -90,10 +91,16 @@ class ConnectionManagerTests(unittest.TestCase):
 
         self.assertEqual(self.cm.state, CONNECTING)
         self.assertEqual(self.cm._connection_attempts, 1)
-
-        self.assertTrue(self.cm._connection is self.fake_pika_connection)
+        self.assertEqual(len(self._connect_deferreds), 1)
         self.cm._create_pika_connection.assert_called_once_with(
                 connection_params)
+
+    def test_private_on_connectTCP(self):
+        connection = mock.Mock()
+        return_value = self.cm._on_connectTCP(connection)
+        self.assertIs(return_value, connection)
+
+        self.assertTrue(self.cm._connection is connection)
 
         self.cm._connection.ready.addCallback.assert_called_once_with(
                 self.cm._on_ready)
@@ -101,7 +108,6 @@ class ConnectionManagerTests(unittest.TestCase):
         self.cm._connection.add_on_close_callback.assert_called_once_with(
                 self.cm._on_pika_connection_closed)
 
-        self.assertEqual(len(self._connect_deferreds), 1)
 
     def test_private_create_pika_connection(self):
         fake_pika_cp = mock.Mock()

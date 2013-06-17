@@ -64,13 +64,17 @@ class ConnectionManager(object):
                 'on port: %s', self.connection_params.hostname,
                 self.connection_params.port)
 
-        self._connection = self._create_pika_connection(self.connection_params)
-        self._connection.ready.addCallback(self._on_ready)
-        self._connection.add_on_close_callback(self._on_pika_connection_closed)
+        pika_connection = self._create_pika_connection(self.connection_params)
 
-        deferred = self._connection.connectTCP(self.connection_params.hostname,
+        deferred = pika_connection.connectTCP(self.connection_params.hostname,
                 self.connection_params.port)
-        deferred.addErrback(self._on_connectTCP_failed)
+        deferred.addCallbacks(self._on_connectTCP, self._on_connectTCP_failed)
+
+    def _on_connectTCP(self, connection):
+        self._connection = connection
+        connection.ready.addCallback(self._on_ready)
+        connection.add_on_close_callback(self._on_pika_connection_closed)
+        return connection
 
     @staticmethod
     def _create_pika_connection(connection_params):
