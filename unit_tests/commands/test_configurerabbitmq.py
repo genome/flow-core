@@ -73,7 +73,8 @@ class ConfigureRabbitMQCommandTest(unittest.TestCase):
 
         arguments = {'x-dead-letter-exchange': 'dead'}
         for q in queues:
-            self.broker.channel.declare_queue.assert_any_call(q, arguments=arguments)
+            self.broker.channel.declare_queue.assert_any_call(q,
+                    arguments=arguments)
             self.broker.channel.declare_queue.assert_any_call('dead_%s' % q)
 
 
@@ -89,7 +90,8 @@ class ConfigureRabbitMQCommandTest(unittest.TestCase):
                 'missing_routing_key', 'alt', '#')
         for q, x, k in bindings:
             self.broker.channel.bind_queue.assert_any_call(q, x, k)
-            self.broker.channel.bind_queue.assert_any_call('dead_%s' % q, 'dead', k)
+            self.broker.channel.bind_queue.assert_any_call('dead_%s' % q,
+                    'dead', k)
 
 
 if '__main__' == __name__:

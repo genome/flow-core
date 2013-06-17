@@ -70,7 +70,8 @@ class ConfigureRabbitMQCommand(CommandBase):
 
     def _declare_queues(self, queues):
         deferreds = []
-        deferreds.append(self.broker.channel.declare_queue('missing_routing_key'))
+        deferreds.append(self.broker.channel.declare_queue(
+            'missing_routing_key'))
 
         arguments = {'x-dead-letter-exchange': 'dead'}
         for queue in queues:
@@ -86,7 +87,8 @@ class ConfigureRabbitMQCommand(CommandBase):
             'missing_routing_key', 'alt', '#'))
 
         for queue, exchange, topic in bindings:
-            deferreds.append(self.broker.channel.bind_queue(queue, exchange, topic))
+            deferreds.append(self.broker.channel.bind_queue(queue, exchange,
+                topic))
             deferreds.append(self.broker.channel.bind_queue(
                 'dead_' + queue, 'dead', topic))
 
