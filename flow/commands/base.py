@@ -27,7 +27,10 @@ class CommandBase(object):
 
     @defer.inlineCallbacks
     def _execute_and_stop(self, parsed_arguments):
-        yield self._execute(parsed_arguments)
+        try:
+            yield self._execute(parsed_arguments)
+        except:
+            LOG.exception("Unexpected Exception raised in command execution.")
         LOG.debug("Stopping the twisted reactor.")
         reactor.stop()
 

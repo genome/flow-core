@@ -92,12 +92,21 @@ class ConnectionManager(object):
     @defer.inlineCallbacks
     def _on_ready(self, connection):
         LOG.debug('Established connection to AMQP')
-        self._channel = yield connection.channel()
+        try:
+            self._channel = yield connection.channel()
+        except:
+            LOG.exception("Unexpected Exception raised while creating connection channel.")
+            os._exit(EXECUTE_ERROR)
         LOG.debug('Channel is open')
 
         if self.connection_params.prefetch_count:
-            yield self._channel.basic_qos(
+            try:
+                yield self._channel.basic_qos(
                     prefetch_count=self.connection_params.prefetch_count)
+            except:
+                LOG.exception("Unexpected Exception raised while setting prefetch_count")
+                os._exit(EXECUTE_ERROR)
+
 
         self.state = CONNECTED
         self._connect_deferred.callback(self._channel)
