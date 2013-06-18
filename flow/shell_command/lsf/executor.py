@@ -23,12 +23,14 @@ LOG = logging.getLogger(__name__)
 class LSFExecutor(ExecutorBase):
     def __init__(self):
         if self.pre_exec:
-            self.pre_exec_command = _find_executable(self.pre_exec)
+            self.pre_exec_command = [_find_executable(self.pre_exec[0])] +\
+                self.pre_exec[1:]
         else:
             self.pre_exec_command = None
 
         if self.post_exec:
-            self.post_exec_command = _find_executable(self.post_exec)
+            self.post_exec_command = [_find_executable(self.post_exec[0])] +\
+                self.post_exec[1:]
         else:
             self.post_exec_command = None
 
