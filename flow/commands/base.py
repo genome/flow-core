@@ -16,7 +16,11 @@ class CommandBase(object):
 
     @staticmethod
     def annotate_parser(parser):
-        raise NotImplementedError
+        """
+        Add options to the command-line arguments parser
+        (an argparse.ArgumentParser object)
+        """
+        pass
 
     def _setup(self, parsed_arguments):
         """
