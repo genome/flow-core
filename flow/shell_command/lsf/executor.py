@@ -17,7 +17,7 @@ LOG = logging.getLogger(__name__)
 
 @inject(pre_exec=setting('shell_command.lsf.pre_exec'),
         post_exec=setting('shell_command.lsf.post_exec'),
-        resource_definitions=setting('shell_command.lsf.resources'),
+        resource_definitions=setting('shell_command.lsf.available_resources'),
         option_definitions=setting('shell_command.lsf.available_options'),
         default_options=setting('shell_command.lsf.default_options'))
 class LSFExecutor(ExecutorBase):
@@ -37,8 +37,13 @@ class LSFExecutor(ExecutorBase):
         self.available_options = factory.build_objects(
                 self.option_definitions, options, 'LSFOption')
 
-        self.available_resources = factory.build_objects(
-                self.resource_definitions, resource, 'ResourceType')
+        self.available_resources = {}
+        self.available_resources['limit'] = factory.build_objects(
+                self.resource_definitions.get('limit', {}), resource)
+        self.available_resources['request'] = factory.build_objects(
+                self.resource_definitions.get('request', {}), resource)
+        self.available_resources['reserve'] = factory.build_objects(
+                self.resource_definitions.get('reserve', {}), resource)
 
 
     def on_job_id(self, job_id, callback_data, service_interfaces):
