@@ -23,14 +23,12 @@ LOG = logging.getLogger(__name__)
 class LSFExecutor(ExecutorBase):
     def __init__(self):
         if self.pre_exec:
-            self.pre_exec_command = [_find_executable(self.pre_exec[0])] +\
-                self.pre_exec[1:]
+            self.pre_exec_command = _localize_cmd(self.pre_exec)
         else:
             self.pre_exec_command = None
 
         if self.post_exec:
-            self.post_exec_command = [_find_executable(self.post_exec[0])] +\
-                self.post_exec[1:]
+            self.post_exec_command = _localize_cmd(self.post_exec)
         else:
             self.post_exec_command = None
 
@@ -172,6 +170,10 @@ def make_pre_post_command_string(executable, executor_data, response_places):
 
     return 'bash -c "%s"' % ' '.join(base_command_line)
 
+def _localize_cmd(cmd):
+    command = cmd[0]
+    localized_command = _find_executable(command)
+    return [localized_command] + cmd[1:]
 
 def _find_executable(name):
     executables = which(name)
