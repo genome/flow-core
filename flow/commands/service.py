@@ -15,8 +15,6 @@ class ServiceCommand(CommandBase):
         for handler in self.handlers:
             self.broker.register_handler(handler)
 
-        self.broker.connect()
-
     def _execute(self, parsed_arguments):
         """
         Returns a deferred that will never fire.
