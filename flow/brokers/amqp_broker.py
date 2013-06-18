@@ -3,6 +3,8 @@ from flow.protocol.exceptions import InvalidMessageException
 from flow import interfaces
 from injector import inject
 from twisted.internet import defer
+from flow.util.exit import exit_process
+from flow.exit_codes import EXECUTE_SYSTEM_FAILURE
 from flow.util.defer import add_callback_and_default_errback
 
 
@@ -55,9 +57,9 @@ class AmqpBroker(interfaces.IBroker):
         return deferred
 
     def _on_get_failed(self, reason, handler):
-        LOG.warning("Get from queue '%s' failed: %s", handler.queue_name,
+        LOG.critical("Get from queue '%s' failed: %s", handler.queue_name,
                 reason)
-        return reason
+        exit_process(EXECUTE_SYSTEM_FAILURE)
 
     def _on_message_recieved(self, get_info, queue, handler):
         (channel, basic_deliver, properties, encoded_message) = get_info

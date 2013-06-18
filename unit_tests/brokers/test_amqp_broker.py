@@ -88,9 +88,11 @@ class AmqpBrokerTests(unittest.TestCase):
     def test_private_on_get_failed(self):
         reason = mock.Mock()
         handler = mock.Mock()
+        fake_exit = mock.Mock()
 
-        return_value = self.b._on_get_failed(reason, handler=handler)
-        self.assertIs(return_value, reason)
+        with mock.patch('flow.brokers.amqp_broker.exit_process', new=fake_exit):
+            self.b._on_get_failed(reason, handler=handler)
+            self.assertEqual(fake_exit.call_count, 1)
 
     def test_private_on_message_recieved(self):
         channel = mock.Mock()
