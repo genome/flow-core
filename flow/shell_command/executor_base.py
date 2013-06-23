@@ -1,7 +1,6 @@
 from flow.configuration.settings.injector import setting
 from flow.shell_command import util
 from flow.shell_command.interfaces import IShellCommandExecutor
-from flow.util import environment as env_util
 from flow.util.exit import exit_process
 from injector import inject
 from twisted.internet import defer
@@ -95,15 +94,9 @@ class ExecutorBase(IShellCommandExecutor):
             send_socket.send(str(job_id))
             send_socket.close()
 
-        util.set_gid_and_uid_or_exit(execution_environment.group_id,
-                execution_environment.user_id)
-        env_util.set_environment(self.default_environment,
-                execution_environment.environment, self.mandatory_environment)
-        try:
-            os.chdir(execution_environment.working_directory)
-        except OSError:
-            os.kill(os.getpid(), 9)
-
+        execution_environment.enter(
+                default_environment=self.default_environment,
+                mandatory_environment=self.mandatory_environment)
         try:
             exit_code = self.execute_command_line(command_line=command_line,
                     job_id_callback=send_job_id, executor_data=executor_data,
