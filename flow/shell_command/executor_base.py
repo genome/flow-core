@@ -37,13 +37,14 @@ class ExecutorBase(IShellCommandExecutor):
         return defer.succeed(None)
 
 
-    def execute(self, group_id, user_id, environment, working_directory,
+    def execute(self, execution_environment,
             command_line, executor_data, callback_data,
             resources, service_interfaces):
         deferreds = []
 
-        child_pid = self.fork_child(deferreds, group_id, user_id, environment,
-                working_directory, command_line, executor_data, callback_data,
+        child_pid = self.fork_child(deferreds,
+                execution_environment,
+                command_line, executor_data, callback_data,
                 resources, service_interfaces)
         exit_code, signal_number = util.wait_for_pid(child_pid)
 
@@ -58,16 +59,16 @@ class ExecutorBase(IShellCommandExecutor):
 
         return defer.gatherResults(deferreds, consumeErrors=True)
 
-    def fork_child(self, deferreds, group_id, user_id, environment,
-            working_directory, command_line, executor_data, callback_data,
+    def fork_child(self, deferreds, execution_environment,
+            command_line, executor_data, callback_data,
             resources, service_interfaces):
         parent_socket, child_socket = util.socketpair_or_exit()
 
         child_pid = util.fork_or_exit()
         if child_pid == 0:
             parent_socket.close()
-            child_exit_code = self._child(child_socket, group_id, user_id,
-                    environment, working_directory, command_line,
+            child_exit_code = self._child(child_socket,
+                    execution_environment, command_line,
                     executor_data, resources)
             exit_process(child_exit_code)
 
@@ -88,17 +89,18 @@ class ExecutorBase(IShellCommandExecutor):
 
         return child_pid
 
-    def _child(self, send_socket, group_id, user_id, environment,
-            working_directory, command_line, executor_data, resources):
+    def _child(self, send_socket, execution_environment,
+            command_line, executor_data, resources):
         def send_job_id(job_id):
             send_socket.send(str(job_id))
             send_socket.close()
 
-        util.set_gid_and_uid_or_exit(group_id, user_id)
+        util.set_gid_and_uid_or_exit(execution_environment.group_id,
+                execution_environment.user_id)
         env_util.set_environment(self.default_environment,
-                environment, self.mandatory_environment)
+                execution_environment.environment, self.mandatory_environment)
         try:
-            os.chdir(working_directory)
+            os.chdir(execution_environment.working_directory)
         except OSError:
             os.kill(os.getpid(), 9)
 

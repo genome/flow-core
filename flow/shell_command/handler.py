@@ -2,6 +2,7 @@ from flow.configuration.settings.injector import setting
 from flow.handler import Handler
 from flow.interfaces import IServiceLocator
 from flow.service_locator import ServiceLocator
+from flow.shell_command.execution_environment import ExecutionEnvironment
 from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.shell_command.messages import ShellCommandSubmitMessage
 from flow.shell_command import resource
@@ -27,14 +28,18 @@ class ShellCommandSubmitMessageHandler(Handler):
         resources = resource.make_all_resource_objects(
                 message.get('resources', {}), self.resource_types)
 
-        return self.executor.execute(
-                command_line=message['command_line'],
+        execution_environment = ExecutionEnvironment(
                 group_id=message['group_id'],
                 user_id=message['user_id'],
-                callback_data=message.get('callback_data', {}),
                 environment=message.get('environment', {}),
+                working_directory=message.get('working_directory', '/tmp')
+        )
+
+        return self.executor.execute(
+                command_line=message['command_line'],
+                execution_environment=execution_environment,
+                callback_data=message.get('callback_data', {}),
                 executor_data=message.get('executor_data', {}),
-                working_directory=message.get('working_directory', '/tmp'),
                 resources=resources,
                 service_interfaces=self.service_interfaces)
 

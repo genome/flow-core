@@ -1,5 +1,6 @@
 from flow import exit_codes
 from flow.shell_command import executor_base
+from flow.shell_command.execution_environment import *
 from twisted.internet import defer
 
 import mock
@@ -53,8 +54,9 @@ class ExecutorBaseTest(unittest.TestCase):
         e = SucceedingExecutor(default_environment={}, mandatory_environment={})
         set_job_id = '42'
         with mock.patch('flow.shell_command.util.set_gid_and_uid_or_exit'):
-            deferred = e.execute(group_id=None, user_id=None, environment={},
-                    working_directory='/tmp', command_line=['a', 'b', 'c'],
+            deferred = e.execute(
+                    execution_environment=NullExecutionEnvironment(),
+                    command_line=['a', 'b', 'c'],
                     executor_data={'set_job_id': set_job_id}, callback_data={},
                     resources={}, service_interfaces={})
 
@@ -64,8 +66,9 @@ class ExecutorBaseTest(unittest.TestCase):
     def test_failure(self):
         e = FailingExecutor(default_environment={}, mandatory_environment={})
         with mock.patch('flow.shell_command.util.set_gid_and_uid_or_exit'):
-            deferred = e.execute(group_id=None, user_id=None, environment={},
-                    working_directory='/tmp', command_line=['a', 'b', 'c'],
+            deferred = e.execute(
+                    execution_environment=NullExecutionEnvironment(),
+                    command_line=['a', 'b', 'c'],
                     executor_data={}, callback_data={}, resources={},
                     service_interfaces={})
 
@@ -75,8 +78,9 @@ class ExecutorBaseTest(unittest.TestCase):
         e = ErrorExecutor(default_environment={}, mandatory_environment={})
 
         with mock.patch('flow.shell_command.util.set_gid_and_uid_or_exit'):
-            deferred = e.execute(group_id=None, user_id=None, environment={},
-                    working_directory='/tmp', command_line=['a', 'b', 'c'],
+            deferred = e.execute(
+                    execution_environment=NullExecutionEnvironment(),
+                    command_line=['a', 'b', 'c'],
                     executor_data={}, callback_data={}, resources={},
                     service_interfaces={})
 
@@ -87,18 +91,24 @@ class ExecutorBaseTest(unittest.TestCase):
         e = SucceedingExecutor(default_environment={}, mandatory_environment={})
 
         socket = mock.Mock()
+
         group_id = mock.Mock()
         user_id = mock.Mock()
         working_directory = mock.Mock()
+        environment = {
+            'sample': 'env',
+        }
+
+        execution_environment = ExecutionEnvironment(
+                group_id=group_id, user_id=user_id,
+                working_directory=working_directory,
+                environment=environment)
+
         command_line = mock.Mock()
         executor_data = {
             'set_job_id': 'awesome job id',
         }
         resources = mock.Mock()
-
-        environment = {
-            'sample': 'env',
-        }
 
         chdir = mock.Mock()
         set_gid_and_uid_or_exit = mock.Mock()
@@ -106,9 +116,8 @@ class ExecutorBaseTest(unittest.TestCase):
                 'flow.shell_command.util.set_gid_and_uid_or_exit',
                 new=set_gid_and_uid_or_exit):
             with mock.patch('os.chdir', new=chdir):
-                exit_code = e._child(socket, group_id, user_id, environment,
-                        working_directory, command_line,
-                        executor_data, resources)
+                exit_code = e._child(socket, execution_environment,
+                        command_line, executor_data, resources)
 
         set_gid_and_uid_or_exit.assert_called_once_with(group_id, user_id)
         chdir.assert_called_once_with(working_directory)
