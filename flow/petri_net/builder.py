@@ -110,6 +110,7 @@ def convert_action_args(orig_args, substitutions):
         try:
             args[name] = substitutions.get(value, value)
         except TypeError:
+            # value is unhashable type
             args[name] = value
 
     return args

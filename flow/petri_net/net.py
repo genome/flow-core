@@ -21,6 +21,7 @@ _COLOR_GROUP_KEY = "G"
 
 class Net(rom.Object):
     # XXX Do we need to keep these around?
+    # add group_id?
     required_constants = ["environment", "user_id", "working_directory"]
 
     name = rom.Property(rom.String)
