@@ -2,10 +2,11 @@ from flow.configuration.settings.injector import setting
 from flow.handler import Handler
 from flow.interfaces import IServiceLocator
 from flow.service_locator import ServiceLocator
+from flow.shell_command import resource
 from flow.shell_command.execution_environment import ExecutionEnvironment
 from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.shell_command.messages import ShellCommandSubmitMessage
-from flow.shell_command import resource
+from flow.util import environment as env_util
 from injector import inject
 from twisted.internet import defer
 
@@ -28,12 +29,10 @@ class ShellCommandSubmitMessageHandler(Handler):
                 self.resource_definitions)
 
     def assemble_environment(self, message):
-        env = {}
-        env.update(self.default_environment)
-        env.update(message.get('environment', {}))
-        env.update(self.mandatory_environment)
-
-        return env
+        return env_util.merge_and_sanitize_environments(
+                self.default_environment,
+                message.get('environment', {}),
+                self.mandatory_environment)
 
     def _handle_message(self, message):
         resources = resource.make_all_resource_objects(
