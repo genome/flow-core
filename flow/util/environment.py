@@ -2,7 +2,9 @@ from contextlib import contextmanager
 import logging
 import os
 
+
 LOG = logging.getLogger(__name__)
+
 
 @contextmanager
 def environment(environment_dicts):
