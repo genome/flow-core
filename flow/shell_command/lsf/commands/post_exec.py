@@ -2,7 +2,6 @@ from flow import exit_codes
 from flow.commands.base import CommandBase
 from flow.configuration.inject.broker import BrokerConfiguration
 from flow.configuration.inject.orchestrator import OrchestratorConfiguration
-from flow.configuration.settings.injector import setting
 from flow.util.exit import exit_process
 from injector import inject
 
