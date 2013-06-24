@@ -1,7 +1,6 @@
 from flow.configuration.settings.injector import setting
 from flow.handler import Handler
 from flow.interfaces import IServiceLocator
-from flow.service_locator import ServiceLocator
 from flow.shell_command import resource
 from flow.shell_command.execution_environment import ExecutionEnvironment
 from flow.shell_command.interfaces import IShellCommandExecutor
