@@ -16,13 +16,24 @@ LOG = logging.getLogger(__name__)
 
 
 @inject(executor=IShellCommandExecutor, service_interfaces=IServiceLocator,
-        resource_definitions=setting('shell_command.resources'))
+        resource_definitions=setting('shell_command.resources'),
+        default_environment=setting('shell_command.default_environment', {}),
+        mandatory_environment=
+            setting('shell_command.mandatory_environment', {}))
 class ShellCommandSubmitMessageHandler(Handler):
     message_class = ShellCommandSubmitMessage
 
     def __init__(self):
         self.resource_types = resource.make_resource_types(
                 self.resource_definitions)
+
+    def assemble_environment(self, message):
+        env = {}
+        env.update(self.default_environment)
+        env.update(message.get('environment', {}))
+        env.update(self.mandatory_environment)
+
+        return env
 
     def _handle_message(self, message):
         resources = resource.make_all_resource_objects(
@@ -31,7 +42,7 @@ class ShellCommandSubmitMessageHandler(Handler):
         execution_environment = ExecutionEnvironment(
                 group_id=message['group_id'],
                 user_id=message['user_id'],
-                environment=message.get('environment', {}),
+                environment=self.assemble_environment(message),
                 working_directory=message.get('working_directory', '/tmp')
         )
 

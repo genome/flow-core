@@ -8,8 +8,7 @@ import unittest
 
 class ForkExecutorTest(unittest.TestCase):
     def setUp(self):
-        self.executor = executor.ForkExecutor(
-                default_environment={}, mandatory_environment={})
+        self.executor = executor.ForkExecutor()
 
     def test_succeeded_job(self):
         job_id_callback = mock.Mock()

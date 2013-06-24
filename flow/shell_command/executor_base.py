@@ -1,8 +1,6 @@
-from flow.configuration.settings.injector import setting
 from flow.shell_command import util
 from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.util.exit import exit_process
-from injector import inject
 from twisted.internet import defer
 
 import abc
@@ -13,10 +11,6 @@ import os
 LOG = logging.getLogger(__name__)
 
 
-
-@inject(default_environment=setting('shell_command.default_environment', {}),
-        mandatory_environment=
-            setting('shell_command.mandatory_environment', {}))
 class ExecutorBase(IShellCommandExecutor):
     @abc.abstractmethod
     def execute_command_line(self, job_id_callback, command_line,
@@ -94,9 +88,7 @@ class ExecutorBase(IShellCommandExecutor):
             send_socket.send(str(job_id))
             send_socket.close()
 
-        execution_environment.enter(
-                default_environment=self.default_environment,
-                mandatory_environment=self.mandatory_environment)
+        execution_environment.enter()
         try:
             exit_code = self.execute_command_line(command_line=command_line,
                     job_id_callback=send_job_id, executor_data=executor_data,

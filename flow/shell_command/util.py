@@ -35,21 +35,3 @@ def fork_or_exit():
         exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
     return pid
-
-
-def set_gid_and_uid_or_exit(group_id, user_id):
-    try:
-        LOG.debug('Setting group id to %s', group_id)
-        os.setgid(group_id)
-    except OSError:
-        LOG.exception('Failed to setgid from %s to %s',
-                os.getgid(), group_id)
-        exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)
-
-    try:
-        LOG.debug('Setting user id to %s', user_id)
-        os.setuid(user_id)
-    except OSError:
-        LOG.exception('Failed to setuid from %s to %s',
-                os.getuid(), user_id)
-        exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)

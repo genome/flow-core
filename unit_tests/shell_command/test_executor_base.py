@@ -51,58 +51,45 @@ class ErrorExecutor(TestExecutorBase):
 
 class ExecutorBaseTest(unittest.TestCase):
     def test_success(self):
-        e = SucceedingExecutor(default_environment={}, mandatory_environment={})
+        e = SucceedingExecutor()
         set_job_id = '42'
-        with mock.patch('flow.shell_command.util.set_gid_and_uid_or_exit'):
-            deferred = e.execute(
-                    execution_environment=NullExecutionEnvironment(),
-                    command_line=['a', 'b', 'c'],
-                    executor_data={'set_job_id': set_job_id}, callback_data={},
-                    resources={}, service_interfaces={})
+        deferred = e.execute(
+                execution_environment=NullExecutionEnvironment(),
+                command_line=['a', 'b', 'c'],
+                executor_data={'set_job_id': set_job_id}, callback_data={},
+                resources={}, service_interfaces={})
 
         self.assertEqual(set_job_id, e.job_id)
         self.assertTrue(e.success)
 
     def test_failure(self):
-        e = FailingExecutor(default_environment={}, mandatory_environment={})
-        with mock.patch('flow.shell_command.util.set_gid_and_uid_or_exit'):
-            deferred = e.execute(
-                    execution_environment=NullExecutionEnvironment(),
-                    command_line=['a', 'b', 'c'],
-                    executor_data={}, callback_data={}, resources={},
-                    service_interfaces={})
+        e = FailingExecutor()
+        deferred = e.execute(
+                execution_environment=NullExecutionEnvironment(),
+                command_line=['a', 'b', 'c'],
+                executor_data={}, callback_data={}, resources={},
+                service_interfaces={})
 
         self.assertEqual(exit_codes.EXECUTE_FAILURE, e.failure_exit_code)
 
     def test_error(self):
-        e = ErrorExecutor(default_environment={}, mandatory_environment={})
+        e = ErrorExecutor()
 
-        with mock.patch('flow.shell_command.util.set_gid_and_uid_or_exit'):
-            deferred = e.execute(
-                    execution_environment=NullExecutionEnvironment(),
-                    command_line=['a', 'b', 'c'],
-                    executor_data={}, callback_data={}, resources={},
-                    service_interfaces={})
+        deferred = e.execute(
+                execution_environment=NullExecutionEnvironment(),
+                command_line=['a', 'b', 'c'],
+                executor_data={}, callback_data={}, resources={},
+                service_interfaces={})
 
         self.assertEqual(9, e.signal_number)
 
 
     def test_child(self):
-        e = SucceedingExecutor(default_environment={}, mandatory_environment={})
+        e = SucceedingExecutor()
 
         socket = mock.Mock()
 
-        group_id = mock.Mock()
-        user_id = mock.Mock()
-        working_directory = mock.Mock()
-        environment = {
-            'sample': 'env',
-        }
-
-        execution_environment = ExecutionEnvironment(
-                group_id=group_id, user_id=user_id,
-                working_directory=working_directory,
-                environment=environment)
+        execution_environment = NullExecutionEnvironment()
 
         command_line = mock.Mock()
         executor_data = {
@@ -110,17 +97,8 @@ class ExecutorBaseTest(unittest.TestCase):
         }
         resources = mock.Mock()
 
-        chdir = mock.Mock()
-        set_gid_and_uid_or_exit = mock.Mock()
-        with mock.patch(
-                'flow.shell_command.util.set_gid_and_uid_or_exit',
-                new=set_gid_and_uid_or_exit):
-            with mock.patch('os.chdir', new=chdir):
-                exit_code = e._child(socket, execution_environment,
-                        command_line, executor_data, resources)
-
-        set_gid_and_uid_or_exit.assert_called_once_with(group_id, user_id)
-        chdir.assert_called_once_with(working_directory)
+        exit_code = e._child(socket, execution_environment,
+                command_line, executor_data, resources)
 
         socket.send.assert_called_once_with(executor_data['set_job_id'])
         socket.close.assert_called_once_with()

@@ -89,58 +89,5 @@ class ForkTest(unittest.TestCase):
         fork.assert_called_once_with()
 
 
-class SetGidUidTest(unittest.TestCase):
-    def setUp(self):
-        self.setgid = mock.Mock()
-        self.setuid = mock.Mock()
-
-    def test_success(self):
-        gid = mock.Mock()
-        uid = mock.Mock()
-        with mock.patch('os.setgid', new=self.setgid):
-            with mock.patch('os.setuid', new=self.setuid):
-                util.set_gid_and_uid_or_exit(gid, uid)
-
-        self.setgid.assert_called_once_with(gid)
-        self.setuid.assert_called_once_with(uid)
-
-    def test_setgid_fail(self):
-        gid = mock.Mock()
-        uid = mock.Mock()
-
-        self.setgid.side_effect = OSError
-
-        exit_process = mock.Mock()
-        exit_process.side_effect = RuntimeError
-
-        with mock.patch('os.setgid', new=self.setgid):
-            with mock.patch('os.setuid', new=self.setuid):
-                with mock.patch('flow.shell_command.util.exit_process',
-                        new=exit_process):
-                    with self.assertRaises(RuntimeError):
-                        util.set_gid_and_uid_or_exit(gid, uid)
-
-        self.setgid.assert_called_once_with(gid)
-
-    def test_setuid_fail(self):
-        gid = mock.Mock()
-        uid = mock.Mock()
-
-        self.setuid.side_effect = OSError
-
-        exit_process = mock.Mock()
-        exit_process.side_effect = RuntimeError
-
-        with mock.patch('os.setgid', new=self.setgid):
-            with mock.patch('os.setuid', new=self.setuid):
-                with mock.patch('flow.shell_command.util.exit_process',
-                        new=exit_process):
-                    with self.assertRaises(RuntimeError):
-                        util.set_gid_and_uid_or_exit(gid, uid)
-
-        self.setgid.assert_called_once_with(gid)
-        self.setuid.assert_called_once_with(uid)
-
-
 if '__main__' == __name__:
     unittest.main()

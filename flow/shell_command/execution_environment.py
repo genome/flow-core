@@ -1,15 +1,20 @@
-from flow.shell_command import util
+from flow import exit_codes
 from flow.util import environment as env_util
+from flow.util.exit import exit_process
 
 import abc
 import os
+import logging
+
+
+LOG = logging.getLogger(__name__)
 
 
 class ExecutionEnvironmentBase(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def enter(self, default_environment, mandatory_environment):
+    def enter(self):
         pass
 
 
@@ -20,17 +25,21 @@ class ExecutionEnvironment(ExecutionEnvironmentBase):
         self.environment = environment
         self.working_directory = working_directory
 
-    def enter(self, default_environment, mandatory_environment):
-        util.set_gid_and_uid_or_exit(self.group_id,
-                self.user_id)
-        env_util.set_environment(default_environment,
-                self.environment, mandatory_environment)
+    def enter(self):
         try:
+            os.setgid(self.group_id)
+            os.setuid(self.user_id)
             os.chdir(self.working_directory)
+            os.environ.clear()
+            os.environ.update(self.environment)
         except OSError:
-            os.kill(os.getpid(), 9)
+            LOG.exception('Failed to enter execution environment:\n'
+                    'group_id = %s, user_id = %s, working_directory = %s\n'
+                    'environment:\n%s' % (self.group_id, self.user_id,
+                        self.working_directory, self.environment))
+            exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
 
 class NullExecutionEnvironment(ExecutionEnvironmentBase):
-    def enter(self, default_environment, mandatory_environment):
+    def enter(self):
         pass
