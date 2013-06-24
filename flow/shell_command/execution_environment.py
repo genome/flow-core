@@ -1,5 +1,4 @@
 from flow import exit_codes
-from flow.util import environment as env_util
 from flow.util.exit import exit_process
 
 import abc
@@ -35,8 +34,8 @@ class ExecutionEnvironment(ExecutionEnvironmentBase):
         except OSError:
             LOG.exception('Failed to enter execution environment:\n'
                     'group_id = %s, user_id = %s, working_directory = %s\n'
-                    'environment:\n%s' % (self.group_id, self.user_id,
-                        self.working_directory, self.environment))
+                    'environment:\n%s', self.group_id, self.user_id,
+                        self.working_directory, self.environment)
             exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)
 
 
