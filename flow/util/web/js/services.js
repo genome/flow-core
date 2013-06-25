@@ -3,11 +3,11 @@ angular
 
     .factory('configService', function() {
         // holds important app parameters
-        console.log("configService instantiated.");
+        // console.log("configService instantiated.");
 
         return {
-            process_tree_update_delay: 1000,
-            cpu_update_delay: 300,
+            PROCESS_TREE_UPDATE_DELAY: 1000,
+            CPU_UPDATE_DELAY: 300,
             UPDATE_DELTA: 5000,
             NUM_DATA_PTS: 1000,
 
@@ -27,27 +27,48 @@ angular
 
     })
 
+    // polls /status and updates process data node
     .factory('statusService', function($http, $timeout, configService, basicService) {
-        // polls /status and updates process data node
-        console.log("statusService initialized. *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-");
 
-        var UPDATE_DELTA = configService.UPDATE_DELTA;
+        var status_current = {
+            "processes": []
+        };
 
-        var current_status = { };
-        var all_status = { calls: Number(), master_parent_pid: Number(), master_pid: Number(), processes: {} };
-        var all_status_nested = { };
+        var status_all = {
+            "calls": Number(),
+            "master_parent_pid": Number(),
+            "master_pid": Number(),
+            "processes": []
+        }; // all initialized status updates
 
+        var status_all_nested = {
+            "calls": Number(),
+            "master_parent_pid": Number(),
+            "master_pid": Number(),
+            "processes": []
+        }; // all initialized status updates, nested by parent id
+
+        // polls /status every UPDATE_DELTA
         var _poller = function() {
+            var service_data = { };
             $http.get('/status').then(
                 function(r) { // success
-                    // current_status.response = r.data;
-                    _update_all_status(r.data);
+                    service_data.config = r.config;
+                    service_data.data = r.data;
+                    service_data.headers = r.headers;
+                    service_data.status = r.status;
+
+                    console.log("service_data");
+                    console.log(service_data);
+
+                    _update_status(service_data, status_current, status_all, status_all_nested);
+
                     $timeout(_poller, configService.UPDATE_DELTA);
                 },
                 function(r) { // fail
                     alert("Could not retrieve process status. " +
-                          "The process has most likely completed. " +
-                          "This monitor will continue to function but it will not recieve any more updates.");
+                        "The process has most likely completed. " +
+                        "This monitor will continue to function but it will not recieve any more updates.");
                 }
 
             );
@@ -56,75 +77,65 @@ angular
 
         _poller();
 
-        var _update_all_status = function(status_data) {
-            // status_data: current status straight from /status
-            // all_status: contains all status updates (initialized)
-            // all_status_nested: status updates nested according to parent/child relationships
-
-            // console.log("_update_all_status called.");
-            // console.log("status_data:");
-            // console.log(status_data);
-
-            // if all_status hasn't been called, initialize it
-            if (0 === all_status.calls) {
-                // set master_pids
-                var basic = basicService
-                        .getBasic()
-                        .then(function(data) {
-                            all_status.master_pid = data.pid;
-                            all_status.master_parent_pid = data.parent_pid;
-                            all_status.processes[data.pid] = {}; // set master_pid as root process
-                        });
-
+        var _update_status = function(service_data, status_current, status_all, status_all_nested) {
+            // if this is the first time called, initialize status_all
+            if (status_all.calls === 0) {
+                var basic = basicService;
+                basic.get()
+                    .then(function(data) {
+                        status_all.master_pid = data.pid;
+                        status_all.master_parent_pid = data.parent_pid;
+                    });
             }
 
-            // console.log("all_status:");
-            // console.log(all_status);
+            status_current.processes = [];
+            status_current.processes = _.map(service_data.data,
+                function(process) {
+                    console.log("pid " + process.pid);
 
-            // console.log("current_status (before addint status_data):");
-            // console.log(current_status);
+                    process.is_running = true;
+                    process.is_master = (process.pid === status_all.master_pid);
 
-            _.each(status_data, function(process_data) {
+                    // store file info
 
-                console.log("process_data:");
-                console.log(process_data);
+                    // store visualization array
 
-                // get process' basic info, copy to current_status and initialize
-                var basic = basicService
-                        .getBasic()
-                        .then(function(data) {
-                            var cPid = data.parent_pid;
-                            current_status[cPid] = {};
-                            current_status[cPid] = _.deepClone(process_data);
-
-                            // console.log("current_status[cPid]:-:-:-:-:-:-:-:-:");
-                            // console.log(current_status[cPid]);
-
-                            _init_process(current_status[cPid]);
-                        });
+                    return process;
+                });
 
 
-            });
+            _.deepExtend(status_all, status_current);
+            // get all is_running processes from status_all
+            // toggle process.is_running to false if not found in status_current.processes
 
-            all_status.calls++;
+            // merge status_current with status_all
+
+            // copy status_all to status_all_nested then nest the processess
+
+
+            status_all.calls++;
         };
 
         var _init_process = function(process) {
+            console.log("_init_process called.");
             process['is_running'] = true;
+            var pid = process.pid;
+            _(process).each(function() {
+                console.log("pid: " + pid);
+                console.log(process);
+            });
 
-            _init_open_files(process);
-            _init_chart_data(process);
-            _nest_all_status();
+            // _init_open_files(process);
+            // _init_chart_data(process);
         };
 
         var _init_open_files = function(process) {
-            console.log("_init_process_open_files called. -- -- -- -- -- -- -- --");
-            console.log(process);
-
             if (!('open_files' in process)) { process['open_files'] = { }; }
 
             var stored_finfo = process['open_files'];
 
+            console.log("process " + process.pid + " open_files:");
+            console.log(stored_finfo);
             // note files that are no longer open
             var finfo = process['open_files'] || {};
             for (var fname in stored_finfo) {
@@ -137,7 +148,7 @@ angular
                 }
             }
 
-            // store info about currently open files
+            // store info about currently open fil]es
             for (var fname in finfo) {
                 if (!(fname in stored_finfo)) {
                     stored_finfo[fname] = {};
@@ -148,7 +159,7 @@ angular
                             'type':finfo[fname][fd]['type'],
                             'read_only':finfo[fname][fd]['read_only'],
                             'flags':finfo[fname][fd]['flags'],
-                            'closed':false,
+                            'closed':false
                         };
                         stored_finfo[fname][fd] = stat_info;
                     }
@@ -170,19 +181,17 @@ angular
         };
 
         var _init_chart_data = function(src, desc, time) {
-            console.log("_init_process_chart_data called.");
+            // console.log("_init_process_chart_data called.");
         };
 
         var _nest_all_status = function() {
-            console.log("_nest_all_status called.");
+            // console.log("_nest_all_status called.");
             all_status_nested = _.nest(all_status, ["parent_pid","id"]);
         };
 
         //
         // UTILITES
         //
-
-        var _quick_clone = function(obj) { return JSON.parse(JSON.stringify(obj)); };
 
         var _store_array = function(src, dest, time) {
             var values = dest['values'];
@@ -191,9 +200,9 @@ angular
         };
 
         return {
-            current_status: current_status,
-            all_status: all_status,
-            all_status_nested: all_status_nested
+            "status_current": status_current,
+            "status_all": status_all,
+            "status_all_nested": status_all_nested
         };
 
 
@@ -201,18 +210,17 @@ angular
 
     .factory('basicService', function($http, $q, configService) {
         // returns basic info about a process
-        var basicData = {};
         return {
-            getBasic: function(pid) {
+            get: function(pid) {
+                console.log("basicService.get() called.");
                 var deferred = $q.defer();
                 var url = pid ? '/basic/' + pid : '/basic';
                 $http.get(url)
-                    .success(function(data, status, headers, config) { // Do something successful.
+                    .success(function(data) { // Do something successful.
                         deferred.resolve(data);
                     })
-                    .error(function(data, status, headers, config) { // Handle the error
+                    .error(function(data) { // Handle the error
                         console.error("Could not retrieve basic data node.");
-
                         deferred.reject();
                     });
 
@@ -220,3 +228,5 @@ angular
             }
         };
     });
+
+

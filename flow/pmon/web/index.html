@@ -7,50 +7,58 @@
         <meta name="viewport" content="width=device-width"/>
 
         <title>Flow Process Monitor!</title>
-        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
-        <link rel="stylesheet" type="text/css" href="lib/nv.d3.css"/>
-    </head>
-    <body>
-        <!-- <div data-ng-app='processMonitorApp'> -->
-        <!--     <div data-ng-controller='MainController'> -->
-        <!--         <div data-ng-controller='ProcessTree'> -->
-        <!--             <ul data-ng-tree="process_tree"> -->
-        <!--                 <li select='selected()'> -->
-        <!--                     <div style='background-color:{{colors[this.selected_pid == this.item.pid]}}'> -->
-        <!--                         <div style='width:40px;float:left;' data-ng-controller='CpuUpdate'> -->
-        <!--                             {{cpu_percent[item.pid]}}% -->
-        <!--                         </div> -->
-        <!--                         {{item.pid}} command: {{item.cmdline}} -->
-        <!--                     </div> -->
-        <!--                 </li> -->
-        <!--             </ul> -->
-        <!--         </div> -->
-        <!--     </div> -->
-        <!-- </div> -->
-
-        <div data-ng-app="processMonitor">
-            <div data-ng-controller="MainController">
-                <div class="row">
-                    <div class="span12">
-                        Update Delta: {{UPDATE_DELTA}}
-                    </div>
-                </div>
-                <div class="content">
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet"></link>
+            <link rel="stylesheet" type="text/css" href="lib/nv.d3.css"></link>
+            <link rel="stylesheet" type="text/css" href="css/app.css"></link>
+        </head>
+        <body>
+            <!-- <div data-ng-app='processMonitorApp'> -->
+            <!--     <div data-ng-controller='MainController'> -->
+            <!--         <div data-ng-controller='ProcessTree'> -->
+            <!--             <ul data-ng-tree="process_tree"> -->
+            <!--                 <li select='selected()'> -->
+            <!--                     <div style='background-color:{{colors[this.selected_pid == this.item.pid]}}'> -->
+            <!--                         <div style='width:40px;float:left;' data-ng-controller='CpuUpdate'> -->
+            <!--                             {{cpu_percent[item.pid]}}% -->
+            <!--                         </div> -->
+            <!--                         {{item.pid}} command: {{item.cmdline}} -->
+            <!--                     </div> -->
+            <!--                 </li> -->
+            <!--             </ul> -->
+            <!--         </div> -->
+            <!--     </div> -->
+            <!-- </div> -->
+            <div class="container">
+            <div data-ng-app="processMonitor">
+                <div data-ng-controller="MainController">
                     <div class="row">
-                        <div class="span4">
-                            <p>Current Status: <br /> {{current_status | json}</p>
+                        <div class="span12">
+                            status_all.master_pid: {{status_all.master_pid}}<br />
+                            status_all.calls: {{status_all.calls}}
+                        </div>
+                    </div>
+                    <div class="content">
+                        <div class="row">
+                            <div class="span4">
+                                <p>Current Status:
+                                </p>
+                                <pre>{{ status_current | json }}</pre>
 
-                        </div> <!-- /div span4 -->
-                        <div class="span4">
-                            <p>All Status: <br /> {{all_status | json}</p>
+                            </div>
 
-                        </div> <!-- /div span4 -->
-                        <div class="span4">
-                            <p>All Status Nested: <br /> {{all_status_nested | json}</p>
+                            <div class="span4">
+                                <p>All Status: </p>
+                                <pre>{{ status_all | json }}</pre>
 
+                            </div>
 
-                            </p>
-                        </div> <!-- /div span4 -->
+                            <div class="span4">
+                                <p>All Status Nested: </p>
+                                <pre>{{ status_all_nested | json }}</pre>
+
+                            </div>
+                        </div>
+
                     </div>
                 </div><!-- /content -->
             </div>

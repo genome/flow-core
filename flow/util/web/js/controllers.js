@@ -1,23 +1,20 @@
 angular.module('processMonitor.controllers', ['processMonitor.services'])
     .controller('MainController', ['$scope', '$timeout', 'configService', 'statusService',
         function($scope, $timeout, configService, statusService) {
-            console.log("MainController instantiated.");
-            // $scope.update_delta = configService.update_delta;
-            $scope.currentStatus = statusService.currentStatus;
-            $scope.all_status = statusService.all_status;
-            $scope.current_status = statusService.current_status;
-            $scope.all_status_nested = statusService.all_status_nested;
+            // console.log("MainController instantiated.");
+            $scope.status_current = statusService.status_current;
+            $scope.status_all= statusService.status_all;
+            $scope.status_all_nested= statusService.status_all_nested;
 
-            $scope.UPDATE_DELTA = statusService.UPDATE_DELTA;
 
         }])
     .controller('ProcessTree', ['$scope', '$timeout',
         function($scope, $timeout) {
-            console.log("ProcessTree instantiated.");
+            // console.log("ProcessTree instantiated.");
 
         }])
     .controller('CpuUpdate', ['$scope', '$timeout',
         function($scope, $timeout){
-            console.log("CpuUpdate instantiated.");
+            // console.log("CpuUpdate instantiated.");
 
         }]);
