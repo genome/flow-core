@@ -96,6 +96,13 @@ angular
                     process.is_running = true;
                     process.is_master = (process.pid === status_all.master_pid);
 
+                    // get parent_pid
+                    var basic = basicService;
+                    basic.get(process.pid)
+                        .then(function(data) {
+                            process.parent_pid = data.parent_pid;
+                        });
+
                     // store file info
 
                     // store visualization array
@@ -103,12 +110,17 @@ angular
                     return process;
                 });
 
+            // set all processes to false
+            _.each(status_all.processes, function(process) {
+                process.is_running = false;
+            });
 
             _.deepExtend(status_all, status_current);
             // get all is_running processes from status_all
             // toggle process.is_running to false if not found in status_current.processes
 
             // merge status_current with status_all
+            status_all_nested.processes = _.nest(status_all.processes, 'parent_pid');
 
             // copy status_all to status_all_nested then nest the processess
 
