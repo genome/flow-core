@@ -53,6 +53,14 @@ class FutureNet(object):
 
         return trans
 
+    def join_transitions(self, destination, sources, name=''):
+        place = self.add_place(name=name)
+        place.add_arc_out(destination)
+        for source in sources:
+            source.add_arc_out(place)
+
+        return place
+
 
 class FutureNode(object):
     def __init__(self, name=''):
