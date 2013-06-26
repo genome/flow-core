@@ -17,6 +17,7 @@ class ShellCommandNetTest(unittest.TestCase):
         self.arg2 = mock.Mock()
         self.net = FakeShellCommandNet(name='foo',
                 arg1=self.arg1, arg2=self.arg2)
+        self.net.wrap_with_places()
 
     def test_unreachable_places(self):
         unreachable_places = {p for p in self.net.places if not p.arcs_in}
@@ -35,7 +36,6 @@ class ShellCommandNetTest(unittest.TestCase):
         dead_end_places = {p for p in self.net.places if not p.arcs_out}
 
         expected_dead_end_places = {
-            self.net.done_place,
             self.net.failure_place,
             self.net.success_place,
         }

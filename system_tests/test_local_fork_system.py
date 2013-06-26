@@ -15,7 +15,6 @@ import os.path
 import tempfile
 import unittest
 
-
 class TestSystemFork(redistest.RedisTest):
     def setUp(self):
         redistest.RedisTest.setUp(self)
@@ -71,6 +70,7 @@ class TestSystemFork(redistest.RedisTest):
         future_net = ForkCommandNet('net name',
                 command_line=['echo', test_data], stdout=output_file.name,
                 stderr='/dev/null')
+        future_net.wrap_with_places()
         future_places, future_transitions = builder.gather_nodes(future_net)
 
         b = builder.Builder(self.conn)
@@ -88,8 +88,7 @@ class TestSystemFork(redistest.RedisTest):
         self.broker.listen()
 
         expected_color_keys = [net.marking_key(
-            cg.begin, future_places[future_net.success_place]),
-            net.marking_key(cg.begin, future_places[future_net.done_place])]
+            cg.begin, future_places[future_net.success_place])]
 
         expected_output = '%s\n' % test_data
         self.assertEqual(expected_output, output_file.read())
@@ -100,7 +99,9 @@ class TestSystemFork(redistest.RedisTest):
         future_net = ForkCommandNet('net name',
                 command_line=['ls', '/doesnotexist/fool'], stdout='/dev/null',
                 stderr='/dev/null')
+        future_net.wrap_with_places()
         future_places, future_transitions = builder.gather_nodes(future_net)
+
 
         b = builder.Builder(self.conn)
         constants = {
@@ -116,8 +117,7 @@ class TestSystemFork(redistest.RedisTest):
         self.broker.listen()
 
         expected_color_keys = [net.marking_key(
-            cg.begin, future_places[future_net.failure_place]),
-            net.marking_key(cg.begin, future_places[future_net.done_place])]
+            cg.begin, future_places[future_net.failure_place])]
 
         self.assertItemsEqual(expected_color_keys, net.color_marking.keys())
 
