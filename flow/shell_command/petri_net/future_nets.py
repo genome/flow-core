@@ -9,7 +9,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ShellCommandNet(SuccessFailureNet):
-    def __init__(self, name, **action_args):
+    def __init__(self, name, dispatch_action_class, **action_args):
         SuccessFailureNet.__init__(self, name)
 
         # state-related places
@@ -32,7 +32,7 @@ class ShellCommandNet(SuccessFailureNet):
             "msg: execute_failure": self.execute_failure_place,
         })
 
-        primary_action = FutureAction(self.DISPATCH_ACTION, **action_args)
+        primary_action = FutureAction(dispatch_action_class, **action_args)
 
         self.dispatch_transition = self.add_basic_transition(
                 name="dispatch", action=primary_action)
@@ -80,11 +80,3 @@ class ShellCommandNet(SuccessFailureNet):
                 sources=[self.execute_failure_transition,
                          self.dispatch_failure_transition],
                 name='failure_bridge')
-
-
-class LSFCommandNet(ShellCommandNet):
-    DISPATCH_ACTION = actions.LSFDispatchAction
-
-
-class ForkCommandNet(ShellCommandNet):
-    DISPATCH_ACTION = actions.ForkDispatchAction

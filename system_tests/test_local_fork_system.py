@@ -5,8 +5,9 @@ from flow.orchestrator.handlers import PetriNotifyTransitionHandler
 from flow.orchestrator.service_interface import OrchestratorServiceInterface
 from flow.petri_net import builder
 from flow.shell_command.fork.executor import ForkExecutor
-from flow.shell_command.petri_net.future_nets import ForkCommandNet
 from flow.shell_command.handler import ForkShellCommandMessageHandler
+from flow.shell_command.petri_net import actions
+from flow.shell_command.petri_net import future_nets
 from flow.shell_command.service_interface import ForkShellCommandServiceInterface
 from test_helpers import redistest
 
@@ -67,7 +68,8 @@ class TestSystemFork(redistest.RedisTest):
     def test_simple_succeeding_command(self):
         test_data = 'hi'
         output_file = tempfile.NamedTemporaryFile('r')
-        future_net = ForkCommandNet('net name',
+        future_net = future_nets.ShellCommandNet('net name',
+                dispatch_action_class=actions.ForkDispatchAction,
                 command_line=['echo', test_data], stdout=output_file.name,
                 stderr='/dev/null')
         future_net.wrap_with_places()
@@ -96,7 +98,8 @@ class TestSystemFork(redistest.RedisTest):
 
 
     def test_simple_failing_command(self):
-        future_net = ForkCommandNet('net name',
+        future_net = future_nets.ShellCommandNet('net name',
+                dispatch_action_class=actions.ForkDispatchAction,
                 command_line=['ls', '/doesnotexist/fool'], stdout='/dev/null',
                 stderr='/dev/null')
         future_net.wrap_with_places()

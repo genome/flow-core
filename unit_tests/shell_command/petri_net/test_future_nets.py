@@ -7,15 +7,18 @@ import unittest
 
 class FakeShellCommandNet(future_nets.ShellCommandNet):
     def __init__(self, *args, **kwargs):
-        self.DISPATCH_ACTION = mock.Mock()
-        future_nets.ShellCommandNet.__init__(self, *args, **kwargs)
+        future_nets.ShellCommandNet.__init__(self,
+                *args, **kwargs)
 
 
 class ShellCommandNetTest(unittest.TestCase):
     def setUp(self):
+        self.dispatch_action_class = mock.Mock()
         self.arg1 = mock.Mock()
         self.arg2 = mock.Mock()
+
         self.net = FakeShellCommandNet(name='foo',
+                dispatch_action_class=self.dispatch_action_class,
                 arg1=self.arg1, arg2=self.arg2)
         self.net.wrap_with_places()
 
@@ -43,7 +46,7 @@ class ShellCommandNetTest(unittest.TestCase):
 
 
     def test_action_set(self):
-        self.assertEqual(self.net.DISPATCH_ACTION,
+        self.assertEqual(self.dispatch_action_class,
                 self.net.dispatch_transition.action.cls)
         expected_args = {
             'arg1': self.arg1,
@@ -104,15 +107,6 @@ class ShellCommandNetTest(unittest.TestCase):
                 self.net.running_place.arcs_out)
         self.assertIn(self.net.internal_failure_place,
                 self.net.execute_failure_transition.arcs_out)
-
-
-    def test_lsf_net(self):
-        self.assertEqual(actions.LSFDispatchAction,
-                future_nets.LSFCommandNet.DISPATCH_ACTION)
-
-    def test_fork_net(self):
-        self.assertEqual(actions.ForkDispatchAction,
-                future_nets.ForkCommandNet.DISPATCH_ACTION)
 
 
 if __name__ == "__main__":
