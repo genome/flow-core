@@ -19,6 +19,7 @@ class LocalBroker(flow.interfaces.IBroker):
         return self.raw_publish(exchange_name, routing_key, encoded_message)
 
     def register_handler(self, handler):
+        LOG.debug('Registering handler on %s', handler.queue_name)
         self.handlers[handler.queue_name] = handler
 
     def raw_publish(self, exchange, routing_key, encoded_message):
@@ -43,8 +44,8 @@ class LocalBroker(flow.interfaces.IBroker):
                     message_class = h.message_class
                     message = message_class.decode(encoded_message)
                     h(message)
-                except KeyError:
-                    pass
+                except:
+                    LOG.exception('Failed to execute handler')
         else:
             LOG.warning('No messages found in queue.')
 
