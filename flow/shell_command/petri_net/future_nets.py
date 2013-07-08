@@ -75,7 +75,7 @@ class ShellCommandNet(SuccessFailureNet):
         self.internal_success_place = self.bridge_transitions(
                 self.execute_success_transition,
                 self.internal_success_transition, name='success_bridge')
-        self.internal_failure_place = self.join_transitions(
+        self.internal_failure_place = self.join_transitions_as_or(
                 destination=self.internal_failure_transition,
                 sources=[self.execute_failure_transition,
                          self.dispatch_failure_transition],

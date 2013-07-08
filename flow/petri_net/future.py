@@ -53,7 +53,7 @@ class FutureNet(object):
 
         return trans
 
-    def join_transitions(self, destination, sources, name=''):
+    def join_transitions_as_or(self, destination, sources, name=''):
         place = self.add_place(name=name)
         place.add_arc_out(destination)
         for source in sources:

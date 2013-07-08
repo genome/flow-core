@@ -100,13 +100,13 @@ class TestFutureNet(TestCase):
             t = get_unique_arc_in(op)
             self.assertEqual(p_in, get_unique_arc_in(t))
 
-    def test_join_transitions(self):
+    def test_join_transitions_as_or(self):
         num_sources = 3
 
         destination = self.net.add_basic_transition()
         sources = [self.net.add_basic_transition() for x in xrange(num_sources)]
 
-        place = self.net.join_transitions(destination=destination,
+        place = self.net.join_transitions_as_or(destination=destination,
                 sources=sources, name='test_name')
 
         self.assertEqual(num_sources + 1, len(self.net.transitions))
