@@ -29,6 +29,9 @@ class Builder(object):
         stored_net.num_places = len(future_places)
         stored_net.num_transitions = len(future_transitions)
 
+        self.future_places = future_places
+        self.future_transitions = future_transitions
+
         return stored_net
 
 
