@@ -3,7 +3,6 @@ from flow.handler import Handler
 from flow.interfaces import IServiceLocator
 from flow.shell_command import resource_types
 from flow.shell_command.execution_environment import ExecutionEnvironment
-from flow.shell_command.interfaces import IShellCommandExecutor
 from flow.shell_command.messages import ShellCommandSubmitMessage
 from flow.util import environment as env_util
 from injector import inject
@@ -15,11 +14,8 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-@inject(executor=IShellCommandExecutor, service_interfaces=IServiceLocator,
-        resource_type_definitions=setting('shell_command.resource_types'),
-        default_environment=setting('shell_command.default_environment', {}),
-        mandatory_environment=
-            setting('shell_command.mandatory_environment', {}))
+@inject(service_interfaces=IServiceLocator,
+        resource_type_definitions=setting('shell_command.resource_types'))
 class ShellCommandSubmitMessageHandler(Handler):
     message_class = ShellCommandSubmitMessage
 
@@ -51,17 +47,3 @@ class ShellCommandSubmitMessageHandler(Handler):
                 executor_data=message.get('executor_data', {}),
                 resources=resources,
                 service_interfaces=self.service_interfaces)
-
-
-@inject(queue_name=setting('shell_command.fork.queue'),
-        exchange=setting('shell_command.fork.exchange'),
-        response_routing_key=setting('shell_command.fork.response_routing_key'))
-class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
-    pass
-
-
-@inject(queue_name=setting('shell_command.lsf.queue'),
-        exchange=setting('shell_command.lsf.exchange'),
-        response_routing_key=setting('shell_command.lsf.response_routing_key'))
-class LSFShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
-    pass

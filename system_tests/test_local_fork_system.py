@@ -5,7 +5,7 @@ from flow.orchestrator.handlers import PetriNotifyTransitionHandler
 from flow.orchestrator.service_interface import OrchestratorServiceInterface
 from flow.petri_net import builder
 from flow.shell_command.fork.executor import ForkExecutor
-from flow.shell_command.handler import ForkShellCommandMessageHandler
+from flow.shell_command.fork.handler import ForkShellCommandMessageHandler
 from flow.shell_command.petri_net import actions
 from flow.shell_command.petri_net import future_nets
 from flow.shell_command.service_interface import ForkShellCommandServiceInterface
