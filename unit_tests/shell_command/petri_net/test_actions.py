@@ -49,7 +49,10 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
 
     def test_executor_data_no_extras(self):
         net = mock.Mock()
-        executor_data = self.action._executor_data(net)
+        color_descriptor = mock.Mock()
+        response_places = mock.Mock()
+        executor_data = self.action.executor_data(net,
+                color_descriptor, response_places)
         self.assertItemsEqual(self.net_constants + ['environment'],
                 executor_data.keys())
 
@@ -58,7 +61,11 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         self.action.args['resources'] = resources
 
         net = mock.Mock()
-        executor_data = self.action._executor_data(net)
+        color_descriptor = mock.Mock()
+        response_places = mock.Mock()
+        executor_data = self.action.executor_data(net,
+                color_descriptor, response_places)
+
         self.assertItemsEqual(self.net_constants + ['environment',
             'resources'], executor_data.keys())
 
@@ -127,7 +134,7 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
 
         net.constant.assert_any_call('user_id')
         net.constant.assert_any_call('group_id')
-        net.constant.assert_any_call('working_directory')
+        net.constant.assert_any_call('working_directory', mock.ANY)
 
         basic_merge_action.execute.assert_called_once_with(self.action, net,
                 color_descriptor, active_tokens, service_interfaces)
@@ -174,7 +181,12 @@ class LSFDispatchActionTest(unittest.TestCase):
         self.action.args['lsf_options'] = lsf_options
 
         net = mock.Mock()
-        executor_data = self.action._executor_data(net)
+        color_descriptor = mock.Mock()
+        response_places = mock.Mock()
+        self.action.callback_data = mock.Mock()
+        self.action.callback_data.return_value = {}
+        executor_data = self.action.executor_data(net,
+                color_descriptor, response_places)
         self.assertItemsEqual(self.net_constants + ['environment',
             'resources', 'lsf_options'], executor_data.keys())
 

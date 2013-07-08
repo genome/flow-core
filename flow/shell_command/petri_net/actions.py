@@ -18,7 +18,7 @@ class ShellCommandDispatchAction(BasicMergeAction):
     required_arguments = place_refs
 
     # Hooks that subclasses can override
-    def command_line(self, token_data):
+    def command_line(self, net, token_data):
         return self.args['command_line']
 
     def environment(self, net):
@@ -29,7 +29,7 @@ class ShellCommandDispatchAction(BasicMergeAction):
     def _response_places(self):
         return {x: self.args[x] for x in self.place_refs}
 
-    def _executor_data(self, net):
+    def executor_data(self, net, color_descriptor, response_places):
         executor_data = {}
 
         self._set_environment(net, executor_data)
@@ -40,6 +40,15 @@ class ShellCommandDispatchAction(BasicMergeAction):
             executor_data['resources'] = self.args['resources']
 
         return executor_data
+
+    def callback_data(self, net, color_descriptor, response_places):
+        result = {
+                u'net_key': net.key,
+                u'color': color_descriptor.color,
+                u'color_group_idx': color_descriptor.group.idx,
+        }
+        result.update(response_places)
+        return result
 
     def _set_environment(self, net, executor_data):
         environment = self.environment(net)
@@ -70,15 +79,6 @@ class ShellCommandDispatchAction(BasicMergeAction):
         # BasicMergeAction returns exactly one token
         token_data = tokens[0].data
 
-        command_line = self.command_line(token_data)
-        executor_data = self._executor_data(net)
-        callback_data = {
-                'net_key': net.key,
-                'color': color_descriptor.color,
-                'color_group_idx': color_descriptor.group.idx,
-        }
-        callback_data.update(response_places)
-
         user_id = int(net.constant('user_id'))
         group_id = int(net.constant('group_id'))
         working_directory = net.constant('working_directory', '/tmp')
@@ -86,8 +86,11 @@ class ShellCommandDispatchAction(BasicMergeAction):
         service = service_interfaces[self.service_name]
         deferred.addCallback(lambda x: service.submit(user_id=user_id,
             group_id=group_id, working_directory=working_directory,
-            callback_data=callback_data, command_line=command_line,
-            executor_data=executor_data))
+            callback_data=self.callback_data(net,
+                color_descriptor, response_places),
+            command_line=self.command_line(net, token_data),
+            executor_data=self.executor_data(net,
+                color_descriptor, response_places)))
 
         return tokens, deferred
 
@@ -95,13 +98,17 @@ class ShellCommandDispatchAction(BasicMergeAction):
 class LSFDispatchAction(ShellCommandDispatchAction):
     service_name = "lsf"
 
-    def _executor_data(self, net):
-        executor_data = ShellCommandDispatchAction._executor_data(self, net)
+    def executor_data(self, net, color_descriptor, response_places):
+        result = ShellCommandDispatchAction.executor_data(self, net,
+            color_descriptor, response_places)
 
         if 'lsf_options' in self.args:
-            executor_data['lsf_options'] = self.args['lsf_options']
+            result['lsf_options'] = self.args['lsf_options']
 
-        return executor_data
+        result.update(self.callback_data(net,
+            color_descriptor, response_places))
+
+        return result
 
 
 class ForkDispatchAction(ShellCommandDispatchAction):
