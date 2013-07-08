@@ -8,16 +8,21 @@ def build_objects(definitions, module, default_class=None):
     objects = {}
 
     for name, definition in definitions.iteritems():
-        objects[name] = build_object(definition, module, default_class)
+        try:
+            objects[name] = build_object(definition, module, default_class)
+        except:
+            LOG.exception('Failed to build object %s: %s', name, definition)
+            raise
 
     return objects
 
 
 def build_object(definition, module, default_class=None):
-    class_name = definition.pop('class', default_class)
+    def_copy = dict(definition)
+    class_name = def_copy.pop('class', default_class)
     cls = getattr(module, class_name)
     try:
-        obj = cls(**definition)
+        obj = cls(**def_copy)
     except TypeError:
         LOG.exception('Failed to instantiate class (%s) with args: %s',
                 cls, definition)

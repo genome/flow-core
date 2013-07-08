@@ -17,7 +17,7 @@ LOG = logging.getLogger(__name__)
 
 @inject(pre_exec=setting('shell_command.lsf.pre_exec'),
         post_exec=setting('shell_command.lsf.post_exec'),
-        resource_definitions=setting('shell_command.lsf.available_resources'),
+        resource_definitions=setting('shell_command.lsf.supported_resources'),
         option_definitions=setting('shell_command.lsf.available_options'),
         default_options=setting('shell_command.lsf.default_options'))
 class LSFExecutor(ExecutorBase):

@@ -54,7 +54,7 @@ class TestSystemFork(redistest.RedisTest):
                     service_interfaces=self.service_interfaces,
                     queue_name='notify_transition_q'))
 
-        resource_definitions = {}
+        resource_type_definitions = {}
         fork_executor = ForkExecutor()
         self.broker.register_handler(
                 ForkShellCommandMessageHandler(
@@ -63,7 +63,7 @@ class TestSystemFork(redistest.RedisTest):
                     service_interfaces=self.service_interfaces,
                     exchange='create_token_x',
                     response_routing_key='create_token_rk',
-                    resource_definitions=resource_definitions))
+                    resource_type_definitions=resource_type_definitions))
 
     def test_simple_succeeding_command(self):
         test_data = 'hi'

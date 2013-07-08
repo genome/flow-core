@@ -138,5 +138,11 @@ def make_resource_objects(src_dict, resource_types):
 
 
 def make_resource_types(resource_definitions):
-    return factory.build_objects(resource_definitions, MODULE,
-            'ResourceType')
+    return {
+        'limit': factory.build_objects(resource_definitions.get('limit', {}),
+            MODULE, 'ResourceType'),
+        'request': factory.build_objects(resource_definitions.get('request',
+            {}), MODULE, 'ResourceType'),
+        'reserve': factory.build_objects(resource_definitions.get('reserve',
+            {}), MODULE, 'ResourceType'),
+    }

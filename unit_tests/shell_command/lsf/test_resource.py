@@ -1,5 +1,4 @@
 from flow.shell_command.lsf import resource
-from flow.shell_command import resource as base_resource
 
 import mock
 import unittest

@@ -1,5 +1,5 @@
 from flow.shell_command.lsf import executor
-from flow.shell_command.resource import ResourceException
+from flow.shell_command.resource_types import ResourceException
 from pythonlsf import lsf
 
 import mock

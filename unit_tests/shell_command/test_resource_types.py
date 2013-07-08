@@ -1,4 +1,4 @@
-from flow.shell_command import resource
+from flow.shell_command import resource_types
 
 import mock
 import unittest
@@ -6,67 +6,71 @@ import unittest
 
 class MemoryUnitConversionTest(unittest.TestCase):
     def test_convert_larger_dest_unit(self):
-        self.assertEqual(1, resource.convert_memory_value(1024, 'KiB', 'MiB'))
+        self.assertEqual(1, resource_types.convert_memory_value(1024, 'KiB',
+            'MiB'))
 
     def test_convert_smaller_dest_unit(self):
-        self.assertEqual(1024, resource.convert_memory_value(1, 'MiB', 'KiB'))
+        self.assertEqual(1024, resource_types.convert_memory_value(1, 'MiB',
+            'KiB'))
 
     def test_convert_same_dest_unit(self):
-        self.assertEqual(42, resource.convert_memory_value(42, 'KiB', 'KiB'))
+        self.assertEqual(42, resource_types.convert_memory_value(42, 'KiB',
+            'KiB'))
 
 
     def test_illegal_src_unit(self):
-        with self.assertRaises(resource.ResourceException):
-            resource.convert_memory_value(42, 'ILLEGAL', 'KiB')
+        with self.assertRaises(resource_types.ResourceException):
+            resource_types.convert_memory_value(42, 'ILLEGAL', 'KiB')
 
     def test_illegal_dest_unit(self):
-        with self.assertRaises(resource.ResourceException):
-            resource.convert_memory_value(42, 'GiB', 'ILLEGAL')
+        with self.assertRaises(resource_types.ResourceException):
+            resource_types.convert_memory_value(42, 'GiB', 'ILLEGAL')
 
 
     def test_illegal_value_type(self):
         with self.assertRaises(ValueError):
-            resource.convert_memory_value('ILLEGAL', 'KiB', 'MiB')
+            resource_types.convert_memory_value('ILLEGAL', 'KiB', 'MiB')
 
 
 class ResourceObjectTest(unittest.TestCase):
     def setUp(self):
         self.resource_types = {
-            'cores': resource.ResourceType(resource_class='IntegerResource'),
-            'cpu_time': resource.ResourceType(
+            'cores': resource_types.ResourceType(
+                resource_class='IntegerResource'),
+            'cpu_time': resource_types.ResourceType(
                 resource_class='TimeResource', units='s'),
-            'memory': resource.ResourceType(
+            'memory': resource_types.ResourceType(
                 resource_class='StorageResource', units='GiB'),
         }
 
     def test_integer_resource(self):
         v = mock.Mock()
-        r = resource.IntegerResource(v)
+        r = resource_types.IntegerResource(v)
 
         self.assertEqual(v, r.value_in_units(None))
 
-        with self.assertRaises(resource.ResourceException):
+        with self.assertRaises(resource_types.ResourceException):
             r.value_in_units('MiB')
 
     def test_storage_resource_same_units(self):
         v = mock.Mock()
-        r = resource.StorageResource(v, 'GiB')
+        r = resource_types.StorageResource(v, 'GiB')
         self.assertEqual(v, r.value_in_units('GiB'))
 
     def test_storage_resource_different_units(self):
         v = 1
-        r = resource.StorageResource(v, 'GiB')
+        r = resource_types.StorageResource(v, 'GiB')
         self.assertEqual(1024, r.value_in_units('MiB'))
 
     def test_time_resource_same_units(self):
         v = mock.Mock()
-        r = resource.TimeResource(v, 's')
+        r = resource_types.TimeResource(v, 's')
         self.assertEqual(v, r.value_in_units('s'))
 
     def test_time_resource_illegal_units(self):
         v = mock.Mock()
-        r = resource.TimeResource(v, 's')
-        with self.assertRaises(resource.ResourceException):
+        r = resource_types.TimeResource(v, 's')
+        with self.assertRaises(resource_types.ResourceException):
             r.value_in_units('ms')
 
 
@@ -77,11 +81,12 @@ class ResourceObjectTest(unittest.TestCase):
             'memory': 2,
         }
         expected_result = {
-            'cores': resource.IntegerResource(4),
-            'cpu_time': resource.TimeResource(3, 's'),
-            'memory': resource.StorageResource(2, 'GiB'),
+            'cores': resource_types.IntegerResource(4),
+            'cpu_time': resource_types.TimeResource(3, 's'),
+            'memory': resource_types.StorageResource(2, 'GiB'),
         }
-        result = resource.make_resource_objects(source, self.resource_types)
+        result = resource_types.make_resource_objects(source,
+                self.resource_types)
         self.assertEqual(expected_result, result)
 
     def test_make_all_resource_objects(self):
@@ -99,17 +104,18 @@ class ResourceObjectTest(unittest.TestCase):
 
         expected_result = {
             'request': {
-                'cores': resource.IntegerResource(4),
+                'cores': resource_types.IntegerResource(4),
             },
             'reserve': {
-                'cpu_time': resource.TimeResource(3, 's'),
+                'cpu_time': resource_types.TimeResource(3, 's'),
             },
             'limit': {
-                'memory': resource.StorageResource(2, 'GiB'),
+                'memory': resource_types.StorageResource(2, 'GiB'),
             },
         }
 
-        result = resource.make_all_resource_objects(source, self.resource_types)
+        result = resource_types.make_all_resource_objects(source,
+                self.resource_types)
         self.assertEqual(expected_result, result)
 
 
