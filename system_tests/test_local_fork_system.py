@@ -27,7 +27,7 @@ class TestSystemFork(redistest.RedisTest):
                     'notify_transition_x': {'notify_transition_q':
                                             ['notify_transition_rk']},
                     'fork_submit_x': {'fork_submit_q': ['fork_submit_rk']}}
-        self.broker = LocalBroker(bindings)
+        self.broker = LocalBroker(bindings=bindings)
 
         self.service_interfaces = {
                 'orchestrator': OrchestratorServiceInterface(broker=self.broker,

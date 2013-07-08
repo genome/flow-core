@@ -1,4 +1,6 @@
 from collections import deque, defaultdict
+from flow.configuration.settings.injector import setting
+from injector import inject
 from twisted.internet import defer
 
 import flow.interfaces
@@ -8,9 +10,10 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
+@inject(bindings=setting('bindings'))
 class LocalBroker(flow.interfaces.IBroker):
-    def __init__(self, bindings):
-        self.bindings = _transform_bindings(bindings)
+    def __init__(self):
+        self.bindings = _transform_bindings(self.bindings)
         self.queue = deque()
         self.handlers = {}
 
