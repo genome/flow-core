@@ -62,7 +62,7 @@ class ShellCommandNetTest(unittest.TestCase):
                 self.net.dispatch_transition.action.args)
 
 
-    def test_path_to_success(self):
+    def test_dispatch_path(self):
         self.assertIn(self.net.dispatch_transition,
                 self.net.internal_start_place.arcs_out)
         self.assertIn(self.net.dispatching_place,
@@ -71,42 +71,48 @@ class ShellCommandNetTest(unittest.TestCase):
                 self.net.dispatching_place.arcs_out)
         self.assertIn(self.net.pending_place,
                 self.net.dispatch_success_transition.arcs_out)
+
+    def test_running_path(self):
         self.assertIn(self.net.execute_begin_transition,
                 self.net.pending_place.arcs_out)
         self.assertIn(self.net.running_place,
                 self.net.execute_begin_transition.arcs_out)
+
+    def test_execute_succes_path(self):
         self.assertIn(self.net.execute_success_transition,
                 self.net.running_place.arcs_out)
-        self.assertIn(self.net.internal_success_place,
+        self.assertIn(self.net.success_cleanup_place,
                 self.net.execute_success_transition.arcs_out)
 
     def test_path_to_failure_from_dispatch(self):
-        self.assertIn(self.net.dispatch_transition,
-                self.net.internal_start_place.arcs_out)
-        self.assertIn(self.net.dispatching_place,
-                self.net.dispatch_transition.arcs_out)
         self.assertIn(self.net.dispatch_failure_transition,
                 self.net.dispatching_place.arcs_out)
-        self.assertIn(self.net.internal_failure_place,
+        self.assertIn(self.net.failure_cleanup_place,
                 self.net.dispatch_failure_transition.arcs_out)
 
     def test_path_to_failure_from_execute(self):
-        self.assertIn(self.net.dispatch_transition,
-                self.net.internal_start_place.arcs_out)
-        self.assertIn(self.net.dispatching_place,
-                self.net.dispatch_transition.arcs_out)
-        self.assertIn(self.net.dispatch_success_transition,
-                self.net.dispatching_place.arcs_out)
-        self.assertIn(self.net.pending_place,
-                self.net.dispatch_success_transition.arcs_out)
-        self.assertIn(self.net.execute_begin_transition,
-                self.net.pending_place.arcs_out)
-        self.assertIn(self.net.running_place,
-                self.net.execute_begin_transition.arcs_out)
         self.assertIn(self.net.execute_failure_transition,
                 self.net.running_place.arcs_out)
-        self.assertIn(self.net.internal_failure_place,
+        self.assertIn(self.net.failure_cleanup_place,
                 self.net.execute_failure_transition.arcs_out)
+
+    def test_success_cleanup_path(self):
+        self.assertIn(self.net.success_cleanup_transition,
+                self.net.success_cleanup_place.arcs_out)
+        self.assertIn(self.net.internal_success_place,
+                self.net.success_cleanup_transition.arcs_out)
+        self.assertIn(self.net.internal_success_transition,
+                self.net.internal_success_place.arcs_out)
+
+    def test_failure_cleanup_path(self):
+        self.assertIn(self.net.failure_cleanup_place,
+                self.net.execute_failure_transition.arcs_out)
+        self.assertIn(self.net.failure_cleanup_transition,
+                self.net.failure_cleanup_place.arcs_out)
+        self.assertIn(self.net.internal_failure_place,
+                self.net.failure_cleanup_transition.arcs_out)
+        self.assertIn(self.net.internal_failure_transition,
+                self.net.internal_failure_place.arcs_out)
 
 
 if __name__ == "__main__":

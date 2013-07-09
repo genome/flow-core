@@ -1,3 +1,4 @@
+from flow.petri_net.actions.remove_data import RemoveDataAction
 from flow.petri_net.future import FutureAction
 from flow.petri_net.success_failure_net import SuccessFailureNet
 from flow.shell_command.petri_net import actions
@@ -44,10 +45,19 @@ class ShellCommandNet(SuccessFailureNet):
                 "dispatch_failure")
         self.execute_begin_transition = self.add_basic_transition(
                 "execute_begin")
+
         self.execute_success_transition = self.add_basic_transition(
                 "execute_success")
         self.execute_failure_transition = self.add_basic_transition(
                 "execute_failure")
+
+        # remove spurious token data
+        self.token_cleanup_action = FutureAction(RemoveDataAction,
+                fields=['hostname', 'job_id', 'exit_code'])
+        self.success_cleanup_transition = self.add_basic_transition(
+                'success_cleanup', action=self.token_cleanup_action)
+        self.failure_cleanup_transition = self.add_basic_transition(
+                'failure_cleanup', action=self.token_cleanup_action)
 
         # connecting things together
         self.internal_start_place = self.bridge_transitions(
@@ -72,11 +82,18 @@ class ShellCommandNet(SuccessFailureNet):
         self.execute_success_place.add_arc_out(self.execute_success_transition)
         self.execute_failure_place.add_arc_out(self.execute_failure_transition)
 
-        self.internal_success_place = self.bridge_transitions(
+
+        self.success_cleanup_place = self.bridge_transitions(
                 self.execute_success_transition,
-                self.internal_success_transition, name='success_bridge')
-        self.internal_failure_place = self.join_transitions_as_or(
-                destination=self.internal_failure_transition,
+                self.success_cleanup_transition, name='success_cleanup')
+        self.failure_cleanup_place = self.join_transitions_as_or(
+                destination=self.failure_cleanup_transition,
                 sources=[self.execute_failure_transition,
-                         self.dispatch_failure_transition],
-                name='failure_bridge')
+                         self.dispatch_failure_transition])
+
+        self.internal_success_place = self.bridge_transitions(
+                self.success_cleanup_transition,
+                self.internal_success_transition, 'success_bridge')
+        self.internal_failure_place = self.bridge_transitions(
+                self.failure_cleanup_transition,
+                self.internal_failure_transition, 'failure_bridge')
