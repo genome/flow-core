@@ -26,7 +26,7 @@ class ShellCommandSubmitMessageHandler(Handler):
     def assemble_environment(self, message):
         return env_util.merge_and_sanitize_environments(
                 self.default_environment,
-                message.get('environment', {}),
+                message.get('executor_data', {}).get('environment', {}),
                 self.mandatory_environment)
 
     def _handle_message(self, message):
