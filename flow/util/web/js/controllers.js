@@ -4,7 +4,7 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'angula
             // console.log("MainController instantiated.");
             $scope.status_current = statusService.status_current;
             $scope.status_all = statusService.status_all;
-            $scope.sttaus_processes = statusService.status_processes;
+            $scope.status_processes = statusService.status_processes;
         }])
     .controller('ProcessTree', ['$scope', 'statusService',
         function($scope, statusService) {

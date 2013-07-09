@@ -110,8 +110,19 @@ angular
         // ensure that initStatus is only called once
         var initStatusAllOnce = _.once(_initStatusAll);
 
+        // sets parent_pid on process
+        var setParentPID= function(proc) {
+            console.log(["setParentPID called with PID: ", proc.pid].join(" "))
+            basicService.get(proc.pid)
+                .then(function(data) {
+                    proc['parent_pid'] = data.parent_pid;
+                    return proc;
+                });
+        }
+
         // set is_running and is_master flags on a processes
         var setBooleans = function(proc) {
+            console.log(["setBooleans called with PID: ", proc.pid].join(" "))
             proc.is_running = true;
             proc.is_master = (proc.pid === status_all.master_pid);
             return proc;
@@ -119,7 +130,7 @@ angular
 
         // initialize a processes node
         var initProcesses= function(proc) {
-            // console.log("storeProcessHistory called.");
+            console.log(["initProcesses called with PID: ", proc.pid].join(" "))
             return proc;
         };
 
@@ -138,28 +149,6 @@ angular
                         })
                     return ofile;
                 });
-
-            // convert all open_files from hash objects to an array of objects
-
-//            proc.files = _.map(file_array,
-//                function(fobj, fname){
-//                    // console.log(["file:", fname].join(" "));
-//                    // console.log(fobj);
-//
-//                    var fd = [];
-//                    fd = _.map(fobj,
-//                        function(fd, fdname) {
-//                            return {
-//                                "id": fdname,
-//                                "finfo": fd
-//                            }
-//                        });
-//
-//                    return {
-//                        "name": fname,
-//                        "fd": fd
-//                    }
-//                });
 
             delete proc.open_files;
             return proc;
@@ -184,19 +173,6 @@ angular
         var setIsOpen = function(stat_current) {
 
         }
-
-        // convert an object hash into an array of objects, each with a new 'name' field copied from its key (not recursive)
-        // TODO: bunch of functions do this kind of thing, fix it and refactor them to use it
-        var convertObjectsToArray = function(obj_hash, name_field) {
-            if (!_.isObject(obj_hash)) { return undefined; }
-            return _.map(obj_hash,
-                function(obj, key) {
-                    if (obj.hasOwnProperty(name_field)) { console.warn(["Overwriting existing attribute, ", name_field, "containing", obj[name_field] ,"with", key].join(" ")); }
-                    obj[name_field] = key;
-                    return obj;
-                });
-        }
-
 
         /*
          * UTILITIES
@@ -241,6 +217,7 @@ angular
                     status_current.processes = _.map(processes,
                         function(process) {
                             var proc = cloneObj(process);
+                            setParentPID(proc);
                             initProcessPipeline(proc);
                             return proc;
                         });
@@ -254,11 +231,16 @@ angular
                             if(_.isObject(existing_process)) {
                                 _.deepExtend(existing_process, process);
                             } else {
-                                status_all.processes.push(process);
+                                status_all.processes.push(cloneObj(process));
                             }
 
-                            console.log(["adding process", process.pid, "to status_all."].join(" "));
                         });
+
+                    // nest status_all.processes to create a hash of references in nested_processes
+                    // if the master process exists, proceed to locate
+                    status_processes = _.nest(status_all.processes, "parent_pid");
+
+
                     $timeout(poller, configService.UPDATE_DELTA);
                 },
                 function(r) { // failure
@@ -266,7 +248,10 @@ angular
                         "The process has most likely completed. " +
                         "This monitor will continue to function but it will not receive any more updates.");
                 }
-            );
+            ).then(function(i) {
+                    console.log("THEN-----------");
+                    console.log(i);
+                });
 
 
             console.log("status_current: ---------- ---------");
@@ -290,11 +275,19 @@ angular
         };
     })
 
-    .factory('basicService', function($http, $q, configService) {
+    .factory('processService', function($http, $q) {
+        // returns all known details about a process.
+        return {
+            get: function(pid) {
+
+            }
+        }
+    })
+
+    .factory('basicService', function($http, $q) {
         // returns basic info about a process
         return {
             get: function(pid) {
-                console.log("basicService.get() called.");
                 var deferred = $q.defer();
                 var url = pid ? '/basic/' + pid : '/basic';
                 $http.get(url)

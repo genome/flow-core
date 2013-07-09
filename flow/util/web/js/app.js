@@ -5,7 +5,8 @@ angular.module('processMonitor', ['processMonitor.controllers','processMonitor.s
     .config([function() {
         // extend underscore.js
         _.mixin({
-            deepExtend: deepExtend// add deepExtend mixin to underscore.js
+            deepExtend: deepExtend,
+            nest: nest// add deepExtend mixin to underscore.js
         });
 
         console.log("processMonitor configured.");
