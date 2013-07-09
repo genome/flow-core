@@ -41,13 +41,30 @@ class TestMergeHashesScript(RedisTest, ScriptTest):
         self.assertEqual(0, rv[0])
         self.assertEqual(expected_result, self.conn.hgetall(dest_key))
 
-    def test_multiple_sources_with_confliect(self):
+    def test_multiple_empty_data(self):
+        dest_key = 'd'
+        src_key_0 = 's0'
+        src_key_1 = 's1'
+
+        data_0 = { 'a': {} }
+        data_1 = { 'a': {} }
+        self.conn.hmset(src_key_0, data_0)
+        self.conn.hmset(src_key_1, data_1)
+
+        rv = self.script(keys=[dest_key, src_key_0, src_key_1])
+
+        expected_result = { 'a': '{}' }
+        self.assertEqual(0, rv[0])
+        self.assertEqual(expected_result, self.conn.hgetall(dest_key))
+
+
+    def test_multiple_sources_with_conflict(self):
         dest_key = 'd'
         src_key_0 = 's0'
         src_key_1 = 's1'
 
         data_0 = { 'a': '1', 'c': '3' }
-        data_1 = { 'b': '2', 'c': '3' }
+        data_1 = { 'b': '2', 'c': '4' }
         self.conn.hmset(src_key_0, data_0)
         self.conn.hmset(src_key_1, data_1)
 
