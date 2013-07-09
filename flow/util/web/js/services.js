@@ -30,7 +30,7 @@ angular
     .factory('statusService', function ($http, $timeout, configService, basicService) {
 
         /*
-        * MODEL VARIABLES
+        * MODEL DATA STRUCTURES
          */
 
         // response from the server
@@ -42,15 +42,31 @@ angular
 
         var service_data = { };
 
-        // the current initialized status, processes flat
+        // the current initialized status
         var status_current = { };
 
-        // all initialized status updates with histories, processes nested
+        // all initialized status updates with histories
         var status_all = {
             "calls": 0,
             "master_parent_pid": Number(),
             "master_pid": Number(),
             "processes": []
+        };
+
+        // references to status_all, nested using angularTree's name: "", children: [] schema
+        var status_processes = {
+            "processes": [
+                {
+                    "name": "Object 1" ,
+                    "children": [
+                        {
+                            "name": "Object 1.1",
+                            "children": []
+                        }
+
+                    ]
+                }
+            ]
         };
 
         // these process attributes will be stored for historical displays
@@ -74,7 +90,7 @@ angular
          */
 
         // initializes status_all
-        var initStatusAll = function(stat_all, serv_data) {
+        var _initStatusAll = function(stat_all, serv_data) {
             var processes = serv_data;
             basicService.get()
                 .then(function(data) {
@@ -92,7 +108,7 @@ angular
         }
 
         // ensure that initStatus is only called once
-        var initStatusAllOnce = _.once(initStatusAll);
+        var initStatusAllOnce = _.once(_initStatusAll);
 
         // set is_running and is_master flags on a processes
         var setBooleans = function(proc) {
@@ -114,7 +130,12 @@ angular
                 function(open_file, key) {
                     var ofile = {};
                     ofile.name = key;
-                    ofile.fd = convertObjectsToArray(open_file[key], 'id');
+                    ofile.fd = _.map(open_file,
+                        function(fd, key) {
+                            var nfd= cloneObj(fd);
+                            nfd['id'] = key;
+                            return nfd;
+                        })
                     return ofile;
                 });
 
@@ -165,6 +186,7 @@ angular
         }
 
         // convert an object hash into an array of objects, each with a new 'name' field copied from its key (not recursive)
+        // TODO: bunch of functions do this kind of thing, fix it and refactor them to use it
         var convertObjectsToArray = function(obj_hash, name_field) {
             if (!_.isObject(obj_hash)) { return undefined; }
             return _.map(obj_hash,
@@ -179,22 +201,9 @@ angular
         /*
          * UTILITIES
          */
-
+        // fastest clone, but clobbers functions (use _.deepExtend(source_obj, {}) to preserve functions)
         var cloneObj = function(obj) {
             return JSON.parse(JSON.stringify(obj));
-        }
-
-        var cloneObj2 = function(obj) {
-            if (obj === null || typeof obj !== 'object') {
-                return obj;
-            }
-
-            var temp = obj.constructor(); // give temp the original obj's constructor
-            for (var key in obj) {
-                temp[key] = cloneObj2(obj[key]);
-            }
-
-            return temp;
         }
 
         /*
@@ -224,20 +233,32 @@ angular
             service_data = {};
             $http.get('/status').then(
                 function(r) { // success
-                    service_data = _.deepExtend(service_data, r); // this is here mainly to get service_data to update in the main controller so we can see it
-
+                    service_data = cloneObj(r);
+                    console.log("service_data: ---------- ----------");
+                    console.log(service_data);
                     var processes = cloneObj(r.data);
-
                     initStatusAllOnce(status_all, processes);
-
                     status_current.processes = _.map(processes,
                         function(process) {
-                            var proc = {};
-                            proc = _.deepExtend(proc, process);
+                            var proc = cloneObj(process);
                             initProcessPipeline(proc);
                             return proc;
                         });
+                    // either add or merge status_current.processes to status_all.processes
+                    // if it exists, merge its updates
+                    // if it does not exist, append it
+                    _.each(status_current.processes,
+                        function(process) {
+                            // TODO: refactor this to be less imperative, more functional
+                            var existing_process = _.findWhere(status_all.processes, { "pid": process.pid });
+                            if(_.isObject(existing_process)) {
+                                _.deepExtend(existing_process, process);
+                            } else {
+                                status_all.processes.push(process);
+                            }
 
+                            console.log(["adding process", process.pid, "to status_all."].join(" "));
+                        });
                     $timeout(poller, configService.UPDATE_DELTA);
                 },
                 function(r) { // failure
@@ -247,15 +268,25 @@ angular
                 }
             );
 
+
+            console.log("status_current: ---------- ---------");
+            console.log(status_current);
+
+            console.log("status_all: ---------- ---------");
+            console.log(status_all);
+
+            console.log("status_processes: ---------- ---------");
+            console.log(status_processes);
+
             status_all.calls++;
         };
 
         poller(service_data);
 
         return {
-            "service_data": service_data,
             "status_current": status_current,
-            "status_all": status_all
+            "status_all": status_all,
+            "status_processes": status_processes
         };
     })
 
