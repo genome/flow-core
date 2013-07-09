@@ -32,6 +32,9 @@ class LocalBroker(flow.interfaces.IBroker):
         self.queue.append((exchange, routing_key, encoded_message))
         return defer.succeed(None)
 
+    def declare_queue(self, queue_name, **kwargs):
+        self.bindings.setdefault('', {})[queue_name] = {queue_name}
+
     def connect_and_listen(self):
         return self.listen()
 
