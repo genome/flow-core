@@ -1,5 +1,4 @@
 body {
-  background-color: #55eeee;
   font-family: "Helvetica";
 }
 body ul {
@@ -7,4 +6,5 @@ body ul {
 }
 body ul li {
   list-style: none;
+  color: #aa3;
 }

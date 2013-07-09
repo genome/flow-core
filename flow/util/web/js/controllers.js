@@ -1,20 +1,33 @@
-angular.module('processMonitor.controllers', ['processMonitor.services'])
-    .controller('MainController', ['$scope', '$timeout', 'configService', 'statusService',
-        function($scope, $timeout, configService, statusService) {
+angular.module('processMonitor.controllers', ['processMonitor.services', 'angularTree'])
+    .controller('MainController', ['$scope', 'statusService',
+        function($scope, statusService) {
             // console.log("MainController instantiated.");
+            $scope.service_data = statusService.service_data;
             $scope.status_current = statusService.status_current;
-            $scope.status_all= statusService.status_all;
-            $scope.status_all_nested= statusService.status_all_nested;
-
-
+            $scope.status_all = statusService.status_all;
+            $scope.processes = statusService.processes;
         }])
-    .controller('ProcessTree', ['$scope', '$timeout',
-        function($scope, $timeout) {
-            // console.log("ProcessTree instantiated.");
+    .controller('ProcessTree', ['$scope', 'statusService',
+        function($scope, statusService) {
+            $scope.test = "testing 1 2 3";
+            $scope.processes = statusService.processes;
 
-        }])
-    .controller('CpuUpdate', ['$scope', '$timeout',
-        function($scope, $timeout){
-            // console.log("CpuUpdate instantiated.");
-
+            $scope.tree_model = [
+                {
+                    name: 'Item 1 Name',
+                    children: [
+                        {
+                            name: 'Item 2 Name',
+                            children: [
+                                {
+                                    name: 'Item 2A Name'
+                                }
+                            ]
+                        },
+                        {
+                            name: 'Item 3 Name'
+                        }
+                    ]
+                }
+            ];
         }]);
