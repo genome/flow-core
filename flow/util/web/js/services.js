@@ -2,52 +2,38 @@ angular
     .module('processMonitor.services', ['ngResource'])
 
     .factory('configService', function() {
-        // holds important app parameters
-        // console.log("configService instantiated.");
-
         return {
             PROCESS_TREE_UPDATE_DELAY: 1000,
             CPU_UPDATE_DELAY: 300,
             UPDATE_DELTA: 5000,
             NUM_DATA_PTS: 1000,
-
-            MASTER_PID: Number(),
-
-            array_fields: [
-                'cpu_percent',
-                'cpu_user',
-                'cpu_system',
-
-                'memory_percent',
-                'memory_rss',
-                'memory_vms'
+            PROCESS_HISTORY_KEYS: [ // these process attribute histories will be stored for generating charts
+                "memory_percent",
+                "memory_vms",
+                "memory_rss",
+                "cpu_user",
+                "cpu_system",
+                "cpu_percent"
             ],
-            scalar_fields: []
+            FILE_HISTORY_KEYS:  [ // these file attribute histories will be stored for generating charts
+                "pos",
+                "size"
+            ]
         };
-
     })
 
-    .factory('statusService', function ($http, $timeout, configService, basicService) {
+    .factory('statusService', function ($http, $timeout, configService, processService) {
 
         /*
         * MODEL DATA STRUCTURES
          */
 
-        // response from the server
-//        var service_data = {
-//            "config": {},
-//            "status": '',
-//            "data": {}
-//        };
-
-        var service_data = { };
-
         // the current initialized status
-        var status_current = { };
+        var status_current = { "test": "testing 1 2 3" };
 
         // all initialized status updates with histories
         var status_all = {
-            "calls": 0,
+            "calls": Number(),
             "master_parent_pid": Number(),
             "master_pid": Number(),
             "processes": []
@@ -69,70 +55,9 @@ angular
             ]
         };
 
-        // these process attributes will be stored for historical displays
-        var process_history_keys = [
-            "memory_percent",
-            "memory_vms",
-            "cpu_user",
-            "cpu_system",
-            "memory_rss",
-            "cpu_percent"
-        ];
-
-        // these file attributes will be stored for historical displays
-        var file_history_keys = [
-            "pos",
-            "size"
-        ];
-
         /*
          * PIPELINE FUNCTIONS
          */
-
-        // initializes status_all
-        var _initStatusAll = function(stat_all, serv_data) {
-            var processes = serv_data;
-            basicService.get()
-                .then(function(data) {
-                    stat_all.master_pid = data.pid;
-                    stat_all.master_parent_pid = data.parent_pid;
-                    var master_object = _.findWhere(processes, { "pid": stat_all.master_pid });
-
-                    master_object.name = ["Process", master_object.pid].join(" ");
-                    master_object.is_running = true;
-                    master_object.is_master = true;
-                    master_object.children = [];
-
-                    stat_all.processes.push(master_object);
-                });
-        }
-
-        // ensure that initStatus is only called once
-        var initStatusAllOnce = _.once(_initStatusAll);
-
-        // sets parent_pid on process
-        var setParentPID= function(proc) {
-            console.log(["setParentPID called with PID: ", proc.pid].join(" "))
-            basicService.get(proc.pid)
-                .then(function(data) {
-                    proc['parent_pid'] = data.parent_pid;
-                    return proc;
-                });
-        }
-
-        // set is_running and is_master flags on a processes
-        var setBooleans = function(proc) {
-            console.log(["setBooleans called with PID: ", proc.pid].join(" "))
-            proc.is_running = true;
-            proc.is_master = (proc.pid === status_all.master_pid);
-            return proc;
-        };
-
-        // initialize a processes node
-        var initProcesses= function(proc) {
-            console.log(["initProcesses called with PID: ", proc.pid].join(" "))
-            return proc;
-        };
 
         // initialize process file node
         var initFileData = function(proc) {
@@ -188,100 +113,67 @@ angular
 
         // pipeline to initialize a service_data.data object to a status_current.processes object
         var initProcessPipeline = _.pipeline(
-            setBooleans,
-            initProcesses,
             initFileData,
             initProcessHistory,
             initFileDataHistory
         );
 
-
-        // pipeline to merge a status_current process node with a status_all node
-
-        // pipeline to update process and file bools in status_all
-
         /*
          * MAIN FUNCTIONS
          */
 
-        // using AngularJS' $timeout, polls the /status REST service, updates status models w/ the response
-        var poller = function(service_data) {
-            service_data = {};
-            $http.get('/status').then(
-                function(r) { // success
-                    service_data = cloneObj(r);
-                    console.log("service_data: ---------- ----------");
-                    console.log(service_data);
-                    var processes = cloneObj(r.data);
-                    initStatusAllOnce(status_all, processes);
-                    status_current.processes = _.map(processes,
-                        function(process) {
-                            var proc = cloneObj(process);
-                            setParentPID(proc);
-                            initProcessPipeline(proc);
-                            return proc;
-                        });
-                    // either add or merge status_current.processes to status_all.processes
-                    // if it exists, merge its updates
-                    // if it does not exist, append it
-                    _.each(status_current.processes,
-                        function(process) {
-                            // TODO: refactor this to be less imperative, more functional
-                            var existing_process = _.findWhere(status_all.processes, { "pid": process.pid });
-                            if(_.isObject(existing_process)) {
-                                _.deepExtend(existing_process, process);
-                            } else {
-                                status_all.processes.push(cloneObj(process));
-                            }
-
-                        });
-
-                    // nest status_all.processes to create a hash of references in nested_processes
-                    // if the master process exists, proceed to locate
-                    status_processes = _.nest(status_all.processes, "parent_pid");
-
-
+        // periodically polls processService, calls various process data structure pipelines
+        var poller = function() {
+            console.log("poller() called.");
+            processService.get()
+                .then(function(processes) {
+                    console.log("executing processService.get()");
+                    status_current['processes'] = _.map(processes, function(process) { return process; } );
                     $timeout(poller, configService.UPDATE_DELTA);
-                },
-                function(r) { // failure
-                    alert("Could not retrieve process status. " +
-                        "The process has most likely completed. " +
-                        "This monitor will continue to function but it will not receive any more updates.");
-                }
-            ).then(function(i) {
-                    console.log("THEN-----------");
-                    console.log(i);
+                    return status_current;
                 });
-
-
-            console.log("status_current: ---------- ---------");
-            console.log(status_current);
-
-            console.log("status_all: ---------- ---------");
-            console.log(status_all);
-
-            console.log("status_processes: ---------- ---------");
-            console.log(status_processes);
 
             status_all.calls++;
         };
 
-        poller(service_data);
-
         return {
+            "poller": poller,
             "status_current": status_current,
             "status_all": status_all,
             "status_processes": status_processes
         };
     })
 
-    .factory('processService', function($http, $q) {
-        // returns all known details about a process.
+    // returns an array of processes with merged /basic and /status data
+    .factory('processService', function($http, $q, basicService) {
         return {
-            get: function(pid) {
-
+            get: function() {
+                var deferred = $q.defer();
+                var url = "/status";
+                $http.get(url)
+                    .success(function(data) { // Do something successful.
+                        deferred.resolve(data);
+                    })
+                    .error(function(data) { // Handle the error
+                        console.error("Could not retrieve status data.");
+                        deferred.reject();
+                    })
+                    .then(function(data) {
+                        var processes = data.data;
+                        // for each process, fetch and merge its /basic attributes
+                        return _.map(processes, function(process){
+                            process['test_attribute'] = "HELLO!";
+                            basicService.get(process.pid)
+                                .then(function(data) {
+                                    process = _.deepExtend(process, data);
+                                })
+                            return process;
+                        });
+                    });
+                return deferred.promise;
             }
-        }
+        };
+
     })
 
     .factory('basicService', function($http, $q) {
