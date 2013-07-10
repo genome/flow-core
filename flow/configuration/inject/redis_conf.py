@@ -8,7 +8,7 @@ import redis
 class RedisConfiguration(injector.Module):
     @injector.singleton
     @injector.provides(flow.interfaces.IStorage)
-    @injector.inject(host=setting('redis.host'),
+    @injector.inject(host=setting('redis.host', None),
             port=setting('redis.port', 6379),
             path=setting('redis.unix_socket_path', None))
     def provide_redis(self, host, port,  path):
