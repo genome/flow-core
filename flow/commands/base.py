@@ -1,5 +1,8 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
+from flow import exit_codes
+from flow.util.exit import exit_process
 from twisted.internet import reactor, defer
+
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -35,6 +38,7 @@ class CommandBase(object):
             yield self._execute(parsed_arguments)
         except Exception:
             LOG.exception("Unexpected Exception raised in command execution.")
+            exit_process(exit_codes.EXECUTE_FAILURE)
         LOG.debug("Stopping the twisted reactor.")
         reactor.stop()
 
