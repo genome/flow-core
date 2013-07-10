@@ -22,14 +22,14 @@ angular
         };
     })
 
-    .factory('statusService', function ($http, $timeout, configService, processService) {
+    .factory('statusService', function ($q, $http, $timeout, configService, processService, basicService) {
 
         /*
         * MODEL DATA STRUCTURES
          */
 
         // the current initialized status
-        var status_current = { "test": "testing 1 2 3" };
+        var status_current = { };
 
         // all initialized status updates with histories
         var status_all = {
@@ -125,14 +125,37 @@ angular
         // periodically polls processService, calls various process data structure pipelines
         var poller = function() {
             console.log("poller() called.");
+            var deferred_calls = [];
+
             processService.get()
                 .then(function(processes) {
                     console.log("executing processService.get()");
                     status_current['processes'] = _.map(processes, function(process) { return process; } );
                     $timeout(poller, configService.UPDATE_DELTA);
-                    return status_current;
+                    return status_current.processes;
+                })
+                .then(function(processes){
+                    console.log("Second processService then() hit.");
+                    console.log(processes);
+                    // create all the deferred basicService calls
+                    var basic_deferreds = _.map(processes, function(process){
+                        return basicService.get(process.pid);
+                    })
+                    // resolve them all with $q.when()
+                    $q.all(basic_deferreds).then(function(results){
+                        console.log("$q.when().then() hit.");
+                        console.log(results);
+                        status_all.processes = results;
+                    });
+                    // in the $q.when().then clause, merge the basic w/ the status
                 });
 
+//            var basic_deferred = $q.all(deferred_calls);
+//
+//            $q.when(basic_deferred).then(function(results){
+//                // merge process status and basic nodes here.
+//
+//            });
             status_all.calls++;
         };
 
@@ -157,18 +180,6 @@ angular
                     .error(function(data) { // Handle the error
                         console.error("Could not retrieve status data.");
                         deferred.reject();
-                    })
-                    .then(function(data) {
-                        var processes = data.data;
-                        // for each process, fetch and merge its /basic attributes
-                        return _.map(processes, function(process){
-                            process['test_attribute'] = "HELLO!";
-                            basicService.get(process.pid)
-                                .then(function(data) {
-                                    process = _.deepExtend(process, data);
-                                })
-                            return process;
-                        });
                     });
                 return deferred.promise;
             }
