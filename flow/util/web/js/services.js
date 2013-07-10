@@ -79,14 +79,28 @@ angular
             return proc;
         }
 
+        var initBooleans = function(proc) {
+            proc.is_master = (proc.pid == status_all.master_pid);
+            proc.is_running = true;
+            return proc;
+        }
+
         // create process history node, populate it with values defined in process_history_keys
         var initProcessHistory = function(proc) {
-
+            proc.history = [];
+            var keys = configService.PROCESS_HISTORY_KEYS;
+            var history = {};
+            history.index = status_all.calls;
+            _.each(keys, function(key) {
+                history[key] = proc[key];
+            });
+            proc.history.push(history);
+            return proc;
         }
 
         // create file history node(s), populate it with values defined in file_history_keys
         var initFileDataHistory = function(proc) {
-
+            return proc;
         }
 
         // find the difference of status_current and status_all processes, set all their is_running bools to false
@@ -113,6 +127,7 @@ angular
 
         // pipeline to initialize a service_data.data object to a status_current.processes object
         var initProcessPipeline = _.pipeline(
+            initBooleans,
             initFileData,
             initProcessHistory,
             initFileDataHistory
@@ -125,11 +140,12 @@ angular
         // periodically polls processService, calls various process data structure pipelines
         var poller = function() {
             console.log("poller() called.");
-            var deferred_calls = [];
 
             processService.get()
                 .then(function(processes) { // transform processService response to an array of initialized processes, set the timeout
-                    var current_processes = _.map(processes, function(process) { return process; } );
+                    var current_processes = _.map(processes, function(process) {
+                        return initProcessPipeline(process);
+                    });
                     $timeout(poller, configService.UPDATE_DELTA);
                     return current_processes;
                 })
@@ -143,22 +159,21 @@ angular
                     $q.all(basic_deferreds).then(function(results){
                         // merge status and basic nodes
                         status_current.processes = _.map(processes, function(process) {
-                            return _.deepExtend(process, _.findWhere(results, {"pid": process.pid}));
+                            return _.deepExtend(process, _.findWhere(results, { "pid": process.pid }));
                         })
 
-                        // merge current process nodes with their corresponding status_all.processes nodes
+                        // merge current process nodes into their corresponding status_all.processes nodes
                         _.each(status_current.processes, function(sc_process) {
-                            var sa_process = _.findWhere(status_all.processes, {"pid": sc_process.pid});
+                            var sa_process = _.findWhere(status_all.processes, { "pid": sc_process.pid });
                             if(_.isObject(sa_process)) {
-                                // merge it
-                                console.log(["Merging process", sa_process.pid].join(" "));
-                                _.deepExtend(sa_process, sc_process);
+                                _.deepExtend(sa_process, sc_process); // exists, merge it
                             } else {
-                                // add it
-                                console.log(["Adding process", sc_process.pid].join(" "));
-                                status_all.processes.push(cloneObj(sc_process));
+                                status_all.processes.push(cloneObj(sc_process)); // doesn't exist, add it
                             }
                         });
+
+                        // nest status_all.processes to create status_processes
+                        status_processes.processes = _.nest(cloneObj(status_all.processes), 'parent_pid');
                     });
                 });
 
