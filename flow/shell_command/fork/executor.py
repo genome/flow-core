@@ -1,11 +1,10 @@
 from flow import exit_codes
 from flow.shell_command.executor_base import ExecutorBase, send_message
+from flow.util.mkdir import make_path_to
 from twisted.internet import defer
 
 import contextlib
-import errno
 import logging
-import os
 import socket
 import subprocess
 
@@ -88,15 +87,3 @@ def open_files(executor_data):
             stdin_fh.close()
         if stdout_fh:
             stdout_fh.close()
-
-def make_path_to(filename):
-    if filename:
-        mkdir_p(os.path.dirname(filename))
-
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc: # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else: raise
