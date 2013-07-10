@@ -128,34 +128,40 @@ angular
             var deferred_calls = [];
 
             processService.get()
-                .then(function(processes) {
-                    console.log("executing processService.get()");
-                    status_current['processes'] = _.map(processes, function(process) { return process; } );
+                .then(function(processes) { // transform processService response to an array of initialized processes, set the timeout
+                    var current_processes = _.map(processes, function(process) { return process; } );
                     $timeout(poller, configService.UPDATE_DELTA);
-                    return status_current.processes;
+                    return current_processes;
                 })
-                .then(function(processes){
-                    console.log("Second processService then() hit.");
-                    console.log(processes);
+                .then(function(processes){ // get basic process info, merge with process details from processService
                     // create all the deferred basicService calls
                     var basic_deferreds = _.map(processes, function(process){
                         return basicService.get(process.pid);
-                    })
-                    // resolve them all with $q.when()
-                    $q.all(basic_deferreds).then(function(results){
-                        console.log("$q.when().then() hit.");
-                        console.log(results);
-                        status_all.processes = results;
                     });
-                    // in the $q.when().then clause, merge the basic w/ the status
+
+                    // resolve them all with $q.all()
+                    $q.all(basic_deferreds).then(function(results){
+                        // merge status and basic nodes
+                        status_current.processes = _.map(processes, function(process) {
+                            return _.deepExtend(process, _.findWhere(results, {"pid": process.pid}));
+                        })
+
+                        // merge current process nodes with their corresponding status_all.processes nodes
+                        _.each(status_current.processes, function(sc_process) {
+                            var sa_process = _.findWhere(status_all.processes, {"pid": sc_process.pid});
+                            if(_.isObject(sa_process)) {
+                                // merge it
+                                console.log(["Merging process", sa_process.pid].join(" "));
+                                _.deepExtend(sa_process, sc_process);
+                            } else {
+                                // add it
+                                console.log(["Adding process", sc_process.pid].join(" "));
+                                status_all.processes.push(cloneObj(sc_process));
+                            }
+                        });
+                    });
                 });
 
-//            var basic_deferred = $q.all(deferred_calls);
-//
-//            $q.when(basic_deferred).then(function(results){
-//                // merge process status and basic nodes here.
-//
-//            });
             status_all.calls++;
         };
 
