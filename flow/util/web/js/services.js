@@ -172,8 +172,19 @@ angular
                             }
                         });
 
+                        // find dead processes and toggle their is_running to false
+                        var sa_running = _.filter(status_all.processes, function(process) {
+                            return process.is_running == true;
+                        });
+                        _.each(sa_running, function(process) {
+                            if (!_.findWhere(status_current.processes, {"pid": process.pid})) {
+                                console.log(["Toggling is_running on process", process.pid, "to false"].join(" "));
+                                process.is_running = false;
+                            }
+                        });
+
                         // nest status_all.processes to create status_processes
-                        status_processes.processes = _.nest(cloneObj(status_all.processes), 'parent_pid');
+                        // status_processes.processes = _.nest(cloneObj(status_all.processes), 'parent_pid');
                     });
                 });
 
