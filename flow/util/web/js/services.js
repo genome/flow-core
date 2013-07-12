@@ -17,7 +17,8 @@ angular
             ],
             FILE_HISTORY_KEYS:  [ // these file attribute histories will be stored for generating charts
                 "pos",
-                "size"
+                "size",
+                "time_of_stat"
             ]
         };
     })
@@ -85,7 +86,7 @@ angular
             return proc;
         }
 
-        // create process history node, populate it with values defined in process_history_keys
+        // create process history node, populate it with values defined in PROCESS_HISTORY_KEYS
         var initProcessHistory = function(proc) {
             proc.history = [];
             var keys = configService.PROCESS_HISTORY_KEYS;
@@ -98,10 +99,24 @@ angular
             return proc;
         }
 
-        // create file history node(s), populate it with values defined in file_history_keys
+        // create file history node(s), populate it with values defined in FILE_HISTORY_KEYS
         var initFileDataHistory = function(proc) {
-            var files = proc.files;
+            var keys = configService.FILE_HISTORY_KEYS;
 
+            _.each(proc.files, function(file) {
+                _.each(file.descriptors, function(descriptor){
+                    descriptor.history = [];
+                    var history = {};
+                    history.index = status_all.calls;
+                    history.pos_time = proc.time;
+
+                    _.each(keys, function(key) {
+                        history[key] = descriptor[key];
+                    });
+
+                    descriptor.history.push(history);
+                });
+            });
             return proc;
         }
 
