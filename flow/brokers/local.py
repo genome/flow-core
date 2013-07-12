@@ -53,7 +53,7 @@ class LocalBroker(flow.interfaces.IBroker):
                 except:
                     LOG.exception('Failed to execute handler')
         else:
-            LOG.warning('No messages found in queue.')
+            LOG.info('No messages found in queue.')
 
 
 def _transform_bindings(source_bindings):
