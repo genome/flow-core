@@ -5,7 +5,7 @@ angular
         return {
             PROCESS_TREE_UPDATE_DELAY: 1000,
             CPU_UPDATE_DELAY: 300,
-            UPDATE_DELTA: 5000,
+            UPDATE_DELTA: 1000,
             NUM_DATA_PTS: 1000,
             PROCESS_HISTORY_KEYS: [ // these process attribute histories will be stored for generating charts
                 "memory_percent",
@@ -66,7 +66,7 @@ angular
                 function(open_file, key) {
                     var ofile = {};
                     ofile.name = key;
-                    ofile.fd = _.map(open_file,
+                    ofile.descriptors = _.map(open_file,
                         function(fd, key) {
                             var nfd= cloneObj(fd);
                             nfd['id'] = key;
@@ -100,6 +100,8 @@ angular
 
         // create file history node(s), populate it with values defined in file_history_keys
         var initFileDataHistory = function(proc) {
+            var files = proc.files;
+
             return proc;
         }
 
@@ -137,7 +139,8 @@ angular
          * MAIN FUNCTIONS
          */
 
-        // periodically polls processService, calls various process data structure pipelines
+        // periodically polls processService, initializes current processes,
+        // updates status_all, and nests processes for the treeview
         var poller = function() {
             console.log("poller() called.");
 
@@ -166,19 +169,18 @@ angular
                         _.each(status_current.processes, function(sc_process) {
                             var sa_process = _.findWhere(status_all.processes, { "pid": sc_process.pid });
                             if(_.isObject(sa_process)) {
-                                _.deepExtend(sa_process, sc_process); // exists, merge it
+                                _.mergeProcess(sa_process, sc_process); // exists, merge it
                             } else {
                                 status_all.processes.push(cloneObj(sc_process)); // doesn't exist, add it
                             }
                         });
 
-                        // find dead processes and toggle their is_running to false
+                        // find dead processes and toggle is_running to false
                         var sa_running = _.filter(status_all.processes, function(process) {
                             return process.is_running == true;
                         });
                         _.each(sa_running, function(process) {
                             if (!_.findWhere(status_current.processes, {"pid": process.pid})) {
-                                console.log(["Toggling is_running on process", process.pid, "to false"].join(" "));
                                 process.is_running = false;
                             }
                         });

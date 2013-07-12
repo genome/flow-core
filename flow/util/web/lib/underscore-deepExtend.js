@@ -14,9 +14,9 @@ deepExtend = function(obj) {
         slice = Array.prototype.slice,
         hasOwnProperty = Object.prototype.hasOwnProperty;
 
-    _.each(slice.call(arguments, 1), function(source) {
+    _.each(_.rest(arguments), function(source) {
         for (var prop in source) {
-            if (hasOwnProperty.call(source, prop)) {
+            if (_.has(source, prop)) {
                 if (_.isArray(source[prop]) && prop == "history") { // special case to concat history objects instead of merging them
                      obj[prop].push(source[prop][0]);
                 }

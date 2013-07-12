@@ -3,8 +3,8 @@ angular.module('processMonitor', ['processMonitor.controllers','processMonitor.s
     .config([function() {
         // underscore.js extensions
         _.mixin({
-            deepExtend: deepExtend,
-            nest: nest
+            deepExtend: deepExtend, // basic merging for nested objects/arrays
+            mergeProcess: mergeProcess // custom function for merging whole processes
         });
         console.log("processMonitor configured.");
     }])
