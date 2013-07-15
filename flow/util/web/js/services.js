@@ -41,20 +41,7 @@ angular
         };
 
         // references to status_all, nested using angularTree's name: "", children: [] schema
-        var status_processes = {
-            "processes": [
-                {
-                    "name": "Object 1" ,
-                    "children": [
-                        {
-                            "name": "Object 1.1",
-                            "children": []
-                        }
-
-                    ]
-                }
-            ]
-        };
+        var status_processes = [];
 
         /*
          * PIPELINE FUNCTIONS
@@ -66,6 +53,7 @@ angular
             proc.files = _.map(proc.open_files,
                 function(open_file, key) {
                     var ofile = {};
+                    ofile.is_open = true;
                     ofile.name = key;
                     ofile.descriptors = _.map(open_file,
                         function(fd, key) {
@@ -80,7 +68,7 @@ angular
             return proc;
         }
 
-        var initBooleans = function(proc) {
+        var initProcess = function(proc) {
             proc.is_master = (proc.pid == status_all.master_pid);
             proc.is_running = true;
             return proc;
@@ -120,16 +108,6 @@ angular
             return proc;
         }
 
-        // find the difference of status_current and status_all processes, set all their is_running bools to false
-        var setIsRunning = function(stat_current) {
-
-        }
-
-        // find the difference of status_current and status_all files, set all their is_open bools to false
-        var setIsOpen = function(stat_current) {
-
-        }
-
         /*
          * UTILITIES
          */
@@ -144,7 +122,7 @@ angular
 
         // pipeline to initialize a service_data.data object to a status_current.processes object
         var initProcessPipeline = _.pipeline(
-            initBooleans,
+            initProcess,
             initFileData,
             initProcessHistory,
             initFileDataHistory
@@ -200,8 +178,54 @@ angular
                             }
                         });
 
-                        // nest status_all.processes to create status_processes
-                        // status_processes.processes = _.nest(cloneObj(status_all.processes), 'parent_pid');
+                        // find closed files
+                        var sa_files_open;
+                        var sc_files_open;
+
+                        _.each(status_all.processes, function(process) {
+                            sa_files_open = _.map(process.files, function(file) {
+                                if(file.is_open == true) { return file }
+                            });
+                        });
+
+                        _.each(status_current.processes, function(process) {
+                            sc_files_open = _.map(process.files, function(file) {
+                                if(file.is_open == true) { return file }
+                            });
+                        });
+
+                        _.each(sc_files_open, function(file) {
+                            if (!_.findWhere(sa_files_open, {"name": file.name})) {
+                                file.is_open= false;
+                            }
+                        });
+
+                        var createRefObj  = function(process) {
+                            console.log(["Creating ref_obj of process", process.pid].join(" "));
+                            var ref_obj = {
+                                "pid": process.pid,
+                                "process": process,
+                                "children": findChildren(process)
+                            };
+                            return ref_obj;
+                        };
+
+                        var findChildren = function(process) {
+                            console.log(["Finding children of process", process.pid].join(" "));
+                            return _.chain(status_all.processes)
+                                .filter(function(sa_process) {
+                                    console.log("Filtering");
+                                    console.log(sa_process);
+                                    return process.pid == sa_process.parent_pid
+                                })
+                                .map(function(sa_process) { return createRefObj(sa_process) })
+                                .value();
+                        };
+
+                        // create nested references for angular-tree
+                        status_processes.push(createRefObj(
+                            _.findWhere(status_all.processes, { "is_master": true })
+                        ));
                     });
                 });
 
