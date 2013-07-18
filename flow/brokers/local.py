@@ -38,6 +38,7 @@ class LocalBroker(flow.interfaces.IBroker):
     def connect_and_listen(self):
         return self.listen()
 
+    @defer.inlineCallbacks
     def listen(self):
         while self.queue:
             exchange, routing_key, encoded_message = self.queue.popleft()
@@ -45,13 +46,10 @@ class LocalBroker(flow.interfaces.IBroker):
                     exchange, routing_key, encoded_message)
             queues = self.bindings[exchange][routing_key]
             for q in queues:
-                try:
-                    h = self.handlers[q]
-                    message_class = h.message_class
-                    message = message_class.decode(encoded_message)
-                    h(message)
-                except:
-                    LOG.exception('Failed to execute handler')
+                h = self.handlers[q]
+                message_class = h.message_class
+                message = message_class.decode(encoded_message)
+                yield h(message)
         else:
             LOG.info('No messages found in queue.')
 
