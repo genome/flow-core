@@ -6,7 +6,8 @@ angular
             PROCESS_TREE_UPDATE_DELAY: 1000,
             CPU_UPDATE_DELAY: 300,
             UPDATE_DELTA: 1000,
-            NUM_DATA_PTS: 1000,
+            SAVE_HISTORY: 100,
+            KEEP_DEAD_PROCESSES_FOR: 10,
             PROCESS_HISTORY_KEYS: [ // these process attribute histories will be stored for generating charts
                 "memory_percent",
                 "memory_vms",
@@ -28,6 +29,9 @@ angular
         /*
         * MODEL DATA STRUCTURES
          */
+
+        // debugging var
+        var fresh_dead_processes = [];
 
         // the current initialized status
         var status_current = { };
@@ -116,6 +120,14 @@ angular
             return JSON.parse(JSON.stringify(obj));
         }
 
+        var trimArray = function(array, trim_length) {
+            if (array.length > trim_length) {
+                for(var i = array.length - trim_length; i > 0; i--) {
+                    array.pop();
+                }
+            }
+        };
+
         /*
          * PIPELINES
          */
@@ -173,8 +185,9 @@ angular
                             return process.is_running == true;
                         });
                         _.each(sa_running, function(process) {
-                            if (!_.findWhere(status_current.processes, {"pid": process.pid})) {
+                            if (!_.isObject(_.findWhere(status_current.processes, {"pid": process.pid}))) {
                                 process.is_running = false;
+                                fresh_dead_processes.push(process);
                             }
                         });
 
@@ -200,22 +213,68 @@ angular
                             }
                         });
 
+                        // trim process and file histories
+                        _.each(status_all.processes, function(process) {
+                            var trim_len = configService.SAVE_HISTORY;
+                            trimArray(process.history, trim_len);
+                            _.each(process.files, function(file) {
+                                _.each(file.descriptors, function(descriptor) {
+                                    trimArray(descriptor.history, trim_len);
+                                });
+                            })
+                        });
+
+                        // cull dead processes
+                        var to_be_culled = [];
+
+                        var dead_processes = _.filter(status_all.processes,
+                            function(process) {
+                                return process.is_running == false
+                            });
+
+                        _.each(dead_processes,
+                            function(process) {
+                                if(_.has(process, 'age')) {
+                                    process.age++;
+                                } else {
+                                    process.age = 1;
+                                }
+
+                                if (process.age > configService.KEEP_DEAD_PROCESSES_FOR) {
+                                    to_be_culled.push(process);
+                                    // FIND AND CULL THE CHILDREN
+                                    var child_processes = _.filter(status.processes,
+                                        function(sa_process) { return process.pid == sa_process.parent_pid});
+
+                                    _.each(child_processes,
+                                        function(cprocess) {
+                                            // add to culled_processes if not already present
+                                            if(!_.isObject(_.findWhere(to_be_culled, {"pid": cprocess.pid }))) {
+                                                to_be_culled.push(cprocess);
+                                            }
+                                    });
+                                }
+                            });
+
+                        console.log("culling:");
+                        console.log(to_be_culled);
+
+                        status_all.processes = _.reject(status_all.processes,
+                            function(process) {
+                                return _.isObject(_.findWhere(to_be_culled, { "pid": process.pid }));
+                            });
+
                         var createRefObj  = function(process) {
-                            console.log(["Creating ref_obj of process", process.pid].join(" "));
-                            var ref_obj = {
+                            return {
                                 "pid": process.pid,
-                                "process": process,
+                                // "process": process,
                                 "children": findChildren(process)
                             };
-                            return ref_obj;
                         };
 
                         var findChildren = function(process) {
-                            console.log(["Finding children of process", process.pid].join(" "));
                             return _.chain(status_all.processes)
                                 .filter(function(sa_process) {
-                                    console.log("Filtering");
-                                    console.log(sa_process);
                                     return process.pid == sa_process.parent_pid
                                 })
                                 .map(function(sa_process) { return createRefObj(sa_process) })
@@ -223,13 +282,15 @@ angular
                         };
 
                         // create nested references for angular-tree
+                        status_processes.length = 0;
                         status_processes.push(createRefObj(
                             _.findWhere(status_all.processes, { "is_master": true })
                         ));
+
+                        console.log("incrementing calls");
+                        status_all.calls++;
                     });
                 });
-
-            status_all.calls++;
         };
 
         return {
