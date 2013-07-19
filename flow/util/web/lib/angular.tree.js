@@ -221,7 +221,7 @@
 
                 for (var childElemIndex = itemIndex; childElemIndex < listChildElems.length; childElemIndex += 1) {
                     var childElem = angular.element(listChildElems[childElemIndex]);
-                    var childItem = tree.getItem(childElem.scope());
+                    if (childElem.scope()) { var childItem = tree.getItem(childElem.scope()); }
 
                     if (childItem === item) {
                         break;
@@ -238,7 +238,7 @@
             while (listElem.children().length > newList.length) {
                 var removeElem = listElem.children().eq(newList.length);
 
-                if (removeElem.scope().$selected) {
+                if (removeElem.scope() && removeElem.scope().$selected) {
                     tree.selected(removeElem.scope(), false);
                 }
                 
@@ -252,8 +252,8 @@
             return {
                 compile: function (elem, attrs) {
                     var tree = initTree(elem, attrs, $compile, $document);
-
                     return function (scope, elem, attrs) {
+                        console.log("angularTree loadTree. -=-=-=-=-=-=-=-=-=-=");
                         loadTree(scope, tree, elem, tree.treeModelWatch);
                     };
                 }

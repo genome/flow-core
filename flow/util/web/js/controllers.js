@@ -8,11 +8,43 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'angula
         }])
     .controller('ProcessTree', ['$scope', 'statusService',
         function($scope, statusService) {
-            $scope.test = "testing 1 2 3";
             $scope.processes = statusService.status_processes;
 
         }])
+    .controller('ProcessTree2', ['$scope', 'statusService',
+        function($scope, statusService) {
+            var status_all = statusService.status_all;
+
+            $scope.processes = statusService.status_processes;
+            $scope.colors = {
+                true:'#99CCFF',
+                false:'white'
+            };
+
+            $scope.selection_class = {
+
+            };
+
+            $scope.getAttribute = function(pid, attribute) {
+                var process = _.findWhere(status_all.processes, { "pid": pid});
+
+                if (_.has(process, attribute)) {
+                    return process[attribute];
+                }
+            };
+
+            $scope.get10 = function() {
+                return 10;
+            }
+
+            $scope.selected = function () {
+                console.log(this.item.pid + ' is selected: ' + this.$selected);
+                if (this.$selected) {
+                    $scope.selected_pid = this.item.pid;
+                }
+            };
+        }])
     .controller('BasicData', ['$scope', 'statusService',
         function($scope, statusService) {
-            $scope.status_all= statusService.status_all;
+            $scope.status_all = statusService.status_all;
         }]);

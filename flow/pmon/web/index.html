@@ -38,8 +38,7 @@
         </div>
       </div>
       <div class="row">
-        <div class="span12 process-tree"
-             data-ng-controller="ProcessTree">
+        <div class="span4 process-tree" data-ng-controller="ProcessTree">
           <ul data-ng-tree="processes">
             <li>{{item.pid}}</li>
             <!--<li-->
@@ -48,7 +47,18 @@
             <!--{{ process.pid }}-->
             <!--</li>-->
           </ul>
-
+        </div>
+        <div class="span4 process-tree2" data-ng-controller="ProcessTree2">
+          <ul data-ng-tree="processes">
+            <li select='selected()'>
+              <div class="{{ colors[this.selected_pid == this.item.pid ]}}">
+                <div style='width:40px; float:left;'>
+                  {{ getAttribute(item.pid, 'cpu_percent') }}%
+                </div>
+                {{ item.pid }}
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
       <!--<div class="content">-->
