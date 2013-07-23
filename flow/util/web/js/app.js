@@ -1,5 +1,5 @@
 'use strict';
-angular.module('processMonitor', ['processMonitor.controllers','processMonitor.services'])
+angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.services', 'processMonitor.directives'])
     .config([function() {
         // underscore.js extensions
         _.mixin({

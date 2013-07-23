@@ -1,16 +1,36 @@
+@import "../lib/bootstrap/less/bootstrap.less";
+
 body {
-  font-family: "Helvetica";
+  font-family: "Helvetica, Arial";
+  color: #333;
+}
+
+.ng-tree {
+  list-style: none;
+  margin-left: 0;
+
   ul {
+    margin-left: 10px !important;
+  }
+
+  li {
+    margin-bottom: .1em;
     list-style: none;
-    li {
-      list-style: none;
-      color: #aa3;
+
+    .cpu-percent {
+      float: left;
+      width: 35px;
+      .clearfix();
+
     }
+  }
+
+  li.running-true {
+    color: #0000FF;
+  }
+
+  li.running-false {
+    color: #F00;
   }
 }
 
-.process-tree {
-  li {
-    background-color: #EFEFEF;
-  }
-}

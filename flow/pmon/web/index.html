@@ -7,9 +7,8 @@
   <meta name="viewport" content="width=device-width"/>
 
   <title>Flow Process Monitor!</title>
-  <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet"/>
   <link rel="stylesheet" type="text/css" href="lib/nv.d3.css"/>
-  <link rel="stylesheet" type="text/css" href="css/app.css"/>
+  <link rel="stylesheet" type="text/css" href="css/main.css"/>
 </head>
 <body>
 <!-- <div data-ng-app='processMonitorApp'> -->
@@ -37,53 +36,39 @@
           status_all.calls: {{status_all.calls}}
         </div>
       </div>
-      <div class="row">
-        <div class="span4 process-tree" data-ng-controller="ProcessTree">
-          <ul data-ng-tree="processes">
-            <li>{{item.pid}}</li>
-            <!--<li-->
-            <!--each="process in processes"-->
-            <!--data-ng-class="{'true': 'running', 'false': ''}[process.is_running]">-->
-            <!--{{ process.pid }}-->
+      <!--<div class="row">-->
+        <!--<div class="span4" data-ng-controller="ProcessTree">-->
+          <!--<ul data-ng-tree="processes">-->
+            <!--<li select='selected()' class="{{ 'running-' + item.is_running }}">-->
+              <!--<div class="{{ colors[this.selected_pid == this.item.pid ]}}">-->
+                <!--<div class="cpu-percent">-->
+                  <!--{{ item.cpu_percent }}%-->
+                <!--</div>-->
+                <!--{{ item.pid }}-->
+              <!--</div>-->
             <!--</li>-->
-          </ul>
+          <!--</ul>-->
+        <!--</div>-->
+      <!--</div>-->
+
+      <div class="row">
+        <div class="span4" data-ng-controller="Tree">
+          <pre>
+            {{ processes | json }}
+          </pre>
         </div>
-        <div class="span4 process-tree2" data-ng-controller="ProcessTree2">
-          <ul data-ng-tree="processes">
-            <li select='selected()'>
-              <div class="{{ colors[this.selected_pid == this.item.pid ]}}">
-                <div style='width:40px; float:left;'>
-                  {{ getAttribute(item.pid, 'cpu_percent') }}%
-                </div>
-                {{ item.pid }}
-              </div>
-            </li>
-          </ul>
+        <div class="span4">
+          <hello></hello>
+          <div data-ng-controller="Tree">
+            <ul>
+              <li>Processes</li>
+              <li ng-repeat="item in processes"
+                  ng-include="'templates/process-tree.html'"></li>
+            </ul>
+          </div>
         </div>
       </div>
-      <!--<div class="content">-->
-      <!--<div class="row">-->
 
-      <!--<div class="span4">-->
-      <!--<p>Status Current: </p>-->
-      <!--<pre>{{ status_current | json }}</pre>-->
-
-      <!--</div>-->
-
-      <!--<div class="span4">-->
-      <!--<p>Status All: </p>-->
-      <!--<pre>{{ status_all | json }}</pre>-->
-
-      <!--</div>-->
-
-      <!--<div class="span4">-->
-      <!--<p>Status Processes: </p>-->
-      <!--<pre>{{ status_processes | json }}</pre>-->
-      <!--</div>-->
-      <!--</div>-->
-
-      <!--</div>-->
-      <!--</div>&lt;!&ndash; /content &ndash;&gt;-->
     </div>
   </div>
 

@@ -20,6 +20,12 @@ angular
                 "pos",
                 "size",
                 "time_of_stat"
+            ],
+            STATUS_PROCESSES_KEYS: [ // these keys will be stored in the simplified nested process tree (status_processes)
+                "cpu_percent",
+                "memory_rss",
+                "is_running",
+                "is_master"
             ]
         };
     })
@@ -256,20 +262,23 @@ angular
                                 }
                             });
 
-                        console.log("culling:");
-                        console.log(to_be_culled);
-
                         status_all.processes = _.reject(status_all.processes,
                             function(process) {
                                 return _.isObject(_.findWhere(to_be_culled, { "pid": process.pid }));
                             });
 
                         var createRefObj  = function(process) {
-                            return {
-                                "pid": process.pid,
-                                // "process": process,
-                                "children": findChildren(process)
-                            };
+                            var ref_obj = {};
+
+                            ref_obj['pid'] = process.pid;
+                            ref_obj['children'] = findChildren(process);
+
+                            _.each(configService.STATUS_PROCESSES_KEYS,
+                                function(key) {
+                                    ref_obj[key] = process[key];
+                                });
+
+                            return ref_obj;
                         };
 
                         var findChildren = function(process) {
@@ -287,7 +296,6 @@ angular
                             _.findWhere(status_all.processes, { "is_master": true })
                         ));
 
-                        console.log("incrementing calls");
                         status_all.calls++;
                     });
                 });
