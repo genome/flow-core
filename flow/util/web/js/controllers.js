@@ -15,17 +15,21 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
 
             };
 
-            $scope.selected = function () {
-                console.log(this.item.pid + ' is selected: ' + this.$selected);
-                if (this.$selected) {
-                    $scope.selected_pid = this.item.pid;
-                }
+            $scope.getData = function (pid) {
+                console.log(["Selected", pid].join(" "));
+//                if (this.$selected) {
+//                    $scope.selected_pid = this.item.pid;
+//                }
             };
         }])
     .controller('Tree', ['$scope', 'statusService',
         function($scope, statusService) {
             console.log("Tree controller instantiated.");
             $scope.processes = statusService.status_processes;
+
+            $scope.getData = function (pid) {
+                console.log(["Selected", pid].join(" "));
+            };
         }])
     .controller('BasicData', ['$scope', 'statusService',
         function($scope, statusService) {
