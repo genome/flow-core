@@ -48,18 +48,22 @@ class ChannelFacade(object):
                 **other_properties)
 
     def basic_publish(self, exchange_name, routing_key, encoded_message):
-        self._connect_and_do('basic_publish',
-                exchange=exchange_name,
+        connect_deferred = self.connect()
+        confirm_deferred = defer.Deferred()
+        connect_deferred.addCallback(self._basic_publish,
+                confirm_deferred=confirm_deferred, exchange_name=exchange_name,
+                routing_key=routing_key, encoded_message=encoded_message)
+        return confirm_deferred
+
+    def _basic_publish(self, _, confirm_deferred, exchange_name, routing_key,
+            encoded_message):
+        self._last_publish_tag += 1
+        self._pika_channel.basic_publish(exchange=exchange_name,
                 routing_key=routing_key,
                 body=encoded_message,
                 properties=self._publish_properties)
-
-        self._last_publish_tag += 1
-        deferred = defer.Deferred()
-        self._publisher_confirm_manager.add_confirm_deferred(
-                publish_tag=self._last_publish_tag,
-                deferred=deferred)
-        return deferred
+        self._publisher_confirm_manager.add_confirm_deferred(self._last_publish_tag,
+                confirm_deferred)
 
     def basic_ack(self, recieve_tag):
         return self._pika_channel.basic_ack(recieve_tag)

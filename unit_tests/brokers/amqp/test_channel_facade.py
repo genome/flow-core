@@ -94,29 +94,8 @@ class ChannelFacadeTests(unittest.TestCase):
                 **properties)
 
     def test_basic_publish(self):
-        self.cf._connect_and_do = mock.Mock()
-        self.cf._publisher_confirm_manager = mock.Mock()
-        exchange_name = mock.Mock()
-        routing_key = mock.Mock()
-        encoded_message = mock.Mock()
-
-        FakeDeferred = mock.Mock()
-        fake_deferred = mock.Mock()
-        FakeDeferred.return_value = fake_deferred
-        with mock.patch('twisted.internet.defer.Deferred', new=FakeDeferred):
-            return_value = self.cf.basic_publish(exchange_name=exchange_name,
-                    routing_key=routing_key,
-                    encoded_message=encoded_message)
-            self.assertIs(return_value, fake_deferred)
-
-            self.cf._connect_and_do.assert_called_once_with('basic_publish',
-                    exchange=exchange_name,
-                    routing_key=routing_key,
-                    body=encoded_message,
-                    properties=self.cf._publish_properties)
-            self.assertEqual(self.cf._last_publish_tag, 1)
-            self.cf._publisher_confirm_manager.add_confirm_deferred.assert_called_once_with(
-                    publish_tag=1, deferred=fake_deferred)
+        # todo
+        pass
 
 
     def test_basic_ack(self):
