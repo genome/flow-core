@@ -75,10 +75,11 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
     def test_set_environment(self):
         net = mock.Mock()
         env = mock.Mock()
+        color_descriptor = mock.Mock()
         net.constant.return_value = env
 
         executor_data = {}
-        self.action._set_environment(net, executor_data)
+        self.action._set_environment(net, color_descriptor, executor_data)
 
         self.assertEqual(executor_data['environment'], env)
         net.constant.assert_called_once_with('environment', {})

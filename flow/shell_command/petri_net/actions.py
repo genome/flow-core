@@ -21,7 +21,7 @@ class ShellCommandDispatchAction(BasicMergeAction):
     def command_line(self, net, token_data):
         return self.args['command_line']
 
-    def environment(self, net):
+    def environment(self, net, color_descriptor):
         return net.constant('environment', {})
 
 
@@ -32,7 +32,7 @@ class ShellCommandDispatchAction(BasicMergeAction):
     def executor_data(self, net, color_descriptor, response_places):
         executor_data = {}
 
-        self._set_environment(net, executor_data)
+        self._set_environment(net, color_descriptor, executor_data)
         self._set_constants(net, executor_data)
         self._set_io_files(executor_data)
 
@@ -50,8 +50,8 @@ class ShellCommandDispatchAction(BasicMergeAction):
         result.update(response_places)
         return result
 
-    def _set_environment(self, net, executor_data):
-        environment = self.environment(net)
+    def _set_environment(self, net, color_descriptor, executor_data):
+        environment = self.environment(net, color_descriptor)
         if environment:
             executor_data['environment'] = environment
 
