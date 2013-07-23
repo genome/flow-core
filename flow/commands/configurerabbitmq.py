@@ -6,7 +6,7 @@ from twisted.internet import defer
 
 import flow.interfaces
 import logging
-#import time
+import time
 
 
 LOG = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class ConfigureRabbitMQCommand(CommandBase):
 
         # XXX Dirty workaround.  I can't tell why the bindings aren't declared
         # by the time we get here.
-        #time.sleep(2)
+        time.sleep(2)
 
 
     def _parse_config(self):

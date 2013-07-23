@@ -34,6 +34,9 @@ class AmqpBroker(interfaces.IBroker):
                 handler)
         return connect_deferred
 
+    def declare_queue(self, *args, **kwargs):
+        return self.channel.declare_queue(*args, **kwargs)
+
     def _start_handler(self, channel, handler):
         queue_name = handler.queue_name
         consume_deferred = channel.basic_consume(queue=queue_name)
