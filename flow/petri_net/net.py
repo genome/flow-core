@@ -151,6 +151,11 @@ class Net(rom.Object):
     def color_group(self, idx):
         return self.color_groups[idx]
 
+    def set_initial_color(self, initial_color):
+        if self.counters.setnx(_COLOR_KEY, initial_color) == 0:
+            raise ValueError("Cannot set initial color, since "
+                    "color has already been incremented")
+
     def add_color_group(self, size, parent_color=None,
             parent_color_group_idx=None):
         group_id = self._incr_counter(_COLOR_GROUP_KEY) - 1
