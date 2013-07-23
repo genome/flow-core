@@ -5261,38 +5261,63 @@ a.badge:focus {
 .affix {
   position: fixed;
 }
-body {
-  font-family: "Helvetica";
-  color: #333;
-}
-.ng-tree {
+.process-tree {
   list-style: none;
   margin-left: 0;
 }
-.ng-tree ul {
-  margin-left: 10px !important;
-}
-.ng-tree li {
-  margin-bottom: .1em;
-  list-style: none;
-}
-.ng-tree li .cpu-percent {
-  float: left;
-  width: 35px;
+.process-tree .process-block {
   *zoom: 1;
 }
-.ng-tree li .cpu-percent:before,
-.ng-tree li .cpu-percent:after {
+.process-tree .process-block:before,
+.process-tree .process-block:after {
   display: table;
   content: "";
   line-height: 0;
 }
-.ng-tree li .cpu-percent:after {
+.process-tree .process-block:after {
   clear: both;
 }
-.ng-tree li.running-true {
-  color: #0000FF;
+.process-tree .process-block .process-data {
+  *zoom: 1;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+  width: 92%;
+  padding-left: 4%;
+  padding-right: 4%;
+  margin-bottom: 5px;
 }
-.ng-tree li.running-false {
-  color: #F00;
+.process-tree .process-block .process-data:before,
+.process-tree .process-block .process-data:after {
+  display: table;
+  content: "";
+  line-height: 0;
+}
+.process-tree .process-block .process-data:after {
+  clear: both;
+}
+.process-tree .process-block .process-data .pid {
+  width: 70%;
+  float: left;
+}
+.process-tree .process-block .process-data .cpu {
+  width: 30%;
+  float: right;
+  text-align: right;
+  font-size: 80%;
+}
+.process-tree .process-block .running-true {
+  color: #03394A;
+  background-color: #94D7EF;
+}
+.process-tree .process-block .running-false {
+  background-color: #EFEFEF;
+}
+.process-tree .process-block .process-children ul {
+  margin-left: 10px;
+  margin-bottom: 0;
+}
+.process-tree .process-block .process-children li {
+  margin-bottom: .1em;
+  list-style: none;
 }

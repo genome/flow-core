@@ -156,14 +156,14 @@ angular
             console.log("poller() called.");
 
             processService.get()
-                .then(function(processes) { // transform processService response to an array of initialized processes, set the timeout
+                .then(function(processes) { // transform processService response to an array of initialized processes
                     var current_processes = _.map(processes, function(process) {
                         return initProcessPipeline(process);
                     });
-                    $timeout(poller, configService.UPDATE_DELTA);
+
                     return current_processes;
                 })
-                .then(function(processes){ // get basic process info, merge with process details from processService
+                .then(function(processes){
                     // create all the deferred basicService calls
                     var basic_deferreds = _.map(processes, function(process){
                         return basicService.get(process.pid);
@@ -296,6 +296,7 @@ angular
                             _.findWhere(status_all.processes, { "is_master": true })
                         ));
 
+                        $timeout(poller, configService.UPDATE_DELTA);
                         status_all.calls++;
                     });
                 });

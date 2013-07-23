@@ -1,36 +1,59 @@
 @import "../lib/bootstrap/less/bootstrap.less";
 
-body {
-  font-family: "Helvetica, Arial";
-  color: #333;
-}
-
-.ng-tree {
+.process-tree {
   list-style: none;
   margin-left: 0;
 
-  ul {
-    margin-left: 10px !important;
-  }
+  .process-block {
+    .clearfix();
 
-  li {
-    margin-bottom: .1em;
-    list-style: none;
-
-    .cpu-percent {
-      float: left;
-      width: 35px;
+    .process-data {
       .clearfix();
+      .border-radius(5px);
+      width: 92%;
+
+      padding-left: 4%;
+      padding-right: 4%;
+      margin-bottom: 5px;
+
+      .pid {
+        width: 70%;
+        float: left;
+      }
+      .cpu {
+        width: 30%;
+        float: right;
+        text-align: right;
+        font-size: 80%;
+      }
 
     }
-  }
 
-  li.running-true {
-    color: #0000FF;
-  }
+    .running-true {
+      color: #03394A;
+      background-color: #94D7EF;
+    }
 
-  li.running-false {
-    color: #F00;
+    .running-false {
+      background-color: #EFEFEF;
+    }
+
+    .process-children {
+      ul {
+        margin-left: 10px;
+        margin-bottom: 0;
+      }
+
+      li {
+        margin-bottom: .1em;
+        list-style: none;
+
+        .cpu-percent {
+
+        }
+      }
+
+    }
   }
 }
 

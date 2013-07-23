@@ -32,7 +32,6 @@
     <div data-ng-controller="MainController">
       <div class="row">
         <div class="span12" data-ng-controller="BasicData">
-          status_all.master_pid: {{status_all.master_pid}}<br />
           status_all.calls: {{status_all.calls}}
         </div>
       </div>
@@ -52,20 +51,17 @@
       <!--</div>-->
 
       <div class="row">
-        <div class="span4" data-ng-controller="Tree">
-          <pre>
-            {{ processes | json }}
-          </pre>
-        </div>
-        <div class="span4">
-          <hello></hello>
+
+        <div class="span2">
           <div data-ng-controller="Tree">
-            <ul>
-              <li>Processes</li>
-              <li ng-repeat="item in processes"
-                  ng-include="'templates/process-tree.html'"></li>
+            <ul class="process-tree">
+              <li ng-repeat="item in processes" ng-include="'templates/process-tree.html'"></li>
             </ul>
           </div>
+        </div>
+
+        <div class="span4" data-ng-controller="Tree">
+          <pre>{{ processes | json }}</pre>
         </div>
       </div>
 
@@ -77,7 +73,6 @@
   <script type="text/javascript" src="lib/underscore-contrib.min.js"></script>
   <script type="text/javascript" src="lib/underscore-deepExtend.js"></script>
   <script type="text/javascript" src="lib/underscore-mergeProcess.js"></script>
-  <script type="text/javascript" src="lib/underscore-nest.min.js"></script>
 
   <script type="text/javascript" src="lib/angular.js"></script>
   <script type="text/javascript" src="lib/angular-resource.min.js"></script>
@@ -89,7 +84,7 @@
   <script type="text/javascript" src="lib/sprintf.min.js"></script>
   <script type="text/javascript" src="lib/sprintf.min.js"></script>
 
-  <script type="text/javascript" src="lib/watch.js"></script>
+  <!--<script type="text/javascript" src="lib/watch.js"></script>-->
 
   <!-- APP SCRIPTS -->
 
