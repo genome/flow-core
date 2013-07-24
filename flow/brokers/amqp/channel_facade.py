@@ -65,6 +65,9 @@ class ChannelFacade(object):
         self._publisher_confirm_manager.add_confirm_deferred(self._last_publish_tag,
                 confirm_deferred)
 
+    def basic_consume(self, *args, **kwargs):
+        return self._pika_channel.basic_consume(*args, **kwargs)
+
     def basic_ack(self, recieve_tag):
         return self._pika_channel.basic_ack(recieve_tag)
 
