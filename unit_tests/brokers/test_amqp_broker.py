@@ -47,6 +47,7 @@ class AmqpBrokerTests(unittest.TestCase):
 
     def test_private_start_handler(self):
         channel = mock.Mock()
+        self.b.channel = mock.Mock()
         deferred = mock.Mock()
         channel.basic_consume = mock.Mock(return_value=deferred)
         handler = mock.Mock()
@@ -55,9 +56,7 @@ class AmqpBrokerTests(unittest.TestCase):
         return_value = self.b._start_handler(channel, handler=handler)
         self.assertIs(return_value, channel)
 
-        channel.basic_consume.assert_called_once_with(queue='fake_queue_name')
-        deferred.addCallback.assert_called_once_with(self.b._begin_get_loop,
-                handler)
+        self.b.channel.basic_consume.assert_called_once_with(queue='fake_queue_name')
 
     def test_private_begin_get_loop(self):
         queue = mock.Mock()

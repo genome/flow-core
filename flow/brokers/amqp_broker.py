@@ -37,12 +37,12 @@ class AmqpBroker(interfaces.IBroker):
     def declare_queue(self, *args, **kwargs):
         return self.channel.declare_queue(*args, **kwargs)
 
-    def _start_handler(self, channel, handler):
+    def _start_handler(self, _cb_channel, handler):
         queue_name = handler.queue_name
-        consume_deferred = channel.basic_consume(queue=queue_name)
+        consume_deferred = self.channel.basic_consume(queue=queue_name)
         add_callback_and_default_errback(consume_deferred, self._begin_get_loop,
                 handler)
-        return channel
+        return _cb_channel
 
     def _begin_get_loop(self, consume_info, handler):
         queue, consumer_tag = consume_info
