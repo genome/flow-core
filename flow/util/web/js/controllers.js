@@ -35,7 +35,11 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
             $scope.status_all = statusService.status_all;
         }])
 
-    .controller('ProcessDetail', ['$scope', '$location', 'statusDetailService',
-        function($scope, $location, statusDetailService){
+    .controller('ProcessDetail', ['$scope', 'statusDetailService',
+        function($scope, statusDetailService){
+            console.log("ProcessDetail instantiated.");
+            $scope.test = function() {
+                console.log("test clicked");
+            }
             $scope.greeting = "HI";
         }]);
