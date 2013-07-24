@@ -20,9 +20,9 @@ class LsfPreExecCommand(CommandBase):
 
     @staticmethod
     def annotate_parser(parser):
-        parser.add_argument('--color')
-        parser.add_argument('--color-group-idx')
-        parser.add_argument('--execute-begin', '-b')
+        parser.add_argument('--color', type=int)
+        parser.add_argument('--color-group-idx', type=int)
+        parser.add_argument('--execute-begin', '-b', type=int)
         parser.add_argument('--net-key', '-n')
 
     def _execute(self, parsed_arguments):

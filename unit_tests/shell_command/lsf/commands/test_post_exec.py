@@ -7,22 +7,6 @@ import unittest
 
 
 class PostExecCommandTest(unittest.TestCase):
-    def test_annotate_parser(self):
-        orchestrator = mock.Mock()
-        command = post_exec.LsfPostExecCommand(orchestrator=orchestrator)
-
-        parser = mock.Mock()
-
-        command.annotate_parser(parser)
-
-        self.assertEqual(5, len(parser.add_argument.mock_calls))
-        parser.add_argument.assert_any_call('--color')
-        parser.add_argument.assert_any_call('--color-group-idx')
-        parser.add_argument.assert_any_call('--execute-failure', '-f')
-        parser.add_argument.assert_any_call('--execute-success', '-s')
-        parser.add_argument.assert_any_call('--net-key', '-n')
-
-
     def test_execute_success(self):
         orchestrator = mock.Mock()
         command = post_exec.LsfPostExecCommand(orchestrator=orchestrator)

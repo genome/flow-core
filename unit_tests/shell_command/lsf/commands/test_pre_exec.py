@@ -5,21 +5,6 @@ import unittest
 
 
 class PreExecCommandTest(unittest.TestCase):
-    def test_annotate_parser(self):
-        orchestrator = mock.Mock()
-        command = pre_exec.LsfPreExecCommand(orchestrator=orchestrator)
-
-        parser = mock.Mock()
-
-        command.annotate_parser(parser)
-
-        self.assertEqual(4, len(parser.add_argument.mock_calls))
-        parser.add_argument.assert_any_call('--color')
-        parser.add_argument.assert_any_call('--color-group-idx')
-        parser.add_argument.assert_any_call('--execute-begin', '-b')
-        parser.add_argument.assert_any_call('--net-key', '-n')
-
-
     def test_execute(self):
         orchestrator = mock.Mock()
         command = pre_exec.LsfPreExecCommand(orchestrator=orchestrator)

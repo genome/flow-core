@@ -22,10 +22,10 @@ class LsfPostExecCommand(CommandBase):
 
     @staticmethod
     def annotate_parser(parser):
-        parser.add_argument('--color')
-        parser.add_argument('--color-group-idx')
-        parser.add_argument('--execute-failure', '-f')
-        parser.add_argument('--execute-success', '-s')
+        parser.add_argument('--color', type=int)
+        parser.add_argument('--color-group-idx', type=int)
+        parser.add_argument('--execute-failure', '-f', type=int)
+        parser.add_argument('--execute-success', '-s', type=int)
         parser.add_argument('--net-key', '-n')
 
     def _execute(self, parsed_arguments):
