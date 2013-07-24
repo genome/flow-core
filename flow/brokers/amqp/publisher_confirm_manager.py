@@ -54,7 +54,10 @@ class PublisherConfirmManager(object):
             deferreds = [(self._confirm_deferreds[tag], tag) for tag in tags]
             return deferreds
         else:
-            return [(self._confirm_deferreds[publish_tag], publish_tag)]
+            if publish_tag in self._confirm_deferreds:
+                return [(self._confirm_deferreds[publish_tag], publish_tag)]
+            else:
+                return []
 
     def add_confirm_deferred(self, publish_tag, deferred):
         if publish_tag not in self._confirm_deferreds:
