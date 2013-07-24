@@ -1,0 +1,11 @@
+<div class="process-block">
+  <div class="process-data running-{{ item.is_running }}" data-ng-click="viewProcess(item.pid)">
+    <div class="pid">{{ item.pid }}</div>
+    <div class="cpu">{{ item.cpu_percent }}%</div>
+  </div>
+  <div class="process-children">
+    <ul>
+      <li data-ng-repeat="item in item.children" data-ng-include="'templates/process-tree.html'"></li>
+    </ul>
+  </div>
+</div>

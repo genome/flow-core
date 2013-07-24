@@ -347,6 +347,10 @@ angular
                 return deferred.promise;
             }
         };
+    })
+
+    .factory('statusDetailService', function(statusService){
+        return {};
     });
 
 

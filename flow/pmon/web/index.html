@@ -29,39 +29,39 @@
 <!-- </div> -->
 <div class="container">
   <div data-ng-app="processMonitor">
-    <div data-ng-controller="MainController">
-      <div class="row">
-        <div class="span12" data-ng-controller="BasicData">
-          status_all.calls: {{status_all.calls}}
+    <div class="row">
+      <div class="span12" data-ng-controller="BasicData">
+        status_all.calls: {{status_all.calls}}
+      </div>
+    </div>
+    <!--<div class="row">-->
+    <!--<div class="span4" data-ng-controller="ProcessTree">-->
+    <!--<ul data-ng-tree="processes">-->
+    <!--<li select='selected()' class="{{ 'running-' + item.is_running }}">-->
+    <!--<div class="{{ colors[this.selected_pid == this.item.pid ]}}">-->
+    <!--<div class="cpu-percent">-->
+    <!--{{ item.cpu_percent }}%-->
+    <!--</div>-->
+    <!--{{ item.pid }}-->
+    <!--</div>-->
+    <!--</li>-->
+    <!--</ul>-->
+    <!--</div>-->
+    <!--</div>-->
+
+    <div class="row">
+
+      <div class="span2">
+        <div data-ng-controller="Tree">
+          <ul class="process-tree">
+            <li data-ng-repeat="item in processes" data-ng-include="'templates/process-tree.html'"></li>
+          </ul>
         </div>
       </div>
-      <!--<div class="row">-->
-        <!--<div class="span4" data-ng-controller="ProcessTree">-->
-          <!--<ul data-ng-tree="processes">-->
-            <!--<li select='selected()' class="{{ 'running-' + item.is_running }}">-->
-              <!--<div class="{{ colors[this.selected_pid == this.item.pid ]}}">-->
-                <!--<div class="cpu-percent">-->
-                  <!--{{ item.cpu_percent }}%-->
-                <!--</div>-->
-                <!--{{ item.pid }}-->
-              <!--</div>-->
-            <!--</li>-->
-          <!--</ul>-->
-        <!--</div>-->
-      <!--</div>-->
 
-      <div class="row">
+      <div class="span10">
+        <div data-ng-view>
 
-        <div class="span2">
-          <div data-ng-controller="Tree">
-            <ul class="process-tree">
-              <li ng-repeat="item in processes" ng-include="'templates/process-tree.html'"></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="span4" data-ng-controller="Tree">
-          <pre>{{ processes | json }}</pre>
         </div>
       </div>
 

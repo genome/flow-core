@@ -1,8 +1,4 @@
 angular.module('processMonitor.controllers', ['processMonitor.services', 'processMonitor.directives', 'angularTree'])
-    .controller('MainController', ['$scope', 'statusService',
-        function($scope, statusService) {
-            $scope.status_processes = statusService.status_processes;
-        }])
     .controller('ProcessTree', ['$scope', 'statusService',
         function($scope, statusService) {
             $scope.processes = statusService.status_processes;
@@ -22,16 +18,24 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
 //                }
             };
         }])
-    .controller('Tree', ['$scope', 'statusService',
-        function($scope, statusService) {
+
+    .controller('Tree', ['$scope', '$location', 'statusService',
+        function($scope, $location, statusService) {
             console.log("Tree controller instantiated.");
             $scope.processes = statusService.status_processes;
 
-            $scope.getData = function (pid) {
+            $scope.viewProcess= function (pid) {
                 console.log(["Selected", pid].join(" "));
+                $location.path("process/" + pid);
             };
         }])
+
     .controller('BasicData', ['$scope', 'statusService',
         function($scope, statusService) {
             $scope.status_all = statusService.status_all;
+        }])
+
+    .controller('ProcessDetail', ['$scope', '$location', 'statusDetailService',
+        function($scope, $location, statusDetailService){
+            $scope.greeting = "HI";
         }]);

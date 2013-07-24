@@ -1,11 +1,15 @@
 'use strict';
 angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.services', 'processMonitor.directives'])
-    .config([function() {
+    .config(['$routeProvider', function($routeProvider, ProcessDetail) {
         // underscore.js extensions
         _.mixin({
             deepExtend: deepExtend, // basic merging for nested objects/arrays
             mergeProcess: mergeProcess // custom function for merging whole processes
         });
+
+        $routeProvider
+            .when('/process/:pid', { controller: ProcessDetail, templateUrl: 'templates/process-detail.html' });
+
         console.log("processMonitor configured.");
     }])
     .run(function(statusService, basicService) {
