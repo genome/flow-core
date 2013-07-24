@@ -117,7 +117,7 @@ def set_rlimits(request, limits, available_limits):
         except KeyError:
             raise ResourceException('Could not map rlimit resource "%s"' % name)
 
-    request.rlimits = rlimits
+    request.rLimits = rlimits
 
 
 def make_rusage_string(select_strings, rusage_strings):
