@@ -122,10 +122,10 @@ class PrePostCommandStringTest(unittest.TestCase):
         }
         response_places = { }
 
-        expected_result = ('bash -c "\'EXE\' --net-key \'<NK>\' --color <C> '
+        expected_result = ('bash -c "EXE --net-key \'<NK>\' --color <C> '
                 '--color-group-idx <G>"')
         self.assertEqual(expected_result,
-                executor.make_pre_post_command_string('EXE',
+                executor.make_pre_post_command_string(['EXE'],
                     executor_data, response_places))
 
 
@@ -141,10 +141,10 @@ class PrePostCommandStringTest(unittest.TestCase):
         }
         response_places = { }
 
-        expected_result = ('bash -c "\'EXE\' --net-key \'<NK>\' --color <C> '
+        expected_result = ('bash -c "EXE --net-key \'<NK>\' --color <C> '
                 '--color-group-idx <G> 1>> \'STDOUT\' 2>> \'STDERR\'"')
         self.assertEqual(expected_result,
-                executor.make_pre_post_command_string('EXE',
+                executor.make_pre_post_command_string(['EXE'],
                     executor_data, response_places))
 
     def test_response_places(self):
@@ -160,10 +160,10 @@ class PrePostCommandStringTest(unittest.TestCase):
             'place_two': '--place-two',
         }
 
-        expected_result = ('bash -c "\'EXE\' --net-key \'<NK>\' --color <C> '
+        expected_result = ('bash -c "EXE --net-key \'<NK>\' --color <C> '
                 '--color-group-idx <G> --place-one 1 --place-two 2"')
         self.assertEqual(expected_result,
-                executor.make_pre_post_command_string('EXE',
+                executor.make_pre_post_command_string(['EXE'],
                     executor_data, response_places))
 
 

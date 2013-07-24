@@ -153,7 +153,7 @@ def make_pre_post_command_string(executable, executor_data, response_places):
     base_arguments = ("--net-key '%(net_key)s' --color %(color)s "
             "--color-group-idx %(color_group_idx)s" % executor_data)
 
-    base_command_line = ["'%s'" % executable, base_arguments]
+    base_command_line = executable + [base_arguments]
 
     for place_name, command_line_flag in response_places.iteritems():
         base_command_line.extend([
@@ -173,7 +173,7 @@ def make_pre_post_command_string(executable, executor_data, response_places):
 def _localize_cmd(cmd):
     command = cmd[0]
     localized_command = _find_executable(command)
-    return [localized_command] + cmd[1:]
+    return ["'%s'" % localized_command] + cmd[1:]
 
 def _find_executable(name):
     executables = which(name)
