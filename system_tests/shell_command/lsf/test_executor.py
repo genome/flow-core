@@ -30,7 +30,7 @@ class LSFExecutorSubmitTest(unittest.TestCase):
     def test_submit_success(self):
         executor_data = {}
         resources = {}
-        command_line = ['ls']
+        command_line = [u'ls']
         exit_code = self.e.execute_command_line(
                 job_id_callback=self.job_id_callback,
                 command_line=command_line,
