@@ -93,7 +93,7 @@ class LSFExecutor(ExecutorBase):
         resource.set_all_resources(request, resources, self.available_resources)
         self.set_options(request, executor_data)
 
-        request.command = str(' '.join(command_line))
+        request.command = str(' '.join("'%s'" % word for word in command_line))
 
         return request
 
