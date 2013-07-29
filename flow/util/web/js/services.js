@@ -282,6 +282,7 @@ angular
                         };
 
                         var findChildren = function(process) {
+
                             return _.chain(status_all.processes)
                                 .filter(function(sa_process) {
                                     return process.pid == sa_process.parent_pid
@@ -308,9 +309,7 @@ angular
             "status_all": status_all,
             "status_processes": status_processes,
             getProcess: function(pid) {
-                console.log(["Getting process", pid].join(" "));
-                return _.find(status_all.processes, function(proc) { return proc.pid = pid })
-                // return _.findWhere(status_all.proceses, { "pid": pid });
+                return _.find(status_all.processes, function(proc) { return proc.pid == pid })
             }
         };
     })

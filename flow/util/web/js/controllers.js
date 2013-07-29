@@ -48,13 +48,6 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
             $scope.addWatcher = function() {
                 $scope.process_data = statusService.getProcess(pid);
 
-                var historyCount = function() {
-                    return $scope.process_data.history.length;
-                };
-
-                $scope.$watch('process_data', function() {
-                    console.log("process_data updated.")
-                }, true);
             };
 
 //            var updateProcess = function(pid) {
