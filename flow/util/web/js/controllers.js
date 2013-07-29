@@ -35,11 +35,35 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
             $scope.status_all = statusService.status_all;
         }])
 
-    .controller('ProcessDetail', ['$scope', 'statusDetailService',
-        function($scope, statusDetailService){
-            console.log("ProcessDetail instantiated.");
+    .controller('ProcessDetail', ['$scope', '$routeParams', 'statusService',
+        function($scope, $routeParams, statusService){
+            var pid = $routeParams['pid'];
+
             $scope.test = function() {
-                console.log("test clicked");
-            }
+                console.log("test clicked, pid: " + pid);
+            };
+
             $scope.greeting = "HI";
+
+            $scope.addWatcher = function() {
+                $scope.process_data = statusService.getProcess(pid);
+
+                var historyCount = function() {
+                    return $scope.process_data.history.length;
+                };
+
+                $scope.$watch('process_data', function() {
+                    console.log("process_data updated.")
+                }, true);
+            };
+
+//            var updateProcess = function(pid) {
+//                console.log(["Updating process", pid].join(" "));
+//                $scope.process_detail = statusService.getProcess(pid);
+//            };
+//
+//            $scope.addWatcher = function() {
+//                $scope.$watch(statusService.getProcess(pid)['history'].length, updateProcess(pid));
+//            }
+
         }]);

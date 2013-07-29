@@ -1,4 +1,9 @@
-<div data-ng-controller="ProcessDetail">
-  <p><a ng-click="test()">PROCESS DETAIL</a></p>
-  <p>Greeting: {{ greeting }}</p>
+<div data-ng-controller="ProcessDetail" data-ng-init="addWatcher()">
+    <div class="row">
+    <div class="span10">
+      <p><a ng-click="test()">PROCESS DETAIL</a></p>
+      <p>Greeting: {{ greeting }}</p>
+      <pre>{{ process_detail | json }}</pre>
+    </div>
+  </div>
 </div>
