@@ -39,13 +39,8 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
         function($scope, $routeParams, statusService){
             var pid = $routeParams['pid'];
 
-            $scope.test = function() {
-                console.log("test clicked, pid: " + pid);
-            };
-
-            $scope.greeting = "HI";
-
-            $scope.addWatcher = function() {
+            $scope.assignProcessData = function() {
+                console.log(['Assigning process_data from process', pid].join(" "));
                 $scope.process_data = statusService.getProcess(pid);
 
             };

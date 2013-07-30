@@ -1,7 +1,7 @@
-<div data-ng-controller="ProcessDetail" data-ng-init="addWatcher()">
-    <div class="row">
+<div data-ng-controller="ProcessDetail" data-ng-init="assignProcessData()">
+  <div class="row">
     <div class="span10">
-      <pre>{{ process_data | json }}</pre>
+      <div data-cpu-chart data-ng-model="process_data"></div>
     </div>
   </div>
 </div>

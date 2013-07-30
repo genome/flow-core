@@ -1,5 +1,4 @@
-angular
-    .module('processMonitor.services', ['ngResource'])
+angular.module('processMonitor.services', ['ngResource'])
 
     .factory('configService', function() {
         return {
