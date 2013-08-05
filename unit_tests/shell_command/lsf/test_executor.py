@@ -134,10 +134,8 @@ class PrePostCommandStringTest(unittest.TestCase):
             'net_key': '<NK>',
             'color': '<C>',
             'color_group_idx': '<G>',
-            'lsf_options': {
-                'stdout': 'STDOUT',
-                'stderr': 'STDERR',
-            },
+            'stdout': 'STDOUT',
+            'stderr': 'STDERR',
         }
         response_places = { }
 

@@ -161,12 +161,11 @@ def make_pre_post_command_string(executable, executor_data, response_places):
             "%s" % str(executor_data[place_name]),
         ])
 
-    lsf_options = executor_data.get('lsf_options', {})
-    if 'stdout' in lsf_options:
-        base_command_line.append("1>> '%s'" % lsf_options['stdout'])
+    if 'stdout' in executor_data:
+        base_command_line.append("1>> '%s'" % executor_data['stdout'])
 
-    if 'stderr' in lsf_options:
-        base_command_line.append("2>> '%s'" % lsf_options['stderr'])
+    if 'stderr' in executor_data:
+        base_command_line.append("2>> '%s'" % executor_data['stderr'])
 
     return 'bash -c "%s"' % ' '.join(base_command_line)
 
