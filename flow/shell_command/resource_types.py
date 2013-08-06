@@ -43,7 +43,7 @@ class Resource(object):
 
 class IntegerResource(Resource):
     def __init__(self, value):
-        self.value = value
+        self.value = int(value)
 
     def value_in_units(self, units):
         if units is None:
@@ -56,7 +56,7 @@ class IntegerResource(Resource):
 
 class StorageResource(Resource):
     def __init__(self, value, units):
-        self.value = value
+        self.value = int(value)
         self.units = units
 
     def value_in_units(self, units):
@@ -68,7 +68,7 @@ class StorageResource(Resource):
 
 class TimeResource(Resource):
     def __init__(self, value, units):
-        self.value = value
+        self.value = int(value)
         self.units = units
 
     def value_in_units(self, units):
@@ -120,12 +120,12 @@ def convert_time_value(src_value, src_units, dest_units):
 
 def make_all_resource_objects(resource_strings, resource_types):
     result = {
-        'limit': make_resource_objects(
-            resource_strings.get('limit', {}), resource_types),
-        'request': make_resource_objects(
-            resource_strings.get('request', {}), resource_types),
-        'reserve': make_resource_objects(
-            resource_strings.get('reserve', {}), resource_types),
+        'limit': make_resource_objects(resource_strings.get('limit', {}),
+            resource_types.get('limit', {})),
+        'request': make_resource_objects(resource_strings.get('request', {}),
+            resource_types.get('request', {})),
+        'reserve': make_resource_objects( resource_strings.get('reserve', {}),
+            resource_types.get('reserve', {})),
     }
     return result
 

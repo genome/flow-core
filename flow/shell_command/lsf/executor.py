@@ -104,6 +104,7 @@ class LSFExecutor(ExecutorBase):
         }
         pre_exec_command = make_pre_post_command_string(self.pre_exec_command,
                 executor_data, response_places)
+        LOG.debug('pre-exec command: %s', pre_exec_command)
 
         request.preExecCmd = str(pre_exec_command)
         request.options |= lsf.SUB_PRE_EXEC
@@ -115,6 +116,7 @@ class LSFExecutor(ExecutorBase):
         }
         post_exec_command = make_pre_post_command_string(self.post_exec_command,
                 executor_data, response_places)
+        LOG.debug('post-exec command: %s', post_exec_command)
 
         request.postExecCmd = str(post_exec_command)
         request.options3 |= lsf.SUB3_POST_EXEC

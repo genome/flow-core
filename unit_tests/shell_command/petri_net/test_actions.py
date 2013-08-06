@@ -56,22 +56,6 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         self.assertItemsEqual(self.net_constants + ['environment'],
                 executor_data.keys())
 
-    def test_executor_data_resources(self):
-        resources = {'limit': {'one': 2}}
-        self.action.args['resources'] = resources
-
-        net = mock.Mock()
-        color_descriptor = mock.Mock()
-        response_places = mock.Mock()
-        executor_data = self.action.executor_data(net,
-                color_descriptor, response_places)
-
-        self.assertItemsEqual(self.net_constants + ['environment',
-            'resources'], executor_data.keys())
-
-        self.assertEqual(resources, executor_data['resources'])
-
-
     def test_set_environment(self):
         net = mock.Mock()
         env = mock.Mock()
@@ -175,9 +159,6 @@ class LSFDispatchActionTest(unittest.TestCase):
                 self.connection, self.key, args=self.args)
 
     def test_executor_data_all(self):
-        resources = {'limit': {'one': 2}}
-        self.action.args['resources'] = resources
-
         lsf_options = {'queue': 'long'}
         self.action.args['lsf_options'] = lsf_options
 
@@ -189,9 +170,8 @@ class LSFDispatchActionTest(unittest.TestCase):
         executor_data = self.action.executor_data(net,
                 color_descriptor, response_places)
         self.assertItemsEqual(self.net_constants + ['environment',
-            'resources', 'lsf_options'], executor_data.keys())
+            'lsf_options'], executor_data.keys())
 
-        self.assertEqual(resources, executor_data['resources'])
         self.assertEqual(lsf_options, executor_data['lsf_options'])
 
 

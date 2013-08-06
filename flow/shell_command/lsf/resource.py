@@ -2,6 +2,10 @@ from flow.shell_command.resource_types import ResourceException
 from pythonlsf import lsf
 
 import abc
+import logging
+
+
+LOG = logging.getLogger(__name__)
 
 
 class LSFResource(object):
@@ -66,7 +70,7 @@ class LSFrlimit(LSFLimit):
 
     def set_limit(self, request, rlimits, resource_spec):
         value = resource_spec.value_in_units(self.units)
-        rlimits[self.option_index] = value
+        rlimits[getattr(lsf, self.option_index)] = value
 
 
 def set_all_resources(request, resources, available_resources):

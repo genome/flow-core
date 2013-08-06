@@ -121,7 +121,8 @@ class LSFLimitBaseTest(unittest.TestCase):
 class LSFrlimitTest(unittest.TestCase):
     def setUp(self):
         self.rlimits = [0, 0, 0]
-        self.option_index = 1
+        self.option_index = 'LSF_RLIMIT_FSIZE'
+        self.numeric_option_index = 1
         self.units = mock.Mock()
 
         self.r = resource.LSFrlimit(self.option_index, units=self.units)
@@ -135,7 +136,7 @@ class LSFrlimitTest(unittest.TestCase):
     def test_set_limit(self):
         self.r.set_limit(self.request, self.rlimits, self.spec)
         self.spec.value_in_units.assert_called_once_with(self.units)
-        self.assertEqual(self.val, self.rlimits[self.option_index])
+        self.assertEqual(self.val, self.rlimits[self.numeric_option_index])
 
 
 class SetResourcesTest(unittest.TestCase):

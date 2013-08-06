@@ -36,9 +36,6 @@ class ShellCommandDispatchAction(BasicMergeAction):
         self._set_constants(net, executor_data)
         self._set_io_files(executor_data)
 
-        if 'resources' in self.args:
-            executor_data['resources'] = self.args['resources']
-
         return executor_data
 
     def callback_data(self, net, color_descriptor, response_places):
@@ -90,7 +87,8 @@ class ShellCommandDispatchAction(BasicMergeAction):
                 color_descriptor, response_places),
             command_line=self.command_line(net, token_data),
             executor_data=self.executor_data(net,
-                color_descriptor, response_places)))
+                color_descriptor, response_places),
+            resources=self.args.get('resources', {})))
 
         return tokens, deferred
 
