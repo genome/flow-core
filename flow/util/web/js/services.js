@@ -7,7 +7,9 @@ angular.module('processMonitor.services', ['ngResource'])
             UPDATE_DELTA: 1000,
             SAVE_HISTORY: 100,
             KEEP_DEAD_PROCESSES_FOR: 10,
-            PROCESS_HISTORY_KEYS: [ // these process attribute histories will be stored for generating charts
+            PROCESS_HISTORY_KEYS: [
+                // these process attribute histories will be stored for generating charts
+                "time",
                 "memory_percent",
                 "memory_vms",
                 "memory_rss",
@@ -15,12 +17,15 @@ angular.module('processMonitor.services', ['ngResource'])
                 "cpu_system",
                 "cpu_percent"
             ],
-            FILE_HISTORY_KEYS:  [ // these file attribute histories will be stored for generating charts
+            FILE_HISTORY_KEYS:  [
+                // these file attribute histories will be stored for generating charts
                 "pos",
                 "size",
                 "time_of_stat"
             ],
-            STATUS_PROCESSES_KEYS: [ // these keys will be stored in the simplified nested process tree (status_processes)
+            STATUS_PROCESSES_KEYS: [
+                // these process attributes will be stored in the nested process
+                // data structure that drives the process menu
                 "cpu_percent",
                 "memory_rss",
                 "is_running",
@@ -35,9 +40,6 @@ angular.module('processMonitor.services', ['ngResource'])
         * MODEL DATA STRUCTURES
          */
 
-        // debugging var
-        var fresh_dead_processes = [];
-
         // the current initialized status
         var status_current = { };
 
@@ -49,7 +51,7 @@ angular.module('processMonitor.services', ['ngResource'])
             "processes": []
         };
 
-        // references to status_all, nested using angularTree's name: "", children: [] schema
+        // nested data structure of simplified processes, used to drive the process tree menu
         var status_processes = [];
 
         /*
@@ -75,13 +77,13 @@ angular.module('processMonitor.services', ['ngResource'])
 
             delete proc.open_files;
             return proc;
-        }
+        };
 
         var initProcess = function(proc) {
             proc.is_master = (proc.pid == status_all.master_pid);
             proc.is_running = true;
             return proc;
-        }
+        };
 
         // create process history node, populate it with values defined in PROCESS_HISTORY_KEYS
         var initProcessHistory = function(proc) {
@@ -94,7 +96,7 @@ angular.module('processMonitor.services', ['ngResource'])
             });
             proc.history.push(history);
             return proc;
-        }
+        };
 
         // create file history node(s), populate it with values defined in FILE_HISTORY_KEYS
         var initFileDataHistory = function(proc) {
@@ -115,7 +117,7 @@ angular.module('processMonitor.services', ['ngResource'])
                 });
             });
             return proc;
-        }
+        };
 
         /*
          * UTILITIES
@@ -123,7 +125,7 @@ angular.module('processMonitor.services', ['ngResource'])
         // fastest clone, but clobbers functions (use _.deepExtend(source_obj, {}) to preserve functions)
         var cloneObj = function(obj) {
             return JSON.parse(JSON.stringify(obj));
-        }
+        };
 
         var trimArray = function(array, trim_length) {
             if (array.length > trim_length) {
@@ -189,10 +191,10 @@ angular.module('processMonitor.services', ['ngResource'])
                         var sa_running = _.filter(status_all.processes, function(process) {
                             return process.is_running == true;
                         });
+
                         _.each(sa_running, function(process) {
                             if (!_.isObject(_.findWhere(status_current.processes, {"pid": process.pid}))) {
                                 process.is_running = false;
-                                fresh_dead_processes.push(process);
                             }
                         });
 
