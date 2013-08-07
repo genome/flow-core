@@ -125,7 +125,7 @@ def set_rlimits(request, limits, available_limits):
 
 
 def make_rusage_string(select_strings, rusage_strings):
-    components = []
+    components = ['span[hosts=1]']
     if select_strings:
         components.append('select[%s]' % ' && '.join(select_strings))
 

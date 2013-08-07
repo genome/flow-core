@@ -244,7 +244,7 @@ class RusageStringTest(unittest.TestCase):
         select_strings = ['a', 'b', 'c']
         rusage_strings = ['d', 'e', 'f']
 
-        expected_string = 'select[a && b && c] rusage[d:e:f]'
+        expected_string = 'span[hosts=1] select[a && b && c] rusage[d:e:f]'
         self.assertEqual(expected_string, resource.make_rusage_string(
             select_strings, rusage_strings))
 
