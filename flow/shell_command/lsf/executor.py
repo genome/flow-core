@@ -131,6 +131,11 @@ class LSFExecutor(ExecutorBase):
         for name, value in lsf_options.iteritems():
             self.available_options[name].set_option(request, value)
 
+        for name in ('stderr', 'stdout', 'stdin'):
+            value = executor_data.get(name)
+            if value:
+                self.available_options[name].set_option(request, value)
+
 
 def create_empty_request():
     request = lsf.submit()
