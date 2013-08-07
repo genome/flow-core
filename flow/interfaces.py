@@ -53,10 +53,6 @@ class IOrchestrator(object):
     def notify_transition(self, net_key, transition_idx, place_idx, token_idx):
         pass
 
-    @abstractmethod
-    def place_entry_observed(self, packet):
-        pass
-
 
 class IServiceLocator(object):
     __metaclass__ = ABCMeta

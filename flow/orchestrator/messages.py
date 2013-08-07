@@ -29,9 +29,3 @@ class NotifyTransitionMessage(Message):
             "transition_idx": int,
             "token_idx": (int, long),
     }
-
-
-class PlaceEntryObservedMessage(Message):
-    required_fields = {
-            "body": basestring,
-    }
