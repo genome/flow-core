@@ -29,12 +29,12 @@ class ShellCommandDispatchAction(BasicMergeAction):
     def _response_places(self):
         return {x: self.args[x] for x in self.place_refs}
 
-    def executor_data(self, net, color_descriptor, response_places):
+    def executor_data(self, net, color_descriptor, token_data, response_places):
         executor_data = {}
 
         self._set_environment(net, color_descriptor, executor_data)
         self._set_constants(net, executor_data)
-        self._set_io_files(executor_data)
+        self.set_io_files(net, executor_data, token_data)
 
         return executor_data
 
@@ -58,7 +58,7 @@ class ShellCommandDispatchAction(BasicMergeAction):
             if value:
                 executor_data[opt] = value
 
-    def _set_io_files(self, executor_data):
+    def set_io_files(self, net, executor_data, token_data):
         if 'stderr' in self.args:
             executor_data['stderr'] = self.args['stderr']
         if 'stdin' in self.args:
@@ -86,8 +86,8 @@ class ShellCommandDispatchAction(BasicMergeAction):
             callback_data=self.callback_data(net,
                 color_descriptor, response_places),
             command_line=self.command_line(net, token_data),
-            executor_data=self.executor_data(net,
-                color_descriptor, response_places),
+            executor_data=self.executor_data(net, color_descriptor,
+                token_data, response_places),
             resources=self.args.get('resources', {})))
 
         return tokens, deferred
@@ -96,9 +96,9 @@ class ShellCommandDispatchAction(BasicMergeAction):
 class LSFDispatchAction(ShellCommandDispatchAction):
     service_name = "lsf"
 
-    def executor_data(self, net, color_descriptor, response_places):
+    def executor_data(self, net, color_descriptor, token_data, response_places):
         result = ShellCommandDispatchAction.executor_data(self, net,
-            color_descriptor, response_places)
+            color_descriptor, token_data, response_places)
 
         if 'lsf_options' in self.args:
             result['lsf_options'] = self.args['lsf_options']

@@ -29,6 +29,7 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         self.key = 'test_action_key'
         self.action = actions.ShellCommandDispatchAction.create(
                 self.connection, self.key, args=self.args)
+        self.net = mock.Mock()
 
     def tearDown(self):
         self.connection.flushall()
@@ -48,39 +49,38 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
                 self.action._response_places())
 
     def test_executor_data_no_extras(self):
-        net = mock.Mock()
         color_descriptor = mock.Mock()
         response_places = mock.Mock()
-        executor_data = self.action.executor_data(net,
-                color_descriptor, response_places)
+        token_data = {}
+        executor_data = self.action.executor_data(self.net,
+                color_descriptor, token_data, response_places)
         self.assertItemsEqual(self.net_constants + ['environment'],
                 executor_data.keys())
 
     def test_set_environment(self):
-        net = mock.Mock()
         env = mock.Mock()
         color_descriptor = mock.Mock()
-        net.constant.return_value = env
+        self.net.constant.return_value = env
 
         executor_data = {}
-        self.action._set_environment(net, color_descriptor, executor_data)
+        self.action._set_environment(self.net, color_descriptor, executor_data)
 
         self.assertEqual(executor_data['environment'], env)
-        net.constant.assert_called_once_with('environment', {})
+        self.net.constant.assert_called_once_with('environment', {})
 
     def test_set_constants(self):
-        net = mock.Mock()
         executor_data = {}
-        self.action._set_constants(net, executor_data)
+        self.action._set_constants(self.net, executor_data)
         for c in self.net_constants:
-            net.constant.assert_any_call(c)
-            self.assertEqual(executor_data[c], net.constant.return_value)
+            self.net.constant.assert_any_call(c)
+            self.assertEqual(executor_data[c], self.net.constant.return_value)
 
-        self.assertEqual(len(self.net_constants), len(net.constant.mock_calls))
+        self.assertEqual(len(self.net_constants),
+                len(self.net.constant.mock_calls))
 
     def test_set_io_files_unset(self):
         executor_data = {}
-        self.action._set_io_files(executor_data)
+        self.action.set_io_files(self.net, executor_data, token_data={})
         self.assertEqual({}, executor_data)
 
     def test_set_io_files_set(self):
@@ -93,7 +93,7 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
             self.action.args[k] = v
 
         executor_data = {}
-        self.action._set_io_files(executor_data)
+        self.action.set_io_files(self.net, executor_data, token_data={})
         self.assertEqual(expected_iofiles, executor_data)
 
 
@@ -101,8 +101,7 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         service_name = 'myservice'
         self.action.service_name = service_name
 
-        net = mock.Mock()
-        net.constant.return_value = 0
+        self.net.constant.return_value = 0
 
         color_descriptor = mock.Mock()
         active_tokens = mock.Mock()
@@ -114,15 +113,15 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         basic_merge_action.execute.return_value = ([token], deferred)
         with mock.patch('flow.shell_command.petri_net.actions.BasicMergeAction',
                 new=basic_merge_action):
-            self.action.execute(net, color_descriptor,
+            self.action.execute(self.net, color_descriptor,
                     active_tokens, service_interfaces)
 
-        net.constant.assert_any_call('user_id')
-        net.constant.assert_any_call('group_id')
-        net.constant.assert_any_call('working_directory', mock.ANY)
+        self.net.constant.assert_any_call('user_id')
+        self.net.constant.assert_any_call('group_id')
+        self.net.constant.assert_any_call('working_directory', mock.ANY)
 
-        basic_merge_action.execute.assert_called_once_with(self.action, net,
-                color_descriptor, active_tokens, service_interfaces)
+        basic_merge_action.execute.assert_called_once_with(self.action,
+                self.net, color_descriptor, active_tokens, service_interfaces)
         deferred.addCallback.assert_called_once_with(mock.ANY)
 
 
@@ -164,11 +163,12 @@ class LSFDispatchActionTest(unittest.TestCase):
 
         net = mock.Mock()
         color_descriptor = mock.Mock()
+        token_data = {}
         response_places = mock.Mock()
         self.action.callback_data = mock.Mock()
         self.action.callback_data.return_value = {}
         executor_data = self.action.executor_data(net,
-                color_descriptor, response_places)
+                color_descriptor, token_data, response_places)
         self.assertItemsEqual(self.net_constants + ['environment',
             'lsf_options'], executor_data.keys())
 
