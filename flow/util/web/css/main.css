@@ -5261,6 +5261,13 @@ a.badge:focus {
 .affix {
   position: fixed;
 }
+.cpu-chart {
+  width: 100%;
+  height: 300px;
+}
+.cpu-chart .line-chart {
+  background: #EFEFEF;
+}
 .process-tree {
   list-style: none;
   margin-left: 0;

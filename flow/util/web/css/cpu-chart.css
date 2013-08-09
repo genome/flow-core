@@ -1,0 +1,7 @@
+.cpu-chart {
+  width: 100%;
+  height: 300px;
+}
+.cpu-chart .line-chart {
+  background: #EFEFEF;
+}
