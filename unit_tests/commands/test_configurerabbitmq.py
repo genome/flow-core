@@ -84,7 +84,7 @@ class ConfigureRabbitMQCommandTest(unittest.TestCase):
             ('H-TOP', 'X-NAMES', 'another.key.routed'),
         }
 
-        self.command._declare_bindings(bindings)
+        self.command._declare_bindings(None, bindings, None)
 
         self.broker.channel.bind_queue.assert_any_call(
                 'missing_routing_key', 'alt', '#')

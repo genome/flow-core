@@ -1,6 +1,8 @@
 from flow.commands.base import CommandBase
 from flow.configuration.inject.broker import BrokerConfiguration
 from flow.configuration.settings.injector import setting
+from flow.util.exit import exit_process
+from flow import exit_codes
 from injector import inject
 from twisted.internet import defer
 
@@ -25,18 +27,25 @@ class ConfigureRabbitMQCommand(CommandBase):
         pass
 
 
-    @defer.inlineCallbacks
     def _execute(self, parsed_arguments):
         exchanges, queues, bindings = self._parse_config()
 
-        yield self._declare_exchanges(exchanges)
-        yield self._declare_queues(queues)
-        yield self._declare_bindings(bindings)
+        LOG.debug("Parsed config")
 
-        # XXX Dirty workaround.  I can't tell why the bindings aren't declared
-        # by the time we get here.
-        time.sleep(2)
+        deferreds = []
+        deferreds.append(self._declare_exchanges(exchanges))
+        deferreds.append(self._declare_queues(queues))
+        dlist = defer.DeferredList(deferreds)
 
+        _execute_deferred = defer.Deferred()
+        dlist.addCallbacks(self._declare_bindings, self._exit,
+                callbackKeywords={
+                    'bindings':bindings,
+                    '_execute_deferred':_execute_deferred
+        })
+        dlist.addErrback(self._exit)
+
+        return _execute_deferred
 
     def _parse_config(self):
         exchanges = set()
@@ -56,13 +65,16 @@ class ConfigureRabbitMQCommand(CommandBase):
 
     def _declare_exchanges(self, exchanges):
         deferreds = []
+        LOG.debug("Declaring Exchange: alt")
         deferreds.append(self.broker.channel.declare_exchange('alt'))
 
         arguments = {'alternate-exchange': 'alt'}
+        LOG.debug("Declaring Exchange: dead")
         deferreds.append(self.broker.channel.declare_exchange(
             'dead', arguments=arguments))
 
         for exchange_name in exchanges:
+            LOG.debug("Declaring Exchange: %s", exchange_name)
             deferreds.append(self.broker.channel.declare_exchange(
                 exchange_name, arguments=arguments))
 
@@ -75,13 +87,14 @@ class ConfigureRabbitMQCommand(CommandBase):
 
         arguments = {'x-dead-letter-exchange': 'dead'}
         for queue in queues:
+            LOG.debug("Declaring queue %s", queue)
             deferreds.append(self.broker.channel.declare_queue(
                 queue, arguments=arguments))
             deferreds.append(self.broker.channel.declare_queue('dead_' + queue))
 
         return defer.DeferredList(deferreds)
 
-    def _declare_bindings(self, bindings):
+    def _declare_bindings(self, _callback, bindings, _execute_deferred):
         deferreds = []
         deferreds.append(self.broker.channel.bind_queue(
             'missing_routing_key', 'alt', '#'))
@@ -92,4 +105,18 @@ class ConfigureRabbitMQCommand(CommandBase):
             deferreds.append(self.broker.channel.bind_queue(
                 'dead_' + queue, 'dead', topic))
 
-        return defer.DeferredList(deferreds)
+        dlist = defer.DeferredList(deferreds)
+        dlist.addCallbacks(self._wait_and_fire_deferred, self._exit,
+               callbackKeywords={'_execute_deferred':_execute_deferred})
+
+        return _callback
+
+    def _wait_and_fire_deferred(self, _callback, _execute_deferred):
+        # XXX Dirty workaround.  I can't tell why the bindings aren't declared
+        # by the time we get here.
+        time.sleep(2)
+        _execute_deferred.callback(None)
+
+    def _exit(self, error):
+        LOG.critical("Unexepected error in configurerabbitmq.\n%s", error.getTraceback())
+        exit_process(exit_codes.EXECUTE_FAILURE)
