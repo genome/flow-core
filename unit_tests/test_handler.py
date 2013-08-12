@@ -45,17 +45,3 @@ class HandlerTest(unittest.TestCase):
 
         self.assertTrue(self.deferred.called)
         self.assertTrue(isinstance(self.deferred.result, Failure))
-
-    def test_call_invalid(self):
-        self.handler._handle_message.side_effect = InvalidMessageException
-        self.deferred = self.handler(self.message)
-
-        self.assertTrue(self.deferred.called)
-        self.assertTrue(isinstance(self.deferred.result, Failure))
-
-    def test_call_error(self):
-        self.handler._handle_message.side_effect = RuntimeError
-        self.deferred = self.handler(self.message)
-
-        self.assertTrue(self.deferred.called)
-        self.assertTrue(isinstance(self.deferred.result, Failure))
