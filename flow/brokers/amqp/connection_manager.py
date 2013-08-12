@@ -88,29 +88,34 @@ class ConnectionManager(object):
                 pika_params)
         return connection
 
-    @defer.inlineCallbacks
     def _on_ready(self, connection):
         LOG.debug('Established connection to AMQP')
-        try:
-            self._channel = yield connection.channel()
-        except Exception:
-            LOG.exception("Unexpected Exception raised while creating "
-            "connection channel.")
-            exit_process(EXECUTE_ERROR)
+        channel_deferred = connection.channel()
+        channel_deferred.addCallbacks(self._set_channel_and_qos, errback=self._exit,
+                errbackKeywords={'msg':'Unexpected error in getting channel'})
+        return channel_deferred
+
+    def _set_channel_and_qos(self, channel):
+        self._channel = channel
         LOG.debug('Channel is open')
 
         if self.connection_params.prefetch_count:
-            try:
-                yield self._channel.basic_qos(
+            qos_deferred = self._channel.basic_qos(
                     prefetch_count=self.connection_params.prefetch_count)
-            except Exception:
-                LOG.exception("Unexpected Exception raised while setting "
-                "prefetch_count")
-                exit_process(EXECUTE_ERROR)
+            qos_deferred.addCallbacks(self._finish_on_ready, errback=self._exit,
+                    errbackKeywords={'msg':'Unexpected error setting qos'})
+        else:
+            self._finish_on_ready(None)
+        return channel
 
+    def _exit(self, error, msg="Unexpected error"):
+        LOG.critical("%s\n%s", msg, error.getTraceback())
+        exit_process(EXECUTE_ERROR)
 
+    def _finish_on_ready(self, _callback):
         self.state = CONNECTED
         self._connect_deferred.callback(self._channel)
+        return _callback
 
     def _on_connectTCP_failed(self, reason):
         LOG.warning("Attempt %d to connect to AMQP server failed: %s",
