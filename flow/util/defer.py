@@ -5,7 +5,8 @@ import logging
 LOG = logging.getLogger(__name__)
 
 def catch_errors_and_crash(error):
-    LOG.exception("Unexpected error in amqp_broker's channel facade.")
+    LOG.critical("Unexpected error in amqp_broker's channel facade.\n%s",
+            error.getTraceback())
     exit_process(EXECUTE_ERROR)
 
 def add_callback_and_default_errback(_deferred, _callback_fn, *args, **kwargs):
