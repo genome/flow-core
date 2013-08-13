@@ -56,6 +56,10 @@ def start_redis(unix_socket):
     return Popen(construct_redis_command(unix_socket), stdout=open(os.devnull))
 
 
+def config_path():
+    return os.path.join(os.path.dirname(__file__), 'redis.conf')
+
+
 def construct_redis_command(unix_socket):
     try:
         redis_path = os.environ[_redis_path]
@@ -63,6 +67,5 @@ def construct_redis_command(unix_socket):
         raise RuntimeError("You must set %s to run redis tests" % _redis_path)
 
     redis_executable = os.path.join(redis_path, 'redis-server')
-    redis_conf = os.path.join(redis_path, 'redis.conf')
-    cmd = [redis_executable, redis_conf, "-- unixsocket", unix_socket]
+    cmd = [redis_executable, config_path(), "-- unixsocket", unix_socket]
     return cmd
