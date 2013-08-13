@@ -1,14 +1,14 @@
-from subprocess import Popen
-
 import os
+import re
 import redis
+import subprocess
 import tempfile
 import time
 import unittest
 
 
-_timeout = 1
-
+_TIMEOUT = 1
+_MIN_REDIS_VERSION = (2, 6, 0)
 
 class RedisTest(unittest.TestCase):
 
@@ -32,7 +32,7 @@ class RedisTest(unittest.TestCase):
     def _wait_for_connection(cls):
         begin_time = time.time()
         while not is_connected(cls.conn) and (
-                time.time() - begin_time <= _timeout):
+                time.time() - begin_time <= _TIMEOUT):
             time.sleep(.01)
 
         try:
@@ -52,11 +52,43 @@ def is_connected(conn):
 
 
 def start_redis(unix_socket):
-    return Popen(construct_redis_command(unix_socket), stdout=open(os.devnull))
+    validate_redis_version()
+    return subprocess.Popen(construct_redis_command(unix_socket),
+            stdout=open(os.devnull))
 
 
 def config_path():
     return os.path.join(os.path.dirname(__file__), 'redis.conf')
+
+
+def validate_redis_version():
+    redis_version = get_redis_version()
+
+    if cmp(redis_version, _MIN_REDIS_VERSION) < 0:
+        raise RuntimeError('redis-server version error:  got %r, expected >= %r'
+                % (redis_version, _MIN_REDIS_VERSION))
+
+
+def get_redis_version():
+    try:
+        result = subprocess.check_output(['redis-server', '--version'])
+
+    except OSError:
+        raise RuntimeError("redis-server not in path")
+    except subprocess.CalledProcessError:
+        raise RuntimeError(
+                'Failed to check redis-server version (might be too old)')
+
+    return extract_version(result)
+
+
+def extract_version(result):
+    m = re.search(r'v\=(\d+)\.(\d+)\.(\d+)', result)
+
+    if m is None:
+        raise RuntimeError('Failed to parse redis version from: %s' % result)
+
+    return tuple(map(int, m.groups()))
 
 
 def construct_redis_command(unix_socket):
