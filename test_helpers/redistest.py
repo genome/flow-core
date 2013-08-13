@@ -1,25 +1,26 @@
+from subprocess import Popen
+
 import os
 import redis
-import unittest
-import uuid
-from subprocess import Popen
+import tempfile
 import time
+import unittest
+
 
 _redis_path = "FLOW_TEST_REDIS_PATH"
 _timeout = 1
+
 
 class RedisTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.unix_socket = os.path.join("/tmp", str(uuid.uuid4()))
-        cmd = construct_redis_command(cls.unix_socket)
-        cls.redis_server = Popen(cmd, stdout=open(os.devnull))
+        unix_socket = tempfile.mktemp()
 
-    def setUp(self):
-        self.conn = redis.Redis(unix_socket_path=self.unix_socket)
-        wait_for_connection(self.conn)
-        self.conn.flushall()
+        cls.redis_server = start_redis(unix_socket)
+        cls.conn = redis.Redis(unix_socket_path=unix_socket)
+
+        cls._wait_for_connection()
 
     def tearDown(self):
         self.conn.flushall()
@@ -27,19 +28,20 @@ class RedisTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.redis_server.terminate()
-        pass
 
-def wait_for_connection(conn):
-    begin_time = time.time()
-    while not is_connected(conn) and (time.time() - begin_time <= _timeout):
-        time.sleep(.01)
+    @classmethod
+    def _wait_for_connection(cls):
+        begin_time = time.time()
+        while not is_connected(cls.conn) and (
+                time.time() - begin_time <= _timeout):
+            time.sleep(.01)
 
-    try:
-        conn.ping()
-    except redis.exceptions.ConnectionError as ex:
-        raise RuntimeError("Failed to connect to redis, aborting test: %s" %
-                str(ex))
-        
+        try:
+            cls.conn.ping()
+        except redis.exceptions.ConnectionError as ex:
+            raise RuntimeError("Failed to connect to redis, aborting test: %s"
+                    % ex)
+
 
 def is_connected(conn):
     try:
@@ -48,7 +50,11 @@ def is_connected(conn):
         return False
 
     return True
-    
+
+
+def start_redis(unix_socket):
+    return Popen(construct_redis_command(unix_socket), stdout=open(os.devnull))
+
 
 def construct_redis_command(unix_socket):
     try:
