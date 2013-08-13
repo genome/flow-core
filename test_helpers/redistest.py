@@ -7,7 +7,6 @@ import time
 import unittest
 
 
-_redis_path = "FLOW_TEST_REDIS_PATH"
 _timeout = 1
 
 
@@ -61,11 +60,5 @@ def config_path():
 
 
 def construct_redis_command(unix_socket):
-    try:
-        redis_path = os.environ[_redis_path]
-    except KeyError:
-        raise RuntimeError("You must set %s to run redis tests" % _redis_path)
-
-    redis_executable = os.path.join(redis_path, 'redis-server')
-    cmd = [redis_executable, config_path(), "-- unixsocket", unix_socket]
+    cmd = ['redis-server', config_path(), "-- unixsocket", unix_socket]
     return cmd
