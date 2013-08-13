@@ -5,7 +5,7 @@ import uuid
 from subprocess import Popen
 import time
 
-_redis_path = "FLOW_REDIS_PATH"
+_redis_path = "FLOW_TEST_REDIS_PATH"
 _timeout = 1
 
 class RedisTest(unittest.TestCase):
