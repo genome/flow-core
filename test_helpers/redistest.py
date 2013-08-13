@@ -14,10 +14,10 @@ class RedisTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        unix_socket = tempfile.mktemp()
+        cls.redis_unix_socket_path = tempfile.mktemp()
 
-        cls.redis_server = start_redis(unix_socket)
-        cls.conn = redis.Redis(unix_socket_path=unix_socket)
+        cls.redis_server = start_redis(cls.redis_unix_socket_path)
+        cls.conn = redis.Redis(unix_socket_path=cls.redis_unix_socket_path)
 
         cls._wait_for_connection()
 
