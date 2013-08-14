@@ -58,7 +58,7 @@ class TestProperty(FakeRedisTest):
 class TestValue(FakeRedisTest):
     def setUp(self):
         FakeRedisTest.setUp(self)
-        self.x = rom.Value(connection=self.conn, key='/x')
+        self.x = rom.Value(connection=self.conn, key='x')
 
     def test_init(self):
         self.assertRaises(TypeError, rom.Value)
@@ -83,8 +83,8 @@ class TestValue(FakeRedisTest):
 class TestInt(FakeRedisTest):
     def setUp(self):
         FakeRedisTest.setUp(self)
-        self.x = rom.Int(connection=self.conn, key='/x')
-        self.c = rom.Int(connection=self.conn, key='/c', cacheable=True)
+        self.x = rom.Int(connection=self.conn, key='x')
+        self.c = rom.Int(connection=self.conn, key='c', cacheable=True)
 
     def test_value(self):
         self.assertRaises(ValueError, setattr, self.x, 'value', 'string')
@@ -110,7 +110,7 @@ class TestInt(FakeRedisTest):
         self.assertEqual(5, self.x.value)
 
     def test_cachable(self):
-        c = rom.Int(connection=self.conn, key='/c', cacheable=True)
+        c = rom.Int(connection=self.conn, key='c', cacheable=True)
         self.conn.set(c.key, 42)
         self.assertEqual(42, c.value)
 
@@ -118,7 +118,7 @@ class TestInt(FakeRedisTest):
         self.assertEqual(42, c.value)
 
     def test_immutable(self):
-        i = rom.Int(connection=self.conn, key='/i', immutable=True)
+        i = rom.Int(connection=self.conn, key='i', immutable=True)
         i._set_raw_value(7)
         self.assertEqual(7, i.value)
         self.assertRaises(ValueError, setattr, i, 'value', 42)
@@ -128,8 +128,8 @@ class TestInt(FakeRedisTest):
 class TestFloat(FakeRedisTest):
     def setUp(self):
         FakeRedisTest.setUp(self)
-        self.x = rom.Float(connection=self.conn, key='/x')
-        self.c = rom.Float(connection=self.conn, key='/c', cacheable=True)
+        self.x = rom.Float(connection=self.conn, key='x')
+        self.c = rom.Float(connection=self.conn, key='c', cacheable=True)
 
     def test_value(self):
         self.assertRaises(ValueError, setattr, self.x, 'value', 'string')
@@ -154,7 +154,7 @@ class TestFloat(FakeRedisTest):
         self.assertEqual(42.3, self.c.value)
 
     def test_immutable(self):
-        f = rom.Float(connection=self.conn, key='/f', immutable=True)
+        f = rom.Float(connection=self.conn, key='f', immutable=True)
         f._set_raw_value(2.1)
         self.assertEqual(2.1, f.value)
         self.assertRaises(ValueError, setattr, f, 'value', 12.3)
@@ -164,8 +164,8 @@ class TestFloat(FakeRedisTest):
 class TestString(FakeRedisTest):
     def setUp(self):
         FakeRedisTest.setUp(self)
-        self.x = rom.String(connection=self.conn, key='/x')
-        self.c = rom.String(connection=self.conn, key='/c', cacheable=True)
+        self.x = rom.String(connection=self.conn, key='x')
+        self.c = rom.String(connection=self.conn, key='c', cacheable=True)
 
     def test_value(self):
         self.x.value = 1234
@@ -179,7 +179,7 @@ class TestString(FakeRedisTest):
         self.assertEqual("hi", self.c.value)
 
     def test_immutable(self):
-        s = rom.String(connection=self.conn, key='/s', immutable=True)
+        s = rom.String(connection=self.conn, key='s', immutable=True)
         s._set_raw_value('hi')
         self.assertEqual('hi', s.value)
         self.assertRaises(ValueError, setattr, s, 'value', 'bye')
@@ -544,7 +544,7 @@ class TestObject(FakeRedisTest):
         # to not include module/class name, then feel free to remove this
         # test.
         obj = SimpleObj.create(connection=self.conn)
-        components = obj.key.split("/")
+        components = obj.key.split(rom.KEY_DELIM)
         self.assertEqual(4, len(components))
         self.assertEqual('', components[0])
         self.assertEqual(obj.__module__, components[1])
@@ -654,12 +654,12 @@ class TestObject(FakeRedisTest):
                 connection=self.conn, key="x", badprop="bad")
 
     def test_subkey(self):
-        obj = SimpleObj.create(connection=self.conn, key="/x")
-        self.assertEqual("/x/y/z", obj.subkey("y", "z"))
-        self.assertEqual("/x/1/2", obj.subkey(1, 2))
+        obj = SimpleObj.create(connection=self.conn, key="x")
+        self.assertEqual("x|y|z", obj.subkey("y", "z"))
+        self.assertEqual("x|1|2", obj.subkey(1, 2))
 
     def test_delete_property(self):
-        obj = SimpleObj.create(connection=self.conn, key="/x")
+        obj = SimpleObj.create(connection=self.conn, key="x")
 
         obj.ascalar = "six"
         key = obj.ascalar.key
@@ -688,7 +688,7 @@ class TestObject(FakeRedisTest):
         self.assertEqual(0, self.conn.llen(key))
 
     def test_delete_object(self):
-        obj = SimpleObj.create(connection=self.conn, key="/x")
+        obj = SimpleObj.create(connection=self.conn, key="x")
 
         obj.ascalar = "six"
         key = obj.ascalar.key
@@ -717,10 +717,10 @@ class TestObject(FakeRedisTest):
 
     def test_class_not_loaded_in_specified_module(self):
         class_info = 'unit_tests:LoadableObj'
-        self.conn.set('/y', class_info)
-        self.conn.set('/y/ascalar', '1234')
+        self.conn.set('y', class_info)
+        self.conn.set('y|ascalar', '1234')
 
-        self.assertRaises(ImportError, rom.get_object, self.conn, '/y')
+        self.assertRaises(ImportError, rom.get_object, self.conn, 'y')
         self.assertRaises(ImportError, rom.Object.get_class, class_info)
 
 

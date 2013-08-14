@@ -10,7 +10,7 @@ import re
 import time
 
 
-KEY_DELIM = '/'
+KEY_DELIM = '|'
 
 # Redis scripts (Instantiated at the bottom of the file)
 _COPY_KEY_SCRIPT_BODY = """
