@@ -9,6 +9,7 @@ from uuid import uuid4
 
 
 import base64
+import itertools
 import flow.redisom as rom
 
 
@@ -36,15 +37,17 @@ class Net(rom.Object):
 
     _put_token_script = rom.Script(lua.load('put_token'))
 
-    def on_delete(self):
-        for place_idx in xrange(self.num_places):
-            self.place(place_idx).delete()
+    def additional_associated_iterkeys(self):
+        return itertools.chain(*map(self.associated_iterkeys_for_attribute,
+            ['place', 'token', 'transition']))
 
-        for token_idx in xrange(self.num_tokens):
-            self.token(token_idx).delete()
+    def associated_iterkeys_for_attribute(self, attribute):
+        for place_idx in xrange(getattr(self, 'num_%ss' % attribute)):
+            obj = getattr(self, attribute)(place_idx)
+            for key in obj.associated_iterkeys():
+                yield key
+            yield obj.key
 
-        for transition_idx in xrange(self.num_transitions):
-            self.transition(transition_idx).delete()
 
     @classmethod
     def make_default_key(cls):

@@ -125,6 +125,8 @@ class TestNet(NetTest):
         tok = self.net.create_token(cg.begin, cg.idx)
 
         self.net.delete()
+        print list(self.net.associated_iterkeys_for_attribute('place'))
+        print [i for i in self.net.associated_iterkeys()]
 
         self.assertEqual([], self.conn.keys())
 
