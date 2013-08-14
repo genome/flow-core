@@ -29,6 +29,9 @@ class TestBasic(NetTest):
         self.assertEqual(0, len(self.net.color_marking))
         self.assertEqual(0, len(self.net.group_marking))
 
+        self.assertIn(trans.state_key(color_descriptor),
+                trans.transient_keys)
+
     def test_consume_tokens_partially_ready(self):
         color_group = self.net.add_color_group(size=1)
         trans = self.setup_transition(BasicTransition, 3, 0)
@@ -57,6 +60,10 @@ class TestBasic(NetTest):
                     self.assertEqual(group_marking_copy,
                             self.net.group_marking.value)
                     self.assertEqual(0, len(trans.enablers))
+
+                    self.assertIn(trans.state_key(color_descriptor),
+                            trans.transient_keys)
+
                 else:
                     num_successes += 1
                     self.assertEqual(0, len(self.net.color_marking.value))
@@ -68,6 +75,10 @@ class TestBasic(NetTest):
 
                     self.assertItemsEqual(expected_token_keys,
                             trans.active_tokens(color_descriptor))
+
+                    self.assertNotIn(trans.state_key(color_descriptor),
+                            trans.transient_keys)
+
 
         self.assertEqual(1, num_successes)
 
@@ -89,6 +100,9 @@ class TestBasic(NetTest):
         self.assertEqual(1,
                 len(trans.active_tokens(color_descriptor).value))
 
+        self.assertIn(trans.active_tokens_key(color_descriptor),
+                trans.transient_keys)
+
         rv = trans.push_tokens(self.net, color_descriptor, tokens.values())
 
         expected_color = {"0:4": 0, "0:5": 0}
@@ -98,6 +112,9 @@ class TestBasic(NetTest):
                 len(trans.active_tokens(color_descriptor).value))
         self.assertEqual(expected_color, self.net.color_marking.value)
         self.assertEqual(expected_group, self.net.group_marking.value)
+
+        self.assertNotIn(trans.active_tokens_key(color_descriptor),
+                trans.transient_keys)
 
 
 if __name__ == "__main__":

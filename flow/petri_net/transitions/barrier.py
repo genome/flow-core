@@ -27,7 +27,7 @@ class BarrierTransition(TransitionBase):
         enablers_key = self.enablers.key
 
         keys = [state_key, active_tokens_key, arcs_in_key, color_marking_key,
-                group_marking_key, enablers_key]
+                group_marking_key, enablers_key, self.transient_keys.key]
         args = [enabler, color_group.idx, color_group.begin, color_group.end]
 
         LOG.debug("Consume tokens: KEYS=%r, ARGS=%r", keys, args)

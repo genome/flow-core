@@ -4,6 +4,7 @@ local arcs_in_key = KEYS[3]
 local color_marking_key = KEYS[4]
 local group_marking_key = KEYS[5]
 local enablers_key = KEYS[6]
+local transient_keys_key = KEYS[7]
 
 local place_key = ARGV[1]
 local cg_id = ARGV[2]
@@ -31,6 +32,8 @@ if remaining_places > 0 then
     return {remaining_places, "Waiting for places"}
 end
 
+redis.call('SREM', transient_keys_key, state_set_key)
+
 local enabler_value = redis.call('HGET', enablers_key, cg_id)
 if enabler_value and enabler_value ~= place_key then
     return {-1, "Transition enabled by a different place: " .. enabler_value}
@@ -55,6 +58,7 @@ for i, place_id in pairs(arcs_in) do
 end
 
 if remaining_places > 0 then
+    redis.call('SADD', transient_keys_key, state_set_key)
     return {remaining_places, "Waiting for places (after full check)"}
 end
 
@@ -88,5 +92,7 @@ for i, token_info in pairs(token_keys) do
         redis.call("HDEL", group_marking_key, gp_key)
     end
 end
+
+redis.call('SADD', transient_keys_key, active_tokens_key)
 
 return {0, "Transition enabled"}

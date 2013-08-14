@@ -25,7 +25,7 @@ class BasicTransition(TransitionBase):
         enablers_key = self.enablers.key
 
         keys = [state_key, active_tokens_key, arcs_in_key, color_marking_key,
-                group_marking_key, enablers_key]
+                group_marking_key, enablers_key, self.transient_keys.key]
         args = [enabler, color_descriptor.group.idx, color_descriptor.color]
 
         LOG.debug("Consume tokens: KEYS=%r, ARGS=%r", keys, args)

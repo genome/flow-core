@@ -2,6 +2,7 @@ local active_tokens_key = KEYS[1]
 local arcs_out_key = KEYS[2]
 local color_marking_key = KEYS[3]
 local group_marking_key = KEYS[4]
+local transient_keys_key = KEYS[5]
 
 local num_tokens = ARGV[1]
 
@@ -41,5 +42,6 @@ for i, place_id in pairs(arcs_out) do
 end
 
 redis.call('DEL', active_tokens_key)
+redis.call('SREM', transient_keys_key, active_tokens_key)
 
 return {0, arcs_out}

@@ -69,6 +69,11 @@ class TestBarrier(NetTest):
                     self.assertEqual(group_marking_copy,
                             self.net.group_marking.value)
                     self.assertEqual(0, len(trans.enablers))
+
+                    if i > 0:  # we don't set this until the first place is full
+                        self.assertIn(trans.state_key(color_descriptor),
+                                trans.transient_keys)
+
                 else:
                     num_successes += 1
                     self.assertEqual(0, len(self.net.color_marking.value))
@@ -80,6 +85,10 @@ class TestBarrier(NetTest):
 
                     self.assertItemsEqual(expected_token_keys,
                             trans.active_tokens(color_descriptor))
+
+                    self.assertNotIn(trans.state_key(color_descriptor),
+                            trans.transient_keys)
+
 
         self.assertEqual(1, num_successes)
 
@@ -101,6 +110,9 @@ class TestBarrier(NetTest):
         self.assertEqual(1,
                 len(trans.active_tokens(color_descriptor).value))
 
+        self.assertIn(trans.active_tokens_key(color_descriptor),
+                trans.transient_keys)
+
         rv = trans.push_tokens(self.net, color_descriptor, tokens.values())
 
         expected_color = {"0:4": 0, "0:5": 0}
@@ -110,6 +122,9 @@ class TestBarrier(NetTest):
                 len(trans.active_tokens(color_descriptor).value))
         self.assertEqual(expected_color, self.net.color_marking.value)
         self.assertEqual(expected_group, self.net.group_marking.value)
+
+        self.assertNotIn(trans.active_tokens_key(color_descriptor),
+                trans.transient_keys)
 
     def test_fire_action(self):
         color_group = self.net.add_color_group(size=1)

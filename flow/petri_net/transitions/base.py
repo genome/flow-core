@@ -19,6 +19,8 @@ class TransitionBase(rom.Object):
 
     enablers = rom.Property(rom.Hash)
 
+    transient_keys = rom.Property(rom.Set)
+
     _push_tokens_script = rom.Script(lua.load('push_tokens'))
 
     def additional_associated_iterkeys(self):
@@ -27,6 +29,9 @@ class TransitionBase(rom.Object):
             yield action.key
             for key in action.associated_iterkeys():
                 yield key
+
+        for key in self.transient_keys:
+            yield key
 
     def consume_tokens(self, enabler, color_descriptor, color_marking_key,
             group_marking_key):
@@ -65,7 +70,8 @@ class TransitionBase(rom.Object):
 
     def push_tokens(self, net, color_descriptor, tokens):
         keys = [self.active_tokens(color_descriptor).key, self.arcs_out.key,
-                net.color_marking.key, net.group_marking.key]
+                net.color_marking.key, net.group_marking.key,
+                self.transient_keys.key]
 
         args = [len(tokens)]
         for t in tokens:
