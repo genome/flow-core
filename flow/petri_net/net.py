@@ -20,18 +20,12 @@ _COLOR_GROUP_KEY = "G"
 
 
 class Net(rom.Object):
-    # XXX Do we need to keep these around?
-    # add group_id?
-    required_constants = ["environment", "user_id", "working_directory"]
-
     name = rom.Property(rom.String)
     color_groups = rom.Property(rom.Hash, value_encoder=color_group_enc,
             value_decoder=color_group_dec)
 
     color_marking = rom.Property(rom.Hash, value_encoder=int, value_decoder=int)
     group_marking = rom.Property(rom.Hash, value_encoder=int, value_decoder=int)
-
-    place_observer_keys = rom.Property(rom.Hash)
 
     counters = rom.Property(rom.Hash, value_encoder=int, value_decoder=int)
 
