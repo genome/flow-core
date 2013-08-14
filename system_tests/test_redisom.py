@@ -236,6 +236,25 @@ class TestCopyObject(RedisTest):
 
         self.assertItemsEqual(keys1, keys2)
 
+class TestDeleteFunctionality(RedisTest):
+    def test_value_delete(self):
+        v = rom.Value(connection=self.conn, key='test-key')
+        v.value = 'test-value'
+
+        self.assertTrue(self.conn.exists(v.key))
+        v.delete()
+        self.assertFalse(self.conn.exists(v.key))
+
+    def test_object_delete(self):
+        obj = SimpleObj.create(connection=self.conn, key='test-obj')
+        obj.ahash = {'some hash key':5}
+        print "Redis has %d keys after creating the object." % len(self.conn.keys())
+
+        obj.delete()
+        print "Redis has %d keys after DELETING the object." % len(self.conn.keys())
+        print self.conn.keys()
+        self.assertEqual(0, len(self.conn.keys()))
+
 
 if __name__ == "__main__":
     unittest.main()
