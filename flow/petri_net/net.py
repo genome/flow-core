@@ -11,6 +11,9 @@ from uuid import uuid4
 import base64
 import itertools
 import flow.redisom as rom
+import logging
+
+LOG = logging.getLogger(__name__)
 
 
 _TOKEN_KEY = "t"
@@ -150,6 +153,9 @@ class Net(rom.Object):
         if consume_rv == 0:
             new_tokens, deferred = trans.fire(self,
                     color_descriptor, service_interfaces)
+            if not new_tokens:
+                LOG.debug('Got no tokens from transition ("%s": %s) '
+                        'on net (%s).', trans.name.value, trans.index, self.key)
             colors = [x.color.value for x in new_tokens]
             trans.push_tokens(self, color_descriptor, new_tokens)
             trans.notify_places(self.key, colors, service_interfaces)
