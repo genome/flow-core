@@ -609,7 +609,13 @@ class Object(object):
     def subkey(self, *args):
         return _make_key(self.key, *args)
 
+    def on_delete(self):
+        # override to do class-specific cleanup before being deleted.
+        pass
+
     def delete(self):
+        self.on_delete()
+
         for name in self._rom_properties.iterkeys():
             getattr(self, name).delete()
 
