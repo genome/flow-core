@@ -27,6 +27,8 @@ class TransitionBase(rom.Object):
         action = self.action
         if action is not None:
             yield action.key
+            for key in action.associated_iterkeys():
+                yield key
 
     def consume_tokens(self, enabler, color_descriptor, color_marking_key,
             group_marking_key):
