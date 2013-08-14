@@ -44,6 +44,7 @@ class FutureNet(object):
     def observe_transition(self, trans, observer_action, name=''):
         observer = self.add_basic_transition(name=name, action=observer_action)
         self.bridge_transitions(trans, observer)
+        return observer
 
     def split_place(self, src, dest_list, name=''):
         trans = self.add_basic_transition(name)
