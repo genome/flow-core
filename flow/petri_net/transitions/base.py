@@ -19,8 +19,6 @@ class TransitionBase(rom.Object):
 
     enablers = rom.Property(rom.Hash)
 
-    tokens_pushed = rom.Property(rom.Int)
-
     _push_tokens_script = rom.Script(lua.load('push_tokens'))
 
     def additional_associated_iterkeys(self):
