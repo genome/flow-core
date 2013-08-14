@@ -23,6 +23,10 @@ class TransitionBase(rom.Object):
 
     _push_tokens_script = rom.Script(lua.load('push_tokens'))
 
+    def on_delete(self):
+        action = self.action
+        if action is not None:
+            action.delete()
 
     def consume_tokens(self, enabler, color_descriptor, color_marking_key,
             group_marking_key):

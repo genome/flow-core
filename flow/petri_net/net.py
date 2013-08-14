@@ -42,6 +42,15 @@ class Net(rom.Object):
 
     _put_token_script = rom.Script(lua.load('put_token'))
 
+    def on_delete(self):
+        for place_idx in xrange(self.num_places):
+            self.place(place_idx).delete()
+
+        for token_idx in xrange(self.num_tokens):
+            self.token(token_idx).delete()
+
+        for transition_idx in xrange(self.num_transitions):
+            self.transition(transition_idx).delete()
 
     @classmethod
     def make_default_key(cls):
@@ -55,6 +64,10 @@ class Net(rom.Object):
     def num_places(self, new_value):
         if self.counters.setnx(_PLACE_KEY, new_value) == 0:
             raise ValueError('Tried to overwrite num_places')
+
+    @property
+    def num_tokens(self):
+        return self.counters.get(_TOKEN_KEY, 0)
 
     @property
     def num_transitions(self):

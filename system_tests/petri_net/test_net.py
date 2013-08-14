@@ -1,5 +1,7 @@
+from flow.petri_net.actions.merge import BasicMergeAction
 from flow.petri_net.net import Net, ColorGroup, Token
 from flow.petri_net.net import PlaceNotFoundError, ForeignTokenError
+from flow.petri_net.transitions.basic import BasicTransition
 import flow.redisom as rom
 
 from test_helpers import NetTest
@@ -114,6 +116,17 @@ class TestNet(NetTest):
                 place_idx=place_idx, token_idx=ANY)
         self.assertEqual(123.0, home.first_token_timestamp.value)
 
+
+    def test_delete(self):
+        p = self.net.add_place('p')
+        trans = self.net.add_transition(BasicTransition)
+        a = BasicMergeAction.create(self.conn, key=trans.action_key)
+        cg = self.net.add_color_group(3)
+        tok = self.net.create_token(cg.begin, cg.idx)
+
+        self.net.delete()
+
+        self.assertEqual([], self.conn.keys())
 
 
 if __name__ == "__main__":
