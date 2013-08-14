@@ -7,6 +7,7 @@ import hashlib
 import redis
 import json
 import re
+import time
 
 
 KEY_DELIM = '/'
@@ -609,17 +610,50 @@ class Object(object):
     def subkey(self, *args):
         return _make_key(self.key, *args)
 
-    def on_delete(self):
-        # override to do class-specific cleanup before being deleted.
-        pass
+    def associated_iterkeys(self):
+        for name in self._rom_properties.iterkeys():
+            yield getattr(self, name).key
+        yield self.key
+        for name in self.additional_associated_iterkeys():
+            yield name
+
+    def additional_associated_iterkeys(self):
+        # override as a generator to add to .associated_iterkeys
+        return []
 
     def delete(self):
-        self.on_delete()
+        keys = list(self.associated_iterkeys())
+        self.connection.delete(*keys)
 
-        for name in self._rom_properties.iterkeys():
-            getattr(self, name).delete()
+    def expire(self, seconds):
+        for key in self.associated_iterkeys():
+            self.connection.expire(key, seconds)
 
-        self._class_info.delete()
+    def expire_at(self, datetime):
+        timestamp = time.mktime(datetime.timetuple())
+        for key in self.associated_iterkeys():
+            self.connection.expire(key, timestamp)
+
+    def associated_iterttls(self):
+        for key in self.associated_iterkeys():
+            yield self.connection.ttl(key)
+
+    def min_ttl(self):
+        def not_infinite(value):
+            return value is None
+        try:
+            return reduce(min, itertools.ifilter(not_infinite, self.associated_iterttls()))
+        except TypeError:
+            return None
+
+    def max_ttl(self):
+        maximum = None
+        for ttl in self.associated_iterttls():
+            if ttl is None:
+                return None
+            else:
+                maximum = max(maximum, ttl)
+        return maximum
 
 
 def get_object(connection=None, key=None):
