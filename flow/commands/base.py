@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
 from flow import exit_codes
 from flow.util.exit import exit_process
-from twisted.internet import reactor, defer
+from twisted.internet import reactor
 
 import logging
 
