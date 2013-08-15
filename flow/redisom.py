@@ -634,27 +634,6 @@ class Object(object):
         for key in self.associated_iterkeys():
             self.connection.expire(key, timestamp)
 
-    def associated_iterttls(self):
-        for key in self.associated_iterkeys():
-            yield self.connection.ttl(key)
-
-    def min_ttl(self):
-        def not_infinite(value):
-            return value is None
-        try:
-            return reduce(min, itertools.ifilter(not_infinite, self.associated_iterttls()))
-        except TypeError:
-            return None
-
-    def max_ttl(self):
-        maximum = None
-        for ttl in self.associated_iterttls():
-            if ttl is None:
-                return None
-            else:
-                maximum = max(maximum, ttl)
-        return maximum
-
 
 def get_object(connection=None, key=None):
     if connection is None or key is None:
