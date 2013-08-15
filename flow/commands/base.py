@@ -33,9 +33,13 @@ class CommandBase(object):
         reactor.callWhenRunning(self._execute_and_stop, parsed_arguments)
 
     def _execute_and_stop(self, parsed_arguments):
-        deferred = self._execute(parsed_arguments)
-        deferred.addCallbacks(self._stop, self._exit)
-        return deferred
+        try:
+            deferred = self._execute(parsed_arguments)
+            deferred.addCallbacks(self._stop, self._exit)
+            return deferred
+        except:
+            LOG.exception("Unexpected exception while executing command")
+            exit_process(exit_codes.EXECUTE_FAILURE)
 
     def _stop(self, _callback):
         LOG.debug("Stopping the twisted reactor.")
