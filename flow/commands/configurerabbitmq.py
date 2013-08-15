@@ -38,11 +38,8 @@ class ConfigureRabbitMQCommand(CommandBase):
         dlist = defer.DeferredList(deferreds)
 
         _execute_deferred = defer.Deferred()
-        dlist.addCallbacks(self._declare_bindings, self._exit,
-                callbackKeywords={
-                    'bindings':bindings,
-                    '_execute_deferred':_execute_deferred
-        })
+        dlist.addCallback(self._declare_bindings, bindings=bindings,
+                    _execute_deferred=_execute_deferred)
         dlist.addErrback(self._exit)
 
         return _execute_deferred
@@ -106,8 +103,9 @@ class ConfigureRabbitMQCommand(CommandBase):
                 'dead_' + queue, 'dead', topic))
 
         dlist = defer.DeferredList(deferreds)
-        dlist.addCallbacks(self._wait_and_fire_deferred, self._exit,
-               callbackKeywords={'_execute_deferred':_execute_deferred})
+        dlist.addCallback(self._wait_and_fire_deferred,
+               _execute_deferred=_execute_deferred)
+        dlist.addErrback(self._exit)
 
         return _callback
 

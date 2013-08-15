@@ -63,6 +63,10 @@ class AmqpBroker(interfaces.IBroker):
                 reason)
         exit_process(EXECUTE_SYSTEM_FAILURE)
 
+    def _on_ack_reject_failed(self, error):
+        LOG.critical('Failed to ack or reject:\n%s', error.getTrackback())
+        exit_process(EXECUTE_SYSTEM_FAILURE)
+
     def _on_message_recieved(self, get_info, queue, handler):
         (channel, basic_deliver, properties, encoded_message) = get_info
 
@@ -78,6 +82,7 @@ class AmqpBroker(interfaces.IBroker):
         deferred.addCallbacks(self._ack, self._reject,
                 callbackArgs=(receive_tag,),
                 errbackArgs=(receive_tag,))
+        deferred.addErrback(self._on_ack_reject_failed)
 
         self._get_message_from_queue(queue, handler)
         return get_info

@@ -70,6 +70,7 @@ class ConnectionManager(object):
         deferred = pika_connection.connectTCP(self.connection_params.hostname,
                 self.connection_params.port)
         deferred.addCallbacks(self._on_connectTCP, self._on_connectTCP_failed)
+        deferred.addErrback(self._exit)
 
     def _on_connectTCP(self, connection):
         self._connection = connection
@@ -91,8 +92,9 @@ class ConnectionManager(object):
     def _on_ready(self, connection):
         LOG.debug('Established connection to AMQP')
         channel_deferred = connection.channel()
-        channel_deferred.addCallbacks(self._set_channel_and_qos, errback=self._exit,
-                errbackKeywords={'msg':'Unexpected error in getting channel'})
+        channel_deferred.addCallback(self._set_channel_and_qos)
+        channel_deferred.addErrback(self._exit,
+                msg='Unexpected error in getting channel')
         return channel_deferred
 
     def _set_channel_and_qos(self, channel):
@@ -102,8 +104,9 @@ class ConnectionManager(object):
         if self.connection_params.prefetch_count:
             qos_deferred = self._channel.basic_qos(
                     prefetch_count=self.connection_params.prefetch_count)
-            qos_deferred.addCallbacks(self._finish_on_ready, errback=self._exit,
-                    errbackKeywords={'msg':'Unexpected error setting qos'})
+            qos_deferred.addCallback(self._finish_on_ready)
+            qos_deferred.addErrback(self._exit,
+                    msg='Unexpected error setting qos')
         else:
             self._finish_on_ready(None)
         return channel
