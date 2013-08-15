@@ -1,14 +1,12 @@
-import unittest
-try:
-    from unittest import mock
-except:
-    import mock
-
 from twisted.python.failure import Failure
 from twisted.internet import defer
 from flow.protocol.exceptions import InvalidMessageException
 
 from flow.brokers.amqp_broker import AmqpBroker
+
+import unittest
+import mock
+
 
 class AmqpBrokerTests(unittest.TestCase):
     def setUp(self):
@@ -72,7 +70,7 @@ class AmqpBrokerTests(unittest.TestCase):
                 queue=queue, handler=handler)
 
     def test_private_get_message_from_queue(self):
-        deferred = mock.Mock()
+        deferred = mock.Mock(defer.Deferred)
         queue = mock.Mock()
         queue.get = mock.Mock(return_value=deferred)
         handler = mock.Mock()
@@ -80,9 +78,8 @@ class AmqpBrokerTests(unittest.TestCase):
         return_value = self.b._get_message_from_queue(queue, handler)
         self.assertIs(return_value, deferred)
 
-        deferred.addCallbacks.assert_called_once_with(self.b._on_message_recieved, self.b._on_get_failed,
-                callbackArgs=(queue, handler),
-                errbackArgs=(handler,))
+        deferred.addCallback.assert_any_call(mock.ANY, queue, handler)
+        deferred.addErrback.assert_any_call(mock.ANY, handler)
 
     def test_private_on_get_failed(self):
         reason = mock.Mock()

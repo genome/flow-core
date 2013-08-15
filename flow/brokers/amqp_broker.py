@@ -54,9 +54,8 @@ class AmqpBroker(interfaces.IBroker):
 
     def _get_message_from_queue(self, queue, handler):
         deferred = queue.get()
-        deferred.addCallbacks(self._on_message_recieved, self._on_get_failed,
-                callbackArgs=(queue, handler),
-                errbackArgs=(handler,))
+        deferred.addCallback(self._on_message_recieved, queue, handler)
+        deferred.addErrback(self._on_get_failed, handler)
         return deferred
 
     def _on_get_failed(self, reason, handler):
