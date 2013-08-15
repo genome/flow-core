@@ -64,7 +64,7 @@ class AmqpBroker(interfaces.IBroker):
         exit_process(EXECUTE_SYSTEM_FAILURE)
 
     def _on_ack_reject_failed(self, error):
-        LOG.critical('Failed to ack or reject:\n%s', error.getTrackback())
+        LOG.critical('Failed to ack or reject:\n%s', error.getTraceback())
         exit_process(EXECUTE_SYSTEM_FAILURE)
 
     def _on_message_recieved(self, get_info, queue, handler):
