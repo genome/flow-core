@@ -10,6 +10,7 @@ from twisted.python.procutils import which
 
 import logging
 import os
+import traceback
 
 
 LOG = logging.getLogger(__name__)
@@ -67,17 +68,23 @@ class LSFExecutor(ExecutorBase):
             LOG.exception("lsb_submit failed for command line: %s "
                     "-- with executor_data: %s -- with resources: %s",
                     command_line, executor_data, resources)
+            log_to_user_log_files(executor_data,
+                    "Exception while submitting lsf job for command line '%r': %s"
+                    % (command_line, traceback.format_exc()))
             raise
 
         if submit_result > 0:
             job_id_callback(submit_result)
-            LOG.debug('successfully submitted lsf job: %s', submit_result)
+            LOG.debug('Successfully submitted lsf job: %s', submit_result)
             return exit_codes.EXECUTE_SUCCESS
 
         else:
             lsf.lsb_perror("lsb_submit")
-            LOG.error('failed to submit lsf job, return value = (%s), err = %s',
+            LOG.error('Failed to submit lsf job, return value = (%s), err = %s',
                     submit_result, lsf.lsb_sperror("lsb_submit"))
+            log_to_user_log_files(executor_data,
+                    "Failed to submit lsf job for command line '%r': %s"
+                    % (command_line, lsf.lsb_sperror('lsb_submit')))
             return exit_codes.EXECUTE_FAILURE
 
 
@@ -135,6 +142,32 @@ class LSFExecutor(ExecutorBase):
             value = executor_data.get(name)
             if value:
                 self.available_options[name].set_option(request, value)
+
+
+def log_to_user_log_files(executor_data, message):
+    template = '%(timestamp)s %(server_host)s: %(message)s\n'
+
+    try:
+        combined_message = template % {
+                'timestamp': datetime.datetime.now(),
+                'server_host': MY_HOSTNAME,
+                'message': message,
+        }
+        _log_to_file('stderr', executor_data, combined_message)
+        _log_to_file('stdout', executor_data, combined_message)
+
+    except:
+        LOG.exception('Failed to log to user files: %s', message)
+
+
+def _log_to_file(param, executor_data, message):
+    try:
+        if param in executor_data:
+            with open(executor_data[param], 'a') as f:
+                f.write(message)
+
+    except:
+        LOG.exception('Failed to log to user %s: %s', param, message)
 
 
 def create_empty_request():
