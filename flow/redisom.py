@@ -22,6 +22,15 @@ end
 return "OK"
 """
 
+_EXPIRE_KEY_SCRIPT_BODY= """
+local ttl = ARGV[1]
+
+for i,key in pairs (KEYS) do
+    redis.call('EXPIRE', key, ttl)
+end
+
+return {0, "Success"}
+"""
 
 def json_enc(obj):
     return json.dumps(obj)
@@ -626,8 +635,7 @@ class Object(object):
         self.connection.delete(*keys)
 
     def expire(self, seconds):
-        for key in self.associated_iterkeys():
-            self.connection.expire(key, seconds)
+        return _EXPIRE_KEY_SCRIPT(connection=self.connection, keys=list(self.associated_iterkeys()), args=[seconds])
 
     def expire_at(self, datetime):
         timestamp = time.mktime(datetime.timetuple())
@@ -678,3 +686,4 @@ def invoke_instance_method(connection, method_descriptor, **kwargs):
 
 
 _COPY_KEY_SCRIPT = Script(_COPY_KEY_SCRIPT_BODY)
+_EXPIRE_KEY_SCRIPT = Script(_EXPIRE_KEY_SCRIPT_BODY)
