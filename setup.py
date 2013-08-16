@@ -19,11 +19,6 @@ shell-command-wrapper = flow.shell_command.commands.wrapper:WrapperCommand
 
 configure-rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 console = flow.commands.console:ConsoleCommand
-graph = flow.commands.graph:GraphCommand
-
-monitoring-command = flow.util.monitoring_command:MonitoringCommand
-reading-command = flow.util.reading_command:ReadingCommand
-random-reading-command = flow.util.reading_command:RandomReadingCommand
 
 [flow.services]
 orchestrator = flow.orchestrator.service_interface:OrchestratorServiceInterface
