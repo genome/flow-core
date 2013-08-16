@@ -642,9 +642,8 @@ class Object(object):
         key_groups = grouper(_EXPIRE_CHUNK_SIZE, self.associated_iterkeys())
         for group in key_groups:
             _EXPIRE_KEY_SCRIPT(connection=self.connection,
-                    keys=[key for key in group if key is not None])
-
-
+                    keys=[key for key in group if key is not None],
+                    args=[seconds])
 
 
 def get_object(connection=None, key=None):
