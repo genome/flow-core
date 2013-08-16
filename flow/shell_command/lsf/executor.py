@@ -8,8 +8,10 @@ from injector import inject
 from pythonlsf import lsf
 from twisted.python.procutils import which
 
+import datetime
 import logging
 import os
+import socket
 import traceback
 
 
@@ -69,7 +71,8 @@ class LSFExecutor(ExecutorBase):
                     "-- with executor_data: %s -- with resources: %s",
                     command_line, executor_data, resources)
             log_to_user_log_files(executor_data,
-                    "Exception while submitting lsf job for command line '%r': %s"
+                    "Exception while submitting lsf job for "
+                    "command line '%r': %s"
                     % (command_line, traceback.format_exc()))
             raise
 
@@ -150,7 +153,7 @@ def log_to_user_log_files(executor_data, message):
     try:
         combined_message = template % {
                 'timestamp': datetime.datetime.now(),
-                'server_host': MY_HOSTNAME,
+                'server_host': socket.gethostname(),
                 'message': message,
         }
         _log_to_file('stderr', executor_data, combined_message)
