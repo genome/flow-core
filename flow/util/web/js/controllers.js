@@ -1,4 +1,4 @@
-angular.module('processMonitor.controllers', ['processMonitor.services', 'processMonitor.directives', 'angularTree'])
+angular.module('processMonitor.controllers', ['processMonitor.services', 'processMonitor.directives'])
     .controller('ProcessTree', ['$scope', 'statusService',
         function($scope, statusService) {
             $scope.processes = statusService.status_processes;

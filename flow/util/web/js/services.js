@@ -1,11 +1,10 @@
 angular.module('processMonitor.services', ['ngResource'])
-
     .factory('configService', function() {
         return {
             PROCESS_TREE_UPDATE_DELAY: 1000,
             CPU_UPDATE_DELAY: 300,
             UPDATE_DELTA: 1000,
-            SAVE_HISTORY: 15,
+            SAVE_HISTORY: 100,
             KEEP_DEAD_PROCESSES_FOR: 10,
             PROCESS_HISTORY_KEYS: [
                 // these process attribute histories will be stored for generating charts
@@ -35,7 +34,6 @@ angular.module('processMonitor.services', ['ngResource'])
     })
 
     .factory('statusService', function ($q, $http, $timeout, configService, processService, basicService) {
-
         /*
         * MODEL DATA STRUCTURES
          */
@@ -80,7 +78,7 @@ angular.module('processMonitor.services', ['ngResource'])
         };
 
         var initProcess = function(proc) {
-            proc.is_master = (proc.pid == status_all.master_pid);
+            proc.is_master = (proc.pid === status_all.master_pid);
             proc.is_running = true;
             return proc;
         };
@@ -154,7 +152,7 @@ angular.module('processMonitor.services', ['ngResource'])
          */
 
         // periodically polls processService, initializes current processes,
-        // updates status_all, and nests processes for the treeview
+        // updates status_all, and nests processes for the treeview process menu
         var poller = function() {
             console.log("poller() called.");
 
@@ -294,7 +292,7 @@ angular.module('processMonitor.services', ['ngResource'])
                                 .value();
                         };
 
-                        // create nested references for angular-tree
+                        // create nested references for tree view menu
                         status_processes.length = 0;
                         status_processes.push(createRefObj(
                             _.findWhere(status_all.processes, { "is_master": true })
@@ -317,7 +315,7 @@ angular.module('processMonitor.services', ['ngResource'])
         };
     })
 
-    // returns an array of processes with merged /basic and /status data
+    // gets detailed status data
     .factory('processService', function($http, $q) {
         return {
             get: function() {
@@ -337,6 +335,7 @@ angular.module('processMonitor.services', ['ngResource'])
 
     })
 
+    // gets basic status data
     .factory('basicService', function($http, $q) {
         // returns basic info about a process
         return {

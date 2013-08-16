@@ -116,13 +116,52 @@ angular.module('processMonitor.directives', [])
                             "width": iAttributes.width,
                             "top": 0,
                             "right": 0,
-                            "left":0,
+                            "left": 35,
                             "bottom": 25,
                             "xVar": "index",
                             "yVar": "cpu_percent"
                         };
 
                         scope.buildChart(iElement, data, options);
+                    }
+                }, true);
+            }
+        };
+    })
+
+    .directive('fileList', function() {
+        return {
+            restrict: 'A',
+            templateUrl: 'templates/directives/file-list.html',
+            require: "^ngModel",
+
+            replace: true,
+            scope: {
+                process_data: "=ngModel"
+            },
+
+            controller: ['$scope', function($scope) {
+                $scope.process_file_data = "something";
+                $scope.buildFileList = function(element, data, options) {
+                    console.log('buildFileList called.');
+                }
+            }],
+
+            link: function(scope, iElement, iAttributes) {
+                console.log("fileList directive linked.");
+                scope.$watch('process_data', function(process_data) {
+                    var process_files = process_data.files;
+                    if(process_files) {
+                        // build file list table
+                        var data = [
+
+                        ];
+
+                        var options = {
+
+                        };
+
+                        scope.buildFileList(iElement, data, options);
                     }
                 }, true);
             }
