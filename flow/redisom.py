@@ -637,11 +637,6 @@ class Object(object):
     def expire(self, seconds):
         return _EXPIRE_KEY_SCRIPT(connection=self.connection, keys=list(self.associated_iterkeys()), args=[seconds])
 
-    def expire_at(self, datetime):
-        timestamp = time.mktime(datetime.timetuple())
-        for key in self.associated_iterkeys():
-            self.connection.expire(key, timestamp)
-
 
 def get_object(connection=None, key=None):
     if connection is None or key is None:
