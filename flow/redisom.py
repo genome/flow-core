@@ -1,5 +1,6 @@
 # pylint: disable=W0212
 
+from flow.util.containers import grouper
 from uuid import uuid4
 
 import functools
@@ -22,7 +23,7 @@ end
 return "OK"
 """
 
-_EXPIRE_KEY_SCRIPT_BODY= """
+_EXPIRE_KEY_SCRIPT_BODY = """
 local ttl = ARGV[1]
 
 for i,key in pairs (KEYS) do
@@ -31,6 +32,9 @@ end
 
 return {0, "Success"}
 """
+
+_EXPIRE_CHUNK_SIZE = 3000
+
 
 def json_enc(obj):
     return json.dumps(obj)
@@ -635,7 +639,12 @@ class Object(object):
         self.connection.delete(*keys)
 
     def expire(self, seconds):
-        return _EXPIRE_KEY_SCRIPT(connection=self.connection, keys=list(self.associated_iterkeys()), args=[seconds])
+        key_groups = grouper(_EXPIRE_CHUNK_SIZE, self.associated_iterkeys())
+        for group in key_groups:
+            _EXPIRE_KEY_SCRIPT(connection=self.connection,
+                    keys=[key for key in group if key is not None])
+
+
 
 
 def get_object(connection=None, key=None):
