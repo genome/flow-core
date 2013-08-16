@@ -12,7 +12,6 @@ angular.module('processMonitor.directives', [])
 
             controller: ['$scope', function($scope) {
                 $scope.buildChart = function(element, data, options) {
-                    console.log("buildChart called.");
                     // remove old chart
                     if (!d3.select("svg").empty()) {
                         d3.select("svg").remove();
@@ -32,7 +31,7 @@ angular.module('processMonitor.directives', [])
                         .attr('class', 'line-chart')
                         .attr("width", width + margin.left + margin.right)
                         .attr("height", height + margin.top + margin.bottom)
-                        .append("g")
+                        .append("svg:g")
                         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
                     svg.selectAll('*').remove();
@@ -44,9 +43,10 @@ angular.module('processMonitor.directives', [])
 
                     var maxX = d3.max(xData),
                         maxY = d3.max(yData),
+                        minX = d3.min(xData),
 
                         x = d3.scale.linear()
-                            .domain([0, maxX])
+                            .domain([minX, maxX])
                             .range([0, width]),
                         y = d3.scale.linear()
                             .domain([0, maxY])
@@ -58,28 +58,23 @@ angular.module('processMonitor.directives', [])
                             .orient('bottom')
                             .ticks(10);
 
-                    svg.append('g')
+                    svg.append('svg:g')
                         .attr('class', 'y-axis')
                         .call(yAxis);
 
-                    svg.append('g')
+                    svg.append('svg:g')
                         .attr('class', 'x-axis')
                         .attr("transform", "translate(0," + height + ")")
                         .call(xAxis);
 
                     var line = d3.svg.line()
-                        .x(function(d,i){
-                            console.log("plotting x: " + x(d[0]));
-                            return x(d[0]);
-                        })
-                        .y(function(d,i){
-                            console.log("plotting y: " + y(d[1]));
-                            return x(d[1]);
-                        })
+                        .x(function(d,i){ return x(d[0]); })
+                        .y(function(d,i){ return y(d[1]); })
                         .interpolate('linear');
 
-                    var path = svg.append('svg:path')
+                    svg.append('svg:path')
                         .attr('d', line(chartData))
+                        .attr('class', 'chart-line')
                         .attr('fill', 'none')
                         .attr('stroke-width', '1');
                 };
@@ -121,8 +116,8 @@ angular.module('processMonitor.directives', [])
                             "width": iAttributes.width,
                             "top": 0,
                             "right": 0,
-                            "left": 40,
-                            "bottom": 20,
+                            "left":0,
+                            "bottom": 25,
                             "xVar": "index",
                             "yVar": "cpu_percent"
                         };

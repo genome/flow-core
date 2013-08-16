@@ -5,7 +5,7 @@ angular.module('processMonitor.services', ['ngResource'])
             PROCESS_TREE_UPDATE_DELAY: 1000,
             CPU_UPDATE_DELAY: 300,
             UPDATE_DELTA: 1000,
-            SAVE_HISTORY: 100,
+            SAVE_HISTORY: 15,
             KEEP_DEAD_PROCESSES_FOR: 10,
             PROCESS_HISTORY_KEYS: [
                 // these process attribute histories will be stored for generating charts
@@ -130,7 +130,9 @@ angular.module('processMonitor.services', ['ngResource'])
         var trimArray = function(array, trim_length) {
             if (array.length > trim_length) {
                 for(var i = array.length - trim_length; i > 0; i--) {
-                    array.pop();
+
+                    var shift = array.shift();
+                    console.log(["Shifting array", shift].join(" "));
                 }
             }
         };

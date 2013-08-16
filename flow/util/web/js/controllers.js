@@ -42,7 +42,7 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
             $scope.assignProcessData = function() {
                 console.log(['Assigning process_data from process', pid].join(" "));
                 $scope.process_data = statusService.getProcess(pid);
-
+                $scope.process_id = pid;
             };
 
 //            var updateProcess = function(pid) {

@@ -1,7 +1,19 @@
 <div data-ng-controller="ProcessDetail" data-ng-init="assignProcessData()">
   <div class="row">
+    <div class="span10 detail-header">
+      <h4>{{ process_id }}</h4>
+    </div>
+  </div>
+  <div class="row">
     <div class="span10">
       <div data-cpu-chart data-ng-model="process_data"></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="span10">
+      <div data-file-list data-ng-model="process_files">
+
+      </div>
     </div>
   </div>
 </div>

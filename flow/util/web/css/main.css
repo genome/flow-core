@@ -5268,6 +5268,29 @@ a.badge:focus {
 .cpu-chart .line-chart {
   background: #EFEFEF;
 }
+.cpu-chart .chart-line {
+  stroke: steelblue;
+  stroke-width: 1;
+  fill: none;
+  border: 1px solid #F00;
+}
+.cpu-chart .axis {
+  shape-rendering: crispEdges;
+}
+.cpu-chart .x.axis line {
+  stroke: lightgrey;
+}
+.cpu-chart .x.axis .minor {
+  stroke-opacity: .5;
+}
+.cpu-chart .x.axis path {
+  display: none;
+}
+.cpu-chart .y.axis line,
+.cpu-chart .y.axis path {
+  fill: none;
+  stroke: #000;
+}
 .process-tree {
   list-style: none;
   margin-left: 0;
