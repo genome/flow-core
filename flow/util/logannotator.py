@@ -16,10 +16,13 @@ def write_output(fd, data, newline_pending, prefix=''):
         lines = lines[1:]
 
     if lines:
-        newline_pending = lines[-1][-1] != '\n'
+        newline_pending = not lines[-1].endswith('\n')
 
         for line in lines:
             fd.write("%s[%s] %s" % (prefix, now, line))
+
+    else:
+        newline_pending = False
 
     return newline_pending
 
@@ -48,6 +51,7 @@ class LogAnnotator(protocol.ProcessProtocol):
             write_output(self.stderr_fd, ex, self.stderr_newline_pending)
             self.stderr_fd.close()
             self.stderr_fd = None
+            self.transport.loseConnection()
 
     def outReceived(self, data):
         try:
@@ -81,6 +85,10 @@ class LogAnnotator(protocol.ProcessProtocol):
         if self.stdout_fd != self.stderr_fd:
             write_output(self.stderr_fd, msg, self.stderr_newline_pending)
 
+
 if __name__ == '__main__':
     log_annotator = LogAnnotator(sys.argv[1:])
-    log_annotator.start()
+    d = log_annotator.start()
+    d.addCallback(lambda x: reactor.stop())
+    d.addErrback(lambda x: reactor.stop())
+    reactor.run()
