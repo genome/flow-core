@@ -1,0 +1,13 @@
+Using libraries at /gscuser/mburnett/genome/lib/perl
+RUN: java -Xmx4g -XX:MaxPermSize=64m  -cp /usr/share/java/ant.jar:/gsc/scripts/lib/java/samtools/picard-tools-1.46/MergeSamFiles.jar net.sf.picard.sam.MergeSamFiles MSD=true SO=coordinate AS=false O=/tmp/zoO7ElVKzT.bam I=/gscmnt/gc13003/info/test_suite_data//Genome-Tools-Sam-Merge/normal.tiny.bam VALIDATION_STRINGENCY=SILENT TMP_DIR=/tmp/gm-genome_sys-2013-08-20_12_18_01--ALxL/Picard-8joe
+[Tue Aug 20 12:18:02 CDT 2013] net.sf.picard.sam.MergeSamFiles INPUT=[/gscmnt/gc13003/info/test_suite_data/Genome-Tools-Sam-Merge/normal.tiny.bam] OUTPUT=/tmp/zoO7ElVKzT.bam SORT_ORDER=coordinate ASSUME_SORTED=false MERGE_SEQUENCE_DICTIONARIES=true TMP_DIR=/tmp/gm-genome_sys-2013-08-20_12_18_01--ALxL/Picard-8joe VALIDATION_STRINGENCY=SILENT    USE_THREADING=false VERBOSITY=INFO QUIET=false COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false
+INFO	2013-08-20 12:18:02	MergeSamFiles	Sorting input files using temp directory /tmp/gm-genome_sys-2013-08-20_12_18_01--ALxL/Picard-8joe
+INFO	2013-08-20 12:18:02	MergeSamFiles	Finished reading inputs.
+[Tue Aug 20 12:18:02 CDT 2013] net.sf.picard.sam.MergeSamFiles done. Elapsed time: 0.01 minutes.
+Runtime.totalMemory()=93913088
+RUN: java -Xmx4g -XX:MaxPermSize=64m  -cp /usr/share/java/ant.jar:/gsc/scripts/lib/java/samtools/picard-tools-1.46/MergeSamFiles.jar net.sf.picard.sam.MergeSamFiles MSD=true SO=coordinate AS=false O=/tmp/WkaIDMiFO1.bam I=/gscmnt/gc13003/info/test_suite_data//Genome-Tools-Sam-Merge/normal.tiny.bam I=/gscmnt/gc13003/info/test_suite_data//Genome-Tools-Sam-Merge/tumor.tiny.bam VALIDATION_STRINGENCY=SILENT TMP_DIR=/tmp/gm-genome_sys-2013-08-20_12_18_01--ALxL/Picard-Y8KM
+[Tue Aug 20 12:18:02 CDT 2013] net.sf.picard.sam.MergeSamFiles INPUT=[/gscmnt/gc13003/info/test_suite_data/Genome-Tools-Sam-Merge/normal.tiny.bam, /gscmnt/gc13003/info/test_suite_data/Genome-Tools-Sam-Merge/tumor.tiny.bam] OUTPUT=/tmp/WkaIDMiFO1.bam SORT_ORDER=coordinate ASSUME_SORTED=false MERGE_SEQUENCE_DICTIONARIES=true TMP_DIR=/tmp/gm-genome_sys-2013-08-20_12_18_01--ALxL/Picard-Y8KM VALIDATION_STRINGENCY=SILENT    USE_THREADING=false VERBOSITY=INFO QUIET=false COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false
+INFO	2013-08-20 12:18:02	MergeSamFiles	Sorting input files using temp directory /tmp/gm-genome_sys-2013-08-20_12_18_01--ALxL/Picard-Y8KM
+INFO	2013-08-20 12:18:02	MergeSamFiles	Finished reading inputs.
+[Tue Aug 20 12:18:03 CDT 2013] net.sf.picard.sam.MergeSamFiles done. Elapsed time: 0.01 minutes.
+Runtime.totalMemory()=93913088
