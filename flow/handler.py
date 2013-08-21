@@ -22,3 +22,6 @@ class Handler(IHandler):
         """
         Returns a deferred to __call__
         """
+
+    def __repr__(self):
+        return "%s(queue_name=%s)" % (self.__class__.__name__, self.queue_name)
