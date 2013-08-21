@@ -150,6 +150,6 @@ class AmqpBrokerTests(unittest.TestCase):
         self.b.channel = mock.Mock()
 
         return_value = self.b._reject(reason, recieve_tag)
-        self.assertIs(return_value, reason)
+        self.assertIs(return_value, None)
         self.b.channel.basic_reject.assert_called_once_with(recieve_tag)
 

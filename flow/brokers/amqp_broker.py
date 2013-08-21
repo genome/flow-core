@@ -96,4 +96,4 @@ class AmqpBroker(interfaces.IBroker):
         LOG.error('Rejecting message (%s) due to error: %s', receive_tag,
                 reason.getTraceback())
         self.channel.basic_reject(receive_tag)
-        return reason
+        return None # we don't want to engage additional errbacks
