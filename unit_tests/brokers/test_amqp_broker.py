@@ -41,7 +41,7 @@ class AmqpBrokerTests(unittest.TestCase):
         self.assertIs(return_value, deferred)
 
         deferred.addCallback.assert_called_once_with(self.b._start_handler,
-                handler)
+                handler=handler)
 
     def test_private_start_handler(self):
         channel = mock.Mock()
@@ -76,21 +76,11 @@ class AmqpBrokerTests(unittest.TestCase):
         handler = mock.Mock()
 
         return_value = self.b._get_message_from_queue(queue, handler)
-        self.assertIs(return_value, deferred)
 
-        deferred.addCallback.assert_any_call(mock.ANY, queue, handler)
-        deferred.addErrback.assert_any_call(mock.ANY, handler)
+        deferred.addCallback.assert_any_call(mock.ANY, queue=queue, handler=handler)
+        deferred.addErrback.assert_any_call(mock.ANY, handler=handler)
 
-    def test_private_on_get_failed(self):
-        reason = mock.Mock()
-        handler = mock.Mock()
-        fake_exit = mock.Mock()
-
-        with mock.patch('flow.brokers.amqp_broker.exit_process', new=fake_exit):
-            self.b._on_get_failed(reason, handler=handler)
-            self.assertEqual(fake_exit.call_count, 1)
-
-    def test_private_on_message_recieved(self):
+    def test_private_message_recieved(self):
         channel = mock.Mock()
         basic_deliver = mock.Mock()
         recieve_tag = mock.Mock()
@@ -109,7 +99,7 @@ class AmqpBrokerTests(unittest.TestCase):
         self.b._get_message_from_queue = mock.Mock()
 
         # without raising exception
-        return_value = self.b._on_message_recieved(get_info, queue, handler)
+        return_value = self.b._message_recieved(get_info, queue, handler)
         self.assertIs(return_value, get_info)
 
         handler.assert_called_once_with(message)
@@ -124,7 +114,7 @@ class AmqpBrokerTests(unittest.TestCase):
         failed_deferred = mock.Mock()
         fake_fail = mock.Mock(return_value=failed_deferred)
         with mock.patch('twisted.internet.defer.fail', new=fake_fail):
-            return_value = self.b._on_message_recieved(get_info, queue, handler)
+            return_value = self.b._message_recieved(get_info, queue, handler)
             self.assertIs(return_value, get_info)
 
             handler.assert_called__with(message)

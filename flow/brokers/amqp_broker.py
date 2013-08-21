@@ -5,7 +5,6 @@ from injector import inject
 from twisted.internet import defer
 from flow.util.exit import exit_process
 from flow.exit_codes import EXECUTE_SYSTEM_FAILURE
-from flow.util.defer import add_callback_and_default_errback
 
 
 import logging
@@ -27,48 +26,38 @@ class AmqpBroker(interfaces.IBroker):
                 routing_key=routing_key,
                 encoded_message=encoded_message)
 
-    def register_handler(self, handler):
-        LOG.debug("Registering handler on queue '%s'.", handler.queue_name)
-        connect_deferred = self.channel.connect()
-        add_callback_and_default_errback(connect_deferred, self._start_handler,
-                handler)
-        return connect_deferred
-
     def declare_queue(self, *args, **kwargs):
         return self.channel.declare_queue(*args, **kwargs)
 
-    def _start_handler(self, _cb_channel, handler):
+    def register_handler(self, handler):
+        LOG.debug("Registering handler on queue '%s'.", handler.queue_name)
+        connect_deferred = self.channel.connect()
+        connect_deferred.addCallback(self._start_handler, handler=handler)
+        connect_deferred.addErrback(self._exit, handler=handler)
+        return connect_deferred
+
+    def _start_handler(self, _callback_arg, handler):
         queue_name = handler.queue_name
         consume_deferred = self.channel.basic_consume(queue=queue_name)
-        add_callback_and_default_errback(consume_deferred, self._begin_get_loop,
-                handler)
-        return _cb_channel
+        consume_deferred.addCallback(self._begin_get_loop, handler=handler)
+        consume_deferred.addErrback(self._exit, handler=handler)
+        return _callback_arg
 
-    def _begin_get_loop(self, consume_info, handler):
-        queue, consumer_tag = consume_info
+    def _begin_get_loop(self, _callback_arg, handler):
+        queue, consumer_tag = _callback_arg
         queue_name = handler.queue_name
         LOG.debug('Beginning consumption on queue (%s)', queue_name)
 
         self._get_message_from_queue(queue=queue, handler=handler)
-        return consume_info
+        return _callback_arg
 
     def _get_message_from_queue(self, queue, handler):
         deferred = queue.get()
-        deferred.addCallback(self._on_message_recieved, queue, handler)
-        deferred.addErrback(self._on_get_failed, handler)
-        return deferred
+        deferred.addCallback(self._message_recieved, queue=queue, handler=handler)
+        deferred.addErrback(self._exit, handler=handler)
 
-    def _on_get_failed(self, reason, handler):
-        LOG.critical("Get from queue '%s' failed: %s", handler.queue_name,
-                reason)
-        exit_process(EXECUTE_SYSTEM_FAILURE)
-
-    def _on_ack_reject_failed(self, error):
-        LOG.critical('Failed to ack or reject:\n%s', error.getTraceback())
-        exit_process(EXECUTE_SYSTEM_FAILURE)
-
-    def _on_message_recieved(self, get_info, queue, handler):
-        (channel, basic_deliver, properties, encoded_message) = get_info
+    def _message_recieved(self, _callback_arg, queue, handler):
+        (channel, basic_deliver, properties, encoded_message) = _callback_arg
 
         message_class = handler.message_class
         try:
@@ -82,18 +71,23 @@ class AmqpBroker(interfaces.IBroker):
         deferred.addCallbacks(self._ack, self._reject,
                 callbackArgs=(receive_tag,),
                 errbackArgs=(receive_tag,))
-        deferred.addErrback(self._on_ack_reject_failed)
+        deferred.addErrback(self._exit)
 
         self._get_message_from_queue(queue, handler)
-        return get_info
+        return _callback_arg
 
-    def _ack(self, confirm_info, receive_tag):
+    def _exit(self, error, **kwargs):
+        LOG.critical("Unexpected error with kwargs: %s\n%s", kwargs,
+                error.getTraceback())
+        exit_process(EXECUTE_SYSTEM_FAILURE)
+
+    def _ack(self, _callback_arg, receive_tag):
         LOG.debug('Acking message (%s)', receive_tag)
         self.channel.basic_ack(receive_tag)
-        return confirm_info
+        return _callback_arg
 
-    def _reject(self, reason, receive_tag):
+    def _reject(self, error, receive_tag):
         LOG.error('Rejecting message (%s) due to error: %s', receive_tag,
-                reason.getTraceback())
+                error.getTraceback())
         self.channel.basic_reject(receive_tag)
         return None # we don't want to engage additional errbacks
