@@ -20,6 +20,8 @@ shell-command-wrapper = flow.shell_command.commands.wrapper:WrapperCommand
 configure-rabbitmq = flow.commands.configurerabbitmq:ConfigureRabbitMQCommand
 console = flow.commands.console:ConsoleCommand
 
+rabbit = flow.commands.rabbit:RabbitCommand
+
 [flow.services]
 orchestrator = flow.orchestrator.service_interface:OrchestratorServiceInterface
 fork = flow.shell_command.service_interface:ForkShellCommandServiceInterface
@@ -52,6 +54,7 @@ setup(
             'platform-python-lsf-api',
             'pyyaml',
             'redis',
+            'requests',  # for flow rabbit
             'statsd-client',
             'twisted',
         ],
