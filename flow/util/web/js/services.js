@@ -128,9 +128,7 @@ angular.module('processMonitor.services', ['ngResource'])
         var trimArray = function(array, trim_length) {
             if (array.length > trim_length) {
                 for(var i = array.length - trim_length; i > 0; i--) {
-
                     var shift = array.shift();
-                    console.log(["Shifting array", shift].join(" "));
                 }
             }
         };

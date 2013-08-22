@@ -28,28 +28,12 @@
 <!-- </div> -->
 <div class="container">
   <div data-ng-app="processMonitor">
-    <div class="row">
-      <div class="span12" data-ng-controller="BasicData">
-        status_all.calls: {{status_all.calls}}
-      </div>
-    </div>
     <!--<div class="row">-->
-    <!--<div class="span4" data-ng-controller="ProcessTree">-->
-    <!--<ul data-ng-tree="processes">-->
-    <!--<li select='selected()' class="{{ 'running-' + item.is_running }}">-->
-    <!--<div class="{{ colors[this.selected_pid == this.item.pid ]}}">-->
-    <!--<div class="cpu-percent">-->
-    <!--{{ item.cpu_percent }}%-->
+      <!--<div class="span12" data-ng-controller="BasicData">-->
+        <!--status_all.calls: {{status_all.calls}}-->
+      <!--</div>-->
     <!--</div>-->
-    <!--{{ item.pid }}-->
-    <!--</div>-->
-    <!--</li>-->
-    <!--</ul>-->
-    <!--</div>-->
-    <!--</div>-->
-
-    <div class="row">
-
+    <div class="row" style="margin-top: 1em;">
       <div class="span2">
         <div data-ng-controller="Tree">
           <ul class="process-tree">
@@ -59,7 +43,7 @@
       </div>
 
       <div class="span10">
-        <div data-ng-view>
+        <div data-ng-view data-ng-model="process_data">
 
         </div>
       </div>

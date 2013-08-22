@@ -1,7 +1,25 @@
 .cpu-chart {
   width: 100%;
-  height: 300px;
 }
 .cpu-chart .line-chart {
   background: #EFEFEF;
+}
+.cpu-chart .chart-line {
+  stroke: steelblue;
+  stroke-width: 1;
+  fill: none;
+  border: 1px solid #F00;
+}
+.cpu-chart .y-axis path,
+.cpu-chart .y-axis line,
+.cpu-chart .x-axis path,
+.cpu-chart .x-axis line {
+  fill: none;
+  stroke: grey;
+  shape-rendering: crispEdges;
+}
+.cpu-chart .y-axis text,
+.cpu-chart .x-axis text {
+  font-family: sans-serif;
+  font-size: 10px;
 }

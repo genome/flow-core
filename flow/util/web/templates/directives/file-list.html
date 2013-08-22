@@ -1,5 +1,6 @@
 <div class="file-list-grid">
-  <div class="gridStyle" ng-grid="gridOptions">
-
-  </div>
+  <h4>Files:</h4>
+  <ul>
+    <li data-ng-repeat="file in process_data.files">{{ file.name }}</li>
+  </ul>
 </div>

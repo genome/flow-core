@@ -1,7 +1,7 @@
 angular.module('processMonitor.directives', [])
     .directive('cpuChart', function () {
         return {
-            restrict: 'A',
+            restrict: 'E',
             templateUrl: 'templates/directives/cpu-chart.html',
             require: "^ngModel",
             transclude: true,
@@ -81,7 +81,6 @@ angular.module('processMonitor.directives', [])
             }],
 
             link: function(scope, iElement, iAttributes) {
-
                 console.log("cpuChart directive linked.");
                 scope.$watch('process_data', function(process_data) {
                     var process_history = process_data.history;
@@ -131,17 +130,13 @@ angular.module('processMonitor.directives', [])
 
     .directive('fileList', function() {
         return {
-            restrict: 'A',
+            restrict: 'E',
             templateUrl: 'templates/directives/file-list.html',
-            require: "^ngModel",
-
             replace: true,
-            scope: {
-                process_data: "=ngModel"
-            },
+            scope: true,
 
             controller: ['$scope', function($scope) {
-                $scope.process_file_data = "something";
+                console.log('FileList controller called.');
                 $scope.buildFileList = function(element, data, options) {
                     console.log('buildFileList called.');
                 }
@@ -150,20 +145,22 @@ angular.module('processMonitor.directives', [])
             link: function(scope, iElement, iAttributes) {
                 console.log("fileList directive linked.");
                 scope.$watch('process_data', function(process_data) {
-                    var process_files = process_data.files;
-                    if(process_files) {
-                        // build file list table
-                        var data = [
-
-                        ];
-
-                        var options = {
-
-                        };
-
-                        scope.buildFileList(iElement, data, options);
-                    }
+                         scope.buildFileList(iElement);
                 }, true);
+//                scope.$watch('process_data', function(process_data) {
+//                    var process_files = process_data.files;
+//                    if(process_files.length > 0) {
+//                        // build file list table
+//                        var data = process_files;
+//                        var options = {
+//                            multiSelect: false
+//                        };
+//
+//                        scope.buildFileList(iElement, data, options);
+//                    } else {
+//                        // indicate that the process has no open files
+//                    }
+//                }, true);
             }
         };
     });

@@ -5263,7 +5263,6 @@ a.badge:focus {
 }
 .cpu-chart {
   width: 100%;
-  height: 300px;
 }
 .cpu-chart .line-chart {
   background: #EFEFEF;
@@ -5274,22 +5273,23 @@ a.badge:focus {
   fill: none;
   border: 1px solid #F00;
 }
-.cpu-chart .axis {
+.cpu-chart .y-axis path,
+.cpu-chart .y-axis line,
+.cpu-chart .x-axis path,
+.cpu-chart .x-axis line {
+  fill: none;
+  stroke: grey;
   shape-rendering: crispEdges;
 }
-.cpu-chart .x.axis line {
-  stroke: lightgrey;
+.cpu-chart .y-axis text,
+.cpu-chart .x-axis text {
+  font-family: sans-serif;
+  font-size: 10px;
 }
-.cpu-chart .x.axis .minor {
-  stroke-opacity: .5;
-}
-.cpu-chart .x.axis path {
-  display: none;
-}
-.cpu-chart .y.axis line,
-.cpu-chart .y.axis path {
-  fill: none;
-  stroke: #000;
+.gridStyle {
+  border: 1px solid #d4d4d4;
+  width: 400px;
+  height: 300px;
 }
 .process-tree {
   list-style: none;
