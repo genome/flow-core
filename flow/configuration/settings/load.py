@@ -5,6 +5,7 @@ from flow.configuration.settings.priority import PrioritySettings
 import os
 import yaml
 
+
 def get_valid_config_dirs():
     config_path = os.environ.get('FLOW_CONFIG_PATH', DEFAULT_FLOW_CONFIG_PATH)
     config_dirs = [os.path.expandvars(d) for d in config_path.split(':')]
@@ -12,11 +13,31 @@ def get_valid_config_dirs():
     return [d for d in reversed(config_dirs) if os.path.isdir(d)]
 
 
+def base_config_name(config_dir):
+    return os.path.join(config_dir, 'flow.yaml')
+
+def command_config_name(config_dir, command_name):
+    return os.path.join(config_dir, '%s.yaml' % command_name)
+
+
+def get_config_file_paths(command_name):
+    config_dirs = get_valid_config_dirs()
+    results = []
+
+    for config_dir in config_dirs:
+        results.append(base_config_name(config_dir))
+
+    for config_dir in config_dirs:
+        results.append(command_config_name(config_dir, command_name))
+
+    return filter(os.path.isfile, results)
+
+
 def load_settings(command_name, parsed_arguments):
     settings = PrioritySettings()
 
-    for config_dir in get_valid_config_dirs():
-        settings.extend(load_config_dir(config_dir, command_name))
+    for config_file in get_config_file_paths(command_name):
+        settings.append(load_settings_file(config_file))
 
     # environment variables?
 
@@ -26,16 +47,6 @@ def load_settings(command_name, parsed_arguments):
     return settings
 
 
-def load_config_dir(config_dir, command_name=None):
-    results = [
-        load_settings_file(os.path.join(config_dir, 'flow.yaml')),
-        load_settings_file(
-            os.path.join(config_dir, '%s.yaml' % command_name)),
-    ]
-
-    return [r for r in results if r]
-
 def load_settings_file(path):
-    if os.path.isfile(path):
-        data = yaml.load(open(path))
-        return CacheSettings(data)
+    data = yaml.load(open(path))
+    return CacheSettings(data)
