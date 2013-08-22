@@ -15,7 +15,12 @@ class Handler(IHandler):
         completely handled, or will errback when the message cannot be
         handled.
         """
-        return self._handle_message(message)
+        try:
+            deferred = self._handle_message(message)
+        except Exception as e:
+            LOG.exception('Unexpected exception in handler (%r)', self)
+            deferred = defer.fail(e)
+        return deferred
 
     @abstractmethod
     def _handle_message(self, message):
