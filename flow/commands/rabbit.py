@@ -1,16 +1,17 @@
 from flow import exit_codes
 from flow.rabbit.api import RabbitMQAPI
 from flow.rabbit.filter.factory import FilterFactory
+from flow.rabbit.reporter.factory import ReporterFactory
 
 import injector
 import logging
-import pprint
 
 
 LOG = logging.getLogger(__name__)
 
 
-@injector.inject(api=RabbitMQAPI, filter_factory=FilterFactory)
+@injector.inject(api=RabbitMQAPI, filter_factory=FilterFactory,
+        reporter_factory=ReporterFactory)
 class RabbitCommand(object):
     injector_modules = []
 
@@ -53,12 +54,12 @@ class RabbitCommand(object):
                 help='whether to return all message data')
 
 
-
     def execute(self, parsed_arguments):
         func = self.subcommand_function(parsed_arguments.subcommand_func)
         result = func(parsed_arguments)
 
-        pprint.pprint(result)
+        reporter = self.reporter_factory.create(parsed_arguments)
+        reporter(result)
 
         return exit_codes.EXECUTE_SUCCESS
 
