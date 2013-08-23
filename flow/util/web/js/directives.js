@@ -138,7 +138,7 @@ angular.module('processMonitor.directives', [])
             controller: ['$scope', function($scope) {
                 console.log('FileList controller called.');
                 $scope.buildFileList = function(element, data, options) {
-                    console.log('buildFileList called.');
+                   // console.log('buildFileList called.');
                 }
             }],
 

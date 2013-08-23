@@ -1,5 +1,7 @@
 <div class="process-block">
-  <div class="process-data running-{{ item.is_running }}" data-ng-click="viewProcess(item.pid)">
+  <div class="process-data running-{{ item.is_running }}" data-ng-click="viewProcess(item.pid)"
+       data-ng-mouseenter="mouseEnter(item.pid)"
+       data-ng-mouseleave="mouseLeave(item.pid)">
     <div class="pid">{{ item.pid }}</div>
     <div class="cpu">{{ item.cpu_percent }}%</div>
   </div>

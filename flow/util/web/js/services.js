@@ -152,7 +152,7 @@ angular.module('processMonitor.services', ['ngResource'])
         // periodically polls processService, initializes current processes,
         // updates status_all, and nests processes for the treeview process menu
         var poller = function() {
-            console.log("poller() called.");
+            // console.log("poller() called.");
 
             processService.get()
                 .then(function(processes) { // transform processService response to an array of initialized processes

@@ -28,6 +28,20 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
                 console.log(["Selected", pid].join(" "));
                 $location.path("process/" + pid);
             };
+
+            $scope.mouseEnter = function(pid) {
+                console.log(["mouseEnter:", pid].join(" "));
+            };
+
+            $scope.mouseLeave = function(pid) {
+                console.log(["mouseLeave:", pid].join(" "));
+            };
+
+            $scope.tabClass = function(item) {
+
+            };
+
+
         }])
 
     .controller('BasicData', ['$scope', 'statusService',
