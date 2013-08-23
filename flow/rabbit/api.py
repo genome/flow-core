@@ -80,6 +80,21 @@ class RabbitMQAPI(object):
             if regex.match(name):
                 yield name
 
+    def publish_to_queue(self, queue_name, payload, payload_encoding='string',
+            message_properties={}):
+        response = requests.post(self.request_string(
+            'exchanges/%(virtual_host)s/amq.default/publish'),
+            data=json.dumps({
+                'properties': message_properties,
+                'payload': payload,
+                'routing_key': queue_name,
+                'payload_encoding': payload_encoding,
+            }), auth=self.auth)
+        if 200 != response.status_code:
+            raise RuntimeError('%s -- failed to publish message to "%s" '
+                    '(properties=%s): %s'
+                    % (response, queue_name, message_properties, payload))
+
     @property
     def queue_names(self):
         results = ['missing_routing_key']
