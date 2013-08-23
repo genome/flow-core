@@ -41,6 +41,14 @@ class RabbitCommand(object):
     def add_queue_show_parser(cls, parser):
         parser.set_defaults(subcommand_func='queue_show')
 
+        filter_group = parser.add_mutually_exclusive_group()
+        filter_group.add_argument('--select_property_names', nargs='+')
+        filter_group.add_argument('--blocked_property_names',
+                default=['deliveries'], nargs='+')
+
+        parser.add_argument('--report_type', default='csv')
+
+
     @classmethod
     def add_queue_get_parser(cls, parser):
         parser.set_defaults(subcommand_func='queue_get')
@@ -69,9 +77,7 @@ class RabbitCommand(object):
 
     def queue_show(self, parsed_arguments):
         queue_filter = self.filter_factory.create(parsed_arguments)
-
-        return queue_filter.header(), self.api.queue_show(
-                parsed_arguments.regex, queue_filter)
+        return self.api.queue_show(parsed_arguments.regex, queue_filter)
 
     def queue_get(self, parsed_arguments):
         return self.api.queue_get(parsed_arguments.regex,

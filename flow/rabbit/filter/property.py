@@ -11,14 +11,8 @@ class BlockPropertyFilter(PropertyFilterBase):
         return {k: v for k, v in query_info.iteritems()
                 if k not in self.property_names}
 
-    def header(self):
-        return None
-
 
 class SelectPropertyFilter(PropertyFilterBase):
     def __call__(self, query_info):
         return {k: v for k, v in query_info.iteritems()
                 if k in self.property_names}
-
-    def header(self):
-        return self.property_names
