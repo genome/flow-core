@@ -24,6 +24,8 @@ def write_output(fd, data, newline_pending, prefix=''):
     else:
         newline_pending = False
 
+    fd.flush()
+
     return newline_pending
 
 
