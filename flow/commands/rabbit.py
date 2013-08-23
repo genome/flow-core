@@ -1,5 +1,6 @@
 from flow import exit_codes
-from flow.rabbitmq_api import RabbitMQAPI
+from flow.rabbit.api import RabbitMQAPI
+from flow.rabbit.filter.factory import FilterFactory
 
 import injector
 import logging
@@ -9,19 +10,19 @@ import pprint
 LOG = logging.getLogger(__name__)
 
 
-@injector.inject(api=RabbitMQAPI)
+@injector.inject(api=RabbitMQAPI, filter_factory=FilterFactory)
 class RabbitCommand(object):
     injector_modules = []
 
     @classmethod
     def annotate_parser(cls, parser):
         subparsers = parser.add_subparsers()
-        queue_parser = subparsers.add_parser('queue',
-                help='queue-related commands')
-        cls.add_queue_parser(queue_parser)
+        cls.add_queue_parser(subparsers)
 
     @classmethod
-    def add_queue_parser(cls, parser):
+    def add_queue_parser(cls, parent_subparsers):
+        parser = parent_subparsers.add_parser('queue',
+                help='queue-related commands')
         parser.add_argument('--regex', default='.*',
                 help='regex to match against queue names')
 
@@ -38,13 +39,6 @@ class RabbitCommand(object):
     @classmethod
     def add_queue_show_parser(cls, parser):
         parser.set_defaults(subcommand_func='queue_show')
-
-        parser_property_group = parser.add_mutually_exclusive_group(
-                required=True)
-        parser_property_group.add_argument('--all', action='store_true',
-                required=False, help='show all properties')
-        parser_property_group.add_argument('--properties', nargs='*',
-                help='properties to show')
 
     @classmethod
     def add_queue_get_parser(cls, parser):
@@ -73,11 +67,10 @@ class RabbitCommand(object):
 
 
     def queue_show(self, parsed_arguments):
-        if parsed_arguments.all:
-            return self.api.queue_show_all(parsed_arguments.regex)
-        else:
-            return self.api.queue_show(parsed_arguments.regex,
-                'name', *parsed_arguments.properties)
+        queue_filter = self.filter_factory.create(parsed_arguments)
+
+        return queue_filter.header(), self.api.queue_show(
+                parsed_arguments.regex, queue_filter)
 
     def queue_get(self, parsed_arguments):
         return self.api.queue_get(parsed_arguments.regex,

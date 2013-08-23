@@ -47,11 +47,10 @@ class RabbitMQAPI(object):
             }), auth=self.auth)
         return json.loads(response.text)
 
-    def queue_show(self, queue_name_regex, *property_names):
-        rows = [list(property_names)]
+    def queue_show(self, queue_name_regex, queue_info_filter):
+        rows = []
         for queue_name in self.queue_names_matching(queue_name_regex):
-            rows.append(extract_properties(self.queue_info(queue_name),
-                *property_names))
+            rows.append(queue_info_filter(self.queue_info(queue_name)))
 
         return rows
 
@@ -91,9 +90,3 @@ class RabbitMQAPI(object):
     @property
     def base_queue_names(self):
         return self.bindings['flow'].keys()
-
-
-def extract_properties(info, *property_names):
-    if not property_names:
-        return info
-    return [info[pn] for pn in property_names]
