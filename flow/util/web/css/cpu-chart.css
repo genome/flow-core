@@ -1,25 +1,13 @@
-.cpu-chart {
-  width: 100%;
-}
-.cpu-chart .line-chart {
-  background: #EFEFEF;
-}
-.cpu-chart .chart-line {
-  stroke: steelblue;
-  stroke-width: 1;
-  fill: none;
-  border: 1px solid #F00;
-}
-.cpu-chart .y-axis path,
-.cpu-chart .y-axis line,
-.cpu-chart .x-axis path,
-.cpu-chart .x-axis line {
-  fill: none;
-  stroke: grey;
-  shape-rendering: crispEdges;
-}
-.cpu-chart .y-axis text,
-.cpu-chart .x-axis text {
-  font-family: sans-serif;
-  font-size: 10px;
-}
+at less.Parser.parser.parse.i (/Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/lib/less/js/lib/less/parser.js:421:31): variable @globalBorderRadius is undefined (Less::ParseError)
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/lib/less/parser.rb:100:in `block in to_css'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/lib/less/java_script/v8_context.rb:90:in `block in do_lock'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/lib/less/java_script/v8_context.rb:88:in `call'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/lib/less/java_script/v8_context.rb:88:in `Locker'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/lib/less/java_script/v8_context.rb:88:in `do_lock'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/lib/less/java_script/v8_context.rb:60:in `lock'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/lib/less/java_script/v8_context.rb:30:in `exec'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/lib/less/java_script.rb:26:in `exec'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/lib/less/parser.rb:100:in `to_css'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/lib/ruby/gems/1.9.1/gems/less-2.3.2/bin/lessc:101:in `<top (required)>'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/bin/lessc:23:in `load'
+	from /Users/jmcmicha/.rbenv/versions/1.9.3-p374/bin/lessc:23:in `<main>'

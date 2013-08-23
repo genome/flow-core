@@ -1,7 +1,6 @@
 angular.module('processMonitor.services', ['ngResource'])
     .factory('configService', function() {
         return {
-            PROCESS_TREE_UPDATE_DELAY: 1000,
             CPU_UPDATE_DELAY: 300,
             UPDATE_DELTA: 1000,
             SAVE_HISTORY: 100,

@@ -24,21 +24,35 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
             console.log("Tree controller instantiated.");
             $scope.processes = statusService.status_processes;
 
-            $scope.viewProcess= function (pid) {
-                console.log(["Selected", pid].join(" "));
-                $location.path("process/" + pid);
+            $scope.selected = null;
+            $scope.hover = null;
+
+            $scope.viewProcess= function (item) {
+                console.log(["Selected", item.pid].join(" "));
+                $location.path("process/" + item.pid);
+                $scope.selected = item.pid;
             };
 
-            $scope.mouseEnter = function(pid) {
-                console.log(["mouseEnter:", pid].join(" "));
+            $scope.mouseEnter = function(item) {
+                console.log(["mouseEnter:", item.pid].join(" "));
+                $scope.hover = item.pid;
             };
 
-            $scope.mouseLeave = function(pid) {
-                console.log(["mouseLeave:", pid].join(" "));
+            $scope.mouseLeave = function(item) {
+                console.log(["mouseLeave:", item.pid].join(" "));
+                $scope.hover = null;
             };
 
             $scope.tabClass = function(item) {
-
+                if ((item.pid === $scope.hover) && (item.pid === $scope.selected)) {
+                    return "hover selected";
+                } else if (item.pid === $scope.hover) {
+                    return "hover";
+                } else if (item.pid === $scope.selected) {
+                    return "selected";
+                } else {
+                    return undefined;
+                }
             };
 
 

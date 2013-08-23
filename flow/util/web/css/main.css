@@ -5266,6 +5266,9 @@ a.badge:focus {
 }
 .cpu-chart .line-chart {
   background: #EFEFEF;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
 }
 .cpu-chart .chart-line {
   stroke: steelblue;
@@ -5291,6 +5294,16 @@ a.badge:focus {
   width: 400px;
   height: 300px;
 }
+.detail-header {
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+  background-color: #b2d49c;
+  margin-bottom: 1em;
+}
+.detail-header h4 {
+  margin: 10px;
+}
 .process-tree {
   list-style: none;
   margin-left: 0;
@@ -5307,30 +5320,31 @@ a.badge:focus {
 .process-tree .process-block:after {
   clear: both;
 }
-.process-tree .process-block .process-data {
+.process-tree .process-block .process-tab {
   *zoom: 1;
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 5px;
   width: 92%;
+  cursor: pointer;
   padding-left: 4%;
   padding-right: 4%;
   margin-bottom: 5px;
 }
-.process-tree .process-block .process-data:before,
-.process-tree .process-block .process-data:after {
+.process-tree .process-block .process-tab:before,
+.process-tree .process-block .process-tab:after {
   display: table;
   content: "";
   line-height: 0;
 }
-.process-tree .process-block .process-data:after {
+.process-tree .process-block .process-tab:after {
   clear: both;
 }
-.process-tree .process-block .process-data .pid {
+.process-tree .process-block .process-tab .pid {
   width: 70%;
   float: left;
 }
-.process-tree .process-block .process-data .cpu {
+.process-tree .process-block .process-tab .cpu {
   width: 30%;
   float: right;
   text-align: right;
@@ -5338,10 +5352,22 @@ a.badge:focus {
 }
 .process-tree .process-block .running-true {
   color: #03394A;
-  background-color: #94D7EF;
+  background-color: #94d7ef;
 }
 .process-tree .process-block .running-false {
-  background-color: #EFEFEF;
+  background-color: #efefef;
+}
+.process-tree .process-block .running-true.hover {
+  background-color: #d7f0f9;
+}
+.process-tree .process-block .running-false.hover {
+  background-color: #c9c9c9;
+}
+.process-tree .process-block .running-true.selected {
+  background-color: #b2d49c;
+}
+.process-tree .process-block .running-false.selected {
+  background-color: #cee3c0;
 }
 .process-tree .process-block .process-children ul {
   margin-left: 10px;
@@ -5350,4 +5376,50 @@ a.badge:focus {
 .process-tree .process-block .process-children li {
   margin-bottom: .1em;
   list-style: none;
+}
+.file-list-block .file-list {
+  list-style: none;
+  margin: 0;
+}
+.file-list-block .file-list .file-item {
+  list-style: none;
+  background-color: #EFEFEF;
+  padding: 5px;
+  margin-bottom: 5px;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+}
+.cpu-chart {
+  width: 100%;
+}
+.cpu-chart .line-chart {
+  background: #EFEFEF;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+}
+.cpu-chart .chart-line {
+  stroke: steelblue;
+  stroke-width: 1;
+  fill: none;
+  border: 1px solid #F00;
+}
+.cpu-chart .y-axis path,
+.cpu-chart .y-axis line,
+.cpu-chart .x-axis path,
+.cpu-chart .x-axis line {
+  fill: none;
+  stroke: grey;
+  shape-rendering: crispEdges;
+}
+.cpu-chart .y-axis text,
+.cpu-chart .x-axis text {
+  font-family: sans-serif;
+  font-size: 10px;
+}
+.gridStyle {
+  border: 1px solid #d4d4d4;
+  width: 400px;
+  height: 300px;
 }

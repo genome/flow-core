@@ -1,5 +1,5 @@
 'use strict';
-angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.services', 'processMonitor.directives', 'ngGrid'])
+angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.services', 'processMonitor.directives'])
     .config(['$routeProvider', function($routeProvider, ProcessDetail) {
         // underscore.js extensions
         _.mixin({

@@ -2,6 +2,23 @@
 @import "cpu-chart.less";
 @import "file-list.less";
 
+// VARIABLES
+@globalBorderRadius: 5px;
+
+// COLORS
+@tabRunningColor: #94D7EF;
+@tabDeadColor: #EFEFEF;
+@selectedColor: #B2D49C;
+
+.detail-header {
+  .border-radius(@globalBorderRadius);
+  background-color: @selectedColor;
+  margin-bottom: 1em;
+  h4 {
+    margin: 10px;
+  }
+}
+
 .process-tree {
   list-style: none;
   margin-left: 0;
@@ -9,10 +26,12 @@
   .process-block {
     .clearfix();
 
-    .process-data {
+    .process-tab {
       .clearfix();
-      .border-radius(5px);
+      .border-radius(@globalBorderRadius);
       width: 92%;
+
+      cursor: pointer;
 
       padding-left: 4%;
       padding-right: 4%;
@@ -33,11 +52,22 @@
 
     .running-true {
       color: #03394A;
-      background-color: #94D7EF;
+      background-color: @tabRunningColor;
     }
 
     .running-false {
-      background-color: #EFEFEF;
+      background-color: @tabDeadColor;
+    }
+
+    .running-true.hover { background-color: lighten(@tabRunningColor, 15%) }
+    .running-false.hover { background-color: darken(@tabDeadColor, 15%) }
+
+    .running-true.selected {
+      background-color: @selectedColor;
+    }
+
+    .running-false.selected {
+      background-color: lighten(@selectedColor, 10%);
     }
 
     .process-children {
@@ -54,8 +84,57 @@
 
         }
       }
-
     }
   }
 }
 
+.file-list-block {
+  .file-list {
+    list-style: none;
+    margin: 0;
+    .file-item {
+      list-style: none;
+      background-color: #EFEFEF;
+      padding: 5px;
+      margin-bottom: 5px;
+      .border-radius(@globalBorderRadius);
+    }
+  }
+}
+
+.cpu-chart {
+  width: 100%;
+
+  .line-chart {
+    background: #EFEFEF;
+    .border-radius(@globalBorderRadius);
+  }
+
+  .chart-line {
+    stroke: steelblue;
+    stroke-width: 1;
+    fill: none;
+    border: 1px solid #F00;
+  }
+
+  .y-axis path,
+  .y-axis line,
+  .x-axis path,
+  .x-axis line {
+    fill: none;
+    stroke: grey;
+    shape-rendering: crispEdges;
+  }
+
+  .y-axis text,
+  .x-axis text {
+    font-family: sans-serif;
+    font-size: 10px;
+  }
+}
+
+.gridStyle {
+  border: 1px solid rgb(212,212,212);
+  width: 400px;
+  height: 300px
+}
