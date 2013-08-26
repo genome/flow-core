@@ -8,7 +8,10 @@ angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.
         });
 
         $routeProvider
-            .when('/process/:pid', { controller: ProcessDetail, templateUrl: 'templates/process-detail.html' });
+            .when('/process/:pid', {
+                controller: ProcessDetail,
+                templateUrl: 'templates/process-detail.html'
+            });
 
         console.log("processMonitor configured.");
     }])

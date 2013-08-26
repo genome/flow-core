@@ -21,25 +21,21 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
 
     .controller('Tree', ['$scope', '$location', 'statusService',
         function($scope, $location, statusService) {
-            console.log("Tree controller instantiated.");
             $scope.processes = statusService.status_processes;
 
             $scope.selected = null;
             $scope.hover = null;
 
             $scope.viewProcess= function (item) {
-                console.log(["Selected", item.pid].join(" "));
                 $location.path("process/" + item.pid);
                 $scope.selected = item.pid;
             };
 
             $scope.mouseEnter = function(item) {
-                console.log(["mouseEnter:", item.pid].join(" "));
                 $scope.hover = item.pid;
             };
 
             $scope.mouseLeave = function(item) {
-                console.log(["mouseLeave:", item.pid].join(" "));
                 $scope.hover = null;
             };
 
@@ -63,23 +59,30 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
             $scope.status_all = statusService.status_all;
         }])
 
-    .controller('ProcessDetail', ['$scope', '$routeParams', 'statusService',
-        function($scope, $routeParams, statusService){
+    .controller('ProcessDetail', ['$scope', '$routeParams', '$q', 'statusService',
+        function($scope, $routeParams, $q, statusService){
             var pid = $routeParams['pid'];
 
             $scope.assignProcessData = function() {
                 console.log(['Assigning process_data from process', pid].join(" "));
-                $scope.process_data = statusService.getProcess(pid);
+                $scope.process_data = getProcessData(pid);
                 $scope.process_id = pid;
             };
 
-//            var updateProcess = function(pid) {
-//                console.log(["Updating process", pid].join(" "));
-//                $scope.process_detail = statusService.getProcess(pid);
-//            };
-//
-//            $scope.addWatcher = function() {
-//                $scope.$watch(statusService.getProcess(pid)['history'].length, updateProcess(pid));
-//            }
+            var getProcessData = function (pid) {
+                var deferred = $q.defer();
 
+                setTimeout(function() {
+                    $scope.$apply(function() {
+                        var process_data = statusService.getProcess(pid);
+                        if (_.isObject(process_data)) {
+                            deferred.resolve(process_data);
+                        } else {
+                            deferred.reject('Could not load process_data for detail view.');
+                        }
+                    });
+                }, 1000);
+
+                return deferred.promise;
+            };
         }]);
