@@ -164,11 +164,17 @@ angular.module('processMonitor.services', ['ngResource'])
                 .then(function(processes){
                     // create all the deferred basicService calls
                     var basic_deferreds = _.map(processes, function(process){
-                        return basicService.get(process.pid);
+                        var currentProcess = _.findWhere(status_all.processes, { "pid": process.pid });
+                        if (_.isObject(currentProcess) && _.has(currentProcess, 'parent_pid')) {
+                            // return nothing - process exists and has already been merged w/ basic info
+                            return undefined;
+                        } else {
+                            return basicService.get(process.pid);
+                        }
                     });
 
                     // resolve them all with $q.all()
-                    $q.all(basic_deferreds).then(function(results){
+                    $q.all(_.compact(basic_deferreds)).then(function(results){
                         // merge status and basic nodes
                         status_current.processes = _.map(processes, function(process) {
                             return _.deepExtend(process, _.findWhere(results, { "pid": process.pid }));
