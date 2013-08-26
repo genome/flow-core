@@ -69,20 +69,25 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
                 $scope.process_id = pid;
             };
 
+            var deferred = $q.defer();
+
             var getProcessData = function (pid) {
-                var deferred = $q.defer();
-
-                setTimeout(function() {
-                    $scope.$apply(function() {
-                        var process_data = statusService.getProcess(pid);
-                        if (_.isObject(process_data)) {
-                            deferred.resolve(process_data);
-                        } else {
-                            deferred.reject('Could not load process_data for detail view.');
-                        }
-                    });
-                }, 1000);
-
+                var process_data = statusService.getProcess(pid);
+                if (_.isObject(process_data)) {
+                    deferred.resolve(process_data);
+                } else {
+                    setTimeout(function() {
+                        $scope.$apply(function() {
+                            var process_data = statusService.getProcess(pid);
+                            if (_.isObject(process_data)) {
+                                deferred.resolve(process_data);
+                            } else {
+                                deferred.reject('Could not load process_data for detail view.');
+                            }
+                        });
+                    }, 1000);
+                }
                 return deferred.promise;
             };
+
         }]);

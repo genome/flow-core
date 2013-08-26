@@ -147,20 +147,7 @@ angular.module('processMonitor.directives', [])
                 scope.$watch('process_data', function(process_data) {
                          scope.buildFileList(iElement);
                 }, true);
-//                scope.$watch('process_data', function(process_data) {
-//                    var process_files = process_data.files;
-//                    if(process_files.length > 0) {
-//                        // build file list table
-//                        var data = process_files;
-//                        var options = {
-//                            multiSelect: false
-//                        };
-//
-//                        scope.buildFileList(iElement, data, options);
-//                    } else {
-//                        // indicate that the process has no open files
-//                    }
-//                }, true);
+
             }
         };
     });
