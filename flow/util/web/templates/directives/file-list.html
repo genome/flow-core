@@ -1,6 +1,21 @@
 <div class="file-list-block">
   <h4>Files:</h4>
   <ul class="file-list">
-    <li class="file-item" data-ng-repeat="file in process_data.files">{{ file.name | longFileName }}</li>
+    <li class="file-item" data-ng-repeat="file in process_data.files">
+      <strong>{{ file.name }}</strong>
+      <ul class="descriptor-list">
+        <li class="descriptor-item" data-ng-repeat="descriptor in file.descriptors">
+          <span class="id">ID: {{ descriptor.id }}</span>
+          <span class="flags">Flags: {{ descriptor.flags }}</span>
+          <span class="readonly">Read-only: {{ descriptor.read_only }}</span>
+          <span class="size">Size: {{ descriptor.size }}</span>
+          <span class="pos">Position: {{ descriptor.pos }}</span>
+
+        </li>
+      </ul>
+    </li>
   </ul>
+  <!--<pre>-->
+    <!--{{  process_data.files | json }}-->
+  <!--</pre>-->
 </div>

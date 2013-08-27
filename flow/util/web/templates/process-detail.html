@@ -1,9 +1,16 @@
 <div data-ng-controller="ProcessDetail" data-ng-init="assignProcessData()">
   <div class="row">
     <div class="span10 detail-header">
-      <h4>Process {{ process_id }}</h4>
+      <h4>Process {{ process_id }} <span ng-switch on="process_data.is_master"><span ng-switch-when="true">(master)</span></span></h4>
+      <p>{{ command_line }}</p>
     </div>
   </div>
+  <!--<div class="row">-->
+    <!--<div class="span12 cmd-line">-->
+      <!--<p><strong>Command Line:</strong><br/>-->
+      <!--{{ command_line }}</p>-->
+    <!--</div>-->
+  <!--</div>-->
   <div class="row">
     <div class="span10">
       <cpu-chart data-ng-model="process_data"></cpu-chart>

@@ -167,13 +167,15 @@ angular.module('processMonitor.services', ['ngResource'])
                         var currentProcess = _.findWhere(status_all.processes, { "pid": process.pid });
                         if (_.isObject(currentProcess) && _.has(currentProcess, 'parent_pid')) {
                             // return nothing - process exists and has already been merged w/ basic info
+                            // (these undefined items are removed from basic_deferreds with _.compact later)
                             return undefined;
                         } else {
                             return basicService.get(process.pid);
                         }
                     });
 
-                    // resolve them all with $q.all()
+                    // call with $q.all() the deferred objects we set up previously,
+                    // then manage process data structures
                     $q.all(_.compact(basic_deferreds)).then(function(results){
                         // merge status and basic nodes
                         status_current.processes = _.map(processes, function(process) {

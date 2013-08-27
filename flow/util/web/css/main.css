@@ -5304,6 +5304,10 @@ a.badge:focus {
 .detail-header h4 {
   margin: 10px;
 }
+.detail-header p {
+  margin: 0 10px 10px 10px;
+  color: #666;
+}
 .process-tree {
   list-style: none;
   margin-left: 0;

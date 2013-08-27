@@ -81,7 +81,6 @@ angular.module('processMonitor.directives', [])
             }],
 
             link: function(scope, iElement, iAttributes) {
-                console.log("cpuChart directive linked.");
                 scope.$watch('process_data', function(process_data) {
                     var process_history = process_data.history;
                     scope.process_history = process_history; // for testing

@@ -10,29 +10,9 @@
   <link rel="stylesheet" type="text/css" href="css/main.css"/>
 </head>
 <body>
-<!-- <div data-ng-app='processMonitorApp'> -->
-<!--     <div data-ng-controller='MainController'> -->
-<!--         <div data-ng-controller='ProcessTree'> -->
-<!--             <ul data-ng-tree="process_tree"> -->
-<!--                 <li select='selected()'> -->
-<!--                     <div style='background-color:{{colors[this.selected_pid == this.item.pid]}}'> -->
-<!--                         <div style='width:40px;float:left;' data-ng-controller='CpuUpdate'> -->
-<!--                             {{cpu_percent[item.pid]}}% -->
-<!--                         </div> -->
-<!--                         {{item.pid}} command: {{item.cmdline}} -->
-<!--                     </div> -->
-<!--                 </li> -->
-<!--             </ul> -->
-<!--         </div> -->
-<!--     </div> -->
-<!-- </div> -->
+
 <div class="container">
   <div data-ng-app="processMonitor">
-    <!--<div class="row">-->
-      <!--<div class="span12" data-ng-controller="BasicData">-->
-        <!--status_all.calls: {{status_all.calls}}-->
-      <!--</div>-->
-    <!--</div>-->
     <div class="row" style="margin-top: 1em;">
       <div class="span2">
         <div data-ng-controller="Tree">

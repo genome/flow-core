@@ -67,11 +67,13 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
                 console.log(['Assigning process_data from process', pid].join(" "));
                 $scope.process_data = getProcessData(pid);
                 $scope.process_id = pid;
+                $scope.process_data.then(function(pdata) {
+                    $scope.command_line = formatCommandLine(pdata.cmdline);
+                });
             };
 
-            var deferred = $q.defer();
-
             var getProcessData = function (pid) {
+                var deferred = $q.defer();
                 var process_data = statusService.getProcess(pid);
                 if (_.isObject(process_data)) {
                     deferred.resolve(process_data);
@@ -90,4 +92,14 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
                 return deferred.promise;
             };
 
+            var formatCommandLine = function(cmdline) {
+                var shortCmdLine = _.map(cmdline, function(part) {
+                    if ((part.match(/\//g)||[]).length > 1) { // find long pathnames, only return the final file string
+                        return part.split("/").pop();
+                    } else {
+                        return part;
+                    }
+                });
+                return shortCmdLine.join(" ");
+            }
         }]);
