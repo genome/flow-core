@@ -36,6 +36,8 @@ class ShellCommandSubmitMessageHandler(Handler):
         execution_environment = ExecutionEnvironment(
                 group_id=message['group_id'],
                 user_id=message['user_id'],
+                groups=message['groups'],
+                umask=message['umask'],
                 environment=self.assemble_environment(message),
                 working_directory=message.get('working_directory', '/tmp')
         )

@@ -18,9 +18,11 @@ class ExecutionEnvironmentBase(object):
 
 
 class ExecutionEnvironment(ExecutionEnvironmentBase):
-    def __init__(self, user_id, group_id, environment, working_directory):
+    def __init__(self, user_id, group_id, groups, umask, environment, working_directory):
         self.user_id = user_id
         self.group_id = group_id
+        self.groups = groups
+        self.umask = umask
         self.environment = environment
         self.working_directory = working_directory
 
@@ -28,6 +30,8 @@ class ExecutionEnvironment(ExecutionEnvironmentBase):
         try:
             os.setgid(self.group_id)
             os.setuid(self.user_id)
+            os.setgroups(self.groups)
+            os.umask(self.umask)
             os.chdir(self.working_directory)
             os.environ.clear()
             os.environ.update(self.environment)
