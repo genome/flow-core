@@ -133,12 +133,13 @@ class RabbitCommand(object):
         for dead_queue, dead_messages in all_dead_messages.iteritems():
             for dead_message in dead_messages:
                 queue_name = self._revive_queue_name(dead_queue, dead_message)
+                LOG.debug("Resurecting message to queue: %s, msg: %s", queue_name, dead_message['payload'])
                 self.api.publish_to_queue(queue_name,
                         payload=dead_message['payload'],
                         payload_encoding=dead_message['payload_encoding'],
                         message_properties=dead_message['properties'])
 
-        return dead_messages
+        return all_dead_messages
 
     def _revive_queue_name(self, dead_queue, dead_message):
         return dead_queue[5:]
