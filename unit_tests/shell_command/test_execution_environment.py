@@ -9,7 +9,9 @@ import unittest
 
 class ExecutionEnvironmentTest(unittest.TestCase):
     def setUp(self):
+        self.umask = mock.Mock()
         self.group_id = mock.Mock()
+        self.groups = [mock.Mock(), mock.Mock()]
         self.user_id = mock.Mock()
         self.working_directory = mock.Mock()
         self.environment = {
@@ -17,9 +19,24 @@ class ExecutionEnvironmentTest(unittest.TestCase):
         }
 
         self.execution_environment = ExecutionEnvironment(
-                group_id=self.group_id, user_id=self.user_id,
+                group_id=self.group_id, groups=self.groups,
+                umask=self.umask, user_id=self.user_id,
                 working_directory=self.working_directory,
                 environment=self.environment)
+
+    def test_set_groups_error(self):
+        with mock.patch('flow.shell_command.execution_environment.os') as os:
+            os.chdir.side_effect = OSError
+
+            # should not raise errors, just logs
+            self.execution_environment.set_groups(self.groups)
+            os.setgroups.assert_called_once_with(self.groups)
+
+    def test_set_groups(self):
+        with mock.patch('flow.shell_command.execution_environment.os') as os:
+            self.execution_environment.set_groups(self.groups)
+            os.setgroups.assert_called_once_with(self.groups)
+
 
     def test_enter_OK(self):
         with mock.patch('flow.shell_command.execution_environment.os') as os:
@@ -28,6 +45,7 @@ class ExecutionEnvironmentTest(unittest.TestCase):
 
             os.setgid.assert_called_once_with(self.group_id)
             os.setuid.assert_called_once_with(self.user_id)
+            os.umask.assert_called_once_with(self.umask)
 
             os.chdir.assert_called_once_with(self.working_directory)
 

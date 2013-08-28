@@ -10,6 +10,8 @@ class ShellCommandMessagesTest(unittest.TestCase):
         message = ShellCommandSubmitMessage(
                 command_line=['a', 'b', 'c'],
                 group_id=100,
+                groups=[100,200,300,400],
+                umask=2,
                 user_id=100,
                 environment={'d': 'e', 'f': 'g'},
                 resources={

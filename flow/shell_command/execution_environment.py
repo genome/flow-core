@@ -30,7 +30,7 @@ class ExecutionEnvironment(ExecutionEnvironmentBase):
         try:
             os.setgid(self.group_id)
             os.setuid(self.user_id)
-            os.setgroups(self.groups)
+            self.set_groups(self.groups)
             os.umask(self.umask)
             os.chdir(self.working_directory)
             os.environ.clear()
@@ -41,6 +41,13 @@ class ExecutionEnvironment(ExecutionEnvironmentBase):
                     'environment:\n%s', self.group_id, self.user_id,
                         self.working_directory, self.environment)
             exit_process(exit_codes.EXECUTE_SYSTEM_FAILURE)
+
+    def set_groups(self, groups):
+        try:
+            os.setgroups(self.groups)
+        except OSError:
+            LOG.debug("Couldn't set groups, user(%s) is not sufficiently privileged",
+                    self.user_id)
 
 
 class NullExecutionEnvironment(ExecutionEnvironmentBase):

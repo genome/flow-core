@@ -7,7 +7,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ShellCommandDispatchAction(BasicMergeAction):
-    net_constants = ['group_id', 'user_id', 'working_directory']
+    net_constants = ['group_id', 'groups', 'umask', 'user_id', 'working_directory']
     place_refs = [
             "msg: dispatch_failure",
             "msg: dispatch_success",
@@ -78,11 +78,14 @@ class ShellCommandDispatchAction(BasicMergeAction):
 
         user_id = int(net.constant('user_id'))
         group_id = int(net.constant('group_id'))
+        groups = [int(g) for g in net.constant('groups')]
+        umask = int(net.constant('umask'))
         working_directory = net.constant('working_directory', '/tmp')
 
         service = service_interfaces[self.service_name]
         deferred.addCallback(lambda x: service.submit(user_id=user_id,
-            group_id=group_id, working_directory=working_directory,
+            group_id=group_id, groups=groups, umask=umask, 
+            working_directory=working_directory,
             callback_data=self.callback_data(net,
                 color_descriptor, response_places),
             command_line=self.command_line(net, token_data),

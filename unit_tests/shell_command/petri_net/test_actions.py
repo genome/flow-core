@@ -7,7 +7,7 @@ import unittest
 
 class ShellCommandDispatchActionTest(unittest.TestCase):
     def setUp(self):
-        self.net_constants = ['group_id', 'user_id', 'working_directory']
+        self.net_constants = ['group_id', 'groups', 'umask', 'user_id', 'working_directory']
 
         self.response_places = {
             'msg: dispatch_failure': 'dfplace',
@@ -101,7 +101,15 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         service_name = 'myservice'
         self.action.service_name = service_name
 
-        self.net.constant.return_value = 0
+        constant_calls = []
+        def constant(key, default=None):
+            constant_calls.append((key, default))
+            if key == 'groups':
+                return [1,2,3]
+            else:
+                return 0
+
+        self.net.constant = constant
 
         color_descriptor = mock.Mock()
         active_tokens = mock.Mock()
@@ -116,9 +124,11 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
             self.action.execute(self.net, color_descriptor,
                     active_tokens, service_interfaces)
 
-        self.net.constant.assert_any_call('user_id')
-        self.net.constant.assert_any_call('group_id')
-        self.net.constant.assert_any_call('working_directory', mock.ANY)
+        self.assertIn(('user_id', None), constant_calls)
+        self.assertIn(('group_id', None), constant_calls)
+        self.assertIn(('groups', None), constant_calls)
+        self.assertIn(('umask', None), constant_calls)
+        self.assertIn(('working_directory', '/tmp'), constant_calls)
 
         basic_merge_action.execute.assert_called_once_with(self.action,
                 self.net, color_descriptor, active_tokens, service_interfaces)
@@ -134,7 +144,7 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
 
 class LSFDispatchActionTest(unittest.TestCase):
     def setUp(self):
-        self.net_constants = ['group_id', 'user_id', 'working_directory']
+        self.net_constants = ['group_id', 'user_id', 'groups', 'umask', 'working_directory']
 
         self.response_places = {
             'msg: dispatch_failure': 'dfplace',
