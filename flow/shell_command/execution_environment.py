@@ -29,8 +29,8 @@ class ExecutionEnvironment(ExecutionEnvironmentBase):
     def enter(self):
         try:
             os.setgid(self.group_id)
-            os.setuid(self.user_id)
             self.set_groups(self.groups)
+            os.setuid(self.user_id)
             os.umask(self.umask)
             os.chdir(self.working_directory)
             os.environ.clear()
