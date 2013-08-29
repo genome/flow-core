@@ -50,11 +50,7 @@ class ExecutionEnvironment(ExecutionEnvironmentBase):
 
     def set_groups(self, groups):
         if groups:
-            try:
-                os.setgroups(self.groups)
-            except OSError:
-                LOG.debug("Couldn't set groups, user(%s) is not sufficiently privileged",
-                        self.user_id)
+            os.setgroups(self.groups)
 
 
 class NullExecutionEnvironment(ExecutionEnvironmentBase):
