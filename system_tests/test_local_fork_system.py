@@ -79,7 +79,6 @@ class TestSystemFork(redistest.RedisTest):
         constants = {
             'user_id': os.getuid(),
             'group_id': os.getgid(),
-            'groups': os.getgroups(),
             'umask': 2,
             'working_directory': os.path.dirname(__file__),
         }
@@ -112,7 +111,6 @@ class TestSystemFork(redistest.RedisTest):
         constants = {
             'user_id': os.getuid(),
             'group_id': os.getgid(),
-            'groups': os.getgroups(),
             'umask': 2,
         }
         net = b.store(future_net, {}, constants)

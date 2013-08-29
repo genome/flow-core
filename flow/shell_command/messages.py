@@ -9,7 +9,6 @@ class ShellCommandSubmitMessage(Message):
     required_fields = {
             'command_line': list,
             'group_id': (int, long),
-            'groups': list,
             'umask': (int, long),
             'user_id': (int, long),
     }
@@ -18,6 +17,7 @@ class ShellCommandSubmitMessage(Message):
             'callback_data': dict,
             'environment': dict,
             'executor_data': dict,
+            'groups': list,
             'resources': dict,
             'working_directory': basestring,
     }

@@ -96,20 +96,19 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         self.action.set_io_files(self.net, executor_data, token_data={})
         self.assertEqual(expected_iofiles, executor_data)
 
+    def test_exec_environment_params(self):
+        self.net.constant = mock.MagicMock()
+        params = self.action.exec_environment_params(self.net)
+        self.net.constant.assert_any_call('user_id')
+        self.net.constant.assert_any_call('group_id')
+        self.net.constant.assert_any_call('umask')
+        self.net.constant.assert_any_call('working_directory', '/tmp')
+
+        self.net.constant.assert_any_call('groups')
 
     def test_execute(self):
         service_name = 'myservice'
         self.action.service_name = service_name
-
-        constant_calls = []
-        def constant(key, default=None):
-            constant_calls.append((key, default))
-            if key == 'groups':
-                return [1,2,3]
-            else:
-                return 0
-
-        self.net.constant = constant
 
         color_descriptor = mock.Mock()
         active_tokens = mock.Mock()
@@ -123,12 +122,6 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
                 new=basic_merge_action):
             self.action.execute(self.net, color_descriptor,
                     active_tokens, service_interfaces)
-
-        self.assertIn(('user_id', None), constant_calls)
-        self.assertIn(('group_id', None), constant_calls)
-        self.assertIn(('groups', None), constant_calls)
-        self.assertIn(('umask', None), constant_calls)
-        self.assertIn(('working_directory', '/tmp'), constant_calls)
 
         basic_merge_action.execute.assert_called_once_with(self.action,
                 self.net, color_descriptor, active_tokens, service_interfaces)

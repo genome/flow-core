@@ -66,6 +66,19 @@ class ShellCommandDispatchAction(BasicMergeAction):
         if 'stdout' in self.args:
             executor_data['stdout'] = self.args['stdout']
 
+    def exec_environment_params(self, net):
+        params = {
+            'user_id': int(net.constant('user_id')),
+            'group_id': int(net.constant('group_id')),
+            'umask': int(net.constant('umask')),
+            'working_directory': net.constant('working_directory', '/tmp'),
+        }
+
+        net_groups = net.constant('groups')
+        if net_groups:
+            params['groups'] = map(int, net_groups)
+
+        return params
 
     def execute(self, net, color_descriptor, active_tokens, service_interfaces):
         tokens, deferred = BasicMergeAction.execute(self, net,
@@ -76,22 +89,15 @@ class ShellCommandDispatchAction(BasicMergeAction):
         # BasicMergeAction returns exactly one token
         token_data = tokens[0].data
 
-        user_id = int(net.constant('user_id'))
-        group_id = int(net.constant('group_id'))
-        groups = [int(g) for g in net.constant('groups')]
-        umask = int(net.constant('umask'))
-        working_directory = net.constant('working_directory', '/tmp')
-
         service = service_interfaces[self.service_name]
-        deferred.addCallback(lambda x: service.submit(user_id=user_id,
-            group_id=group_id, groups=groups, umask=umask, 
-            working_directory=working_directory,
+        deferred.addCallback(lambda x: service.submit(
             callback_data=self.callback_data(net,
                 color_descriptor, response_places),
             command_line=self.command_line(net, token_data),
             executor_data=self.executor_data(net, color_descriptor,
                 token_data, response_places),
-            resources=self.args.get('resources', {})))
+            resources=self.args.get('resources', {}),
+            **self.exec_environment_params(net)))
 
         return tokens, deferred
 
