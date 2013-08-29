@@ -27,16 +27,22 @@ class ExecutionEnvironmentTest(unittest.TestCase):
     def test_set_groups_error(self):
         with mock.patch('flow.shell_command.execution_environment.os') as os:
             os.chdir.side_effect = OSError
+            os.getuid.return_value = 0
 
             # should not raise errors, just logs
-            self.execution_environment.set_groups(self.groups)
+            self.execution_environment.set_groups()
             os.setgroups.assert_called_once_with(self.groups)
 
     def test_set_groups(self):
         with mock.patch('flow.shell_command.execution_environment.os') as os:
-            self.execution_environment.set_groups(self.groups)
+            os.getuid.return_value = 0
+            self.execution_environment.set_groups()
             os.setgroups.assert_called_once_with(self.groups)
 
+    def test_set_groups_not_root(self):
+        with mock.patch('flow.shell_command.execution_environment.os') as os:
+            self.execution_environment.set_groups()
+            self.assertEqual([], os.setgroups.mock_calls)
 
     def test_enter_OK(self):
         with mock.patch('flow.shell_command.execution_environment.os') as os:

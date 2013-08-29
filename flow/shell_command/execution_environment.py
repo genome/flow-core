@@ -45,12 +45,17 @@ class ExecutionEnvironment(ExecutionEnvironmentBase):
 
     def set_permissions(self):
         os.setgid(self.group_id)
-        self.set_groups(self.groups)
+        self.set_groups()
         os.setuid(self.user_id)
 
-    def set_groups(self, groups):
-        if groups:
-            os.setgroups(self.groups)
+    def set_groups(self):
+        if self.groups:
+            if os.getuid() == 0:
+                os.setgroups(self.groups)
+            else:
+                LOG.warning(
+                'Failed to set groups to %r while running as %d (must be root)',
+                    self.groups, os.getuid())
 
 
 class NullExecutionEnvironment(ExecutionEnvironmentBase):
