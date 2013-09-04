@@ -5302,11 +5302,11 @@ a.badge:focus {
   margin-bottom: 1em;
 }
 .detail-header h4 {
-  margin: 10px;
+  margin: 10px 10px 5px 10px;
 }
 .detail-header p {
   margin: 0 10px 10px 10px;
-  color: #666;
+  color: #393;
 }
 .process-tree {
   list-style: none;

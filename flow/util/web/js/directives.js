@@ -62,6 +62,23 @@ angular.module('processMonitor.directives', [])
                         .attr('class', 'y-axis')
                         .call(yAxis);
 
+                    // y axis label
+                    svg.append("svg:text")
+                        .attr("class", "y label")
+                        .attr("text-anchor", "middle")
+                        .attr("y", -(options.left - 15))
+                        .attr("x", -(height/2))
+                        .attr("transform", "rotate(-90)")
+                        .text(options.yVar);
+
+                    // x axis label
+                    svg.append("svg:text")
+                        .attr("class", "x label")
+                        .attr("text-anchor", "end")
+                        .attr("x", width/2)
+                        .attr("y", height + 32)
+                        .text(options.xVar);
+
                     svg.append('svg:g')
                         .attr('class', 'x-axis')
                         .attr("transform", "translate(0," + height + ")")
@@ -113,9 +130,9 @@ angular.module('processMonitor.directives', [])
                             "height": iAttributes.height,
                             "width": iAttributes.width,
                             "top": 0,
-                            "right": 0,
-                            "left": 35,
-                            "bottom": 25,
+                            "right": 20,
+                            "left": 45,
+                            "bottom": 40,
                             "xVar": "index",
                             "yVar": "cpu_percent"
                         };
