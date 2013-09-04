@@ -43,20 +43,29 @@ angular.module('processMonitor.directives', [])
 
                     var maxX = d3.max(xData),
                         maxY = d3.max(yData),
-                        minX = d3.min(xData),
+                        minX = d3.min(xData);
 
-                        x = d3.scale.linear()
+                    if (options.xVar == "time") {
+                        var x = d3.time.scale()
+                            .domain([new Date(minX * 1000), new Date(maxX * 1000)])
+                            .range([0, width]);
+                    } else {
+                        var x = d3.scale.linear()
                             .domain([minX, maxX])
-                            .range([0, width]),
-                        y = d3.scale.linear()
-                            .domain([0, maxY])
-                            .range([height, 0]),
-                        yAxis = d3.svg.axis().scale(y)
-                            .orient('left')
-                            .ticks(5),
-                        xAxis = d3.svg.axis().scale(x)
-                            .orient('bottom')
-                            .ticks(10);
+                            .range([0, width]);
+                    }
+
+                    var y = d3.scale.linear()
+                        .domain([0, maxY])
+                        .range([height, 0]);
+
+                    var yAxis = d3.svg.axis().scale(y)
+                        .orient('left')
+                        .ticks(5);
+
+                    var xAxis = d3.svg.axis().scale(x)
+                        .orient('bottom')
+                        .ticks(10);
 
                     svg.append('svg:g')
                         .attr('class', 'y-axis')
@@ -85,7 +94,13 @@ angular.module('processMonitor.directives', [])
                         .call(xAxis);
 
                     var line = d3.svg.line()
-                        .x(function(d,i){ return x(d[0]); })
+                        .x(function(d,i){
+                            if (options.xVar == "time") {
+                                return x(new Date(d[0] * 1000));
+                            } else {
+                                return x(d[0]);
+                            }
+                        })
                         .y(function(d,i){ return y(d[1]); })
                         .interpolate('linear');
 
@@ -133,7 +148,7 @@ angular.module('processMonitor.directives', [])
                             "right": 20,
                             "left": 45,
                             "bottom": 40,
-                            "xVar": "index",
+                            "xVar": "time",
                             "yVar": "cpu_percent"
                         };
 
