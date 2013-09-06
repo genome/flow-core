@@ -23,6 +23,13 @@
   }
 }
 
+.titlebar {
+  h2 {
+    border-bottom: 2px solid #CCC;
+    color: #555;
+  }
+}
+
 .process-tree {
   list-style: none;
   margin-left: 0;
@@ -101,6 +108,22 @@
       padding: 5px;
       margin-bottom: 5px;
       .border-radius(@globalBorderRadius);
+
+      .descriptor-list {
+        margin-left: 0;
+
+        .descriptor-item {
+          list-style: none;
+        }
+
+        .descriptor-item.read-only {
+          border: 1px solid #AAA;
+        }
+
+        .descriptor-item.read-write{
+          border: 1px solid #FAA;
+        }
+      }
     }
   }
 }

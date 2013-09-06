@@ -5308,6 +5308,10 @@ a.badge:focus {
   margin: 0 10px 10px 10px;
   color: #393;
 }
+.titlebar h2 {
+  border-bottom: 2px solid #CCC;
+  color: #555;
+}
 .process-tree {
   list-style: none;
   margin-left: 0;
@@ -5393,6 +5397,18 @@ a.badge:focus {
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 5px;
+}
+.file-list-block .file-list .file-item .descriptor-list {
+  margin-left: 0;
+}
+.file-list-block .file-list .file-item .descriptor-list .descriptor-item {
+  list-style: none;
+}
+.file-list-block .file-list .file-item .descriptor-list .descriptor-item.read-only {
+  border: 1px solid #AAA;
+}
+.file-list-block .file-list .file-item .descriptor-list .descriptor-item.read-write {
+  border: 1px solid #FAA;
 }
 .cpu-chart {
   width: 100%;

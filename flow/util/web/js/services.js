@@ -5,6 +5,7 @@ angular.module('processMonitor.services', ['ngResource'])
             UPDATE_DELTA: 1000,
             SAVE_HISTORY: 100,
             KEEP_DEAD_PROCESSES_FOR: 10,
+            HOSTNAME: "",
             PROCESS_HISTORY_KEYS: [
                 // these process attribute histories will be stored for generating charts
                 "time",

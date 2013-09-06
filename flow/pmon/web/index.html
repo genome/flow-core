@@ -1,34 +1,37 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" data-ng-app="processMonitor">
 <head>
   <meta charset='utf-8'/>
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
   <meta name="description" content=""/>
   <meta name="viewport" content="width=device-width"/>
 
-  <title>Flow Process Monitor</title>
+  <title>{{ title }}</title>
   <link rel="stylesheet" type="text/css" href="css/main.css"/>
 </head>
 <body>
 
 <div class="container">
-  <div data-ng-app="processMonitor">
-    <div class="row" style="margin-top: 1em;">
-      <div class="span2">
-        <div data-ng-controller="Tree">
-          <ul class="process-tree">
-            <li data-ng-repeat="item in processes" data-ng-include="'templates/process-tree.html'"></li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="span10">
-        <div data-ng-view data-ng-model="process_data">
-
-        </div>
-      </div>
-
+  <div class="row">
+    <div class="span12 titlebar">
+      <h2>{{ host }}</h2>
     </div>
+  </div>
+  <div class="row">
+    <div class="span2">
+      <div data-ng-controller="Tree">
+        <ul class="process-tree">
+          <li data-ng-repeat="item in processes" data-ng-include="'templates/process-tree.html'"></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="span10">
+      <div data-ng-view data-ng-model="process_data">
+
+      </div>
+    </div>
+
   </div>
 
   <!-- VENDOR LIBS -->

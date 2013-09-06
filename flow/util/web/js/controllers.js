@@ -19,8 +19,8 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
             };
         }])
 
-    .controller('Tree', ['$scope', '$location', 'statusService',
-        function($scope, $location, statusService) {
+    .controller('Tree', ['$scope', '$location', '$rootScope', 'statusService',
+        function($scope, $location, $rootScope, statusService) {
             $scope.processes = statusService.status_processes;
 
             $scope.selected = null;
@@ -29,6 +29,8 @@ angular.module('processMonitor.controllers', ['processMonitor.services', 'proces
             $scope.viewProcess= function (item) {
                 $location.path("process/" + item.pid);
                 $scope.selected = item.pid;
+                $rootScope.pid = item.pid;
+                $rootScope.title = "Flow " + $rootScope.host + ":" + $rootScope.pid;
             };
 
             $scope.mouseEnter = function(item) {

@@ -1,6 +1,6 @@
 'use strict';
 angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.services', 'processMonitor.directives', 'processMonitor.filters'])
-    .config(['$routeProvider', function($routeProvider, ProcessDetail) {
+    .config(['$routeProvider', function($routeProvider, $location, configService, ProcessDetail) {
         // underscore.js extensions
         _.mixin({
             deepExtend: deepExtend, // basic merging for nested objects/arrays
@@ -15,7 +15,13 @@ angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.
 
         console.log("processMonitor configured.");
     }])
-    .run(function(statusService, basicService) {
+
+    .run(['$location', '$rootScope', 'statusService', 'basicService', 'configService', function($location, $rootScope, statusService, basicService, configService) {
+        $rootScope.host = $location.host();
+        $rootScope.$on('$routeChangeSuccess', function (event, current, previous) {
+            $rootScope.host = $location.host();
+        });
+
         // set the master ids then call the poller
         basicService.get()
             .then(function(data) {
@@ -24,6 +30,19 @@ angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.
             })
             .then(function(){
                 statusService.poller();
+            })
+            .then(function() {
+                // set path to view master PID if URL doesn't exist
+                if($location.path() == "") {
+                    $location.path("process/" + statusService.status_all.master_pid);
+                    $rootScope.pid = statusService.status_all.master_pid;
+                    $rootScope.title = "Flow " + $rootScope.host + ":" + $rootScope.pid;
+                } else {
+                    $rootScope.pid = statusService.status_all.master_pid;
+                    $rootScope.title = "Flow " + $rootScope.host + ":" + $rootScope.pid;
+                }
+
             });
+
         console.log("processMonitor run.");
-    });
+    }]);
