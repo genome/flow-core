@@ -9,6 +9,7 @@ import flow.exit_codes
 import flow.util.stats
 import logging.config
 import pika
+import signal
 import sys
 import traceback
 
@@ -18,6 +19,9 @@ LOG = logging.getLogger(__name__)
 
 def main():
     try:
+        setup_exit_handler(signal.SIGINT, [signal.SIGINT, signal.SIGTERM])
+        setup_exit_handler(signal.SIGTERM, [signal.SIGTERM])
+
         exit_code = naked_main()
 
     except SystemExit as e:
@@ -28,6 +32,13 @@ def main():
         exit_code = flow.exit_codes.UNKNOWN_ERROR
 
     return exit_code
+
+
+def setup_exit_handler(signum, child_signals):
+    def _handler(signum, frame):
+        LOG.critical('Received signal %d: %s', signum, frame)
+        exit_process(exit_codes.UNKNOWN_ERROR, child_signals=child_signals)
+    signal.signal(signum, _handler)
 
 
 def naked_main():
