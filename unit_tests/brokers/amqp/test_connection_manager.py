@@ -19,7 +19,8 @@ connection_params = ConnectionParams(
         virtual_host=object(),
         retry_delay=0.01,
         connection_attempts=3,
-        prefetch_count=1
+        prefetch_count=1,
+        heartbeat_interval=600,
 )
 
 class ConnectionManagerTests(unittest.TestCase):

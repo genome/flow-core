@@ -21,6 +21,7 @@ LOG = logging.getLogger(__name__)
     retry_delay=setting('amqp.retry_delay'),
     connection_attempts=setting('amqp.connection_attempts'),
     prefetch_count=setting('amqp.prefetch_count'),
+    heartbeat_interval=setting('amqp.heartbeat_interval'),
 )
 class ConnectionParams(object): pass
 
@@ -83,7 +84,9 @@ class ConnectionManager(object):
         pika_params = pika.ConnectionParameters(
                 host=connection_params.hostname,
                 port=connection_params.port,
-                virtual_host=connection_params.virtual_host)
+                virtual_host=connection_params.virtual_host,
+                heartbeat_interval=connection_params.heartbeat_interval,
+                )
         connection = protocol.ClientCreator(reactor,
                 twisted_connection.TwistedProtocolConnection,
                 pika_params)
