@@ -23,7 +23,12 @@ LOG = logging.getLogger(__name__)
     prefetch_count=setting('amqp.prefetch_count'),
     heartbeat_interval=setting('amqp.heartbeat_interval'),
 )
-class ConnectionParams(object): pass
+class ConnectionParams(object):
+    @property
+    def pika_params(self):
+        return pika.ConnectionParameters(host=self.hostname, port=self.port,
+                virtual_host=self.virtual_host,
+                heartbeat_interval=self.heartbeat_interval)
 
 DISCONNECTED = 'disconnected'
 CONNECTING = 'connecting'
@@ -81,15 +86,9 @@ class ConnectionManager(object):
 
     @staticmethod
     def _create_pika_connection(connection_params):
-        pika_params = pika.ConnectionParameters(
-                host=connection_params.hostname,
-                port=connection_params.port,
-                virtual_host=connection_params.virtual_host,
-                heartbeat_interval=connection_params.heartbeat_interval,
-                )
         connection = protocol.ClientCreator(reactor,
                 twisted_connection.TwistedProtocolConnection,
-                pika_params)
+                connection_params.pika_params)
         return connection
 
     def _on_ready(self, connection):
