@@ -1,8 +1,5 @@
 import unittest
-try:
-    from unittest import mock
-except:
-    import mock
+import mock
 
 from twisted.internet import defer, reactor
 
