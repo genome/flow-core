@@ -53,7 +53,7 @@ class ShellCommandNet(SuccessFailureNet):
 
         # remove spurious token data
         self.token_cleanup_action = FutureAction(RemoveDataAction,
-                fields=['hostname', 'job_id', 'exit_code'])
+                fields=['hostname', 'job_id', 'exit_code', 'signal_number'])
         self.success_cleanup_transition = self.add_basic_transition(
                 'success_cleanup', action=self.token_cleanup_action)
         self.failure_cleanup_transition = self.add_basic_transition(
