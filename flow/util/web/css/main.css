@@ -5299,7 +5299,7 @@ a.badge:focus {
   -moz-border-radius: 5px;
   border-radius: 5px;
   background-color: #b2d49c;
-  margin-bottom: 1em;
+  margin-bottom: .5em;
 }
 .detail-header h4 {
   margin: 10px 10px 5px 10px;

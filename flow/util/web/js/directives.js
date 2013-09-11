@@ -37,12 +37,15 @@ angular.module('processMonitor.directives', [])
                     svg.selectAll('*').remove();
 
                     var xData = _.findWhere(data, {"name": options.xVar}).values;
-                    var yData = _.findWhere(data, {"name": options.yVar}).values;
+                    var y0Data = _.findWhere(data, {"name": options.yVar0}).values;
+                    var y1Data = _.findWhere(data, {"name": options.yVar1}).values;
 
-                    var chartData = _.zip(xData, yData);
+                    var y0ChartData = _.zip(xData, y0Data);
+                    var y1ChartData = _.zip(xData, y1Data);
 
                     var maxX = d3.max(xData),
-                        maxY = d3.max(yData),
+                        maxY0 = d3.max(y0Data),
+                        maxY1 = d3.max(y1Data),
                         minX = d3.min(xData);
 
                     if (options.xVar == "time") {
@@ -55,12 +58,20 @@ angular.module('processMonitor.directives', [])
                             .range([0, width]);
                     }
 
-                    var y = d3.scale.linear()
-                        .domain([0, maxY])
+                    var y0 = d3.scale.linear()
+                        .domain([0, maxY0])
                         .range([height, 0]);
 
-                    var yAxis = d3.svg.axis().scale(y)
+                    var y1 = d3.scale.linear()
+                        .domain([0, maxY1])
+                        .range([height, 0]);
+
+                    var yAxis0 = d3.svg.axis().scale(y0)
                         .orient('left')
+                        .ticks(5);
+
+                    var yAxis1 = d3.svg.axis().scale(y1)
+                        .orient('right')
                         .ticks(5);
 
                     var xAxis = d3.svg.axis().scale(x)
@@ -69,16 +80,30 @@ angular.module('processMonitor.directives', [])
 
                     svg.append('svg:g')
                         .attr('class', 'y-axis')
-                        .call(yAxis);
+                        .call(yAxis0);
 
-                    // y axis label
+                    svg.append('svg:g')
+                        .attr('class', 'y-axis')
+                        .attr("transform", "translate(" + width + ",0)")
+                        .call(yAxis1);
+
+                    // y0 axis label
                     svg.append("svg:text")
                         .attr("class", "y label")
                         .attr("text-anchor", "middle")
                         .attr("y", -(options.left - 15))
                         .attr("x", -(height/2))
                         .attr("transform", "rotate(-90)")
-                        .text(options.yVar);
+                        .text(options.yVar0Label);
+
+                    // y1 axis label
+                    svg.append("svg:text")
+                        .attr("class", "y label")
+                        .attr("text-anchor", "middle")
+                        .attr("y", -(options.right))
+                        .attr("x", -(height/2))
+                        .attr("transform", "rotate(90)")
+                        .text(options.yVar1Label);
 
                     // x axis label
                     svg.append("svg:text")
@@ -101,11 +126,17 @@ angular.module('processMonitor.directives', [])
                                 return x(d[0]);
                             }
                         })
-                        .y(function(d,i){ return y(d[1]); })
+                        .y(function(d,i){ return y0(d[1]); })
                         .interpolate('linear');
 
                     svg.append('svg:path')
-                        .attr('d', line(chartData))
+                        .attr('d', line(y0ChartData))
+                        .attr('class', 'chart-line')
+                        .attr('fill', 'none')
+                        .attr('stroke-width', '1');
+
+                    svg.append('svg:path')
+                        .attr('d', line(y1ChartData))
                         .attr('class', 'chart-line')
                         .attr('fill', 'none')
                         .attr('stroke-width', '1');
@@ -138,6 +169,10 @@ angular.module('processMonitor.directives', [])
                             {
                                 "name": "cpu_system",
                                 "values": _.pluck(process_history, "cpu_system")
+                            },
+                            {
+                                "name": "memory_percent",
+                                "values": _.pluck(process_history, "memory_percent")
                             }
                         ];
 
@@ -145,11 +180,14 @@ angular.module('processMonitor.directives', [])
                             "height": iAttributes.height,
                             "width": iAttributes.width,
                             "top": 0,
-                            "right": 20,
+                            "right": 45,
                             "left": 45,
                             "bottom": 40,
                             "xVar": "time",
-                            "yVar": "cpu_percent"
+                            "yVar0": "cpu_percent",
+                            "yVar0Label": "CPU %",
+                            "yVar1": "memory_percent",
+                            "yVar1Label": "Memory %"
                         };
 
                         scope.buildChart(iElement, data, options);
