@@ -18,7 +18,8 @@ class ExecutionEnvironmentBase(object):
 
 
 class ExecutionEnvironment(ExecutionEnvironmentBase):
-    def __init__(self, user_id, group_id, groups, umask, environment, working_directory):
+    def __init__(self, user_id, group_id, environment, working_directory,
+            groups=None, umask=None):
         self.user_id = user_id
         self.group_id = group_id
         self.groups = groups
@@ -29,7 +30,8 @@ class ExecutionEnvironment(ExecutionEnvironmentBase):
     def enter(self):
         try:
             self.set_permissions()
-            os.umask(self.umask)
+            if self.umask:
+                os.umask(self.umask)
 
             os.chdir(self.working_directory)
 

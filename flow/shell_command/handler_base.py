@@ -37,7 +37,7 @@ class ShellCommandSubmitMessageHandler(Handler):
                 group_id=message['group_id'],
                 user_id=message['user_id'],
                 groups=message.get('groups'),
-                umask=message['umask'],
+                umask=message.get('umask'),
                 environment=self.assemble_environment(message),
                 working_directory=message.get('working_directory', '/tmp')
         )
