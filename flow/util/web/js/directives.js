@@ -66,11 +66,11 @@ angular.module('processMonitor.directives', [])
                         .domain([0, maxY1])
                         .range([height, 0]);
 
-                    var yAxis0 = d3.svg.axis().scale(y0)
+                    var y0Axis = d3.svg.axis().scale(y0)
                         .orient('left')
                         .ticks(5);
 
-                    var yAxis1 = d3.svg.axis().scale(y1)
+                    var y1Axis = d3.svg.axis().scale(y1)
                         .orient('right')
                         .ticks(5);
 
@@ -80,12 +80,12 @@ angular.module('processMonitor.directives', [])
 
                     svg.append('svg:g')
                         .attr('class', 'y-axis')
-                        .call(yAxis0);
+                        .call(y0Axis);
 
                     svg.append('svg:g')
                         .attr('class', 'y-axis')
                         .attr("transform", "translate(" + width + ",0)")
-                        .call(yAxis1);
+                        .call(y1Axis);
 
                     // y0 axis label
                     svg.append("svg:text")
@@ -100,8 +100,8 @@ angular.module('processMonitor.directives', [])
                     svg.append("svg:text")
                         .attr("class", "y label")
                         .attr("text-anchor", "middle")
-                        .attr("y", -(options.right))
-                        .attr("x", -(height/2))
+                        .attr("y", -(width + 30))
+                        .attr("x", height/2)
                         .attr("transform", "rotate(90)")
                         .text(options.yVar1Label);
 
