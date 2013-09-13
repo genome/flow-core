@@ -1,7 +1,8 @@
-from flow.rabbit.reporter import pretty, separated_values
+from flow.rabbit.reporter import pretty, separated_values, yaml_report
 
 _REPORT_TYPES = {
     'csv': separated_values.CSVReporter,
+    'yaml': yaml_report.YamlReporter,
 }
 
 
