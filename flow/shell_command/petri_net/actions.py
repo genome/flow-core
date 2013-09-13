@@ -70,13 +70,12 @@ class ShellCommandDispatchAction(BasicMergeAction):
         params = {
             'user_id': int(net.constant('user_id')),
             'group_id': int(net.constant('group_id')),
-            'umask': int(net.constant('umask')),
             'working_directory': net.constant('working_directory', '/tmp'),
         }
 
-        net_groups = net.constant('groups')
-        if net_groups:
-            params['groups'] = map(int, net_groups)
+        umask = net.constant('umask')
+        if umask:
+            params['umask'] = int(umask)
 
         return params
 
