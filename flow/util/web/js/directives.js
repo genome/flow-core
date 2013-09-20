@@ -1,4 +1,79 @@
 angular.module('processMonitor.directives', [])
+    .directive('filePosition', function() {
+        return {
+            restrict: 'E',
+            templateUrl: 'templates/directives/file-position.html',
+            require: "^ngModel",
+            replace: true,
+            transclude: true,
+            scope: {
+                file_descriptor: "=ngModel"
+            },
+
+            controller: ['$scope', function($scope) {
+                $scope.buildChart = function(element, data, options) {
+                    // remove old chart
+                    if (!d3.select("svg.file-pos-svg").empty()) {
+                        d3.select("svg.file-pos-svg").remove();
+                    }
+
+                    var positions = _.findWhere(data, { "name": "pos" });
+                    var fileSize = _.findWhere(data, { "name": "fileSize"}).value;
+                    var currentPos = positions.values[positions.values.length - 1];
+
+                    var width = options.width;
+                    var height = options.height;
+
+                    var x = d3.scale.linear()
+                        .domain([0, fileSize])
+                        .range([0, width]);
+
+                    var chart = d3.select("div.file-pos").append("svg")
+                        .attr("class", "file-pos-svg")
+                        .attr("width", width)
+                        .attr("height", height)
+                        .attr("fill", "#AAA");
+
+                    var line = chart.append("line")
+                        .attr("x1", x(currentPos))
+                        .attr("y1", 0)
+                        .attr("x2", x(currentPos))
+                        .attr("y2", height)
+                        .attr("stroke-width", 1)
+                        .attr("stroke", "black");
+                }
+            }],
+
+            link: function(scope, iElement, iAttributes) {
+                scope.$watch('file_descriptor', function(file_descriptor) {
+                    scope.file_descriptor = file_descriptor;
+                    var descriptor_history = file_descriptor.history;
+
+                    var data = [
+                        {
+                            "name": "pos",
+                            "values": _.pluck(descriptor_history, "pos")
+                        },
+                        {
+                            "name": "time",
+                            "values": _.pluck(descriptor_history, "pos_time")
+                        },
+                        {
+                            "name": "fileSize",
+                            "value": file_descriptor.size
+                        }
+                    ];
+
+                    var options = {
+                        width: iAttributes.filePosWidth,
+                        height: iAttributes.filePosHeight
+                    };
+
+                    scope.buildChart(iElement, data, options);
+                }, true);
+            }
+        }
+    })
     .directive('cpuChart', function () {
         return {
             restrict: 'E',
@@ -26,6 +101,8 @@ angular.module('processMonitor.directives', [])
                     var width = (options.width || 780) - margin.left - margin.right,
                         height = (options.height || 350) - margin.top - margin.bottom;
 
+                    var color = d3.scale.category10();
+
                     var svg = d3.select(element[0])
                         .append('svg:svg')
                         .attr('class', 'line-chart')
@@ -37,8 +114,8 @@ angular.module('processMonitor.directives', [])
                     svg.selectAll('*').remove();
 
                     var xData = _.findWhere(data, {"name": options.xVar}).values;
-                    var y0Data = _.findWhere(data, {"name": options.yVar0}).values;
-                    var y1Data = _.findWhere(data, {"name": options.yVar1}).values;
+                    var y0Data = _.findWhere(data, {"name": options.y0Var}).values;
+                    var y1Data = _.findWhere(data, {"name": options.y1Var}).values;
 
                     var y0ChartData = _.zip(xData, y0Data);
                     var y1ChartData = _.zip(xData, y1Data);
@@ -94,7 +171,8 @@ angular.module('processMonitor.directives', [])
                         .attr("y", -(options.left - 15))
                         .attr("x", -(height/2))
                         .attr("transform", "rotate(-90)")
-                        .text(options.yVar0Label);
+                        .text(options.y0VarLabel)
+                        .style("fill", color(1));
 
                     // y1 axis label
                     svg.append("svg:text")
@@ -103,7 +181,8 @@ angular.module('processMonitor.directives', [])
                         .attr("y", -(width + 30))
                         .attr("x", height/2)
                         .attr("transform", "rotate(90)")
-                        .text(options.yVar1Label);
+                        .text(options.y1VarLabel)
+                        .style("fill", color(2));
 
                     // x axis label
                     svg.append("svg:text")
@@ -133,13 +212,15 @@ angular.module('processMonitor.directives', [])
                         .attr('d', line(y0ChartData))
                         .attr('class', 'chart-line')
                         .attr('fill', 'none')
-                        .attr('stroke-width', '1');
+                        .attr('stroke-width', '1')
+                        .style("stroke", color(1));
 
                     svg.append('svg:path')
                         .attr('d', line(y1ChartData))
                         .attr('class', 'chart-line')
                         .attr('fill', 'none')
-                        .attr('stroke-width', '1');
+                        .attr('stroke-width', '1')
+                        .style("stroke", color(2));
                 };
             }],
 
@@ -184,10 +265,10 @@ angular.module('processMonitor.directives', [])
                             "left": 45,
                             "bottom": 40,
                             "xVar": "time",
-                            "yVar0": "cpu_percent",
-                            "yVar0Label": "CPU %",
-                            "yVar1": "memory_percent",
-                            "yVar1Label": "Memory %"
+                            "y0Var": "cpu_percent",
+                            "y0VarLabel": "CPU %",
+                            "y1Var": "memory_percent",
+                            "y1VarLabel": "Memory %"
                         };
 
                         scope.buildChart(iElement, data, options);

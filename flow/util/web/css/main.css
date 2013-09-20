@@ -5443,3 +5443,23 @@ a.badge:focus {
   width: 400px;
   height: 300px;
 }
+.file-position {
+  *zoom: 1;
+}
+.file-position:before,
+.file-position:after {
+  display: table;
+  content: "";
+  line-height: 0;
+}
+.file-position:after {
+  clear: both;
+}
+.file-position .file-id {
+  float: left;
+  display: inline-block;
+}
+.file-position .file-pos {
+  float: left;
+  display: inline-block;
+}

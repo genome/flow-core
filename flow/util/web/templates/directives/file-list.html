@@ -4,11 +4,7 @@
       <strong><i class="icon-file"></i> {{ file.name }}</strong>
       <ul class="descriptor-list">
         <li class="descriptor-item" data-ng-repeat="descriptor in file.descriptors">
-          <strong><span class="id">{{ descriptor.id }}: </span></strong>
-          <i data-ng-class="{true:'icon-search', false:'icon-pencil'}[descriptor.read_only]" ></i>
-          <!--<span class="flags">Flags: {{ descriptor.flags }}</span>-->
-          <span class="size">Size: {{ descriptor.size }}</span>
-          <span class="pos">Position: {{ descriptor.pos }}</span>
+          <file-position data-ng-model="descriptor"></file-position>
         </li>
       </ul>
     </li>
