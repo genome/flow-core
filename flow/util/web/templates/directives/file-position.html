@@ -3,7 +3,5 @@
     <strong><span class="id">{{ file_descriptor.id }}: </span></strong>
     <i data-ng-class="{true:'icon-search', false:'icon-pencil'}[file_descriptor.read_only]" ></i>
   </div>
-  <div class="file-pos"></div>
-  <br/>
-  <pre>Size: {{ file_descriptor.size }} Pos: {{ file_descriptor.pos }}</pre>
+  <div class="file-pos"></div><div class="file-pos-kb">({{ file_descriptor.pos }}b)</div>
 </div>

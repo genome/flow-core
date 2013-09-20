@@ -1,7 +1,7 @@
 <div class="file-list-block">
   <ul class="file-list">
     <li class="file-item" data-ng-repeat="file in process_data.files">
-      <strong><i class="icon-file"></i> {{ file.name }}</strong>
+      <strong><i class="icon-file"></i> {{ file.name }}</strong> ({{  file.descriptors[0].size }}b)
       <ul class="descriptor-list">
         <li class="descriptor-item" data-ng-repeat="descriptor in file.descriptors">
           <file-position data-ng-model="descriptor"></file-position>

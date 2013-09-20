@@ -40,7 +40,7 @@ angular.module('processMonitor.directives', [])
                         .attr("x2", x(currentPos))
                         .attr("y2", height)
                         .attr("stroke-width", 1)
-                        .attr("stroke", "black");
+                        .attr("stroke", "#99A");
                 }
             }],
 
