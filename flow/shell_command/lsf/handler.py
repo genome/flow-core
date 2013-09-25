@@ -16,7 +16,7 @@ class LSFShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
             job_id_handled=None):
         dispatch_data = {'job_id': job_id}
         d = self.send_message('msg: dispatch_success',
-            callback_data, token_data=dispatch_data))
+            callback_data, token_data=dispatch_data)
 
         d.addCallbacks(job_id_handled.callback, job_id_handled.errback)
 
