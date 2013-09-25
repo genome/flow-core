@@ -1,4 +1,5 @@
 from flow.configuration.settings.injector import setting
+from flow.interfaces import IServiceLocator
 from flow.shell_command.handler_base import ShellCommandSubmitMessageHandler
 from flow.shell_command.lsf import executor
 from injector import inject
