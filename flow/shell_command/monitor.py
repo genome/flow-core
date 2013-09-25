@@ -29,7 +29,10 @@ class ExecutorMonitor(protocol.ProcessProtocol):
             try:
                 LOG.debug('Trying to open log file in %s: %s',
                         self.__class__.__name__, self.log_file)
-                self._log_file_handle = open(self.log_file, 'a')
+                if self.log_file:
+                    self._log_file_handle = open(self.log_file, 'a')
+                else:
+                    self._log_file_handle = sys.stderr
             except:
                 LOG.info('Could not open log file %r', self.log_file)
                 self._log_file_handle = sys.stderr
