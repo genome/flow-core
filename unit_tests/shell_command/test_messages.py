@@ -8,21 +8,22 @@ import unittest
 class ShellCommandMessagesTest(unittest.TestCase):
     def test_submit_valid(self):
         message = ShellCommandSubmitMessage(
-                command_line=['a', 'b', 'c'],
                 group_id=100,
-                groups=[100,200,300,400],
-                umask=2,
                 user_id=100,
                 environment={'d': 'e', 'f': 'g'},
-                resources={
-                    'limit': {
-                        'foo': 'scalar',
-                    },
-                    'reserve': {
-                        'bar': 7,
-                    },
-                    'request': {
-                        'baz': 'buz',
+                executor_data={
+                    'command_line': ['a', 'b', 'c'],
+                    'umask': 2,
+                    'resources': {
+                        'limit': {
+                            'foo': 'scalar',
+                        },
+                        'reserve': {
+                            'bar': 7,
+                        },
+                        'request': {
+                            'baz': 'buz',
+                        },
                     },
                 })
 
@@ -31,33 +32,37 @@ class ShellCommandMessagesTest(unittest.TestCase):
 
     def test_submit_invalid_command_line(self):
         with self.assertRaises(InvalidMessageException):
-            ShellCommandSubmitMessage(command_line=[],
+            ShellCommandSubmitMessage(
+                    executor_data={'command_line': [object(), object()]},
                     group_id=100, user_id=100)
 
         with self.assertRaises(InvalidMessageException):
-            ShellCommandSubmitMessage(command_line=[7],
+            ShellCommandSubmitMessage(
+                    executor_data={'command_line': [7]},
                     group_id=100, user_id=100)
 
         with self.assertRaises(InvalidMessageException):
-            ShellCommandSubmitMessage(command_line={'a': 'b'},
+            ShellCommandSubmitMessage(
+                    executor_data={'command_line': {'a': 'b'}},
                     group_id=100, user_id=100)
 
         with self.assertRaises(InvalidMessageException):
-            ShellCommandSubmitMessage(command_line='a b c',
+            ShellCommandSubmitMessage(
+                    executor_data={'command_line': 'a b c'},
                     group_id=100, user_id=100)
 
 
     def test_submit_invalid_environment(self):
         with self.assertRaises(InvalidMessageException):
             ShellCommandSubmitMessage(
-                    command_line=['a', 'b', 'c'],
+                    executor_data={'command_line': ['a', 'b', 'c']},
                     group_id=100, user_id=100,
                     environment={1: 'badnews'},
             )
 
         with self.assertRaises(InvalidMessageException):
             ShellCommandSubmitMessage(
-                    command_line=['a', 'b', 'c'],
+                    executor_data={'command_line': ['a', 'b', 'c']},
                     group_id=100, user_id=100,
                     environment={'badnews': 1},
             )
@@ -66,30 +71,38 @@ class ShellCommandMessagesTest(unittest.TestCase):
     def test_submit_invalid_resources(self):
         with self.assertRaises(InvalidMessageException):
             ShellCommandSubmitMessage(
-                    command_line=['a', 'b', 'c'],
+                    executor_data={
+                        'command_line': ['a', 'b', 'c'],
+                        'resources': {'bad': 'news'},
+                    },
                     group_id=100, user_id=100,
-                    resources={'bad': 'news'},
             )
 
         with self.assertRaises(InvalidMessageException):
             ShellCommandSubmitMessage(
-                    command_line=['a', 'b', 'c'],
+                    executor_data={
+                        'command_line': ['a', 'b', 'c'],
+                        'resources': {'limit': 'badnews'},
+                    },
                     group_id=100, user_id=100,
-                    resources={'limit': 'badnews'},
             )
 
         with self.assertRaises(InvalidMessageException):
             ShellCommandSubmitMessage(
-                    command_line=['a', 'b', 'c'],
+                    executor_data={
+                        'command_line': ['a', 'b', 'c'],
+                        'resources': {'limit': {1: 'badnews'}},
+                    },
                     group_id=100, user_id=100,
-                    resources={'limit': {1: 'badnews'}},
             )
 
         with self.assertRaises(InvalidMessageException):
             ShellCommandSubmitMessage(
-                    command_line=['a', 'b', 'c'],
+                    executor_data={
+                        'command_line': ['a', 'b', 'c'],
+                        'resources': {'limit': {'badnews': object()}},
+                    },
                     group_id=100, user_id=100,
-                    resources={'limit': {'badnews': object()}},
             )
 
 

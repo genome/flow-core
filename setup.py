@@ -6,6 +6,8 @@ import os.path
 entry_points = '''
 [console_scripts]
 flow = flow.main:main
+flow-fork-shell-command-executor = flow.shell_command.fork.executor:main
+flow-lsf-shell-command-executor = flow.shell_command.lsf.executor:main
 
 [flow.commands]
 set-token = flow.commands.set_token:SetTokenCommand

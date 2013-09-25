@@ -7,8 +7,6 @@ import unittest
 
 class ShellCommandDispatchActionTest(unittest.TestCase):
     def setUp(self):
-        self.net_constants = ['group_id', 'groups', 'umask', 'user_id', 'working_directory']
-
         self.response_places = {
             'msg: dispatch_failure': 'dfplace',
             'msg: dispatch_success': 'dsplace',
@@ -29,54 +27,30 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         self.key = 'test_action_key'
         self.action = actions.ShellCommandDispatchAction.create(
                 self.connection, self.key, args=self.args)
-        self.net = mock.Mock()
+        self.net = mock.MagicMock()
 
     def tearDown(self):
         self.connection.flushall()
 
 
-    def test_correct_net_constants(self):
-        self.assertEqual(self.net_constants,
-                self.action.net_constants)
-
     def test_correct_place_refs(self):
         expected_place_refs = self.response_places.keys()
         self.assertItemsEqual(expected_place_refs, self.action.place_refs)
-
 
     def test_response_places(self):
         self.assertEqual(self.response_places,
                 self.action._response_places())
 
+
     def test_executor_data_no_extras(self):
         color_descriptor = mock.Mock()
         response_places = mock.Mock()
         token_data = {}
+        self.net.constant.return_value = None
+
         executor_data = self.action.executor_data(self.net,
                 color_descriptor, token_data, response_places)
-        self.assertItemsEqual(self.net_constants + ['environment'],
-                executor_data.keys())
-
-    def test_set_environment(self):
-        env = mock.Mock()
-        color_descriptor = mock.Mock()
-        self.net.constant.return_value = env
-
-        executor_data = {}
-        self.action._set_environment(self.net, color_descriptor, executor_data)
-
-        self.assertEqual(executor_data['environment'], env)
-        self.net.constant.assert_called_once_with('environment', {})
-
-    def test_set_constants(self):
-        executor_data = {}
-        self.action._set_constants(self.net, executor_data)
-        for c in self.net_constants:
-            self.net.constant.assert_any_call(c)
-            self.assertEqual(executor_data[c], self.net.constant.return_value)
-
-        self.assertEqual(len(self.net_constants),
-                len(self.net.constant.mock_calls))
+        self.assertItemsEqual(['command_line'], executor_data.keys())
 
     def test_set_io_files_unset(self):
         executor_data = {}
@@ -96,15 +70,14 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
         self.action.set_io_files(self.net, executor_data, token_data={})
         self.assertEqual(expected_iofiles, executor_data)
 
-    def test_exec_environment_params(self):
+    def test_base_message_params(self):
         self.net.constant = mock.MagicMock()
-        params = self.action.exec_environment_params(self.net)
+        params = self.action.base_message_params(self.net)
+
         self.net.constant.assert_any_call('user_id')
         self.net.constant.assert_any_call('group_id')
-        self.net.constant.assert_any_call('umask')
         self.net.constant.assert_any_call('working_directory', '/tmp')
-
-        self.net.constant.assert_any_call('groups')
+        self.net.constant.assert_any_call('environment')
 
     def test_execute(self):
         service_name = 'myservice'
@@ -137,8 +110,6 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
 
 class LSFDispatchActionTest(unittest.TestCase):
     def setUp(self):
-        self.net_constants = ['group_id', 'user_id', 'groups', 'umask', 'working_directory']
-
         self.response_places = {
             'msg: dispatch_failure': 'dfplace',
             'msg: dispatch_success': 'dsplace',
@@ -164,7 +135,7 @@ class LSFDispatchActionTest(unittest.TestCase):
         lsf_options = {'queue': 'long'}
         self.action.args['lsf_options'] = lsf_options
 
-        net = mock.Mock()
+        net = mock.MagicMock()
         color_descriptor = mock.Mock()
         token_data = {}
         response_places = mock.Mock()
@@ -172,8 +143,8 @@ class LSFDispatchActionTest(unittest.TestCase):
         self.action.callback_data.return_value = {}
         executor_data = self.action.executor_data(net,
                 color_descriptor, token_data, response_places)
-        self.assertItemsEqual(self.net_constants + ['environment',
-            'lsf_options'], executor_data.keys())
+        self.assertItemsEqual(['command_line', 'lsf_options', 'resources',
+            'umask'], executor_data.keys())
 
         self.assertEqual(lsf_options, executor_data['lsf_options'])
 

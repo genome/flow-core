@@ -7,7 +7,6 @@ LOG = logging.getLogger(__name__)
 
 
 class ShellCommandDispatchAction(BasicMergeAction):
-    net_constants = ['group_id', 'groups', 'umask', 'user_id', 'working_directory']
     place_refs = [
             "msg: dispatch_failure",
             "msg: dispatch_success",
@@ -21,9 +20,6 @@ class ShellCommandDispatchAction(BasicMergeAction):
     def command_line(self, net, token_data):
         return self.args['command_line']
 
-    def environment(self, net, color_descriptor):
-        return net.constant('environment', {})
-
 
     # Private methods
     def _response_places(self):
@@ -32,8 +28,11 @@ class ShellCommandDispatchAction(BasicMergeAction):
     def executor_data(self, net, color_descriptor, token_data, response_places):
         executor_data = {}
 
-        self._set_environment(net, color_descriptor, executor_data)
-        self._set_constants(net, executor_data)
+        executor_data['command_line'] = self.command_line(net, token_data)
+        umask = net.constant('umask')
+        if umask:
+            executor_data['umask'] = int(umask)
+
         self.set_io_files(net, executor_data, token_data)
 
         return executor_data
@@ -47,17 +46,6 @@ class ShellCommandDispatchAction(BasicMergeAction):
         result.update(response_places)
         return result
 
-    def _set_environment(self, net, color_descriptor, executor_data):
-        environment = self.environment(net, color_descriptor)
-        if environment:
-            executor_data['environment'] = environment
-
-    def _set_constants(self, net, executor_data):
-        for opt in self.net_constants:
-            value = net.constant(opt)
-            if value:
-                executor_data[opt] = value
-
     def set_io_files(self, net, executor_data, token_data):
         if 'stderr' in self.args:
             executor_data['stderr'] = self.args['stderr']
@@ -66,16 +54,19 @@ class ShellCommandDispatchAction(BasicMergeAction):
         if 'stdout' in self.args:
             executor_data['stdout'] = self.args['stdout']
 
-    def exec_environment_params(self, net):
+    def base_message_params(self, net):
         params = {
             'user_id': int(net.constant('user_id')),
             'group_id': int(net.constant('group_id')),
             'working_directory': net.constant('working_directory', '/tmp'),
         }
 
-        umask = net.constant('umask')
-        if umask:
-            params['umask'] = int(umask)
+        if 'stderr' in self.args:
+            params['stderr'] = self.args['stderr']
+
+        environment = net.constant('environment')
+        if environment:
+            params['environment'] = environment
 
         return params
 
@@ -92,11 +83,9 @@ class ShellCommandDispatchAction(BasicMergeAction):
         deferred.addCallback(lambda x: service.submit(
             callback_data=self.callback_data(net,
                 color_descriptor, response_places),
-            command_line=self.command_line(net, token_data),
             executor_data=self.executor_data(net, color_descriptor,
                 token_data, response_places),
-            resources=self.args.get('resources', {}),
-            **self.exec_environment_params(net)))
+            **self.base_message_params(net)))
 
         return tokens, deferred
 
@@ -105,16 +94,17 @@ class LSFDispatchAction(ShellCommandDispatchAction):
     service_name = "lsf"
 
     def executor_data(self, net, color_descriptor, token_data, response_places):
-        result = ShellCommandDispatchAction.executor_data(self, net,
+        executor_data = ShellCommandDispatchAction.executor_data(self, net,
             color_descriptor, token_data, response_places)
 
+        executor_data['resources'] = self.args.get('resources', {})
         if 'lsf_options' in self.args:
-            result['lsf_options'] = self.args['lsf_options']
+            executor_data['lsf_options'] = self.args['lsf_options']
 
-        result.update(self.callback_data(net,
+        executor_data.update(self.callback_data(net,
             color_descriptor, response_places))
 
-        return result
+        return executor_data
 
 
 class ForkDispatchAction(ShellCommandDispatchAction):

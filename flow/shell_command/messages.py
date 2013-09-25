@@ -7,7 +7,6 @@ ALLOWED_RESOURCE_TYPES = set(['limit', 'request', 'reserve'])
 
 class ShellCommandSubmitMessage(Message):
     required_fields = {
-            'command_line': list,
             'group_id': (int, long),
             'user_id': (int, long),
     }
@@ -16,10 +15,17 @@ class ShellCommandSubmitMessage(Message):
             'callback_data': dict,
             'environment': dict,
             'executor_data': dict,
-            'groups': list,
+
+            'stderr': basestring,
+            'working_directory': basestring,
+
+            # Deprecated - moved into executor_data
+            'command_line': list,
             'resources': dict,
             'umask': (int, long),
-            'working_directory': basestring,
+
+            # Deprecated - removed
+            'groups': list,
     }
 
     def validate(self):
@@ -28,9 +34,12 @@ class ShellCommandSubmitMessage(Message):
         self.validate_resources()
 
     def validate_command_line(self):
-        if not self.command_line:
-            raise exceptions.InvalidMessageException('Empty command_line.')
-        for word in self.command_line:
+        command_line = self.get('executor_data', {}).get('command_line', [])
+        if not isinstance(command_line, (tuple, list)):
+            raise exceptions.InvalidMessageException(
+                    'command_line must be a list or tuple.  Got: %r'
+                    % command_line)
+        for word in command_line:
             if not isinstance(word, basestring):
                 raise exceptions.InvalidMessageException(
                         'Invalid type in command_line: %s' % word)
@@ -48,7 +57,7 @@ class ShellCommandSubmitMessage(Message):
                         % (k, v))
 
     def validate_resources(self):
-        resources = self.get('resources', {})
+        resources = self.get('executor_data', {}).get('resources', {})
         for k, v in resources.iteritems():
             if k not in ALLOWED_RESOURCE_TYPES:
                 raise exceptions.InvalidMessageException(

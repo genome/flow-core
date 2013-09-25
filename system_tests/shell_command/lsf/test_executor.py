@@ -1,9 +1,10 @@
-from flow import exit_codes
-from flow.shell_command.lsf import executor
-from pythonlsf import lsf
+import flow.shell_command.lsf.executor
 
-import mock
+import json
 import os
+import re
+import subprocess
+import tempfile
 import unittest
 
 
@@ -13,46 +14,57 @@ def lsf_available():
 
 @unittest.skipIf(not lsf_available(), 'LSF not available')
 class LSFExecutorSubmitTest(unittest.TestCase):
-    def setUp(self):
-        opt_defs = {
-            'queue': {
-                'name': 'queue',
-                'flag': 'SUB_QUEUE',
-            },
-        }
-
-        self.e = executor.LSFExecutor(pre_exec=None, post_exec=None,
-                    option_definitions=opt_defs, default_options={},
-                    resource_definitions={})
-
-        self.job_id_callback = mock.Mock()
+    def executable(self):
+        return [os.path.join(os.path.dirname(
+            flow.shell_command.lsf.executor.__file__), 'executor.py')]
 
     def test_submit_success(self):
-        executor_data = {}
-        resources = {}
-        command_line = [u'ls']
-        exit_code = self.e.execute_command_line(
-                job_id_callback=self.job_id_callback,
-                command_line=command_line,
-                executor_data=executor_data,
-                resources=resources)
+        data = {
+            'command_line': [u'ls'],
+            'net_key': 'abcdef',
+            'color': 0,
+            'color_group_idx': 0,
 
-        self.assertEqual(exit_codes.EXECUTE_SUCCESS, exit_code)
-        self.job_id_callback.assert_called_once_with(mock.ANY)
+            'msg: dispatch_failure': 0,
+            'msg: dispatch_success': 1,
+            'msg: execute_begin':    2,
+            'msg: execute_failure':  3,
+            'msg: execute_success':  4,
+        }
+
+        stdin = tempfile.NamedTemporaryFile(delete=False)
+        json.dump(data, stdin)
+        stdin.close()
+
+        output = subprocess.check_output(self.executable(),
+                stdin=open(stdin.name))
+
+        lines = output.split('\n')
+        self.assertTrue(re.search('Job <\d+> is submitted to queue <\w+>.',
+            lines[0]))
+        self.assertTrue(int(lines[1]))
 
     def test_submit_failure_illegal_queue(self):
-        executor_data = {'lsf_options': {'queue': 'UNKNOWNQUEUE'}}
-        resources = {}
-        command_line = ['ls']
-        exit_code = self.e.execute_command_line(
-                job_id_callback=self.job_id_callback,
-                command_line=command_line,
-                executor_data=executor_data,
-                resources=resources)
+        data = {
+            'command_line': [u'ls'],
+            'net_key': 'abcdef',
+            'color': 0,
+            'color_group_idx': 0,
 
-        self.assertFalse(self.job_id_callback.mock_calls)
-        self.assertEqual(exit_codes.EXECUTE_FAILURE, exit_code)
+            'msg: dispatch_failure': 0,
+            'msg: dispatch_success': 1,
+            'msg: execute_begin':    2,
+            'msg: execute_failure':  3,
+            'msg: execute_success':  4,
+            'lsf_options': {'queue': 'UNKNOWNQUEUE'},
+        }
 
+        stdin = tempfile.NamedTemporaryFile(delete=False)
+        json.dump(data, stdin)
+        stdin.close()
+
+        self.assertEqual(1, subprocess.call(self.executable(),
+            stdin=open(stdin.name), stderr=open('/dev/null', 'w')))
 
 
 
