@@ -11,9 +11,9 @@ class HandlerBaseTest(unittest.TestCase):
         subprocess.check_call([EXECUTABLE, '--expect-success', PRETEND_CAT],
                 stdout=open('/dev/null', 'w'))
 
-#    def test_failure(self):
-#        subprocess.check_call([EXECUTABLE, 'false'],
-#                stderr=open('/dev/null', 'w'))
+    def test_failure(self):
+        subprocess.check_call([EXECUTABLE, 'false'],
+                stderr=open('/dev/null', 'w'))
 
 
 if __name__ == '__main__':

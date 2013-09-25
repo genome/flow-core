@@ -60,6 +60,7 @@ def parse_arguments():
 def main(exe_name, expect_success):
     message = ShellCommandSubmitMessage(
             user_id=os.getuid(), group_id=os.getgid(),
+            working_directory='.',
             executor_data={
                 'command_line': ['echo', 'foo'],
             })
