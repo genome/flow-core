@@ -54,7 +54,7 @@ class ShellCommandSubmitMessageHandler(Handler):
 
     def _handle_message(self, message):
         monitor = ExecutorMonitor(message.get('executor_data', {}),
-                log_file=message.get('stderr'))
+                log_file=message.get('executor_data', {}).get('stderr'))
 
         t = reactor.spawnProcess(monitor,
                 self.executable, [self.executable, '--job_id_fd', '3'],

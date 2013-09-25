@@ -16,7 +16,6 @@ class ShellCommandSubmitMessage(Message):
             'environment': dict,
             'executor_data': dict,
 
-            'stderr': basestring,
             'working_directory': basestring,
 
             # Deprecated - moved into executor_data
