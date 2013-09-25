@@ -68,7 +68,7 @@ def main(exe_name, expect_success):
     TestHandler.executable_name = exe_name
     handler = TestHandler(expected_job_id=json.dumps(message.executor_data),
             expect_success=expect_success,
-            default_environment={}, mandatory_environment={})
+            default_environment=os.environ, mandatory_environment={})
 
     handler._handle_message(message)
 
