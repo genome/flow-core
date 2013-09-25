@@ -1,7 +1,7 @@
 from collections import deque, defaultdict
 from flow.configuration.settings.injector import setting
 from injector import inject
-from twisted.internet import defer
+from twisted.internet import defer, reactor
 
 import flow.interfaces
 import logging
@@ -52,7 +52,8 @@ class LocalBroker(flow.interfaces.IBroker):
                 message = message_class.decode(encoded_message)
                 yield h(message)
         else:
-            LOG.info('No messages found in queue.')
+            LOG.info('No messages found in queue, stoping reactor.')
+            reactor.stop()
 
 
 def _transform_bindings(source_bindings):
