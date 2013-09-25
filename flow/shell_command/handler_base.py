@@ -14,8 +14,9 @@ import twisted.python.procutils
 LOG = logging.getLogger(__name__)
 
 
-@inject(default_environment=setting('shell_command.default_environment'),
-        mandatory_environment=setting('shell_command.mandatory_environment'))
+@inject(default_environment=setting('shell_command.default_environment', {}),
+        mandatory_environment=setting(
+            'shell_command.mandatory_environment', {}))
 class ShellCommandSubmitMessageHandler(Handler):
     message_class = ShellCommandSubmitMessage
 
