@@ -223,3 +223,11 @@ class Net(rom.Object):
     @staticmethod
     def marking_key(tag, place_idx):
         return "%s:%s" % (tag, place_idx)
+
+    def describe_color_marking(self):
+        result = {}
+        for key, token_idx in self.color_marking.value.iteritems():
+            place_idx = key.split(':')[1]
+            result[key] = (self.place(place_idx).name.value, token_idx)
+
+        return result
