@@ -30,7 +30,7 @@ class ShellCommandSubmitMessageHandler(Handler):
     def assemble_environment(self, message):
         return env_util.merge_and_sanitize_environments(
                 self.default_environment,
-                message.get('executor_data', {}).get('environment', {}),
+                message.get('environment', {}),
                 self.mandatory_environment)
 
     def _get_value_if_root(self, value, requested_uid, field_name):
