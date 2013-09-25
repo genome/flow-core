@@ -4,8 +4,7 @@ from flow.shell_command.lsf import executor
 from injector import inject
 
 
-@inject(executor=executor.LSFExecutor,
-        queue_name=setting('shell_command.lsf.queue'),
+@inject(queue_name=setting('shell_command.lsf.queue'),
         exchange=setting('shell_command.lsf.exchange'),
         response_routing_key=setting('shell_command.lsf.response_routing_key'),
         service_interfaces=IServiceLocator)
