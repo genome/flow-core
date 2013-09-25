@@ -72,12 +72,13 @@ class ShellCommandDispatchActionTest(unittest.TestCase):
 
     def test_base_message_params(self):
         self.net.constant = mock.MagicMock()
-        params = self.action.base_message_params(self.net)
+        color_descriptor = mock.Mock()
+        params = self.action.base_message_params(self.net, color_descriptor)
 
         self.net.constant.assert_any_call('user_id')
         self.net.constant.assert_any_call('group_id')
         self.net.constant.assert_any_call('working_directory', '/tmp')
-        self.net.constant.assert_any_call('environment')
+        self.net.constant.assert_any_call('environment', {})
 
     def test_execute(self):
         service_name = 'myservice'

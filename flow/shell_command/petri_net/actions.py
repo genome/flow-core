@@ -54,21 +54,20 @@ class ShellCommandDispatchAction(BasicMergeAction):
         if 'stdout' in self.args:
             executor_data['stdout'] = self.args['stdout']
 
-    def base_message_params(self, net):
+    def base_message_params(self, net, color_descriptor):
         params = {
             'user_id': int(net.constant('user_id')),
             'group_id': int(net.constant('group_id')),
             'working_directory': net.constant('working_directory', '/tmp'),
         }
 
-        if 'stderr' in self.args:
-            params['stderr'] = self.args['stderr']
-
-        environment = net.constant('environment')
-        if environment:
-            params['environment'] = environment
+        params['environment'] = self.environment(net, color_descriptor)
 
         return params
+
+    def environment(self, net, color_descriptor):
+        return net.constant('environment', {})
+
 
     def execute(self, net, color_descriptor, active_tokens, service_interfaces):
         tokens, deferred = BasicMergeAction.execute(self, net,
@@ -85,7 +84,7 @@ class ShellCommandDispatchAction(BasicMergeAction):
                 color_descriptor, response_places),
             executor_data=self.executor_data(net, color_descriptor,
                 token_data, response_places),
-            **self.base_message_params(net)))
+            **self.base_message_params(net, color_descriptor)))
 
         return tokens, deferred
 
