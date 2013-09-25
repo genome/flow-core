@@ -52,13 +52,3 @@ class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
         d.addCallbacks(job_ended_handled.callback, job_ended_handled.errback)
 
         return d
-
-    def send_message(self, place_name, callback_data, token_data=None):
-        net_key = callback_data['net_key']
-        color = callback_data['color']
-        color_group_idx = callback_data['color_group_idx']
-        place_idx = callback_data[place_name]
-
-        return self.service_interfaces['orchestrator'].create_token(
-                net_key=net_key, place_idx=place_idx, color=color,
-                color_group_idx=color_group_idx, data=token_data)
