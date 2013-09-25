@@ -70,7 +70,6 @@ class ExecutorMonitor(protocol.ProcessProtocol):
             if isinstance(exit_status.value, error.ProcessDone):
                 self.job_ended_deferred.callback(None)
             else:
-                # XXX Is this a very useful log message?  Add a timestamp?
                 self.log_file_handle.write('Executor failed with exit_status %s'
                         % exit_status)
                 self.log_file_handle.flush()
