@@ -15,7 +15,6 @@ import logging.config
 import os
 import socket
 import sys
-import traceback
 
 
 LOG = logging.getLogger(__name__)
