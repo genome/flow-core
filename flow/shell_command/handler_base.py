@@ -56,7 +56,7 @@ class ShellCommandSubmitMessageHandler(Handler):
         monitor = ExecutorMonitor(message.get('executor_data', {}),
                 log_file=message.get('executor_data', {}).get('stderr'))
 
-        t = reactor.spawnProcess(monitor,
+        reactor.spawnProcess(monitor,
                 self.executable, [self.executable, '--job_id_fd', '3'],
                 env=self.assemble_environment(message),
                 uid=self.uid(message), gid=self.gid(message),
@@ -95,27 +95,6 @@ class ShellCommandSubmitMessageHandler(Handler):
         return self.service_interfaces['orchestrator'].create_token(
                 net_key=net_key, place_idx=place_idx, color=color,
                 color_group_idx=color_group_idx, data=token_data)
-
-# XXX These are abstract
-#    def on_job_id_success(self, job_id, callback_data=None,
-#            job_id_handled=None):
-#        job_id_handled.callback(job_id)
-#        return job_id
-#
-#    def on_job_id_failure(self, error, callback_data=None,
-#            job_id_handled=None):
-#        job_id_handled.callback(error)
-#        return error
-#
-#    def on_job_ended_success(self, result, callback_data=None,
-#            job_ended_handled=None):
-#        job_ended_handled.callback(result)
-#        return result
-#
-#    def on_job_ended_failure(self, error, callback_data=None,
-#            job_ended_handled=None):
-#        job_ended_handled.callback(error)
-#        return error
 
 
 def is_executable(fpath):
