@@ -4,6 +4,7 @@ from flow.shell_command.handler_base import ShellCommandSubmitMessageHandler
 from injector import inject
 from twisted.internet import defer
 
+import os
 import socket
 
 
@@ -45,7 +46,11 @@ class ForkShellCommandMessageHandler(ShellCommandSubmitMessageHandler):
 
     def on_job_ended_failure(self, error, callback_data=None,
             job_ended_handled=None):
-        token_data = {}  # XXX exit code and signal number
+        token_data = {}
+        if os.WIFEXITED(error.value.exitCode):
+            token_data['exit_code'] = os.WEXITSTATUS(error.value.exitCode)
+        elif os.WIFSIGNALED(error.value.exitCode):
+            token_data['signal_number'] = os.WSTOPSIG(error.value.exitCode)
 
         d = self.send_message('msg: execute_failure', callback_data,
                 token_data=token_data)
