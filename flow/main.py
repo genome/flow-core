@@ -4,14 +4,13 @@ from flow.configuration.inject.initialize import initialize_injector
 from flow.configuration.metrics import initialize_metrics
 from flow.configuration.parser import parse_arguments
 from flow.configuration.settings.load import load_settings
-from flow.util.exit import exit_process
 from flow import exit_codes
 
 import flow.exit_codes
+import flow.util.signal
 import flow.util.stats
 import logging.config
 import pika
-import signal
 import sys
 import traceback
 
@@ -21,8 +20,7 @@ LOG = logging.getLogger(__name__)
 
 def main():
     try:
-        setup_exit_handler(signal.SIGINT, [signal.SIGINT, signal.SIGTERM])
-        setup_exit_handler(signal.SIGTERM, [signal.SIGTERM])
+        flow.util.signal.setup_standard_exit_handlers()
 
         exit_code = naked_main()
 
@@ -35,12 +33,6 @@ def main():
 
     return exit_code
 
-
-def setup_exit_handler(signum, child_signals):
-    def _handler(signum, frame):
-        LOG.critical('Received signal %d: %s', signum, frame)
-        exit_process(exit_codes.UNKNOWN_ERROR, child_signals=child_signals)
-    signal.signal(signum, _handler)
 
 
 def naked_main():
