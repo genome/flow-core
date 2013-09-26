@@ -7,7 +7,7 @@ from flow.configuration.settings.load import load_settings
 from flow.shell_command import executor_utils
 from flow.shell_command.lsf.request_builder import LSFRequestBuilder
 from flow.util.exit import exit_process
-from flow.util.signal import setup_standard_signal_handlers
+from flow.util.signal_handlers import setup_standard_signal_handlers
 from pythonlsf import lsf
 
 import datetime

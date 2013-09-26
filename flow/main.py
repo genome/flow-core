@@ -7,7 +7,7 @@ from flow.configuration.settings.load import load_settings
 from flow import exit_codes
 
 import flow.exit_codes
-import flow.util.signal
+import flow.util.signal_handlers
 import flow.util.stats
 import logging.config
 import pika
@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 
 def main():
     try:
-        flow.util.signal.setup_standard_signal_handlers()
+        flow.util.signal_handlers.setup_standard_signal_handlers()
 
         exit_code = naked_main()
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from flow.util.mkdir import make_path_to
-from flow.util.signal import setup_standard_signal_handlers
+from flow.util.signal_handlers import setup_standard_signal_handlers
 from flow.shell_command import executor_utils
 
 import contextlib
