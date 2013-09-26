@@ -14,6 +14,15 @@ def lsf_available():
 
 @unittest.skipIf(not lsf_available(), 'LSF not available')
 class LSFExecutorSubmitTest(unittest.TestCase):
+    def setUp(self):
+        self.old_flow_config_path = os.environ.get('FLOW_CONFIG_PATH')
+        os.environ['FLOW_CONFIG_PATH'] = os.path.dirname(__file__)
+
+    def tearDown(self):
+        if self.old_flow_config_path is not None:
+            os.environ['FLOW_CONFIG_PATH'] = self.old_flow_config_path
+
+
     def executable(self):
         return [os.path.join(os.path.dirname(
             flow.shell_command.lsf.executor.__file__), 'executor.py')]

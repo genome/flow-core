@@ -1,0 +1,166 @@
+shell_command:
+    resource_types:
+        limit:
+            cpu_time:
+                resource_class: TimeResource
+                units: s
+
+            max_resident_memory:
+                resource_class: StorageResource
+                units: MiB
+
+            open_files:
+                resource_class: IntegerResource
+
+            processes:
+                resource_class: IntegerResource
+
+            stack_size:
+                resource_class: StorageResource
+                units: MiB
+
+            threads:
+                resource_class: IntegerResource
+
+            max_virtual_memory:
+                resource_class: StorageResource
+                units: MiB
+
+        reserve:
+            memory:
+                resource_class: StorageResource
+                units: MiB
+
+            temp_space:
+                resource_class: StorageResource
+                units: GiB
+
+        request:
+            max_cores:
+                resource_class: IntegerResource
+
+            min_cores:
+                resource_class: IntegerResource
+
+            memory:
+                resource_class: StorageResource
+                units: MiB
+
+            temp_space:
+                resource_class: StorageResource
+                units: GiB
+
+    lsf:
+        exchange: flow
+        submit_routing_key: shell_command.lsf.submit
+        queue: lsf_submit
+        pre_exec: ['true']
+        post_exec: ['true']
+
+        default_options:
+            queue: apipe
+
+        response_routing_key: petri.place.create_token
+
+        available_options:
+            beginTime:
+                name: beginTime
+                type: int
+
+            job_group:
+                name: group
+                flag: SUB2_JOB_GROUP
+                option_set: 2
+            job_name:
+                name: jobName
+                flag: SUB_JOB_NAME
+            project:
+                name: projectName
+                flag: SUB_PROJECT_NAME
+
+            mail_user:
+                name: mail_user
+                flag: SUB_MAIL_USER
+
+            queue:
+                name: queue
+                flag: SUB_QUEUE
+
+            stderr:
+                name: errFile
+                flag: SUB_ERR_FILE
+            stdin:
+                name: inFile
+                flag: SUB_IN_FILE
+            stdout:
+                name: outFile
+                flag: SUB_OUT_FILE
+
+            termTime:
+                name: termTime
+                type: int
+
+        supported_resources:
+            limit:
+                cpu_time:
+                    class: LSFrlimit
+                    option_index: LSF_RLIMIT_CPU
+                    units: s
+
+                max_resident_memory:
+                    class: LSFrlimit
+                    option_index: LSF_RLIMIT_RSS
+                    units: KiB
+
+                open_files:
+                    class: LSFrlimit
+                    option_index: LSF_RLIMIT_NOFILE
+
+                processes:
+                    class: LSFrlimit
+                    option_index: LSF_RLIMIT_PROCESS
+
+                stack_size:
+                    class: LSFrlimit
+                    option_index: LSF_RLIMIT_STACK
+                    units: KiB
+
+                threads:
+                    class: LSFrlimit
+                    option_index: LSF_RLIMIT_THREAD
+
+                max_virtual_memory:
+                    class: LSFrlimit
+                    option_index: LSF_RLIMIT_VMEM
+                    units: MiB
+
+            reserve:
+                memory:
+                    class: LSFResourceViaString
+                    name: mem
+                    units: MiB
+
+                temp_space:
+                    class: LSFResourceViaString
+                    name: gtmp
+                    units: GiB
+
+            request:
+                max_cores:
+                    class: LSFResourceDirectRequest
+                    name: maxNumProcessors
+
+                min_cores:
+                    class: LSFResourceDirectRequest
+                    name: numProcessors
+
+                memory:
+                    class: LSFResourceViaString
+                    name: mem
+                    units: MiB
+
+                temp_space:
+                    class: LSFResourceViaString
+                    name: gtmp
+                    units: GiB
+
