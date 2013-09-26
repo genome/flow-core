@@ -7,10 +7,12 @@ import injector
 
 
 @injector.inject(
-    resource_types=setting('shell_command.resource_types'),
+    resource_type_definitions=setting('shell_command.resource_types'),
     resource_definitions=setting('shell_command.lsf.supported_resources'))
 class LSFResourceManager(object):
     def __init__(self):
+        self.resource_types = resource_types.make_resource_types(
+                self.resource_type_definitions)
         self.available_resources = {}
         self.available_resources['limit'] = factory.build_objects(
                 self.resource_definitions.get('limit', {}), resource)
