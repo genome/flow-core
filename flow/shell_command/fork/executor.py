@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from flow.util.mkdir import make_path_to
+from flow.util.signal import setup_standard_exit_handlers
 from flow.shell_command import executor_utils
 
 import contextlib
@@ -17,6 +18,8 @@ def main():
 
     if 'umask' in data:
         os.umask(data['umask'])
+
+    setup_standard_exit_handlers()
 
     with open_files(data) as (stderr, stdin, stdout):
         p = subprocess.Popen(data['command_line'], close_fds=True,
