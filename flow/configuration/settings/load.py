@@ -48,5 +48,6 @@ def load_settings(command_name, parsed_arguments):
 
 
 def load_settings_file(path):
-    data = yaml.load(open(path))
+    with open(path) as f:
+        data = yaml.load(f)
     return CacheSettings(data)
