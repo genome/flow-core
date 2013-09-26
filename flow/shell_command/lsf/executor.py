@@ -7,7 +7,7 @@ from flow.configuration.settings.load import load_settings
 from flow.shell_command import executor_utils
 from flow.shell_command.lsf.request_builder import LSFRequestBuilder
 from flow.util.exit import exit_process
-from flow.util.signal import setup_standard_exit_handlers
+from flow.util.signal import setup_standard_signal_handlers
 from pythonlsf import lsf
 
 import datetime
@@ -85,7 +85,7 @@ def main():
     if 'umask' in data:
         os.umask(data['umask'])
 
-    setup_standard_exit_handlers()
+    setup_standard_signal_handlers()
 
     settings = load_settings('flow-lsf-shell-command-executor',
             parsed_arguments=None)

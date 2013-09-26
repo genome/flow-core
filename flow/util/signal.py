@@ -7,7 +7,7 @@ import signal
 LOG = logging.getLogger(__name__)
 
 
-def setup_standard_exit_handlers():
+def setup_standard_signal_handlers():
     setup_exit_handler(signal.SIGINT, [signal.SIGINT, signal.SIGTERM])
     setup_exit_handler(signal.SIGTERM, [signal.SIGTERM])
 

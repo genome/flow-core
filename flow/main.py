@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 
 def main():
     try:
-        flow.util.signal.setup_standard_exit_handlers()
+        flow.util.signal.setup_standard_signal_handlers()
 
         exit_code = naked_main()
 
