@@ -1,1 +1,2 @@
 include flow/petri_net/lua/*
+include flow/local-redis.conf

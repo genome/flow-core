@@ -46,6 +46,7 @@ setup(
         include_package_data=True,
         package_data={
             'flow/petri_net/lua': LUA_FILES,
+            'flow': ['flow/local-redis.conf'],
         },
         entry_points = entry_points,
         install_requires = [
