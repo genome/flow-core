@@ -8,6 +8,7 @@ from flow.shell_command.monitor import ExecutorMonitor
 
 import logging
 import os
+import sys
 import twisted.python.procutils
 
 
@@ -24,6 +25,10 @@ class ShellCommandSubmitMessageHandler(Handler):
     def executable(self):
         if is_executable(os.path.abspath(self.executable_name)):
             return os.path.abspath(self.executable_name)
+        elif is_executable(os.path.join(os.path.dirname(sys.executable),
+                self.executable_name)):
+            return os.path.join(os.path.dirname(sys.executable),
+                    self.executable_name)
         else:
             return twisted.python.procutils.which(self.executable_name)[0]
 
