@@ -4,8 +4,11 @@ from flow.util.exit import exit_process
 from twisted.internet import reactor
 
 import logging
+import twisted.internet.error
+
 
 LOG = logging.getLogger(__name__)
+
 
 class CommandBase(object):
     __metaclass__ = ABCMeta
@@ -43,7 +46,10 @@ class CommandBase(object):
 
     def _stop(self, _callback):
         LOG.debug("Stopping the twisted reactor.")
-        reactor.stop()
+        try:
+            reactor.stop()
+        except twisted.internet.error.ReactorNotRunning:
+            LOG.debug('Failed to stop reactor -- reactor not running')
         return _callback
 
     def _exit(self, error):
