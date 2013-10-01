@@ -15,7 +15,8 @@ class ForkShellCommandSystemTest(redistest.RedisTest):
 
     def test_failure(self):
         subprocess.check_call([EXECUTABLE, '--expect-failure',
-                '--redis-socket-path', self.redis_unix_socket_path])
+                '--redis-socket-path', self.redis_unix_socket_path],
+                stderr=open('/dev/null', 'w'))
 
 
 if __name__ == '__main__':

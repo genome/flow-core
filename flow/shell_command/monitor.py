@@ -9,9 +9,19 @@ LOG = logging.getLogger(__name__)
 
 
 class ExecutorMonitor(protocol.ProcessProtocol):
-    def __init__(self, data_to_send, log_file=None):
+    def __init__(self, data_to_send, log_file=None, uid=None, gid=None):
         self.data_to_send = data_to_send
         self.log_file = log_file
+
+        if uid is None:
+            self.uid = -1
+        else:
+            self.uid = uid
+
+        if gid is None:
+            self.gid = -1
+        else:
+            self.gid = gid
 
         self.job_id_deferred = defer.Deferred()
         self.job_ended_deferred = defer.Deferred()
@@ -30,7 +40,12 @@ class ExecutorMonitor(protocol.ProcessProtocol):
                 LOG.debug('Trying to open log file in %s: %s',
                         self.__class__.__name__, self.log_file)
                 if self.log_file:
-                    self._log_file_handle = open(self.log_file, 'a')
+                    try:
+                        self._log_file_handle = open(self.log_file, 'a')
+                        self._set_log_file_ownership()
+                    except OSError:
+                        # try to write to the actual log file in the future
+                        return sys.stderr
                 else:
                     self._log_file_handle = sys.stderr
             except:
@@ -38,6 +53,10 @@ class ExecutorMonitor(protocol.ProcessProtocol):
                 self._log_file_handle = sys.stderr
 
         return self._log_file_handle
+
+    def _set_log_file_ownership(self):
+        os.chown(self.log_file, self.uid, self.gid)
+        os.chmod(self.log_file, 0664)
 
     def close_log_file(self):
         if self._log_file_handle:
@@ -70,8 +89,8 @@ class ExecutorMonitor(protocol.ProcessProtocol):
             if isinstance(exit_status.value, error.ProcessDone):
                 self.job_ended_deferred.callback(None)
             else:
-                self.log_file_handle.write('Executor failed with exit_status %s'
-                        % exit_status)
+                self.log_file_handle.write('Fork service execution failed: %s\n'
+                        % exit_status.value)
                 self.log_file_handle.flush()
                 self.job_ended_deferred.errback(exit_status)
         finally:
