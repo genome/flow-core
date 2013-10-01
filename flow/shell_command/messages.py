@@ -31,6 +31,7 @@ class ShellCommandSubmitMessage(Message):
         self.validate_command_line()
         self.validate_environment()
         self.validate_resources()
+        self.validate_permissions()
 
     def validate_command_line(self):
         command_line = self.get('executor_data', {}).get('command_line', [])
@@ -77,3 +78,11 @@ class ShellCommandSubmitMessage(Message):
                     raise exceptions.InvalidMessageException(
                             'Expected scalar type for resource value.  '
                             'Got %s instead: %s' % (type(subval), subval))
+
+    def validate_permissions(self):
+        if self.user_id == 0:
+            raise exceptions.InvalidMessageException(
+                    'Running shell commands with uid == 0 is not allowed')
+        if self.group_id == 0:
+            raise exceptions.InvalidMessageException(
+                    'Running shell commands with gid == 0 is not allowed')
