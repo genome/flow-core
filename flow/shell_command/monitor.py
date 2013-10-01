@@ -2,6 +2,7 @@ from twisted.internet import defer, error, protocol
 
 import json
 import logging
+import os
 import sys
 
 
@@ -43,13 +44,17 @@ class ExecutorMonitor(protocol.ProcessProtocol):
                     try:
                         self._log_file_handle = open(self.log_file, 'a')
                         self._set_log_file_ownership()
-                    except OSError:
+                    except IOError:
                         # try to write to the actual log file in the future
                         return sys.stderr
+                    except OSError:
+                        return sys.stderr
+
                 else:
                     self._log_file_handle = sys.stderr
-            except:
-                LOG.info('Could not open log file %r', self.log_file)
+
+            except Exception as e:
+                LOG.exception('Could not open log file %r', self.log_file)
                 self._log_file_handle = sys.stderr
 
         return self._log_file_handle
