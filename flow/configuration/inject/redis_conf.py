@@ -30,7 +30,8 @@ class LocalRedisConfiguration(injector.Module):
     @injector.provides(flow.interfaces.IStorage)
     def provide_redis(self):
         _, unix_socket = tempfile.mkstemp()
-        subprocess.Popen(['flow-redis-server', '--unixsocket', unix_socket],
+        subprocess.Popen([executable(),
+            '--unixsocket', unix_socket],
                 stdout=sys.stderr)
 
         os.environ['FLOW_REDIS_SOCKET'] = unix_socket
@@ -39,6 +40,11 @@ class LocalRedisConfiguration(injector.Module):
         _wait_for_connection(conn)
 
         return conn
+
+
+def executable():
+    return os.path.join(os.path.dirname(sys.executable), 'flow-redis-server')
+
 
 _TIMEOUT=30
 def _wait_for_connection(conn):
