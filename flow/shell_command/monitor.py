@@ -80,7 +80,7 @@ class ExecutorMonitor(protocol.ProcessProtocol):
         if childFD == 3:
             self._job_id_connection_lost()
         else:
-            LOG.warning('Lost connection with child FD %d', childFD)
+            LOG.debug('Lost connection with child FD %d', childFD)
 
     def _job_id_connection_lost(self):
         job_id = ''.join(self._job_id_data)
