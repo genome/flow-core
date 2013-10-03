@@ -13,9 +13,9 @@ angular.module('processMonitor.directives', [])
             controller: ['$scope', function($scope) {
                 $scope.buildChart = function(element, data, options) {
                     // remove old chart
-                    // TODO: refactor to remove the jquery horror
-                    if (!d3.select($(element[0]).find(".file-pos svg")[0]).empty()) {
-                        d3.select($(element[0]).find(".file-pos svg")[0]).remove();
+                    // TODO: refactor to remove the jquery horror - couldn't get d3 to limit its select to children of element w/o it
+                    if (!d3.select(element[0]).select("svg").empty()) {
+                        d3.select(element[0]).select("svg").remove();
                     }
 
                     var positions = _.findWhere(data, { "name": "pos" });
@@ -29,7 +29,7 @@ angular.module('processMonitor.directives', [])
                         .domain([0, fileSize])
                         .range([0, width]);
 
-                    var chart = d3.select($(element[0]).find(".file-pos")[0]).append("svg")
+                    var chart = d3.select(element[0]).select(".file-pos").append("svg")
                         .attr("class", "file-pos-svg")
                         .attr("width", width)
                         .attr("height", height)
