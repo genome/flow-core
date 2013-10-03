@@ -9,6 +9,7 @@ class CSVReporter(flow.rabbit.reporter.base.IReporter):
         writer.writeheader()
         for row in result:
             writer.writerow(row)
+        sys.stdout.flush()
 
     def get_field_names(self, result):
         try:
