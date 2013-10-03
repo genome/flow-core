@@ -10,8 +10,8 @@ flow-fork-shell-command-executor = flow.shell_command.fork.executor:main
 flow-lsf-shell-command-executor = flow.shell_command.lsf.executor:main
 flow-redis-server = flow.local_redis:main
 
+
 [flow.commands]
-set-token = flow.commands.set_token:SetTokenCommand
 orchestrator = flow.orchestrator.command:OrchestratorCommand
 
 fork-shell-command-service = flow.shell_command.fork.commands.service:ForkShellCommand
