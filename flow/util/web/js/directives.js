@@ -13,7 +13,6 @@ angular.module('processMonitor.directives', [])
             controller: ['$scope', function($scope) {
                 $scope.buildChart = function(element, data, options) {
                     // remove old chart
-                    // TODO: refactor to remove the jquery horror - couldn't get d3 to limit its select to children of element w/o it
                     if (!d3.select(element[0]).select("svg").empty()) {
                         d3.select(element[0]).select("svg").remove();
                     }
