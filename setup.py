@@ -29,6 +29,8 @@ monitoring-command = flow.pmon.test_commands.monitoring_command:MonitoringComman
 reading-command = flow.pmon.test_commands.reading_command:ReadingCommand
 random-reading-command = flow.pmon.test_commands.reading_command:RandomReadingCommand
 
+benchmark = flow.commands.benchmark:BenchmarkCommand
+
 [flow.services]
 orchestrator = flow.orchestrator.service_interface:OrchestratorServiceInterface
 fork = flow.shell_command.service_interface:ForkShellCommandServiceInterface

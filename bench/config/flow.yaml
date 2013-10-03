@@ -1,0 +1,69 @@
+amqp:
+    connection_attempts: 40
+    hostname: localhost
+    port: 5672
+    api_port: 15672
+    prefetch_count: 10
+    retry_delay: 30
+    socket_timeout: 30
+    vhost: core_bench
+    heartbeat_interval: 600
+
+
+bindings:
+    flow:
+        petri_create_token:
+            - petri.place.create_token
+
+        petri_notify_place:
+            - petri.place.notify
+
+        petri_notify_transition:
+            - petri.transition.notify
+
+
+orchestrator:
+    create_token_exchange: flow
+    create_token_routing_key: petri.place.create_token
+    create_token_queue: petri_create_token
+
+    notify_place_exchange: flow
+    notify_place_routing_key: petri.place.notify
+    notify_place_queue: petri_notify_place
+
+    notify_transition_exchange: flow
+    notify_transition_routing_key: petri.transition.notify
+    notify_transition_queue: petri_notify_transition
+
+
+redis:
+    unix_socket_path: '/tmp/flow-bench-redis.sock'
+
+
+statsd_configuration:
+    STATSD_HOST: 'apipe-statsd'
+    STATSD_BUCKET_PREFIX: 'test.flow'
+
+
+logging:
+    version: 1
+    disable_existing_loggers: true
+
+    formatters:
+        plain:
+            format: '%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d: %(message)s'
+
+    root:
+        level: WARNING
+        handlers: [console]
+
+    loggers:
+        pika:
+            level: WARNING
+        flow:
+            level: WARNING
+
+    handlers:
+        console:
+            class: logging.StreamHandler
+            formatter: plain
