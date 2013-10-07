@@ -1,0 +1,15 @@
+<div class="process-block">
+  <div class="process-tab running-{{ item.is_running }}" data-ng-click="viewProcess(item)"
+       data-ng-mouseenter="mouseEnter(item)"
+       data-ng-mouseleave="mouseLeave(item)"
+       data-ng-class="tabClass(item)">
+
+    <div class="pid">{{ item.pid }}</div>
+    <div class="cpu">{{ item.cpu_percent }}%</div>
+  </div>
+  <div class="process-children">
+    <ul>
+      <li data-ng-repeat="item in item.children" data-ng-include="'templates/process-tree.html'"></li>
+    </ul>
+  </div>
+</div>

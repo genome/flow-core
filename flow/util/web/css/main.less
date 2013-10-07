@@ -1,0 +1,201 @@
+@import "../lib/bootstrap/less/bootstrap.less";
+@import "cpu-chart.less";
+@import "file-list.less";
+
+// VARIABLES
+@globalBorderRadius: 5px;
+
+// COLORS
+@tabRunningColor: #94D7EF;
+@tabDeadColor: #EFEFEF;
+@selectedColor: #B2D49C;
+
+.detail-header {
+  .border-radius(@globalBorderRadius);
+  background-color: @selectedColor;
+  margin-bottom: .5em;
+  h4 {
+    margin: 10px 10px 5px 10px;
+  }
+  p  {
+    margin: 0 10px 10px 10px;
+    color: #393;
+  }
+}
+
+.titlebar {
+  border-bottom: 2px solid #CCC;
+  margin-bottom: 1em;
+  .title {
+    float: left;
+    h2 {
+      color: #555;
+    }
+  }
+  .version {
+    float: right;
+    text-align: right;
+    line-height: 1em;
+    padding-top: 1.5em;
+    p {
+      font-size: 80%;
+      color: #999;
+      margin-bottom: 0;
+    }
+  }
+}
+
+.process-tree {
+  list-style: none;
+  margin-left: 0;
+
+  .process-block {
+    .clearfix();
+
+    .process-tab {
+      .clearfix();
+      .border-radius(@globalBorderRadius);
+      width: 92%;
+
+      cursor: pointer;
+
+      padding-left: 4%;
+      padding-right: 4%;
+      margin-bottom: 5px;
+
+      .pid {
+        width: 70%;
+        float: left;
+      }
+      .cpu {
+        width: 30%;
+        float: right;
+        text-align: right;
+        font-size: 80%;
+      }
+    }
+
+    .running-true {
+      color: #03394A;
+      background-color: @tabRunningColor;
+    }
+
+    .running-false {
+      background-color: @tabDeadColor;
+    }
+
+    .running-true.hover { background-color: lighten(@tabRunningColor, 15%) }
+    .running-false.hover { background-color: darken(@tabDeadColor, 15%) }
+
+    .running-true.selected {
+      background-color: @selectedColor;
+    }
+
+    .running-false.selected {
+      background-color: lighten(@selectedColor, 10%);
+    }
+
+    .process-children {
+      ul {
+        margin-left: 10px;
+        margin-bottom: 0;
+      }
+
+      li {
+        margin-bottom: .1em;
+        list-style: none;
+
+        .cpu-percent {
+
+        }
+      }
+    }
+  }
+}
+
+.file-list-block {
+  .file-list {
+    list-style: none;
+    margin: 0;
+    .file-item {
+      list-style: none;
+      background-color: #EFEFEF;
+      padding: 5px;
+      margin-bottom: 5px;
+      .border-radius(@globalBorderRadius);
+
+      .descriptor-list {
+        margin-left: 0;
+
+        .descriptor-item {
+          list-style: none;
+        }
+
+        .descriptor-item.read-only {
+          border: 1px solid #AAA;
+        }
+
+        .descriptor-item.read-write{
+          border: 1px solid #FAA;
+        }
+      }
+    }
+  }
+}
+
+.cpu-chart {
+  width: 100%;
+
+  .line-chart {
+    background: #EFEFEF;
+    .border-radius(@globalBorderRadius);
+  }
+
+  .chart-line {
+    stroke: steelblue;
+    stroke-width: 1;
+    fill: none;
+    border: 1px solid #F00;
+  }
+
+  .y-axis path,
+  .y-axis line,
+  .x-axis path,
+  .x-axis line {
+    fill: none;
+    stroke: grey;
+    shape-rendering: crispEdges;
+  }
+
+  .y-axis text,
+  .x-axis text {
+    font-family: sans-serif;
+    font-size: 10px;
+  }
+}
+
+.gridStyle {
+  border: 1px solid rgb(212,212,212);
+  width: 400px;
+  height: 300px
+}
+
+.file-position {
+  .clearfix();
+  .file-id {
+    float: left;
+    display: inline-block;
+  }
+
+  .file-pos {
+    float: left;
+    display: inline-block;
+    padding-left: 8px;
+    padding-right: 8px;
+    svg {
+      .border-radius(3px);
+      background-color: #FFF;
+      border: 1px solid #CCC;
+    }
+  }
+}

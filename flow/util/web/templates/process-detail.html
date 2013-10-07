@@ -1,0 +1,23 @@
+<div data-ng-controller="ProcessDetail" data-ng-init="assignProcessData()">
+  <div class="row">
+    <div class="span10 detail-header">
+      <h4>Process {{ process_id }} <span data-ng-switch on="process_data.is_master"><span data-ng-switch-when="true">(master)</span></span></h4>
+      <p>{{ command_line }}</p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="span10">
+      <cpu-chart data-ng-model="process_data"></cpu-chart>
+    </div>
+  </div>
+  <div class="row">
+    <div class="span10">
+      <scroller-chart data-ng-model="scroller_data"></scroller-chart>
+    </div>
+  </div>
+  <div class="row">
+    <div class="span10">
+      <file-list data-ng-model="process_data"></file-list>
+    </div>
+  </div>
+</div>

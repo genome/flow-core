@@ -1,0 +1,30 @@
+.cpu-chart {
+  width: 100%;
+
+  .line-chart {
+    background: #EFEFEF;
+    .border-radius(@globalBorderRadius);
+  }
+
+  .chart-line {
+    stroke: steelblue;
+    stroke-width: 1;
+    fill: none;
+    border: 1px solid #F00;
+  }
+
+  .y-axis path,
+  .y-axis line,
+  .x-axis path,
+  .x-axis line {
+    fill: none;
+    stroke: grey;
+    shape-rendering: crispEdges;
+  }
+
+  .y-axis text,
+  .x-axis text {
+    font-family: sans-serif;
+    font-size: 10px;
+  }
+}
