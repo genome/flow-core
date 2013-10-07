@@ -1,6 +1,6 @@
 from flow.commands.base import CommandBase
 from twisted.internet import defer, reactor
-from flow.util.process_monitor import ProcessMonitor
+from flow.pmon.process_monitor import ProcessMonitor
 from flow.util.logannotator import LogAnnotator
 import os
 

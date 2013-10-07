@@ -1,4 +1,4 @@
-from flow.util.process_info import ParentProcessInfo
+from flow.pmon.process_info import ParentProcessInfo
 from twisted.internet import reactor
 from twisted.web.resource import Resource, NoResource
 from twisted.web.server import Site
