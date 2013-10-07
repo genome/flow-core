@@ -25,6 +25,10 @@ console = flow.commands.console:ConsoleCommand
 
 rabbit = flow.commands.rabbit:RabbitCommand
 
+monitoring-command = flow.pmon.test_commands.monitoring_command:MonitoringCommand
+reading-command = flow.pmon.test_commands.reading_command:ReadingCommand
+random-reading-command = flow.pmon.test_commands.reading_command:RandomReadingCommand
+
 [flow.services]
 orchestrator = flow.orchestrator.service_interface:OrchestratorServiceInterface
 fork = flow.shell_command.service_interface:ForkShellCommandServiceInterface
