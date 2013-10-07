@@ -5308,9 +5308,26 @@ a.badge:focus {
   margin: 0 10px 10px 10px;
   color: #393;
 }
-.titlebar h2 {
+.titlebar {
   border-bottom: 2px solid #CCC;
+  margin-bottom: 1em;
+}
+.titlebar .title {
+  float: left;
+}
+.titlebar .title h2 {
   color: #555;
+}
+.titlebar .version {
+  float: right;
+  text-align: right;
+  line-height: 1em;
+  padding-top: 1.5em;
+}
+.titlebar .version p {
+  font-size: 80%;
+  color: #999;
+  margin-bottom: 0;
 }
 .process-tree {
   list-style: none;

@@ -1,6 +1,8 @@
 angular.module('processMonitor.services', ['ngResource'])
     .factory('configService', function() {
         return {
+            APP_NAME: "PTero Node Dashboard",
+            VERSION: "0.1",
             CPU_UPDATE_DELAY: 300,
             UPDATE_DELTA: 1000,
             SAVE_HISTORY: 100,

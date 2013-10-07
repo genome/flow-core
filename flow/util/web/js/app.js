@@ -1,5 +1,5 @@
 'use strict';
-angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.services', 'processMonitor.directives', 'processMonitor.filters'])
+var processMonitorApp = angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.services', 'processMonitor.directives', 'processMonitor.filters'])
     .config(['$routeProvider', function($routeProvider, $location, configService, ProcessDetail) {
         // underscore.js extensions
         _.mixin({
@@ -18,6 +18,8 @@ angular.module('processMonitor', ['processMonitor.controllers', 'processMonitor.
 
     .run(['$location', '$rootScope', 'statusService', 'basicService', 'configService', function($location, $rootScope, statusService, basicService, configService) {
         $rootScope.host = $location.host();
+        $rootScope.version = configService.VERSION;
+        $rootScope.app_name= configService.APP_NAME;
         $rootScope.$on('$routeChangeSuccess', function (event, current, previous) {
             $rootScope.host = $location.host();
         });

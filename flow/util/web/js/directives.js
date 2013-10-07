@@ -88,9 +88,23 @@ angular.module('processMonitor.directives', [])
             controller: ['$scope', function($scope) {
                 $scope.buildChart = function(element, data, options) {
                     // remove old chart
-                    if (!d3.select("svg").empty()) {
-                        d3.select("svg").remove();
+                    if (!d3.select(element[0]).select("svg").empty()) {
+                        d3.select(element[0]).select("svg").remove();
                     }
+
+                    // set up data for chart
+                    var xData = _.findWhere(data, {"name": options.xVar}).values;
+                    var y0Data = _.findWhere(data, {"name": options.y0Var}).values;
+                    var y1Data = _.findWhere(data, {"name": options.y1Var}).values;
+
+                    var y0ChartData = _.zip(xData, y0Data);
+                    var y1ChartData = _.zip(xData, y1Data);
+
+                    var maxX = d3.max(xData),
+                        maxY0 = d3.max(y0Data),
+                        maxY1 = d3.max(y1Data),
+                        minX = d3.min(xData);
+
                     var margin = {
                         top: options.top || 20,
                         right: options.right || 10,
@@ -113,24 +127,14 @@ angular.module('processMonitor.directives', [])
 
                     svg.selectAll('*').remove();
 
-                    var xData = _.findWhere(data, {"name": options.xVar}).values;
-                    var y0Data = _.findWhere(data, {"name": options.y0Var}).values;
-                    var y1Data = _.findWhere(data, {"name": options.y1Var}).values;
-
-                    var y0ChartData = _.zip(xData, y0Data);
-                    var y1ChartData = _.zip(xData, y1Data);
-
-                    var maxX = d3.max(xData),
-                        maxY0 = d3.max(y0Data),
-                        maxY1 = d3.max(y1Data),
-                        minX = d3.min(xData);
+                    var x;
 
                     if (options.xVar == "time") {
-                        var x = d3.time.scale()
+                        x = d3.time.scale()
                             .domain([new Date(minX * 1000), new Date(maxX * 1000)])
                             .range([0, width]);
                     } else {
-                        var x = d3.scale.linear()
+                        x = d3.scale.linear()
                             .domain([minX, maxX])
                             .range([0, width]);
                     }
@@ -277,7 +281,6 @@ angular.module('processMonitor.directives', [])
             }
         };
     })
-
     .directive('fileList', function() {
         return {
             restrict: 'E',
