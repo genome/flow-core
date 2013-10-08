@@ -9,8 +9,6 @@ from flow.petri_net.builder import Builder
 from twisted.internet import defer
 from flow.service_locator import ServiceLocator
 
-from flow_workflow.completion import MonitoringCompletionHandler
-from flow_workflow.entities.workflow.actions import NotificationAction
 
 import flow.interfaces
 import injector
@@ -77,6 +75,7 @@ class BenchmarkCommand(CommandBase):
         return done_deferred
 
     def _register_completion_handler(self, result, done_deferred, net_key):
+        from flow_workflow.completion import MonitoringCompletionHandler
         self.completion_handler = MonitoringCompletionHandler(
                 queue_name=net_key, done_deferred=done_deferred)
         self.broker.register_handler(self.completion_handler)
@@ -143,32 +142,7 @@ class BenchmarkCommand(CommandBase):
         future_net.bridge_transitions(last_join_transition,
                 stop_time_transition)
 
-        notify_transition = future_net.add_basic_transition(
-                name='notify transition', action=future.FutureAction(
-                    cls=NotificationAction, status='done'))
-
-        future_net.bridge_transitions(stop_time_transition, notify_transition)
-
-        return future_net, start_place
-
-    def alternative_future_net(self, size):
-        future_net = future.FutureNet()
-
-        start_place = future_net.add_place(name='start place')
-        start_time_transition = future_net.add_basic_transition(
-                name='start time', action=future.FutureAction(
-                    RecordTimeAction, destination='start_time'))
-        start_place.add_arc_out(start_time_transition)
-
-        stop_time_transition = future_net.add_basic_transition(
-                name='stop time', action=future.FutureAction(
-                    RecordTimeAction, destination='stop_time'))
-
-        for i in xrange(size):
-            t = future_net.add_basic_transition()
-            future_net.bridge_transitions(start_time_transition, t)
-            future_net.bridge_transitions(t, stop_time_transition)
-
+        from flow_workflow.entities.workflow.actions import NotificationAction
         notify_transition = future_net.add_basic_transition(
                 name='notify transition', action=future.FutureAction(
                     cls=NotificationAction, status='done'))
