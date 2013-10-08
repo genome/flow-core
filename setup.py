@@ -63,6 +63,7 @@ setup(
             'pika',
             'platform-python-lsf-api',
             'psutil',
+            'python-magic',
             'pyyaml',
             'redis',
             'requests',  # for flow rabbit
