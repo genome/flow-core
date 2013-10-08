@@ -52,10 +52,12 @@ class BenchmarkCommand(CommandBase):
 
     @staticmethod
     def annotate_parser(parser):
-        parser.add_argument('--size', type=int)
+        parser.add_argument('--groups', type=int, default=1)
+        parser.add_argument('--size', type=int, default=50)
 
     def _execute(self, parsed_arguments):
-        net, start_place = self.construct_net(parsed_arguments.size)
+        net, start_place = self.construct_net(parsed_arguments.groups,
+                parsed_arguments.size)
         completion_deferred = self.listen_for_completion(net)
 
         completion_deferred.addCallback(self.print_runtime, net=net)
@@ -92,8 +94,8 @@ class BenchmarkCommand(CommandBase):
         return result
 
 
-    def construct_net(self, size):
-        future_net, start_place = self.future_net(size)
+    def construct_net(self, groups, size):
+        future_net, start_place = self.future_net(groups, size)
 
         builder = Builder(self.storage)
         stored_net = builder.store(future_net, {}, {})
@@ -106,7 +108,7 @@ class BenchmarkCommand(CommandBase):
         return orchestrator.create_token(net.key, start_place, cg.begin, cg.idx)
 
 
-    def future_net(self, size):
+    def future_net(self, groups, size):
         future_net = future.FutureNet()
 
         start_place = future_net.add_place(name='start place')
@@ -115,23 +117,31 @@ class BenchmarkCommand(CommandBase):
                     RecordTimeAction, destination='start_time'))
         start_place.add_arc_out(start_time_transition)
 
-        split_transition = future_net.add_basic_transition(
-                name='split', action=future.FutureAction(
-                    SplitTransition, size=size))
-        future_net.bridge_transitions(start_time_transition, split_transition)
+        last_split_transition = start_time_transition
+        for i in xrange(groups):
+            split_transition = future_net.add_basic_transition(
+                    name='split', action=future.FutureAction(
+                        SplitTransition, size=size))
+            future_net.bridge_transitions(last_split_transition,
+                    split_transition)
+            last_split_transition = split_transition
 
         worker_transition = future_net.add_basic_transition()
-        future_net.bridge_transitions(split_transition, worker_transition)
+        future_net.bridge_transitions(last_split_transition, worker_transition)
 
-        join_transition = future_net.add_barrier_transition(
-                name='join', action=future.FutureAction(
-                    JoinTransition))
-        future_net.bridge_transitions(worker_transition, join_transition)
+        last_join_transition = worker_transition
+        for i in xrange(groups):
+            join_transition = future_net.add_barrier_transition(
+                    name='join', action=future.FutureAction(
+                        JoinTransition))
+            future_net.bridge_transitions(last_join_transition, join_transition)
+            last_join_transition = join_transition
 
         stop_time_transition = future_net.add_basic_transition(
                 name='stop time', action=future.FutureAction(
                     RecordTimeAction, destination='stop_time'))
-        future_net.bridge_transitions(join_transition, stop_time_transition)
+        future_net.bridge_transitions(last_join_transition,
+                stop_time_transition)
 
         notify_transition = future_net.add_basic_transition(
                 name='notify transition', action=future.FutureAction(

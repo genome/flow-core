@@ -5,22 +5,28 @@ set -e
 ITERATIONS=1
 
 declare -a ORCHESTRATORS=(
-    1
+#    1
     5
     10
     20
 )
 
-declare -a OPERATIONS=(
-    50
-    500
-    5000
-    50000
+declare -a NUM_GROUPS=(
+#    1
+    3
 )
 
+declare -a SIZES=(
+    20
+    30
+)
 
 export FLOW_CONFIG_PATH=`pwd`/config
 
+function cleanup {
+    kill $(jobs -p)
+}
+trap "cleanup" EXIT
 
 # setup rabbit
 RMQ_VHOST=core_bench
@@ -45,14 +51,14 @@ for N in ${ORCHESTRATORS[@]}; do
         flow orchestrator &> "logs/orchestrator-$o.log" &
     done
 
-    for M in ${OPERATIONS[@]}; do
-        echo -n "$N,$M"
-        for iteration in `seq 1 $ITERATIONS`; do
-            RUNTIME="$(flow benchmark --size $M)"
-            echo -n ",$RUNTIME"
+    for M in ${NUM_GROUPS[@]}; do
+        for SIZE in ${SIZES[@]}; do
+            OPERATIONS=$(($SIZE**$M))
+            for iteration in `seq 1 $ITERATIONS`; do
+                RUNTIME="$(flow benchmark --groups $M --size $SIZE)"
+                echo "$N,$OPERATIONS,$RUNTIME"
+            done
         done
-
-        echo # newline
     done
 
     kill $(jobs -p | tail -n +2)
