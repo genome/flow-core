@@ -20,7 +20,7 @@ def exit_process(exit_code, child_signals=[signal.SIGINT, signal.SIGTERM]):
     _signal_child_processes(signal.SIGKILL, recursive=True,
             timeout=_SIGNAL_TIMEOUT)
 
-    LOG.info('Children killed, exitting with code %d', exit_code)
+    LOG.info('Children killed, exiting with code %d', exit_code)
     os._exit(exit_code)
 
 
