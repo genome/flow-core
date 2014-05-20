@@ -68,7 +68,10 @@ setup(
             'redis',
             'requests',  # for flow rabbit
             'statsd-client',
-            'twisted',
+            'twisted==12.3.99',
+        ],
+        dependency_links=[
+            'https://github.com/genome-vendor/twisted/tarball/twisted-12.3.99#egg=Twisted-12.3.99',
         ],
         setup_requires = [
             'nose',
