@@ -8,6 +8,7 @@ from injector import inject
 import flow.interfaces
 import logging
 import os
+import pwd
 
 
 LOG = logging.getLogger(__name__)
@@ -50,8 +51,10 @@ class LsfPostExecCommand(CommandBase):
                 'signal_number': signal_number,
             }
 
-            LOG.debug('Job exitted with code (%s) and signal (%s)',
-                    exit_code, signal_number)
+            LOG.debug(
+'Job exitted with code (%s) and signal (%s) owner (%s) uid (%s)',
+                    exit_code, signal_number,
+                    pwd.getpwuid(os.getuid())[0], os.getuid())
 
             info = os.environ.get('LSB_JOBEXIT_INFO', None)
             if info:
